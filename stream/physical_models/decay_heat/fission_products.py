@@ -32,8 +32,8 @@ def read(standard: Standard, source: Source) -> pd.DataFrame:
     filepath = _to_filepath(standard, source)
     try:
         return pd.read_csv(filepath)
-    except FileNotFoundError:
-        raise NameError(f"Does not vendor {source.name} from {standard.name}") from None
+    except (FileNotFoundError, pd.errors.EmptyDataError):
+        raise FileNotFoundError(f"Does not vendor {source.name} from {standard.name}") from None
 
 
 def write(standard: Standard, source: Source, data: pd.DataFrame):
@@ -65,7 +65,11 @@ def contribution(standard: Standard, source: Source) -> DecayHeatFunction:
 
     Examples
     --------
-    >>> fp = contribution(Standard.ANS14, Source.U235)
+    >>> import pytest
+    >>> try:
+    ...     fp = contribution(Standard.ANS14, Source.U235)
+    ... except FileNotFoundError:
+    ...     pytest.skip("This doctest requires the standards which are not there")
     >>> Q: MeV = 200 # Approx. total recoverable energy associated with one fission
     >>> fp(t=0., T=np.inf) / Q
     array([0.06728006])

@@ -174,11 +174,11 @@ def rectangular_laminar_correction(aspect_ratio: float) -> Value:
 
     Examples
     --------
-    >>> rectangular_laminar_correction(1.)
+    >>> float(rectangular_laminar_correction(1.))
     1.1246190353017915
-    >>> rectangular_laminar_correction(0.)
+    >>> float(rectangular_laminar_correction(0.))
     0.6668484123609236
-    >>> rectangular_laminar_correction(0.5)
+    >>> float(rectangular_laminar_correction(0.5))
     1.0363896075094456
     """
     assert 0.0 <= aspect_ratio <= 1.0, f"{aspect_ratio = } must be non-negative and less than 1"

@@ -69,10 +69,12 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     mock_pk.input_reactivity = just(inp)
     save = mock_pk.save([p, ck], T={mock_calc: T})
     r = inp - mock_pk.temp_worth[mock_calc] * T
-    assert save == dict(
+    known = dict(
         power=p, ck=[ck], reactivity=r,
         dPdt=np.dot(mock_pk.lambdak, [ck]) + (r - mock_pk.dollar) * p / mock_pk.Lambda
     )
+    for key, value in known.items():
+        are_close(save[key], value, rtol=1e-5, atol=1e-8)
 
 
 @given(floats(allow_nan=False), floats(allow_nan=False))

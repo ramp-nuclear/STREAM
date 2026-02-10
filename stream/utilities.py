@@ -15,7 +15,7 @@ import numpy as np
 from cytoolz import valmap
 from numba import njit
 # noinspection PyProtectedMember
-from numpy.core._multiarray_umath import normalize_axis_index
+from numpy._core._multiarray_umath import normalize_axis_index
 # noinspection PyProtectedMember
 from numpy.lib._function_base_impl import _diff_dispatcher, array_function_dispatch
 from scipy.optimize import fsolve

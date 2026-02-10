@@ -39,7 +39,7 @@ def constant_LiquidFuncs(fluid: LiquidFuncs, T: Celsius, p: Pascal) -> LiquidFun
     --------
     >>> from stream.substances import light_water
     >>> clf = constant_LiquidFuncs(light_water, T=20., p=1e5)
-    >>> clf.density(20.) == clf.density(80.) == light_water.density(20.)
+    >>> bool(clf.density(20.) == clf.density(80.) == light_water.density(20.))
     True
     >>> clf.density(np.zeros(4)) / clf.density(20)
     array([1., 1., 1., 1.])

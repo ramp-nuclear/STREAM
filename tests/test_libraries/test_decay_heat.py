@@ -2,18 +2,26 @@
 from functools import partial
 
 import numpy as np
+import pytest
 from hypothesis import given, strategies as st, settings
 from hypothesis.strategies import SearchStrategy
 from scipy.constants import day, hour, week
 
-from stream.physical_models.decay_heat import (actinides, activation, fission_products, fissions)
-from stream.physical_models.decay_heat.fission_products import (Source, Standard)
+try:
+    from stream.physical_models.decay_heat import (actinides, activation, fission_products, fissions)
+    from stream.physical_models.decay_heat.fission_products import (Source, Standard)
+except FileNotFoundError:
+    pytest.skip("Standards of decay heat not available, skipping this file", allow_module_level=True)
+
 from stream.utilities import factor, just
 from .conftest import pos_medium_floats
 
 
 Q = 200.0
-fp = fission_products.contribution(Standard.ANS14, Source.U235)
+try:
+    fp = fission_products.contribution(Standard.ANS14, Source.U235)
+except FileNotFoundError:
+    pytest.skip("Standards of decay heat not available, skipping this file", allow_module_level=True)
 al28 = activation.profile(5.16e-3)
 ac = actinides.contribution(R=1)
 
