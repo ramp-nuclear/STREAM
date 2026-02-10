@@ -1,0 +1,17 @@
+dependencies:
+  - cachetools
+  - cytoolz
+  - ipython
+  - matplotlib
+  - more-itertools
+  - networkx
+  - numba
+  - numpy
+  - pandas
+  - python
+  - rich
+  - scikits.odes
+  - scipy
+  - sundials
+  - dask
+  - XXXX

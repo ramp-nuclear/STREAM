@@ -1,0 +1,6 @@
+dependencies:
+  - pytest
+  - hypothesis
+  - cloudpickle
+  - pytest-regressions
+  - python-graphviz

@@ -1,0 +1,12 @@
+.cache
+.idea
+__pycache__
+*.pyc
+.ipynb_checkpoints
+.hypothesis
+*.egg-info
+/docs/build/
+build
+/.pytest_cache/
+*.swp
+*regression*

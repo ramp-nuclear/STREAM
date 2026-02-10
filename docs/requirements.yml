@@ -1,0 +1,11 @@
+dependencies:
+  - jupyter
+  - mathjax
+  - matplotlib
+  - nbsphinx
+  - networkx
+  - numpydoc
+  - sphinx
+  - sphinx_rtd_theme
+  - hypothesis
+  - pytest
