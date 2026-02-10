@@ -19,7 +19,7 @@ jobs:
       uses: mamba-org/setup-micromamba@v2.0.6
       with:
         environment-file: allreq.yml
-        environment-name: stream-"${{ github.run_id }}-${{ github.run_attempt }}"
+        environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
         post-cleanup: 'all'
     - name: Test with pytest
       run: |
