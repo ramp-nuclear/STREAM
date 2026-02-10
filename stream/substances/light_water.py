@@ -243,7 +243,7 @@ def _surface_tension(T: Celsius) -> NPerM:
     >>> _surface_tension(100.)
     0.05891594230703328
     """
-    X = np.abs(373.99 - T) / XXX.XX
+    X = np.abs(373.99 - T) / 647.15
     A = 235.8e-3
     B = 1.256
     C = -0.625

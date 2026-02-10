@@ -179,9 +179,9 @@ def _nusselt_coefficient_developing(x: Value) -> Value:
         A source book for compact heat exchanger analytical data, Academic Press 1978,
         New York, San Francisco, London,
         Chapter VI, Parallel plates, Section C, Page 182, Equations 317-319.
-    .. [#TERMIC_dev] P. Abbate, TERMIC XX.X: A Program for
+    .. [#TERMIC_dev] P. Abbate, TERMIC V4.1: A Program for
         the Thermal-Hydraulic Analysis of a MTR Core in Forced Convection,
-        Vol 1: Models and Correlations, Rev 3, Pages XX-XX,
+        Vol 1: Models and Correlations, Rev 3, Pages 14-15,
         Nuclear Engineering Division, INVAP, December 2003
 
     """
@@ -195,7 +195,7 @@ def _nusselt_coefficient_developing(x: Value) -> Value:
 
 
 _xstar_table34 = np.array(sum([[j * 10 ** (-i) for j in (1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9)]
-                               for i in [6, 5, 4, 3, 2]], start=[]) + [0.1, X.XX, 0.2])
+                               for i in [6, 5, 4, 3, 2]], start=[]) + [0.1, 0.15, 0.2])
 _nuxh_table34 = np.array([148.773,
                           129.944,
                           118.049,
@@ -225,8 +225,8 @@ _nuxh_table34 = np.array([148.773,
                           18.050,
                           17.205,
                           16.511,
-                          XX.928,
-                          XX.427,
+                          15.928,
+                          15.427,
                           13.681,
                           12.604,
                           11.299,
@@ -325,9 +325,9 @@ def developing_laminar_h_spl(*, coolant: Liquid, mdot: KgPerS, A: Meter2,
         A source book for compact heat exchanger analytical data, Academic Press 1978,
         New York, San Francisco, London,
         Chapter VI, Parallel plates, Section C, Page 181, Table 34.
-    .. [#TERMIC] P. Abbate, TERMIC XX.X: A Program for
+    .. [#TERMIC] P. Abbate, TERMIC V4.1: A Program for
         the Thermal-Hydraulic Analysis of a MTR Core in Forced Convection,
-        Vol 1: Models and Correlations, Rev 3, Pages XX-XX,
+        Vol 1: Models and Correlations, Rev 3, Pages 14-15,
         Nuclear Engineering Division, INVAP, December 2003
 
     Parameters

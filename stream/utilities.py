@@ -17,7 +17,7 @@ from numba import njit
 # noinspection PyProtectedMember
 from numpy.core._multiarray_umath import normalize_axis_index
 # noinspection PyProtectedMember
-from numpy.lib.function_base import _diff_dispatcher, array_function_dispatch
+from numpy.lib._function_base_impl import _diff_dispatcher, array_function_dispatch
 from scipy.optimize import fsolve
 
 from stream.units import Array, Array1D, Celsius, Fahrenheit, KgPerS, Place, Value

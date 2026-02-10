@@ -49,7 +49,7 @@ def test_viscosity_correction_for_precalculated_case(heat_wet_ratio, mu_ratio, K
 @pytest.mark.parametrize(("a_dp", "K_R"),
                          [(0.05, 0.71742),
                           (0.1, 0.76565),
-                          (X.XX, 0.81110),
+                          (0.15, 0.81110),
                           (0.2, 0.85346)])
 def test_rectangular_laminar_correction_for_precalculated_case(a_dp, K_R):
     assert np.isclose(rectangular_laminar_correction(a_dp), K_R)

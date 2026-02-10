@@ -260,7 +260,7 @@ def flow_graph_to_aggregator(
     agr = summed(in_series(u, *comps, v) for u, v, _, comps in edges)
     g = DiGraph(agr.graph)
     # Non-Calculation Single Input Single Output (SISO) junctions are allowed,
-    # Here we XXXX with them, since they can't go into the Aggregator as nodes.
+    # Here we deal with them, since they can't go into the Aggregator as nodes.
     siso = filter(lambda n: not isinstance(n, Calculation), f_graph.nodes)
     for junction in siso:
         u, v = None, None

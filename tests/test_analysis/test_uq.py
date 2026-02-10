@@ -160,7 +160,7 @@ def test_uq_improves_with_mdot_for_simple_channel():
     c = ChannelAndContacts(z, light_water, pipe)
 
     def _make_agr(mdot: float, tlow: float) -> tuple[Aggregator, State, np.array]:
-        t = np.linspace(tlow, tlow + XX, 100)
+        t = np.linspace(tlow, tlow + 15, 100)
         p = Pump(mdot0=mdot)
         g = flow_graph(edge(('In', 'Out'), c), edge(('Out', 'In'), hx, p))
         agr, _ = flow_graph_to_agr_and_k(

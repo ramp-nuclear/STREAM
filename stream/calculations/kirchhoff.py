@@ -1,6 +1,6 @@
 """
 In the case of incompressible flow, Kirchhoff's rules dictate flow behavior.
-This calculation receives a graph containing calculations representing XXXX
+This calculation receives a graph containing calculations representing real
 system objects as nodes, and connected by edges depicting the connected cycles.
 
 .. attention::
@@ -42,7 +42,7 @@ class Kirchhoff(Calculation):
         Parameters
         ----------
         graph: MultiDiGraph
-            Containing calculations representing XXXX system objects as comps in edges, whose nodes are Junctions
+            Containing calculations representing real system objects as comps in edges, whose nodes are Junctions
             (If multiple entries are involved) or junction-names which are strings.
         abs_pressure_comps: Sequence[Hashable]
             If a component needs to know the absolute pressure, such information may be provided

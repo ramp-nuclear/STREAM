@@ -14,4 +14,4 @@ dependencies:
   - scipy
   - sundials
   - dask
-  - XXXX
+  - yaml

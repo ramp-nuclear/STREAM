@@ -90,7 +90,7 @@ def Saha_Zuber_OSV(T_bulk: Celsius, coolant: Liquid, u: MPerS, Dh: Meter) -> WPe
 
     .. math::
         T_\text{sat} - T_\text{bulk}
-        = XXX.8 \frac{q''_\text{OSV}}{c_{p, \text{bulk}}G}
+        = 153.8 \frac{q''_\text{OSV}}{c_{p, \text{bulk}}G}
 
     .. danger::
         This method assumes that the coolant temperature does not change when the flux changes.
@@ -267,7 +267,7 @@ def Whittle_Forgan_OFI(
 
     .. math::
         P_\text{RD} = \frac{\dot{m} c_\text{p}(T_\text{sat} - T_\text{inlet})}
-        {1 + X.XX (D_\text{h} / L_\text{h}) (1.08G)^{0.29}}
+        {1 + 3.15 (D_\text{h} / L_\text{h}) (1.08G)^{0.29}}
 
     Where :math:`G= \rho u = \dot{m}/A` is the mass flow flux, given in CGS.
     The reference says so: "G: vitesse massique à l'entrée et évaluée en CGS"
@@ -295,7 +295,7 @@ def Whittle_Forgan_OFI(
     G /= 10  # G must be in CGS, sadly.
     cp_int = quad(cp, inlet_temperature, sat_temperature)[0]  # type: ignore
     return (np.abs(mdot) * cp_int
-            / (1. + X.XX * (pipe.hydraulic_diameter / pipe.length) * (1.08 * G) ** 0.29)
+            / (1. + 3.15 * (pipe.hydraulic_diameter / pipe.length) * (1.08 * G) ** 0.29)
             )
 
 
@@ -469,7 +469,7 @@ def Mirshak_CHF(T_bulk: Celsius, T_sat: Celsius, pressure: Pascal, v: MPerS) -> 
 def Fabrega_CHF(Tin: Celsius, T_sat: Celsius, Dh: Meter) -> WPerM2:
     r"""The limit for CHF as measured and calculated by Fabrega [#Fabrega]_ for slow flows (v < 0.5 m/s)
 
-    .. math:: 10^7 D_\text{h}(0.023(T_\text{sat} - T_\text{bulk in}) + X.XX)
+    .. math:: 10^7 D_\text{h}(0.023(T_\text{sat} - T_\text{bulk in}) + 4.56)
 
     Parameters
     ----------
@@ -485,4 +485,4 @@ def Fabrega_CHF(Tin: Celsius, T_sat: Celsius, Dh: Meter) -> WPerM2:
     q'': WPerM2
         Heat flux where Critical Heat Flux (CHF) begins
     """
-    return 1e7 * Dh * (0.023 * (T_sat - Tin) + X.XX)
+    return 1e7 * Dh * (0.023 * (T_sat - Tin) + 4.56)

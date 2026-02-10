@@ -343,7 +343,7 @@ def test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundar
     y0 = np.zeros(len(agr))
     y0[agr.sections[F]] = 2 * T0
     y0[agr.var_index(PK, "ck")] = 1e3
-    y0[agr.var_index(PK, "power")] = XXX
+    y0[agr.var_index(PK, "power")] = 1e5
 
     sol = agr.solve_steady(y0)
     state = agr.save(sol)
@@ -380,7 +380,7 @@ def test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet()
     y0 = np.zeros(len(agr))
     y0[agr.sections[F]] = 2 * T0
     y0[agr.var_index(PK, "ck")] = 1e3
-    y0[agr.var_index(PK, "power")] = XXX
+    y0[agr.var_index(PK, "power")] = 1e5
     y0[agr.var_index(C, "h_left")] = 0.9e5
     y0[agr.var_index(C, "h_right")] = 0.9e5
     y0[agr.var_index(C, "T_cool")] = 2 * T0

@@ -3,7 +3,7 @@ The :class:`~stream.calculations.ideal.ideal.LumpedComponent` is used as
 a base class for methods and properties which many other ``Calculation``\ s use.
 The overarching concept is that of a Lumped object in an idealized Kirchoff model
 for flow, with an analogy to electronic circuits.
-Most Primary Circuit ``Calculation``\ s just XXXX with changes in pressure and outlet
+Most Primary Circuit ``Calculation``\ s just deal with changes in pressure and outlet
 temperature, and these often share much of their implementation.
 Some calculations may benefit from methods or properties of the LumpedComponent,
 and if they are not just LumpedComponents, they should use composition rather

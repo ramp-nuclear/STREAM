@@ -24,10 +24,10 @@ from .conftest import are_close, pos_floats, pos_medium_floats, mock_pipe
 
 
 @pytest.mark.parametrize(("pressure", "q_spl", "T_wall_inc"),
-                         [(XXX, 0, heavy_water.sat_temperature(1e5)),
+                         [(1e5, 0, heavy_water.sat_temperature(1e5)),
                           (2e5, 2.5e5, 126.4446),
                           (3e5, 3e6, 147.8462),
-                          (XXX, 5e6, 128.6497)])
+                          (1e5, 5e6, 128.6497)])
 def test_BR_T_wall_inc_for_precalculated_case(pressure, q_spl, T_wall_inc):
     Tsat = heavy_water.sat_temperature(pressure)
     assert np.isclose(Bergles_Rohsenow_T_ONB(pressure, q_spl, Tsat), T_wall_inc)
@@ -107,7 +107,7 @@ def test_wall_temperature_for_precalculated_case(input, expected):
 def test_regime_dependent_q_scb_is_zero_for_Twall_equals_Tsat(re):
     """Both Bergles-Rosenhow and McAdams are zero at Twall=Tsat"""
     re_bounds = 2000, 4000
-    T_wall = light_water.sat_temperature(p := np.full_like(re, XXX))
+    T_wall = light_water.sat_temperature(p := np.full_like(re, 1e5))
     q = regime_dependent_q_scb(T_wall, light_water.to_properties(T_wall, p), re, re_bounds)
     assert np.allclose(q, 0)
 
@@ -125,7 +125,7 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
     interpolation scheme"""
     re_bounds = (min(re), max(re))
     h = regime_dependent_h_spl(
-        mock_liquid_funcs.to_properties(np.array([100.]), XXX),
+        mock_liquid_funcs.to_properties(np.array([100.]), 1e5),
         mdot=md,
         Dh=1.,
         A=1.,

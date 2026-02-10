@@ -134,7 +134,7 @@ class _UQModel:
     @model.setter
     def model(self, mod: Model) -> None:
         self._model = mod
-        self.nominal = self._XXXX()
+        self.nominal = self._eval()
         self._invalidate_cache()
 
     @property
@@ -147,7 +147,7 @@ class _UQModel:
     @parameters.setter
     def parameters(self, params: dict[str, Value]) -> None:
         self._parameters = params
-        self.nominal = self._XXXX()
+        self.nominal = self._eval()
         self._invalidate_cache()
 
     @property
@@ -166,7 +166,7 @@ class _UQModel:
     def _invalidate_cache(self) -> None:
         self._cache = {}
 
-    def _XXXX(self, **parameters) -> DataFrame:
+    def _eval(self, **parameters) -> DataFrame:
         return self.model(**(self.parameters | parameters))
 
 
@@ -372,11 +372,11 @@ class DASKUQModel(_UQModel):
         """
         super().__init__(parameters, model, None, step_strategy)
         self.features = features
-        self.nominal = self._XXXX()
+        self.nominal = self._eval()
         self._len = feature_length
         self.persist = persist
 
-    def _XXXX(self, **parameters) -> Delayed:
+    def _eval(self, **parameters) -> Delayed:
         params = self.parameters | parameters
         # noinspection PyArgumentList
         pieces = [feature(self.model, **params) for feature in self.features]
@@ -386,7 +386,7 @@ class DASKUQModel(_UQModel):
         """Evaluate the solver with different parameter values.
 
         """
-        df = self._XXXX(**parameters)
+        df = self._eval(**parameters)
         return df.value.values
 
     def subjacobian(self, param: str, persist: bool = None) -> Delayed:

@@ -57,7 +57,7 @@ def test_symmetric_plate_steady_state_accepts_negative_flow_rate():
 def test_symmetric_plate_steady_state_solves_negative_flow_rate():
     """Tests whether the function solves negative flow rate correctly"""
     mdot = -1.
-    power = XXX
+    power = 1e5
     Tin = 35.
     f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
     solution = symmetric_plate_steady_state(c=c, f=f, mdot=mdot, p_abs=2e5, power=power, Tin=Tin)

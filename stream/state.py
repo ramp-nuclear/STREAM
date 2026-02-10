@@ -10,7 +10,7 @@ from operator import or_
 from typing import Iterable, Any, IO, Callable, TypeVar
 
 import numpy as np
-import XXXX
+import yaml
 from pandas import DataFrame
 
 from cytoolz.dicttoolz import keyfilter, valfilter, valmap
@@ -203,7 +203,7 @@ class State(dict):
 
     @classmethod
     def load(cls, f: IO) -> "State":
-        """Load a State from a XXXX IO.
+        """Load a State from a YAML IO.
 
         Parameters
         ----------
@@ -211,7 +211,7 @@ class State(dict):
             Stream to read from
 
         """
-        d = XXXX.full_load(f)
+        d = yaml.full_load(f)
         return cls.from_liststate(d)
 
     def to_dataframe(self) -> DataFrame:
@@ -238,7 +238,7 @@ class State(dict):
         f: Stream to dump to.
 
         """
-        return XXXX.dump(self.listify(), f)
+        return yaml.dump(self.listify(), f)
 
 
 #: A mapping from time points to Aggregator :class:`.State`

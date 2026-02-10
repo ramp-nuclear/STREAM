@@ -286,21 +286,21 @@ def cylindrical_areas_volumes(r: Meter, z: Meter) -> tuple[Meter2, Meter2, Meter
 
     Examples
     --------
-    >>> r = np.array([0, 1, 4, 14]); z = np.array([0, 3, 5, XX])
+    >>> r = np.array([0, 1, 4, 14]); z = np.array([0, 3, 5, 15])
     >>> r_areas, z_areas, volumes = cylindrical_areas_volumes(r=r, z=z)
     >>> r_areas / (2 * np.pi)
     array([[  0.,   3.,  12.,  42.],
            [  0.,   2.,   8.,  28.],
            [  0.,  10.,  40., 140.]])
     >>> z_areas / np.pi
-    array([[  1.,  XX., 180.],
-           [  1.,  XX., 180.],
-           [  1.,  XX., 180.],
-           [  1.,  XX., 180.]])
+    array([[  1.,  15., 180.],
+           [  1.,  15., 180.],
+           [  1.,  15., 180.],
+           [  1.,  15., 180.]])
     >>> volumes / np.pi
     array([[   3.,   45.,  540.],
            [   2.,   30.,  360.],
-           [  10.,  XXX., 1800.]])
+           [  10.,  150., 1800.]])
     """
     dz = np.diff(z)
     cum_areas = np.pi * np.diff(np.asarray(r) ** 2)

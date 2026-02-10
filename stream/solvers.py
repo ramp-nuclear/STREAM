@@ -256,5 +256,5 @@ def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -
         The solution matrix at requested times: [time, variable].
     """
     time_limits = (time[0], time[-1])
-    solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_XXXX=time, **options)
+    solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_eval=time, **options)
     return np.transpose(solution.y)

@@ -101,7 +101,7 @@ def test_aggregator_input_works_as_expected():
     b = DoNothing(name='b')
     assert np.all(a.calculate(np.arange(6)) == np.arange(6))
     agr = Aggregator(DiGraph([(a, b, vars_("var")), (b, a, vars_("var"))]))
-    assert np.all(agr.compute(np.arange(10)) == np.tile(np.arange(5.0, XX.0, 2), 2))
+    assert np.all(agr.compute(np.arange(10)) == np.tile(np.arange(5.0, 15.0, 2), 2))
 
 
 def test_ida_root_functions():

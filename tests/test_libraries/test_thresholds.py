@@ -13,7 +13,7 @@ from .conftest import mock_pipe
 
 
 def test_SK_CHF_is_non_negative_for_specific_cases():
-    sat_coolant = light_water.to_properties(np.full(3, 100), np.full(3, XXX))
+    sat_coolant = light_water.to_properties(np.full(3, 100), np.full(3, 1e5))
     q_chf = Sudo_Kaminaga_CHF(
         T_bulk=np.full(3, 80), sat_coolant=sat_coolant, mdot=1, pipe=mock_pipe
         )
@@ -39,7 +39,7 @@ def test_WF_OFI_for_precalculated_case(mdot, T_sat, Tin, Dh, Lh, G, PF):
 @pytest.mark.parametrize(
     ("T", "p", "u", "Dh", "critical_flux"),
     [
-        (10, XXX, 0.2, 0.005, 4777567),
+        (10, 1e5, 0.2, 0.005, 4777567),
         (30, 2e5, 0.3, 0.005, 5068894),
         (50, 3e5, 0.4, 0.005, 4885202),
         (70, 4e5, 0.5, 0.005, 4435097),
@@ -75,7 +75,7 @@ def test_Mirshak_CHF_precalculated_case(T, p, u, critical_flux):
         (120, 36.0, 0.005, 324600.0),
         (130, 37.0, 0.005, 334950.0),
         (140, 38.0, 0.005, 345300.0),
-        (XXX, 39.0, 0.005, 355650.0),
+        (150, 39.0, 0.005, 355650.0),
         ],
     )
 def test_Fabrega_CHF_precalculated_case(T_sat, Tin, Dh, critical_flux):

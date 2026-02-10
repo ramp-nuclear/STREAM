@@ -248,11 +248,11 @@ def check_gravity_mismatch(k: Kirchhoff, temperature: Celsius = 10.0,
     comps = k.components
     md = dict.fromkeys(comps, 0.0)
 
-    XXXX_with_pressure_pumps = {p.name: dict(pressure=0.0)
+    deal_with_pressure_pumps = {p.name: dict(pressure=0.0)
                                 for p in comps
                                 if isinstance(p, Pump)}
     hs = guess_hydraulic_steady_state(k, md, temperature, strategy)
-    s = State.merge(hs, XXXX_with_pressure_pumps)
+    s = State.merge(hs, deal_with_pressure_pumps)
     p = np.fromiter((s[comp.name]['pressure'] for comp in comps),
                     dtype=float, count=len(comps))
     p_errors = k.kvl_errors(p) / head

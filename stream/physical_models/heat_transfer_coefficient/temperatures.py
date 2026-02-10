@@ -103,7 +103,7 @@ def Bergles_Rohsenow_dT_ONB(pressure: Pascal, q_spl: WPerM2) -> Celsius:
         at which nucleate boiling begins.
 
     """
-    p = pressure / XXX
+    p = pressure / 1e5
     return 0.556 * (q_spl / 1082 / p ** 1.156) ** (0.463 * p ** 0.0234)
 
 

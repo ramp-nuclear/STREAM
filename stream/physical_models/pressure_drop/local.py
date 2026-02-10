@@ -28,15 +28,15 @@ def _table_interp(re_numbers: Array1D, area_ratios: Array1D, f_factors: Array2D,
 
 
 _tabulated_area_ratios = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
-_idelchik_4_2_re = np.array([10, XX, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 3e3, 3300])
+_idelchik_4_2_re = np.array([10, 15, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 3e3, 3300])
 
 _idelchik_4_2_f = np.array(
-    [[3.10, 3.20, 3.00, 2.40, X.XX, 1.95, 1.70, 1.65, 1.70, 2.00, 1.60, 1.00, 0.81],
+    [[3.10, 3.20, 3.00, 2.40, 2.15, 1.95, 1.70, 1.65, 1.70, 2.00, 1.60, 1.00, 0.81],
      [3.10, 3.20, 2.80, 2.20, 1.85, 1.65, 1.40, 1.30, 1.30, 1.60, 1.25, 0.70, 0.64],
      [3.10, 3.10, 2.60, 2.00, 1.60, 1.40, 1.20, 1.10, 1.10, 1.30, 0.95, 0.60, 0.50],
      [3.10, 3.00, 2.40, 1.80, 1.50, 1.30, 1.10, 1.00, 0.85, 1.05, 0.80, 0.40, 0.36],
-     [3.10, 2.80, 2.30, 1.65, 1.35, X.XX, 0.90, 0.75, 0.65, 0.90, 0.65, 0.30, 0.25],
-     [3.10, 2.70, X.XX, 1.55, 1.25, 1.05, 0.80, 0.60, 0.40, 0.60, 0.50, 0.20, 0.16]]
+     [3.10, 2.80, 2.30, 1.65, 1.35, 1.15, 0.90, 0.75, 0.65, 0.90, 0.65, 0.30, 0.25],
+     [3.10, 2.70, 2.15, 1.55, 1.25, 1.05, 0.80, 0.60, 0.40, 0.60, 0.50, 0.20, 0.16]]
     )
 
 _idelchik_local_expansion_interp = partial(_table_interp,
@@ -143,7 +143,7 @@ sudden_expansion_factor.__doc__ = (
 def contraction_factor(aratio: Value) -> Value:
     r"""Closed form approximation for sudden contraction at high Re numbers.
 
-    According to Idelchik Table X.XX, there is a closed form approximation for
+    According to Idelchik Table 4.10, there is a closed form approximation for
     sudden contraction of the form :math:`\frac{1}{2}\left(1-\frac{A_2}{A_1}\right)^{\frac{3}{4}}`.
     This is written to be true for Re > 35000, but the table for lower Re numbers
     stops at 10000, so it is unclear what to do for interim values of Re.
@@ -157,29 +157,29 @@ def contraction_factor(aratio: Value) -> Value:
     return 0.5 * (1. - aratio) ** 0.75
 
 
-_idelchik_X_XX_re = np.array([10, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 4e3, 5e3, 1e4])
+_idelchik_4_10_re = np.array([10, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 4e3, 5e3, 1e4])
 
 # This is the original data
-_idelchik_X_XX_f = np.array([
+_idelchik_4_10_f = np.array([
     [5.00, 3.20, 2.40, 2.00, 1.80, 1.30, 1.04, 0.82, 0.64, 0.50, 0.80, 0.75, 0.50],
     [5.00, 3.10, 2.30, 1.84, 1.62, 1.20, 0.95, 0.70, 0.50, 0.40, 0.60, 0.60, 0.40],
-    [5.00, 2.95, X.XX, 1.70, 1.50, 1.10, 0.85, 0.60, 0.44, 0.30, 0.55, 0.55, 0.35],
+    [5.00, 2.95, 2.15, 1.70, 1.50, 1.10, 0.85, 0.60, 0.44, 0.30, 0.55, 0.55, 0.35],
     [5.00, 2.80, 2.00, 1.60, 1.40, 1.00, 0.78, 0.50, 0.35, 0.25, 0.45, 0.50, 0.30],
     [5.00, 2.70, 1.80, 1.46, 1.30, 0.90, 0.65, 0.42, 0.30, 0.20, 0.40, 0.42, 0.25],
-    [5.00, 2.60, 1.70, 1.35, 1.20, 0.80, 0.56, 0.35, 0.24, X.XX, 0.35, 0.35, 0.20],
+    [5.00, 2.60, 1.70, 1.35, 1.20, 0.80, 0.56, 0.35, 0.24, 0.15, 0.35, 0.35, 0.20],
     ])
 # For Re=1e4, we change the original values, so they match `contraction_factor`
-_idelchik_X_XX_f[:, -1] = contraction_factor(_tabulated_area_ratios)
+_idelchik_4_10_f[:, -1] = contraction_factor(_tabulated_area_ratios)
 
 _idelchik_local_contraction_interp = partial(_table_interp,
-                                             _idelchik_X_XX_re,
+                                             _idelchik_4_10_re,
                                              _tabulated_area_ratios,
-                                             _idelchik_X_XX_f.T)
+                                             _idelchik_4_10_f.T)
 
 sudden_contraction_factor = partial(_sudden_area_factor,
-                                    np.max(_idelchik_X_XX_re),
-                                    np.min(_idelchik_X_XX_re),
-                                    _idelchik_X_XX_f[0, 0],
+                                    np.max(_idelchik_4_10_re),
+                                    np.min(_idelchik_4_10_re),
+                                    _idelchik_4_10_f[0, 0],
                                     np.max(_tabulated_area_ratios),
                                     np.min(_tabulated_area_ratios),
                                     0.5,
@@ -187,7 +187,7 @@ sudden_contraction_factor = partial(_sudden_area_factor,
                                     _idelchik_local_contraction_interp
                                     )
 sudden_contraction_factor.__doc__ = (
-    r"""The Idelchik Table X.XX interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
+    r"""The Idelchik Table 4.10 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
     
     The table used is bounded by :math:`A_2/A_1 \in [0.1, 0.6]` and :math:`\text{Re} \in [10, 10000]`. 
     Within those boundaries, linear interpolation is performed.
@@ -407,7 +407,7 @@ def _relative_curvature_effect(relative_curvature: float) -> float:
 _reynolds_numbers = np.array([0.1e5, 0.14e5, 0.2e5, 0.3e5, 0.4e5, 0.6e5, 0.8e5, 1.0e5, 1.4e5, 2.0e5, 3.0e5, 4.0e5])
 _reynolds_number_effect_low = np.array([1.40, 1.33, 1.26, 1.19, 1.14, 1.09, 1.06, 1.04, 1.0, 1.0, 1.0, 1.0])
 _reynolds_number_effect_mid = np.array([1.67, 1.58, 1.49, 1.40, 1.34, 1.26, 1.21, 1.19, 1.17, 1.14, 1.06, 1.0])
-_reynolds_number_effect_high = np.array([2.00, 1.89, 1.77, 1.64, 1.56, 1.46, 1.38, 1.30, X.XX, 1.02, 1.0, 1.0])
+_reynolds_number_effect_high = np.array([2.00, 1.89, 1.77, 1.64, 1.56, 1.46, 1.38, 1.30, 1.15, 1.02, 1.0, 1.0])
 
 
 def _reynolds_number_effect(re: float, relative_curvature: float) -> float:

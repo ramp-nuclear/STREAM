@@ -133,7 +133,7 @@ def _some_config():
 
     T = np.full((len(dz)) * (len(dx)) + 2 * len(dz), 100)
     T_cool = np.array((20, 40))
-    h_left, h_right = np.array([XXX]), np.array([XXX])
+    h_left, h_right = np.array([1e5]), np.array([1e5])
 
     fuel = Fuel(z, x, Solid(density=3000, specific_heat=700,
                             conductivity=240), y_length=y)

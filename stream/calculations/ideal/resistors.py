@@ -260,7 +260,7 @@ class Gravity(LumpedComponent):
 class LocalPressureDrop(LumpedComponent):
     """Local pressure drop due to expansion or contraction according to Idelchik chapter 4.
 
-    The appropriate diagrams are 4.2 and X.XX, on pages 246 and 256. [#Idelchik]_
+    The appropriate diagrams are 4.2 and 4.10, on pages 246 and 256. [#Idelchik]_
 
     """
 
@@ -400,11 +400,11 @@ _idelchik_table37 = np.array([[0.5, 0.47, 0.45, 0.43, 0.41, 0.4, 0.42, 0.45, 0.5
                               [0.5, 0.45, 0.41, 0.36, 0.33, 0.3, 0.35, 0.42, 0.5],
                               [0.5, 0.42, 0.35, 0.3, 0.26, 0.23, 0.3, 0.4, 0.5],
                               [0.5, 0.39, 0.32, 0.25, 0.22, 0.18, 0.27, 0.38, 0.5],
-                              [0.5, 0.37, 0.27, 0.2, 0.16, X.XX, 0.25, 0.37, 0.5],
+                              [0.5, 0.37, 0.27, 0.2, 0.16, 0.15, 0.25, 0.37, 0.5],
                               [0.6, 0.27, 0.18, 0.13, 0.11, 0.12, 0.23, 0.36, 0.5]
                               ])
 _idelchik_alpha = np.pi / 180 * np.array([0, 10, 20, 30, 40, 60, 100, 140, 180])
-_idelchik_l_over_d = np.array([0.025, 0.05, 0.75, 0.1, X.XX, 0.6])
+_idelchik_l_over_d = np.array([0.025, 0.05, 0.75, 0.1, 0.15, 0.6])
 
 
 def idelchik_conical_interp(alpha: float, l_over_d: float) -> float:
@@ -649,7 +649,7 @@ class Screen(LumpedComponent):
         if re < 50:
             return factor + 22 / re
 
-        re_list = np.array([50, 100, XXX, 200, 300, 400, 500, 1000])
+        re_list = np.array([50, 100, 150, 200, 300, 400, 500, 1000])
         k_tag = np.array([1.44, 1.24, 1.13, 1.08, 1.03, 1.01, 1.01, 1.00])
         return np.interp(re, re_list, k_tag) * factor
 

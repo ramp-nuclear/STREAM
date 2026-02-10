@@ -33,7 +33,7 @@ def test_pkc():
     mock_pk.calculate([0, 0], source={mock_pk: 1}, T={mock_calc: 0})
     assert np.allclose(mock_pk._A, ((1 - 0.25, 2), (0.25, -2)))
     assert np.isclose(mock_pk._s[0], 1)
-    assert np.isclose(mock_pk.reactivity({mock_calc: np.array([2])}, XX), -2 * 10 + XX)
+    assert np.isclose(mock_pk.reactivity({mock_calc: np.array([2])}, 15), -2 * 10 + 15)
     assert mock_pk.indices("ck") == slice(1, 2)
 
 
