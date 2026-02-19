@@ -80,7 +80,7 @@ powers = st.floats(min_value=1., max_value=3e7, allow_nan=False, allow_infinity=
 def test_point_kinetics_steady_state_follows_analytic_formula(power, kwargs):
     pk = PointKinetics(**kwargs)
     state = point_kinetics_steady_state(pk, power=power)
-    assert np.allclose(pk.calculate(pk.load(state[pk.name])) / power, 0.0, atol=1e-8)
+    assert np.allclose(pk.calculate(pk.load(state[pk.name]), T=None, t=0.0) / power, 0.0, atol=1e-8)
 
 
 low_fraction = st.floats(0, 0.7, allow_nan=False)
@@ -91,7 +91,7 @@ def test_point_kinetics_w_input_steady_state_follows_analytic_formula(power, kwa
     pk = PointKineticsWInput(**kwargs, temp_worth={}, ref_temp={})
     state = point_kinetics_steady_state(pk, power, power_input=ex_fraction * power)
     assert np.allclose(
-        pk.calculate(pk.load(state[pk.name]), T={}, power_input={pk: ex_fraction * power})
+        pk.calculate(pk.load(state[pk.name]), T={}, t=0.0, power_input=ex_fraction * power)
         / ((1 + ex_fraction) * power),
         0.0, atol=1e-8
     )

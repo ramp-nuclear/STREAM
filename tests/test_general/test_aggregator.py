@@ -1,3 +1,4 @@
+from contextlib import nullcontext
 from itertools import count
 from typing import Sequence
 
@@ -8,9 +9,8 @@ from hypothesis.strategies import floats, text, nothing, one_of
 from networkx import DiGraph
 from networkx.utils import graphs_equal
 
-from stream import Aggregator, CalculationGraph, Calculation, unpacked
-# noinspection PyProtectedMember
-from stream.aggregator import vars_, NonUniqueCalculationNameError, add_variables
+from stream.aggregator import vars_, NonUniqueCalculationNameError, add_variables, Aggregator, CalculationGraph, create_constraints, CONSTRAINT
+from stream.calculation import Calculation, unpacked
 from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
@@ -171,6 +171,19 @@ def test_associated_calculations_for_a_known_example(mock_agr):
     assoc = _associated_calculations(mock_agr)
     assert assoc == {0: [add, multiply], 1: [multiply, add]}
 
+justx = Calculation_factory(calculate=lambda x, *, y: x, mass_vector=[False], variables={"x": 0})("justx")
+justy = Calculation_factory(calculate=lambda y, *, x: y, mass_vector=[False], variables={"y": 0})("justy")
+
+@pytest.mark.parametrize(["graph", "expectation"],
+                         [
+                             (DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("y"))]), nullcontext()),
+                             (DiGraph([(justx, justy, vars_("missing_variable")), (justy, justx, vars_("y"))]), pytest.raises(KeyError, match="missing_variable")),
+                             (DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("missing_variable"))]), pytest.raises(KeyError, match="missing_variable")),
+                         ])
+def test_agr_identifies_missing_variables_in_indices_for_known_examples(graph, expectation):
+    with expectation:
+        Aggregator(graph)
+
 
 @given(s=text(), n=one_of(text(), nothing()))
 def test_add_variables_accepts_added_variables_correctly(s, n):
@@ -195,3 +208,14 @@ def test_add_variables_is_idempotent(s):
     graph_prior = mock_graph.copy()
     add_variables(mock_graph, add, multiply, s)
     assert graphs_equal(graph_prior, mock_graph)
+
+def test_create_constraints_for_a_known_example():
+    calc = Calculation_factory(lambda v, **_: v - np.array([-1,0,1]), [False] * 3, dict(v_neg=0, v_zero=1, v_pos=2))()
+    agr = Aggregator.from_decoupled(calc)
+    assert np.all(create_constraints(agr, negative=["v_neg"], positive=["v_pos"]) == np.array([c.value for c in [CONSTRAINT.negative, CONSTRAINT.none, CONSTRAINT.positive]]))
+
+def test_create_constraints_with_bad_name_errors_well():
+    calc = Calculation_factory(lambda v, **_: v - np.array([-1,0,1]), [False] * 3, dict(v_neg=0, v_zero=1, v_pos=2))()
+    agr = Aggregator.from_decoupled(calc)
+    with pytest.raises(KeyError, match="moo. Must be one of"):
+        create_constraints(agr, moo=["v_neg"], positive=["v_pos"])

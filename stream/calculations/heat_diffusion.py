@@ -571,11 +571,12 @@ class Fuel(Calculation):
 
     def __init__(self, z_boundaries: Meter, x_boundaries: Meter,
                  material: Solid, y_length: Meter,
+                 power_shape: Array2D,
                  heat_func: Callable = x_diffusion,
                  T_wall_func: Callable = wall_temperature,
                  x_contacts: WPerM2K = None, z_contacts: WPerM2K = None,
                  meat_indices: Array2D = None,
-                 power_shape: Array2D = np.ones(1), name: str = 'Fuel'):
+                 name: str = 'Fuel'):
         """
         Parameters
         ----------
@@ -585,6 +586,11 @@ class Fuel(Calculation):
             Boundaries crossing the x-axis
         material: Solid
             Bulk properties. Can be of shape: (z_cells, x_cells) matrix
+        y_length: Meter
+            Length of the symmetric dimension.
+        power_shape: Array2D
+            Shape of power distribution over the fuel meat.
+            Should have the same shape as the fuel meat.
         heat_func: Callable
             A function computing the temporal derivative of bulk temperatures.
         T_wall_func: Callable
@@ -598,10 +604,9 @@ class Fuel(Calculation):
         meat_indices: Array2D
             Meat placements, specifically where power would be
             deposited (at meat_indices = 1).
-        y_length : Meter
-            Length of the symmetric dimension.
-        power_shape: Array2D
-            Shape of power distribution over the fuel meat
+        name: str
+            Name of the calculation.
+        
         """
         self.name = name
         # Geometry

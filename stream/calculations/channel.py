@@ -234,7 +234,7 @@ class Channel(Calculation):
         return dict(Tin=self.n - 1, Tin_minus=0,
                     T_coolant=(Ts := slice(0, self.n)),
                     T_cool=Ts, pressure=self.n,
-                    T_left=Ts, T_right=Ts, T=Ts, dp=self.n).get(variable)
+                    T_left=Ts, T_right=Ts, T=Ts, dp=self.n)[variable]
 
     @property
     def mass_vector(self) -> Sequence[bool]:
@@ -425,10 +425,11 @@ class ChannelAndContacts(Channel):
         return 3 * self.n + 1
 
     def indices(self, variable: Name, asking=None) -> Place:
-        sup = super().indices(variable, asking=asking)
-        return (dict(h_left=self.variables['h_right'],
-                     h_right=self.variables['h_left'])[variable]
-                if sup is None else sup)
+        try:
+            return super().indices(variable, asking=asking)
+        except KeyError:
+            pass
+        return dict(h_left=self.variables['h_right'], h_right=self.variables['h_left'])[variable]
 
     @property
     def variables(self) -> dict[str, Place]:

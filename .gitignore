@@ -10,3 +10,4 @@ build
 /.pytest_cache/
 *.swp
 *regression*
+CLAUDE.md

@@ -16,8 +16,12 @@ from cytoolz import valmap
 from numba import njit
 # noinspection PyProtectedMember
 from numpy._core._multiarray_umath import normalize_axis_index
-# noinspection PyProtectedMember
-from numpy.lib._function_base_impl import _diff_dispatcher, array_function_dispatch
+try:
+    # noinspection PyProtectedMember
+    from numpy.lib.function_base import _diff_dispatcher, array_function_dispatch
+except ImportError:
+    # noinspection PyProtectedMember
+    from numpy.lib._function_base_impl import _diff_dispatcher, array_function_dispatch
 from scipy.optimize import fsolve
 
 from stream.units import Array, Array1D, Celsius, Fahrenheit, KgPerS, Place, Value
@@ -634,6 +638,12 @@ def strictly_monotonous(*arrays: Sequence) -> Array:
     array([1. , 1.5, 2. , 2.5, 3. ])
     """
     return np.unique(np.sort(concat(*arrays)))
+
+def mutually_exclusive(*arrays: Sequence) -> bool:
+    """Checks if the arrays provided are mutually exclusive (don't contain the same elements)."""
+    all_values = concat(arrays)
+    unique = np.unique(all_values)
+    return all_values.size == unique.size
 
 
 @singledispatch

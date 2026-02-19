@@ -9,7 +9,6 @@ from itertools import chain
 from typing import Callable, Sequence, Protocol
 
 import numpy as np
-import scipy as sp
 from numba import njit
 
 from stream.calculation import unpacked, CalcState, Calculation
@@ -29,7 +28,6 @@ from stream.physical_models.pressure_drop.local import (
     sudden_contraction_factor,
     bend_factor
     )
-from stream.physical_models.pressure_drop.friction import Blasius_friction
 from stream.pipe_geometry import EffectivePipe
 from stream.substances.liquid import LiquidFuncs
 from stream.units import (
@@ -50,7 +48,6 @@ __all__ = [
     "MultipliableCalculation",
     "RegimeDependentFriction",
     "Screen",
-    "ConicalContraction",
     "VolumetricFlowResistor"
     ]
 
@@ -394,162 +391,6 @@ class RegimeDependentFriction(LumpedComponent):
     def dp_out(self, *, Tin: Celsius, mdot: KgPerS, **_) -> Pascal:
         return -self._dp(mdot=mdot, rho=self._rho(Tin),
                          f=self._f(T_cool=Tin, mdot=mdot, T_wall=Tin))
-
-
-_idelchik_table37 = np.array([[0.5, 0.47, 0.45, 0.43, 0.41, 0.4, 0.42, 0.45, 0.5],
-                              [0.5, 0.45, 0.41, 0.36, 0.33, 0.3, 0.35, 0.42, 0.5],
-                              [0.5, 0.42, 0.35, 0.3, 0.26, 0.23, 0.3, 0.4, 0.5],
-                              [0.5, 0.39, 0.32, 0.25, 0.22, 0.18, 0.27, 0.38, 0.5],
-                              [0.5, 0.37, 0.27, 0.2, 0.16, 0.15, 0.25, 0.37, 0.5],
-                              [0.6, 0.27, 0.18, 0.13, 0.11, 0.12, 0.23, 0.36, 0.5]
-                              ])
-_idelchik_alpha = np.pi / 180 * np.array([0, 10, 20, 30, 40, 60, 100, 140, 180])
-_idelchik_l_over_d = np.array([0.025, 0.05, 0.75, 0.1, 0.15, 0.6])
-
-
-def idelchik_conical_interp(alpha: float, l_over_d: float) -> float:
-    """The Idelchik Table 3.7 interpolation of the conical contraction pressure
-    drop coefficient. [#idelchik]_
-
-    This function returns the closest extermal value when extrapolation is performed.
-
-    Parameters
-    ----------
-    alpha: float
-        The cone head angle, in radians.
-    l_over_d: float
-        The distance along which the cone change happens, divided by the diameter
-        of the smaller pipe.
-
-    """
-    if np.min(_idelchik_l_over_d) <= l_over_d <= np.max(_idelchik_l_over_d):
-        return sp.interpolate.interp2d(_idelchik_alpha, _idelchik_l_over_d,
-                                       _idelchik_table37)(alpha, l_over_d)
-    elif l_over_d < np.min(_idelchik_l_over_d):
-        firstline = _idelchik_table37[0, :]
-        return sp.interpolate.interp1d(_idelchik_alpha, firstline,
-                                       fill_value=(firstline[0], firstline[-1])
-                                       )(alpha)
-    elif l_over_d > np.max(_idelchik_l_over_d):
-        lastline = _idelchik_table37[-1, :]
-        return sp.interpolate.interp1d(_idelchik_alpha, lastline,
-                                       fill_value=(lastline[0], lastline[-1])
-                                       )(alpha)
-
-
-@_multiplies
-class ConicalContraction(LumpedComponent):
-    """Taken from Chapters 3 and 4 of Idelchik, Diagrams 4.9 and 3.7 [#Idelchik]_
-
-    References
-    -----------
-    .. [#Idelchik] Handbook of Hydraulic Resistance, I. E. Idelchik, ????
-
-    This implementation uses an interpolation over given conical angle and distance
-    between the two pipes.
-
-    todo: This does not support flow inversion where the contraction becomes an expansion
-
-    """
-    DEFAULT_NAME = 'IdelchikContraction'
-
-    def __init__(self, asmall: float,
-                 alarge: float,
-                 alpha: float,
-                 l_over_d: float,
-                 density_func: Callable[[float], float],
-                 name: str = DEFAULT_NAME):
-        """
-
-        Parameters
-        ----------
-        asmall: float
-            The area of the smaller pipe, in Meters squared.
-        alarge: float
-            The area of the larger pipe, in Meters squared.
-        alpha: float
-            The head angle of the cone, in radians.
-        l_over_d: float
-            The length of the contraction divided by the hydraulic diameter of
-            the smaller pipe
-        density_func: Callable[[float], float]
-            A function that returns the liquid's density given its temperature.
-        """
-        if alarge <= asmall:
-            raise ValueError("The larger cross section area should actually be"
-                             "larger than the smaller one. Alas: "
-                             f"alarge = {alarge:.2g} <= {asmall:.2g} = asmall")
-        self.A = asmall
-        self.Alarge = alarge
-        self.local_coeff = idelchik_conical_interp(alpha, l_over_d)
-        self._rho = density_func
-        self.name = name
-        self._area_difference = (1 / (asmall ** 2)) - (1 / (alarge ** 2))
-
-    @classmethod
-    def from_areas(cls, a1: float, a2: float, dist: float,
-                   density_func: Callable[[float], float],
-                   name: str = DEFAULT_NAME
-                   ) -> "ConicalContraction":
-        """Creates this from the areas and length instead.
-
-        Parameters
-        ----------
-        a1: float
-            The area of the larger pipe, in meters squared.
-        a2: float
-            The area of the smaller pipe, in meters squared.
-        dist: float
-            The distance between the two conical areas, in meters.
-        density_func: Callable[[float], float]
-            A function that returns the liquid's density given its temperature.
-        name: str
-            The name of this calculation.
-
-        """
-        assert a2 < a1
-        r1, r2 = tuple(np.sqrt(np.array((a1, a2)) / np.pi))
-        alpha = 2 * np.arctan((r1 - r2) / dist)
-        return cls(a2, a1, alpha, dist / (2 * r2), density_func, name=name)
-
-    @classmethod
-    def from_areas_angle(cls, a1: float, a2: float, alpha: float,
-                         density_func: Callable[[float], float],
-                         name: str = DEFAULT_NAME
-                         ) -> "ConicalContraction":
-        """Creates this from the areas and angle instead.
-
-        Parameters
-        ----------
-        a1: float
-            The area of the larger pipe, in meters squared.
-        a2: float
-            The area of the smaller pipe, in meters squared.
-        alpha: float
-            The head angle of the cone, in radians.
-        density_func: Callable[[float], float]
-            A function that returns the liquid's density given its temperature.
-        name: str
-            The name of this calculation.
-
-        """
-        assert a2 < a1
-        r1, r2 = tuple(np.sqrt(np.array((a1, a2)) / np.pi))
-        x = r1 / np.tan(alpha / 2)
-        length = x * (r1 - r2) / r1
-        return cls(a2, a1, alpha, length / (2 * r2),
-                   density_func, name=name)
-
-    save = LocalPressureDrop.save
-
-    def dp_out(self, *, Tin: Celsius, mdot: KgPerS, **_) -> Pascal:
-        if mdot < 0:
-            raise ValueError("The current Idelchik Conical Contraction does not"
-                             "support the expansion case when the flow is reversed,"
-                             f"i.e. negative: {mdot:.2g}")
-        rho = self._rho(Tin)
-        return -local_pressure_by_mdot(mdot, rho, self.local_coeff, self.A)
-
 
 @_multiplies
 class VolumetricFlowResistor(LumpedComponent):

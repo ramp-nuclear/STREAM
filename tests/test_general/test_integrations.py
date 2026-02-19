@@ -9,8 +9,7 @@ from hypothesis.strategies import floats, integers
 from networkx import DiGraph
 from scipy.constants import g
 
-from stream import Aggregator, CalculationGraph, EffectivePipe
-from stream.aggregator import vars_
+from stream.aggregator import vars_, Aggregator, CalculationGraph
 from stream.calculations import (
     Channel, ChannelAndContacts, Flapper, Friction, Fuel, Gravity,
     HeatExchanger, Inertia, Junction, Kirchhoff, KirchhoffWDerivatives,
@@ -25,6 +24,7 @@ from stream.composition.cycle import (
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.jacobians import ALG_jacobian, DAE_jacobian
 from stream.physical_models.pressure_drop import pressure_diff, friction_factor
+from stream.pipe_geometry import EffectivePipe
 from stream.state import State
 from stream.substances import light_water
 from stream.substances.mocks import mock_liquid_funcs, mock_solid
@@ -134,13 +134,15 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
     channel_length = 1.0
     cells = 10
     boundaries = np.linspace(0, channel_length, cells + 1)
-    power_shape = np.full(cells, 1 / cells)
+    x_bounds = np.array([0,1])
+
+    power_shape = np.full((cells, len(x_bounds)-1), 1 / cells)
     pipe = EffectivePipe(length=channel_length, heated_perimeter=1,
                          wet_perimeter=1, area=1, heated_parts=(0, 1))
     C = Channel(z_boundaries=boundaries, fluid=mock_liquid_funcs, pipe=pipe)
     F = Fuel(
         z_boundaries=boundaries,
-        x_boundaries=np.array([0, 1]),
+        x_boundaries=x_bounds,
         material=mock_solid,
         y_length=1.0,
         power_shape=power_shape,
@@ -161,7 +163,7 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
     Tw_calculated = state[F.name]["T_wall_left"]
     Tf_calculated = np.squeeze(state[F.name]["T"])
     cp = C.fluid.specific_heat(Tc_calculated)
-    Tc_analytical = T0 + np.cumsum(P * power_shape / (cp * mdot))
+    Tc_analytical = T0 + np.cumsum(P * power_shape.flatten() / (cp * mdot))
     h_fw = 2 * mock_solid.conductivity / F.dx
     # Tf_analytical = Tw_calculated + P * power_shape / h_fw
     Tw_analytical = (Tc_analytical * h + Tf_calculated * h_fw) / (h + h_fw)
@@ -180,6 +182,9 @@ def test_channel_point_kinetics():
     channel_length = 1.2
     cells = 7
     boundaries = np.linspace(0, channel_length, cells + 1)
+    x_bounds = np.array([0,1])
+
+    power_shape = np.full((cells, len(x_bounds)-1), 1 / cells)
 
     pipe = EffectivePipe(
         length=channel_length, heated_perimeter=1, wet_perimeter=1, area=1
@@ -192,10 +197,10 @@ def test_channel_point_kinetics():
         )
     fuel_input = dict(
         z_boundaries=boundaries,
-        x_boundaries=[0, 1],
+        x_boundaries=x_bounds,
         material=mock_solid,
         y_length=1.0,
-        power_shape=np.full(cells, 1 / cells),
+        power_shape=power_shape,
         )
     channels = [ChannelAndContacts(**channel_input, name=f'CC{i}')
                 for i in range(channels_num)]
@@ -213,7 +218,7 @@ def test_channel_point_kinetics():
         temp_worth=temp_worth,
         ref_temp=dict.fromkeys(temp_worth, T0),
         )
-    power_control = CalculationGraph.from_decoupled(PK, funcs={PK: dict(source=0)})
+    power_control = CalculationGraph.from_decoupled(PK, funcs={PK: dict(t=identity)})
 
     rods = summed(symmetric_plate(
         channel, fuel, funcs={channel: dict(mdot=1, Tin=T0 - 10, p_abs=1e5)})
@@ -337,7 +342,7 @@ def test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundar
 
     agr = Aggregator(
         graph=DiGraph([(F, PK, vars_("T")), (PK, F, vars_("power"))]),
-        funcs={F: dict(T_left=T0, T_right=T0), PK: dict(source=0.0)},
+        funcs={F: dict(T_left=T0, T_right=T0), PK: dict(t=identity)},
         )
 
     y0 = np.zeros(len(agr))
@@ -372,7 +377,7 @@ def test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet()
 
     power_stuff = CalculationGraph(
         graph=DiGraph([(PK, F, vars_("power")), (C, PK, vars_("T"))]),
-        funcs={C: dict(p_abs=2e5, Tin=T0, mdot=0.1), PK: dict(source=0.0)},
+        funcs={C: dict(p_abs=2e5, Tin=T0, mdot=0.1), PK: dict(t=identity)},
         )
 
     agr = (symmetric_plate(C, F) + power_stuff).to_aggregator()
@@ -815,7 +820,9 @@ def test_inertia_with_transistor_in_PCS_coastdown():
     agr, K = agr_k(fg, inertial_comps=[flywheel], k_constructor=KirchhoffWDerivatives,
                    funcs={R: dict(Tin=T), transistor: dict(t=identity)})
 
-    def sr(a, b): return 1 + np.sqrt(a/b)
+    def sr(a, b): 
+        return 1 + np.sqrt(a/b)
+    
     flows = {pump: mdot0, R: mdot0 / sr(k1, k2), transistor: mdot0 / sr(k2, k1)}
     guess = guess_hydraulic_steady_state(K, flows, T)
     steady = agr.save(agr.solve_steady(guess))
@@ -855,7 +862,9 @@ def test_inertia_with_two_parallel_resistors(k1, k2):
     agr, K = agr_k(fg, inertial_comps=[flywheel], k_constructor=KirchhoffWDerivatives,
                    funcs={R1: dict(Tin=T)})
 
-    def sr(a, b): return 1 + np.sqrt(a/b)
+    def sr(a, b): 
+        return 1 + np.sqrt(a/b)
+    
     flows = {pump: mdot0, R1: mdot0 / sr(k1, k2), R2: mdot0 / sr(k2, k1)}
     guess = guess_hydraulic_steady_state(K, flows, T)
     steady = agr.save(agr.solve_steady(guess))

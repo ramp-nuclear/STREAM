@@ -9,7 +9,7 @@ from hypothesis import given, settings
 from hypothesis.extra.numpy import arrays
 from hypothesis.strategies import floats, integers, sampled_from, tuples
 
-from stream import EffectivePipe
+from stream.pipe_geometry import EffectivePipe
 # noinspection PyProtectedMember
 from stream.calculations.heat_diffusion import _fill
 from stream.physical_models.heat_transfer_coefficient import (
@@ -22,6 +22,10 @@ from stream.substances.mocks import mock_liquid_funcs
 from stream.utilities import just, lin_interp
 from .conftest import are_close, pos_floats, pos_medium_floats, mock_pipe
 
+evus_pipe = EffectivePipe(length=1.35697937,
+                          heated_perimeter=0.1212,
+                          wet_perimeter=0.2965,
+                          area=0.00064706)
 
 @pytest.mark.parametrize(("pressure", "q_spl", "T_wall_inc"),
                          [(1e5, 0, heavy_water.sat_temperature(1e5)),

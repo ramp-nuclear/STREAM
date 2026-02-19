@@ -3,14 +3,13 @@ Utilizing the incompressible scheme, this module contains functions for
 constructing coolant cycles and adding Kirchhoff constraints to its flow
 """
 import logging
-from functools import partial
+from functools import partial, wraps
 from typing import Any, Hashable, Sequence, Type
 
 from cytoolz import keymap
 from networkx import DiGraph, MultiDiGraph
 from networkx.utils import pairwise
 
-from stream import State
 from stream.aggregator import (
     Aggregator, CalculationGraph, BaseAgr, VARS, vars_,
     ExternalFunctions, add_variables,
@@ -19,6 +18,7 @@ from stream.calculation import Calculation
 from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
 from stream.calculations.kirchhoff import COMPS
 from stream.composition import guess_hydraulic_steady_state
+from stream import State
 from stream.composition.subsystems import check_gravity_mismatch, HydraulicStrategyMap
 from stream.units import Pascal, KgPerS, Celsius
 from stream.utilities import summed
@@ -35,8 +35,33 @@ __all__ = [
     ]
 
 logger = logging.getLogger("stream.cycle")
+MIS_MSG = "all calculations in a `FlowGraph` must have ('Tin', 'Tin_minus', 'pressure') in `indices`."
 
 
+def _indices_missing(calc, *variables):
+    """Returns which variables are missing from the given variables names"""
+    missing = []
+    if isinstance(calc, Calculation):
+        for var in variables:
+            try:
+                calc.indices(var)
+            except KeyError:
+                missing.append(var)
+    return missing
+
+
+def _check_missing_tin(f):
+    """Decorator for functions that we want to ensure check for missing Tin variables in its positional arguments"""
+    @wraps(f)
+    def _wrap(*components, **kw):
+        for comp in components:
+            if missing := _indices_missing(comp, "Tin", "Tin_minus"):
+                raise KeyError(f"{comp} is missing {missing} in its 'indices' method and {MIS_MSG}")
+        return f(*components, **kw)
+    return _wrap
+
+
+@_check_missing_tin
 def in_series(
         *components: Calculation,
         cyclic: bool = False,
@@ -63,11 +88,10 @@ def in_series(
     if len(components) == 2 and cyclic:
         comp1, comp2 = components
         return CalculationGraph(
-            DiGraph(
-                [
-                    (comp1, comp2, vars_("Tin", "Tin_minus")),
-                    (comp2, comp1, vars_("Tin", "Tin_minus")),
-                    ]
+            DiGraph([
+                (comp1, comp2, vars_("Tin", "Tin_minus")),
+                (comp2, comp1, vars_("Tin", "Tin_minus")),
+                ]
                 ),
             funcs=funcs,
             )
@@ -78,7 +102,7 @@ def in_series(
         G.add_edge(comp2, comp1, variables=("Tin_minus",))
     return CalculationGraph(G, funcs=funcs)
 
-
+@_check_missing_tin
 def in_parallel(
         start_comp: Calculation,
         end_comp: Calculation,
@@ -159,6 +183,8 @@ def kirchhoffify(
 
     for component in hydraulic_comps or k.components.keys():
         add(k, component, "mdot")
+        if _indices_missing(component, "pressure"):
+            raise KeyError(f"{component} is missing 'pressure' in its 'indices' method and {MIS_MSG}")
         add(component, k, "pressure")
 
     for component in filter(lambda _n: isinstance(_n, Junction), k.g.nodes):
@@ -356,7 +382,8 @@ class FlowGraph:
         f_graph = MultiDiGraph(edges)
         self.aggregator, self.kirchhoff = flow_graph_to_agr_and_k(
             f_graph, funcs, reference_node, abs_pressure_comps,
-            inertial_comps, ref_mdots, k_constructor)
+            inertial_comps, ref_mdots, k_constructor
+            )
 
     def guess_steady_state(
             self, mdots: dict[Calculation | str, KgPerS], temperature: Celsius,

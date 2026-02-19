@@ -5,6 +5,7 @@ import numpy as np
 
 from stream import Aggregator
 from stream.calculations import PointKinetics
+from stream.calculations.point_kinetics import ReactivityController
 from stream.composition import point_kinetics_steady_state
 from stream.units import Array1D, DecayHeatFunction, PerS, Second, Value
 from stream.utilities import identity
@@ -16,8 +17,7 @@ __all__ = ["profile", "profile_from_pk"]
 def profile(time: Second, generation_time: Second,
             delayed_neutron_fractions: Array1D,
             delayed_groups_decay_rates: PerS,
-            input_reactivity_func: Callable[
-                [Second, Second], float] = None,
+            controls: ReactivityController | None = None,
             ) -> DecayHeatFunction:
     r"""
     Parameters
@@ -31,8 +31,8 @@ def profile(time: Second, generation_time: Second,
         defined delay groups. 1$ worth is the total.
     delayed_groups_decay_rates: PerS
         each group's decay rate.
-    input_reactivity_func: Callable[[Second, Second], float] or None
-        External reactivity input, a function of (time, SCRAM_time)
+    controls: ReactivityController
+        Reactor reactivity controls
 
     Returns
     -------
@@ -43,7 +43,7 @@ def profile(time: Second, generation_time: Second,
         generation_time=generation_time,
         delayed_neutron_fractions=delayed_neutron_fractions,
         delayed_groups_decay_rates=delayed_groups_decay_rates,
-        input_reactivity_func=input_reactivity_func,
+        controls=controls,
     )
     agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, t=identity)})
     sol = agr.solve(y0 := agr.load(point_kinetics_steady_state(pk, 1e6)),

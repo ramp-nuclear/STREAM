@@ -9,12 +9,13 @@ from hypothesis import given, settings
 from hypothesis.extra.numpy import arrays
 from hypothesis.strategies import floats, integers, sampled_from
 
-from stream import Aggregator, EffectivePipe
+from stream.aggregator import Aggregator
 from stream.calculations.channel import (
     Channel,
     ChannelAndContacts,
     coolant_first_order_upwind_dTdt,
 )
+from stream.pipe_geometry import EffectivePipe
 from stream.state import State
 from stream.substances import heavy_water, light_water
 from stream.substances.mocks import mock_liquid_funcs

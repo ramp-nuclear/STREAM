@@ -1,24 +1,4 @@
-r"""
-The :class:`Aggregator` class defined below is the beating heart of **STREAM**.
-
-It defines a methodology where several (separate) calculations can be simulated in a coupled manner.
-Such coupling is defined through a graph, and is simulated through several backends (see :ref:`Backends`).
-The main scheme is neatly presented in :ref:`Documentation`.
-
-.. autosummary::
-    :nosignatures:
-
-    Aggregator.compute
-    Aggregator.load
-    Aggregator.save
-    Aggregator.var_index
-    Aggregator.at_times
-    Aggregator.solve
-    Aggregator.solve_steady
-
-"""
 import logging
-from collections import defaultdict
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
@@ -26,77 +6,19 @@ from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
 from cytoolz import valmap
-from more_itertools import unique_everseen
 from networkx import compose, DiGraph
 
 from stream.calculation import Calculation
 from stream.solvers import algebraic, differential, differential_algebraic
 from stream.state import State, StateTimeseries, DictState
-from stream.units import Array1D, Array2D, Name, Place, Second, FunctionOfTime, Value
-from stream.utilities import concat, offset, uppercase_numeric_only, STREAM_DEBUG
+from stream.units import Array1D, Array2D, Name, Place, Second
+from stream.utilities import concat, offset, STREAM_DEBUG
+from .solution import Solution
+from .utils import VARS, BaseAgr, ExternalFunctions, add_variables, draw_aggregator, non_unique_calculations, vars_, partition, map_externals
 
-
-__all__ = ["Aggregator", "CalculationGraph", "draw_aggregator", "ExternalFunctions",
-           "vars_", "VARS", "BaseAgr", 'Solution', "add_variables"]
+__all__ = ["Aggregator", "CalculationGraph", "NonUniqueCalculationNameError"]
 
 logger = logging.getLogger("stream.aggregator")
-
-VARS = "variables"
-ExternalFunctions = dict[Calculation, dict[Name, FunctionOfTime]]
-
-
-class BaseAgr(Protocol):
-    """A protocol for data objects similar to the :class:`~.stream.aggregator.Aggregator`
-    class.
-    These can be used in most places where aggregator creation tools are necessary.
-
-    """
-    graph: DiGraph
-    funcs: ExternalFunctions | None
-
-    @classmethod
-    def connect(
-            cls,
-            a: "BaseAgr",
-            b: "BaseAgr",
-            *edges: tuple[Calculation, Calculation, Iterable[Name]],
-            ) -> "BaseAgr":
-        """
-
-        Parameters
-        ----------
-        a: BaseAgr
-            First object to connect
-        b: BaseAgr
-            Second object to connect
-        edges: tuple[Calculation, Calculation, Iterable[Name]]
-            Edges to connect between the two graphs of the objects with connection data.
-
-        """
-        raise NotImplemented
-
-    def __add__(self, other: "BaseAgr") -> "BaseAgr":
-        raise NotImplemented
-
-
-def non_unique_calculations(g: DiGraph) -> dict[str, list[Calculation]]:
-    """Returns which calculations in the graph that are not uniquely named.
-
-    Parameters
-    ----------
-    g: DiGraph
-
-    Returns
-    -------
-    dict[str, list[Calculation]]
-        A dictionary whose keys are non-unique names and its values are the non-unique
-        calculations
-
-    """
-    d = defaultdict(list)
-    for calc in g.nodes:
-        d[calc.name].append(calc)
-    return {key: val for key, val in d.items() if len(val) > 1}
 
 
 class NonUniqueCalculationNameError(ValueError):
@@ -106,32 +28,21 @@ class NonUniqueCalculationNameError(ValueError):
     pass
 
 
-@dataclass(slots=True, frozen=True)
-class Solution:
-    """The result of asking an :class:`.Aggregator` to solve a system of equations.
-
-    Parameters
-    ----------
-    time: Array1D
-        The times at which the solution was calculated.
-    data: Array2D
-        The vector of values for each time in the time vector.
-        Shaped as (len(time), len(state_vector))
-
+class ProgressBarLike(Protocol):
+    """What a progresbar must supply to not crash. Hopefully its methods have something to do with updating a display of a progressbar...
     """
-    time: Array1D
-    data: Array2D
-
-    def __getitem__(self, item) -> Value:
-        return self.data[item]
-
-    def __bool__(self):
-        return self.data is not None
-
-    def __eq__(self, other: "Solution") -> bool:
-        if not isinstance(other, Solution):
-            return NotImplemented
-        return np.allclose(self.time, other.time) and np.allclose(self.data, other.data)
+    def update(self, s: int) -> None:
+        """Method to update the state of the progress bar.
+        Parameters
+        ----------
+        s: int
+            The step number to update it.
+        """
+        ...
+    
+    def finish(self) -> None:
+        """Method to finalize and close the progressbar."""
+        ...
 
 
 class Aggregator:
@@ -180,9 +91,9 @@ class Aggregator:
                 f"Calculations were not uniquely named: {non_unique}")
         self.graph = graph
         self.funcs = funcs or {}
-        self.sections, self.vector_length = _partition(graph.nodes)
+        self.sections, self.vector_length = partition(graph.nodes)
         self.mass = concat(*(node.mass_vector for node in graph))
-        self.external = _map_externals(graph.edges(data=VARS), self.sections)
+        self.external = map_externals(graph.edges(data=VARS), self.sections)
         self._nodes_num = len(self.graph)
         logger.log(STREAM_DEBUG, f"New Aggregator of length {len(self)}")
 
@@ -318,7 +229,7 @@ class Aggregator:
                                for name, f in self.funcs.get(node, {}).items()}
         return external | evaluated_functions
 
-    def _root(self, y: Sequence[float], t: Second = 0) -> Array1D:
+    def _root(self, y: Sequence[float], t: Second = 0, progressbar: ProgressBarLike | None = None) -> Array1D:
         r"""A function called in transient simulation, whenever a point in time
         is found, that is, when the roots of all constraints
         :math:`\vec{F}(\vec{y},t)=0` are found. This method allows calculations
@@ -332,6 +243,8 @@ class Aggregator:
             guess/result from solver
         t: Second
             time
+        progressbar: ProgressBarLike | None
+            The progressbar to update as we go along
 
         Returns
         -------
@@ -340,21 +253,44 @@ class Aggregator:
             whether that calculation permits the simulation to continue.
         """
         logger.log(STREAM_DEBUG, f"time: {t:.8g}")
+        if progressbar is not None:
+            progressbar.update(int(1e3 * t))
         list(map(partial(self._op, "change_state", y, t), self.graph))
         sc = np.fromiter(map(partial(self._op, "should_continue", y, t),
-                               self.graph), dtype=bool, count=self._nodes_num)
+                            self.graph), dtype=bool, count=self._nodes_num)
         if not all(sc):
             stopped = np.array(self.graph)[~sc]
             logger.warning(f"At t = {t:.5f}, the simulation has been stopped by {stopped}")
         return sc
 
-
     @overload
     def load(self, s: DictState) -> Array1D:
+        """Loads a dictionary based state to the functional vector it represents.
+        
+        Parameters
+        ----------
+        s: DictState
+            The state from (possibly) a saved solution, or a guess
+            
+        Returns
+        -------
+        Array1D
+            The state vector given to the functional in this case"""
         ...
 
     @overload
     def load(self, s: StateTimeseries) -> Solution:
+        """Loads a time-series of named states into a 2D vector solution.
+        
+        Parameters
+        ----------
+        s: StateTimeseries
+            The (possibly) saved named-variable solution
+        
+        Returns
+        -------
+        Solution
+            The 2D solution that an Aggregator would have given to create such a stateful solution."""
         ...
 
     def load(self, s):
@@ -408,11 +344,38 @@ class Aggregator:
 
     @overload
     def save(self, solution: Solution) -> StateTimeseries:
+        """Write a 2D vector time-dependent solution as a human-readable object.
+        
+        Parameters
+        ----------
+        solution: Solution
+            The 2D solution to save
+        
+        Returns
+        -------
+        StateTimeseries
+            The time-dependent human-readable state object"""
         ...
 
     @overload
     def save(self, solution: Sequence[float],
              t: Second = 0, strict: bool = False) -> State:
+        """Write a vector solution with proper names that allow human readable solutions
+        
+        Parameters
+        ----------
+        solution: Sequence[float]
+            The vector solution in mind. Has the length of this aggregator.
+        t: Second
+            The absolute time at which the solution is given.
+        strict: bool
+            Flag for wether information beyond the scope of the solution be added
+        
+        Returns
+        -------
+        State
+            The saved human-readable version of the solution
+        """
         ...
 
     def save(self, solution, t=0, strict=False):
@@ -517,6 +480,8 @@ class Aggregator:
             time: Sequence[float] | None,
             yp0: Array1D = None,
             eq_type: Literal["ODE", "DAE", "ALG"] | None = None,
+            *,
+            progressbar: ProgressBarLike | bool = False,
             **options,
             ) -> Solution:
         """
@@ -541,6 +506,8 @@ class Aggregator:
             A solver may be chosen deliberately from [ODE, DAE, ALG].
             If None, the method is set by looking at the mass matrix and
             whether time is none.
+        progressbar: ProgressBarLike or bool
+            Whether to use a progressbar, and if so, which one. If ``True``, use ``use progressbar.ProgressBar``
         options:
             Other options
 
@@ -570,16 +537,29 @@ class Aggregator:
         if eq_type == "ODE":
             data = differential(F=self.compute, y0=y0, time=time, **options)
         elif eq_type == "DAE":
+            if progressbar and isinstance(progressbar, bool):
+                try:
+                    from progressbar import ProgressBar
+                except ImportError as e:
+                    e.msg = "User asked for a progressbar without supplying one, and the optional dependency on progressbar2 was not satisfied, so importing it failed"
+                    raise
+                progressbar = ProgressBar().start(max_value=int(1e3 * max(time)))
+            elif not progressbar:
+                progressbar = None
+            root = partial(self._root, progressbar=progressbar)
+
             data, time = differential_algebraic(
                 F=self.compute,
                 mass=self.mass,
-                R=self._root,
+                R=root,
                 y0=y0,
                 time=time,
                 yp0=yp0,
                 nr_rootfns=self._nodes_num,
                 **options,
                 )
+            if progressbar is not None:
+                progressbar.finish()
         elif eq_type == "ALG":
             data = algebraic(F=self.compute, y0=y0, time=time, R=self._root, **options)
         else:
@@ -700,122 +680,3 @@ class CalculationGraph:
     def draw(self, node_options=None, edge_options=None):
         r"""Method equivalent of :func:`draw_aggregator`"""
         draw_aggregator(self.graph, node_options, edge_options)
-
-
-def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
-    r"""
-    Draw an Aggregator's graph. This is useful for presentation and
-    system design.
-
-    Creates a Matplotlib figure, so ``plt.show()`` should be called.
-
-    Parameters
-    ----------
-    graph: DiGraph
-        The Aggregator's graph to be drawn
-    node_options: dict
-        Options to change default behavior.
-    edge_options: dict
-        Options to change default edge label behavior.
-
-    See Also
-    --------
-    networkx.draw_networkx,
-    networkx.draw_networkx_edge_labels
-
-    """
-    node_options = node_options or {}
-    edge_options = edge_options or {}
-    from matplotlib import rc_context
-    import networkx as nx
-
-    # noinspection SpellCheckingInspection
-    with rc_context({r"text.usetex": False}):
-        labels = {n: uppercase_numeric_only(type(n).__name__) for n in graph}
-        default = dict(
-            pos=nx.circular_layout(graph),
-            labels=labels,
-            node_size=1200,
-            node_color="k",
-            font_color="w",
-            font_family="serif",
-            font_size=12,
-            node_shape="s",
-            )
-        kwargs = default | node_options
-        nx.draw_networkx(graph, **kwargs)
-
-        edge_labels = {(u, v): d for u, v, d in graph.edges(data=VARS)}
-        default = dict(label_pos=0.2, edge_labels=edge_labels, font_size=10)
-        edge_kwargs = default | edge_options
-        nx.draw_networkx_edge_labels(graph, kwargs["pos"], **edge_kwargs)
-
-
-def _partition(nodes: Sequence[Calculation]) -> tuple[dict[Calculation, slice], int]:
-    """
-    Go over all nodes in the graph, partitioning the vector.
-
-    Returns
-    -------
-    Partitions, length of the aggregator vector
-    """
-    index = 0
-    sections = {node: slice(index, index := index + len(node)) for node in nodes}
-    return sections, index
-
-
-def _map_externals(
-        edges: Iterable[tuple[Calculation, Calculation, Iterable[str]]],
-        sections: dict[Calculation, slice],
-        ) -> dict[Calculation, dict[str, dict[Calculation, Place]]]:
-    """
-    Go over every edge in the graph, assigning every calculation with its
-    outer variables.
-    """
-    external = {}
-    for u, v, var_names in edges:
-        position = sections[u].start
-        for name in var_names:
-            places = offset(u.indices(name, asking=v), position)
-            external.setdefault(v, {}).setdefault(name, {})
-            if isinstance(places, dict):
-                external[v][name].update(places)
-            else:
-                external[v][name][u] = places
-    return external
-
-
-def vars_(*v):
-    return {VARS: tuple(v)}
-
-
-def add_variables(graph: DiGraph,
-                  source_calc: Calculation,
-                  target_calc: Calculation,
-                  *added_vars: str) -> None:
-
-    r"""Add variables to the edge (source_calc,target_calc) in a graph.
-    If the edge (source_calc,target_calc) doesn't exist, create it.
-
-    Parameters
-    ----------
-    graph: DiGraph
-        The calculation graph.
-    source_calc: Calculation
-        The source node.
-    target_calc: Calculation
-        The target node.
-    *added_vars: str
-        Variables to be added to the edge (source_calc, target_calc) in the graph.
-
-    Returns
-    -------
-    None.
-
-    """
-
-    if (source_calc, target_calc) in graph.edges:
-        edge_vars = list(graph[source_calc][target_calc][VARS])
-        graph[source_calc][target_calc][VARS] = tuple(unique_everseen(edge_vars + list(added_vars)))
-    else:
-        graph.add_edge(source_calc, target_calc, variables=tuple(unique_everseen(added_vars)))

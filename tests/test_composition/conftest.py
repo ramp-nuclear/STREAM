@@ -39,13 +39,14 @@ def MTR_fuel_and_channel(z_N: int, fuel_N: int, clad_N: int) -> tuple[Fuel, Chan
     materials[meat] = Solid(density=3500, specific_heat=750, conductivity=100)  # Approximately IRR-1 (MAMAG)
     materials[~meat] = Solid(density=2700, specific_heat=900, conductivity=250) # Approximately Aluminium
     material = Solid.from_array(materials)
+    power_shape = normalize(np.ones((z_N, fuel_N)))
 
     F = Fuel(
         z_boundaries=(zb := np.linspace(0, 1, z_N + 1)),
         x_boundaries=x_boundaries(clad_N, fuel_N, clad_depth, meat_depth),
         material=material,
         meat_indices=meat,
-        power_shape=normalize(np.ones(z_N * fuel_N)),
+        power_shape=power_shape,
         y_length=meat_width
         )
 

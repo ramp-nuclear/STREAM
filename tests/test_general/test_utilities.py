@@ -3,6 +3,7 @@ import pytest
 from hypothesis import given, settings, strategies as st
 from hypothesis.extra.numpy import arrays
 
+from stream.composition import uniform_x_power_shape
 from stream.utilities import (
     cosine_shape, just, offset, pair_mean, pair_mean_1d,
     cosine_shape_by_zero_endpoints
@@ -21,6 +22,7 @@ decent_floats = st.floats(min_value=-1e20, max_value=1e20,
                           allow_nan=False, allow_infinity=False)
 non_small_positive_floats = st.floats(min_value=0.5, max_value=10)
 small_floats = st.floats(min_value=-10, max_value=10)
+ints = st.integers(min_value=1, max_value=100)
 PPF_values = st.floats(min_value=1., max_value=np.pi / 2)
 illegal_ppf_values = st.one_of(st.floats(min_value=0, max_value=0.99),
                                st.floats(min_value=np.pi / 2 + 0.01, max_value=3)
@@ -153,3 +155,9 @@ def test_cosine_extrapolation_endpoints_are_zero_for_high_resolution(xi, ll):
     v1, v2 = np.array([shape[0], shape[-1]]) * shape.size
     assert np.isclose(v1, 0, atol=1e-4)
     assert np.isclose(v2, 0, atol=1e-4)
+
+@given(ints, ints, decent_floats, non_small_positive_floats, non_small_positive_floats)
+def test_uniform_x_power_shape_works_with_clad_N_equals_zero(z_N, fuel_N, clad_w, meat_w, meat_h):
+    power_shape = uniform_x_power_shape(z_N, fuel_N, 0, clad_w, meat_w, meat_h)
+    assert power_shape.shape == (z_N, fuel_N)
+    assert np.allclose(np.sum(power_shape, axis=0), 1 / fuel_N)

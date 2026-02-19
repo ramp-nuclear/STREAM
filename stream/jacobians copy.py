@@ -12,17 +12,16 @@ from typing import Callable, Sequence, Protocol, Literal, TypeVar
 import numpy as np
 
 from stream import Aggregator, Calculation
-from stream.units import Array1D, Array2D, Value
 
 __all__ = ["DAE_jacobian", "ALG_jacobian"]
+
+from stream.units import Array1D, Array2D, Value
 
 StepStrategyWithydot = Callable[[Array1D, Array1D], Array1D]
 StepStrategy = Callable[[Array1D], Array1D]
 T = TypeVar("T", bound=Value)
 
-
 def _default_step_strategy(y: T, *_) -> T: return 1e-12 + 1e-6 * np.abs(y)
-
 
 def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:
     indices = np.arange(len(agr))
@@ -36,25 +35,24 @@ def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]
                     a[i].append(v)
     return a
 
-
-def _inner(fy, h, t, yh, associated_calculations, *, agr, jac, cj=None):
+def _inner(fy, h, t, yh, *, agr, jac, cj=None):
+    associated_calculations = _associated_calculations(agr)
     for j, hj in enumerate(h):
         yh[j] += hj
         fyh = fy.copy()
         for c in associated_calculations[j]:
             fyh[agr.sections[c]] = agr._op("calculate", yh, t, c)
-
+        
         jac[:, j] = (fyh - fy) / hj
         if cj is not None:
             jac[j, j] -= cj * agr.mass[j]
         yh[j] -= hj
     return jac if cj is None else 0
 
-
 class JacFuncDAE(Protocol):
     """Protocol for the signature one should expect from the returned function."""
     def __call__(self, t, y: np.ndarray, ydot: Value, Gy: Value, cj: Value, J: Array2D) -> Literal[0]:
-        """A function that edits the Jacobian J as its output using the current solver values.
+        """A function that edits the Jacibuian J as its output using the current solver values.
         This signature is required by the DAE solver and not of our choice.
         """
         ...
@@ -100,14 +98,13 @@ def DAE_jacobian(agr: Aggregator, step_strategy: StepStrategyWithydot = _default
         :math:`J(t, y, \dot{y}, G(t, y, \dot{y}), \sigma, \text{result})`,
         matching the required SUNDIALS format.
     """
-    associated_calculations = _associated_calculations(agr)
 
     def _jac_func(t, y: np.ndarray, ydot: Value, Gy: Value, cj: Value, J: Array2D) -> Literal[0]:
         h = step_strategy(y, ydot)
         Fy = Gy + agr.mass * ydot
-        _inner(Fy, h, t, y.copy(), associated_calculations, agr=agr, jac=J, cj=cj)
-        return 0  # This function edits J which is how the data actually comes out.
-
+        _inner(Fy, h, t, y.copy(), agr=agr, jac=J, cj=cj)
+        return 0 # This function edits J which is how the data actually comes out.
+    
     return _jac_func
 
 
@@ -119,12 +116,11 @@ class JacFuncALG(Protocol):
 
 
 def ALG_jacobian(agr: Aggregator, step_strategy: StepStrategy = _default_step_strategy) -> JacFuncALG:
-    associated_calculations = _associated_calculations(agr)
     jac = np.empty((len(agr), len(agr)))
 
     def _jac_func(y: np.ndarray, t=0) -> Array2D:
         h = step_strategy(y)
         Fy = agr.compute(y, t)
-        return _inner(Fy, h, t, y.copy(), associated_calculations, agr=agr, jac=jac)
+        return _inner(Fy, h, t, y.copy, agr=agr, jac=jac)
 
     return _jac_func

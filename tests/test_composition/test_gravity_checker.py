@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 
-from stream import light_water
+from stream.substances import light_water
 from stream.calculations import Pump, Gravity, Junction, Resistor
 from stream.composition import FlowGraph, flow_edge
 from stream.composition.subsystems import GravityMismatchError

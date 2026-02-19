@@ -265,7 +265,7 @@ def x_boundaries(clad_N: int, fuel_N: int, clad_w: Meter, meat_w: Meter) -> Arra
     fuel_N: int
         Into how many fuel (meat) cells to partition (centered).
     clad_w: Meter
-        Width of cladding (on each side)
+        Width of cladding (on each side). This value is not used if clad_N = 0.
     meat_w: Meter
         Width of Meat.
 
@@ -274,11 +274,14 @@ def x_boundaries(clad_N: int, fuel_N: int, clad_w: Meter, meat_w: Meter) -> Arra
     x_bounds: Meter
         An array containing the cells boundary placements, beginning with zero.
     """
-    x = concat(
-        np.linspace(0, clad_w, clad_N, endpoint=False),
-        np.linspace(clad_w, clad_w + meat_w, fuel_N, endpoint=False),
-        np.linspace(clad_w + meat_w, 2 * clad_w + meat_w, clad_N + 1),
-        )
+    if clad_N == 0:
+        x = np.linspace(0 ,meat_w, fuel_N+1)
+    else:
+        x = concat(
+            np.linspace(0, clad_w, clad_N, endpoint=False),
+            np.linspace(clad_w, clad_w + meat_w, fuel_N, endpoint=False),
+            np.linspace(clad_w + meat_w, 2 * clad_w + meat_w, clad_N + 1),
+            )
     return x
 
 
@@ -298,7 +301,7 @@ def uniform_x_power_shape(
     clad_N : int
         Into how many cladding cells to partition (symmetrically on each side).
     clad_w: Meter
-        Width of cladding (on each side)
+        Width of cladding (on each side). This value is not used if clad_N = 0.
     meat_w: Meter
         Width of meat.
     meat_h : Meter
@@ -312,6 +315,7 @@ def uniform_x_power_shape(
     Array2D
     """
     power_shape_in_rod = z_shaper(np.linspace(0, meat_h, z_N + 1))
-    dx_meat = np.diff(x_boundaries(clad_N, fuel_N, clad_w, meat_w))[clad_N:-clad_N]
+    dx_meat = np.diff(x_boundaries(clad_N, fuel_N, clad_w, meat_w))
+    dx_meat = dx_meat if clad_N == 0 else dx_meat[clad_N:-clad_N]
     area_fraction = dx_meat / meat_w
     return np.outer(power_shape_in_rod, area_fraction)

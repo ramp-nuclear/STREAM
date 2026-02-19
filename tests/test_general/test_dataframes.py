@@ -9,8 +9,8 @@ from hypothesis import given, settings, HealthCheck
 from networkx import DiGraph
 from pandas import DataFrame
 
-from stream.aggregator import State, StateTimeseries, Solution, Aggregator, vars_
-from stream.state import to_dataframe, from_dataframe
+from stream.aggregator import Solution, Aggregator, vars_
+from stream.state import to_dataframe, from_dataframe, State, StateTimeseries
 from .test_calculation import add, multiply
 
 

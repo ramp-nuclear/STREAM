@@ -1,8 +1,7 @@
 from networkx import DiGraph, MultiDiGraph
 import pytest
 
-from stream import CalculationGraph
-from stream.aggregator import VARS
+from stream.aggregator import VARS, CalculationGraph
 from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
 from stream.composition.cycle import (
     flow_edge, flow_graph, flow_graph_to_aggregator, in_parallel, in_series,

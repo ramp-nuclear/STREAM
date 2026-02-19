@@ -2,8 +2,9 @@ from inspect import signature
 from typing import Callable
 
 from networkx import DiGraph
-from stream import CalculationGraph, Calculation
-from stream.aggregator import vars_
+
+from stream.aggregator import vars_, CalculationGraph
+from stream.calculation import Calculation
 from stream.utilities import just
 
 __all__ = ["maximally_coupled"]

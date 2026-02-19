@@ -6,9 +6,9 @@ from hypothesis.strategies import floats, lists
 from stream.aggregator import Aggregator
 from stream.calculations import PointKinetics
 from stream.calculations.point_kinetics import (
-    PointKineticsWInput, temperature_reactivity)
+    PointKineticsWInput, temperature_reactivity, OneWayToSCRAM)
 from stream.composition import Calculation_factory
-from stream.utilities import just
+from stream.utilities import just, identity
 from .conftest import are_close, medium_floats, pos_floats
 
 
@@ -29,8 +29,8 @@ def mock_point_kinetics():
 @pytest.mark.implementation
 def test_pkc():
     mock_pk = mock_point_kinetics()
-    mock_pk.input_reactivity = just(1.0)
-    mock_pk.calculate([0, 0], source={mock_pk: 1}, T={mock_calc: 0})
+    mock_pk.controls.input_reactivity = just(1.0)
+    mock_pk.calculate([0, 0], source=1, T={mock_calc: 0}, t=0.0)
     assert np.allclose(mock_pk._A, ((1 - 0.25, 2), (0.25, -2)))
     assert np.isclose(mock_pk._s[0], 1)
     assert np.isclose(mock_pk.reactivity({mock_calc: np.array([2])}, 15), -2 * 10 + 15)
@@ -53,10 +53,9 @@ def test_precursor_death(p0, ck):
         generation_time=1,
         delayed_groups_decay_rates=lambdak,
         delayed_neutron_fractions=np.zeros(len(ck)),
-        input_reactivity_func=just(0),
     )
     pk = PointKinetics(**pkm)
-    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0)})
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, t=0)})
 
     calculation = agr.solve(y0=np.array([p0] + ck), time=time)
     analytical = p0 - np.array(ck) @ np.expm1(-np.outer(lambdak, time))
@@ -66,8 +65,8 @@ def test_precursor_death(p0, ck):
 @given(medium_floats, medium_floats, medium_floats, medium_floats)
 def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     mock_pk = mock_point_kinetics()
-    mock_pk.input_reactivity = just(inp)
-    save = mock_pk.save([p, ck], T={mock_calc: T})
+    mock_pk.controls.input_reactivity = just(inp)
+    save = mock_pk.save([p, ck], T={mock_calc: T}, t=0)
     r = inp - mock_pk.temp_worth[mock_calc] * T
     known = dict(
         power=p, ck=[ck], reactivity=r,
@@ -106,14 +105,13 @@ def test_pk_with_decay():
         delayed_neutron_fractions=np.zeros(6),
         temp_worth={},
         ref_temp={},
-        input_reactivity_func=just(0),
     )
     pk = PointKineticsWInput(**pkm)
 
     def power_input(t): return t
 
     agr = Aggregator.from_decoupled(
-        pk, funcs={pk: dict(T=0, power_input=power_input)}
+        pk, funcs={pk: dict(T=0, power_input=power_input, t=identity)}
     )
 
     calculation = agr.solve(y0=np.array([p0] + ck + [p0]), time=time)
@@ -131,14 +129,17 @@ def test_pk_with_decay():
 @given(pos_floats)
 def test_pk_change_state_sets_SCRAM_time(t):
     mock_pk = mock_point_kinetics()
-    assert mock_pk.SCRAM_time is None
-    mock_pk.SCRAM_condition = just(True)
-    mock_pk.change_state([0, 0], T=mock_pk.T0, t={mock_pk: t})
-    assert mock_pk.SCRAM_time == t
+    assert mock_pk.controls.state == OneWayToSCRAM.NORMAL
+    mock_pk.controls.state_machine = just(OneWayToSCRAM.SCRAM)
+    mock_pk.change_state([0,0], T=mock_pk.T0, t=t)
+    assert mock_pk.controls.state == OneWayToSCRAM.SCRAM
+    assert mock_pk.controls.t_state == t
 
 
 @given(pos_floats)
 def test_pk_should_continue_stops_at_SCRAM_time(t):
     mock_pk = mock_point_kinetics()
-    mock_pk.SCRAM_time = t
-    assert not mock_pk.should_continue([0, 0], T=mock_pk.T0, t={mock_pk: t})
+    mock_pk.controls.state = OneWayToSCRAM.SCRAM
+    mock_pk.controls.t_state = t
+    mock_pk.controls.abort_states = {OneWayToSCRAM.SCRAM}
+    assert not mock_pk.should_continue([0,0],T=mock_pk.T0, t=t)
