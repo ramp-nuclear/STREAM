@@ -190,7 +190,7 @@ def Gr(
     beta: PerC,
     T: Celsius,
     Twall: Celsius,
-    Lh: Meter,
+    Dh: Meter,
     g: MPerS2 = local_gravity,
 ) -> Value:
     r"""The Grashof number (Gr) is an approximation of the ratio of buoyancy to viscous
@@ -212,8 +212,8 @@ def Gr(
         fluid bulk temperature
     Twall: Celsius
         wall\surface temperature
-    Lh: Meter
-        heated vertical length
+    Dh: Meter
+        Hydraulic diameter
     g: MPerS2
         Gravitational acceleration constant
 
@@ -224,10 +224,10 @@ def Gr(
 
     Examples
     --------
-    >>> Gr(rho=1, mu=1, beta=1, T=50, Twall=50, Lh=1)
+    >>> Gr(rho=1, mu=1, beta=1, T=50, Twall=50, Dh=1)
     0.0
     """
-    return rho ** 2 * g * beta * (Twall - T) * Lh ** 3 / mu ** 2
+    return rho ** 2 * g * beta * (Twall - T) * Dh ** 3 / mu ** 2
 
 
 @njit
@@ -239,7 +239,7 @@ def Ra(
     beta: PerC,
     T: Celsius,
     Twall: Celsius,
-    Lh: Meter,
+    Dh: Meter,
     g: MPerS2 = local_gravity,
 ) -> Value:
     r"""The Rayleigh number (Ra) is associated with heat transfer for natural convection.
@@ -262,8 +262,8 @@ def Ra(
         fluid bulk temperature
     Twall: Celsius
         wall\surface temperature
-    Lh: Meter
-        heated vertical length
+    Dh: Meter
+        Hydraulic diameter
     g: MPerS2
         Gravitational acceleration constant
 
@@ -274,10 +274,10 @@ def Ra(
 
     Examples
     --------
-    >>> Ra(rho=1, mu=1, cp=1, k=1, beta=1, T=50, Twall=50, Lh=1)
+    >>> Ra(rho=1, mu=1, cp=1, k=1, beta=1, T=50, Twall=50, Dh=1)
     0.0
     """
-    return Gr(rho, mu, beta, T, Twall, Lh, g) * Pr(cp, mu, k)
+    return Gr(rho, mu, beta, T, Twall, Dh, g) * Pr(cp, mu, k)
 
 
 @njit

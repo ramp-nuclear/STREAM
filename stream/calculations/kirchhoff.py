@@ -425,7 +425,9 @@ class Junction(Calculation):
         self.name = name or f"J{self._i}"
 
     def indices(self, variable: Name, asking=None) -> Place:
-        assert variable == "Tin" or variable == "Tin_minus", (variable, asking)
+        allowed = {"Tin", "Tin_minus"}
+        if variable not in allowed:
+            raise KeyError(f"Junction indices raise for everything but {allowed}, which does not include the variable {variable} or the asking {asking}")
         return 0
 
     @property

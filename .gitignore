@@ -10,3 +10,11 @@ build
 /.pytest_cache/
 *.swp
 *regression*
+CLAUDE.md
+.vscode/
+dist/
+.coverage
+coverage.xml
+htmlcov/
+.env
+*.log

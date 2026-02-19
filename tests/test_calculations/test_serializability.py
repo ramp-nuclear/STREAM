@@ -24,6 +24,7 @@ pipes = st.builds(EffectivePipe, reg_floats, reg_floats, reg_floats, reg_floats)
 boundaries = (st.lists(elements=reg_floats, min_size=2, max_size=40)
               .map(np.array).map(np.cumsum)
               )
+power_shape = (st.lists(elements=st.just(1), min_size=1, max_size=1).map(np.array))
 delayed_groups = st.shared(st.integers(min_value=1, max_value=6), key='moo')
 b1 = delayed_groups.flatmap(lambda x: st.lists(reg_floats, min_size=x,
                                                max_size=x).map(np.array))
@@ -53,7 +54,8 @@ fuels = st.builds(calcs.Fuel,
                   z_boundaries=boundaries,
                   x_boundaries=boundaries,
                   material=solids,
-                  y_length=reg_floats)
+                  y_length=reg_floats,
+                  power_shape=power_shape)
 frictions = st.builds(calcs.Friction, reg_floats, light_water, reg_floats, reg_floats,
                       reg_floats, names)
 gravities = st.builds(calcs.Gravity, light_water, reg_floats, name=names)

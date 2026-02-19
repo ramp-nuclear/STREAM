@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from scikits.odes import dae
 
-from stream import Aggregator
+from stream.aggregator import Aggregator
 from stream.composition import Calculation_factory
 from stream.solvers import TransientRuntimeError
 from stream.units import Array1D

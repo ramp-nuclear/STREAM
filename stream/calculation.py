@@ -5,7 +5,7 @@ such a system.
 """
 from abc import abstractmethod
 from functools import wraps
-from typing import Any, Optional, Protocol, runtime_checkable, Sequence
+from typing import Any, Optional, Protocol, runtime_checkable, Sequence, Iterable
 
 import numpy as np
 from cytoolz.dicttoolz import valmap
@@ -102,7 +102,7 @@ class Calculation(Protocol):
             dictionary with variable names related to this name and
             their places.
         """
-        return self.variables.get(variable)
+        return self.variables[variable]
 
     @property
     @abstractmethod
@@ -224,7 +224,7 @@ class Calculation(Protocol):
         pass
 
 
-def unpacked(calculate):
+def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
     """
     This is a decorator for Calculation methods (calculate and save, mostly),
     to be applied when the origin of the external variables is unimportant.
@@ -233,6 +233,8 @@ def unpacked(calculate):
     ----------
     calculate: callable
         Calculation.calculate actualized method
+    exclude: Iterable[str]
+        Which variables to exclude from unpacking
 
     Returns
     -------
@@ -241,15 +243,27 @@ def unpacked(calculate):
         np.arrays or as floats and not a dictionary
     """
 
-    @wraps(calculate)
-    def unpack(*args, **kwargs):
-        try:
-            return calculate(*args, **valmap(_concat, kwargs))
-        except BaseException as e:
-            e.args = (f"Error found at {calculate}: {e.args[0]}", *e.args[1:])
-            raise
+    
+    def _unpacked(_calculate):
+        @wraps(_calculate)
+        def _unpack(*args, **kwargs):
+            try:
+                excluded_kwargs = {k: kwargs.pop(k) for k in exclude}
+                return _calculate(*args, **valmap(_concat, kwargs) | excluded_kwargs)
+            except KeyError as e:
+                raise KeyError(f"While unpacking in {_calculate}, 'exclude' got a variable name which was not recieved by {_calculate}. Variable name: {e}")
+            except BaseException as e:
+                e.args = (f"Error found at {_calculate}: {e.args[0]}", *e.args[1:])
+                raise
 
-    return unpack
+        return _unpack
+    
+    if calculate is not None:
+        # Used as @unpacked
+        return _unpacked(calculate)
+    else:
+        # Used as @unpacked(...)
+        return _unpacked
 
 
 def _concat(v: Value | dict[Any, Value]) -> Array1D:

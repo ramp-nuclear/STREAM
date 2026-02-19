@@ -11,7 +11,7 @@ from stream.units import KgPerM3, PaS, JPerKgK, WPerMK, PerC, Celsius, Meter, Va
 def _Elenbaas(
         rho: KgPerM3, mu: PaS, cp: JPerKgK, k: WPerMK, beta: PerC, T: Celsius, Twall: Celsius,
         Lh: Meter, S: Meter) -> Value:
-    ra = Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Lh=S)
+    ra = Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)
     return (1 / 24) * ra * (S / Lh) * (1 - np.exp(- 35 * Lh / (ra * S))) ** 0.75
 
 

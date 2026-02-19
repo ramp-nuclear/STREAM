@@ -9,7 +9,7 @@ import pytest
 from hypothesis import given, settings, assume
 from scipy.constants import g
 
-from stream import EffectivePipe
+from stream.pipe_geometry import EffectivePipe
 from stream.calculations import LocalPressureDrop
 from stream.physical_models.pressure_drop import (
     pressure_diff, Darcy_Weisbach_pressure_by_mdot, friction_factor,

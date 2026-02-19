@@ -80,8 +80,8 @@ class EffectivePipe:
         object.__setattr__(self, "heated_parts", (
             self.heated_parts if self.heated_parts
             else (self.heated_perimeter / 2, self.heated_perimeter / 2)))
-        assert np.sum(self.heated_parts) == self.heated_perimeter, (
-            f"The partitions of P_heated: {self.heated_parts} do not sum up to the total"
+        assert np.isclose(np.sum(self.heated_parts), self.heated_perimeter, rtol=1e-15), (
+            f"The partitions of P_heated: {self.heated_parts} do not sum up to the total within relative tolerance 1e-15"
         )
 
     @classmethod

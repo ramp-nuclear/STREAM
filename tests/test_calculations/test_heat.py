@@ -5,7 +5,7 @@ from hypothesis import given, settings
 from hypothesis.strategies import integers, sampled_from
 from numpy import allclose
 
-from stream import Aggregator
+from stream.aggregator import Aggregator
 from stream.calculations.heat_diffusion import (
     Fuel, Solid, Walls, xz_diffusion,
     cylindrical_areas_volumes,
@@ -24,11 +24,12 @@ def test_Fuel_at_constant_temperature_has_derivative_0():
     x = np.arange(6)
     dx = np.diff(x)
     material = mock_solid
+    power_shape = np.zeros((len(dz), (len(dx))))
 
-    fuel = Fuel(z, x, material, y_length=1.0)
+    fuel = Fuel(z, x, material, y_length=1.0, power_shape=power_shape)
     T0 = 30
     T = T0 * np.ones(len(dz) * (len(dx) + 2))
-    result = fuel.calculate(T, power=np.zeros(len(fuel) - 2 * len(dz)),
+    result = fuel.calculate(T, power=0,
                             T_left=T0 * np.ones_like(dz),
                             T_right=T0 * np.ones_like(dz),
                             h_left=np.ones_like(dz), h_right=np.ones_like(dz))
@@ -42,11 +43,12 @@ def test_derivative_of_one_cell_follows_the_x_diffusion_kernel(T, T_left, T_righ
     z = np.arange(2)
     x = np.arange(2)
     dx = 1
-    input = np.array((T, T_left, T_right))
+    power_shape = np.zeros((len(z) - 1, len(x) - 1))
 
-    fuel = Fuel(z, x, mock_solid, y_length=1)
+    fuel = Fuel(z, x, mock_solid, y_length=1, power_shape=power_shape)
+    input = np.array((T, T_left, T_right))
     result = fuel.calculate(input,
-                            power=np.zeros_like(T),
+                            power=0,
                             T_left=np.array([T_left]),
                             T_right=np.array([T_right]),
                             h_left=np.array([np.inf]),
@@ -63,13 +65,14 @@ def test_derivative_of_one_cell_follows_the_x_diffusion_kernel(T, T_left, T_righ
 def test_not_equispaced(T0, T_l, T_r):
     z = np.arange(2)
     x = np.array([0, 1, 3, 4])
+    power_shape = np.zeros((len(z) - 1, len(x) - 1))
 
     T = np.array((T_l, T0, T_r))
     T_left, T_right = np.full(1, T_l), np.full(1, T_r)
     input = concat(T, T_left, T_right)
 
-    fuel = Fuel(z, x, mock_solid, y_length=1)
-    result = fuel.calculate(input, power=np.zeros(3),
+    fuel = Fuel(z, x, mock_solid, y_length=1, power_shape=power_shape)
+    result = fuel.calculate(input, power=0,
                             T_left=T_left, T_right=T_right,
                             h_left=np.full(1, np.inf),
                             h_right=np.full(1, np.inf))
@@ -89,9 +92,9 @@ def multiple_regions():
     meat = np.ones((len(z) - 1, len(x) - 1))
     meat[:, 0] = 0
 
-    return Fuel(z, x, mock_solid,
-                x_contacts=np.tile(np.array([np.inf, 2e4, np.inf, np.inf]), (2, 1)),
-                meat_indices=meat, y_length=y)
+    power_shape = np.ones((len(z) - 1, len(x) - 2))
+    return Fuel(z, x, mock_solid, x_contacts=np.tile(np.array([np.inf, 2e4, np.inf, np.inf]), (2, 1)),
+                meat_indices=meat, y_length=y, power_shape=power_shape)
 
 
 def test_specific_multi_cell_has_the_right_dimensions(multiple_regions):
@@ -104,6 +107,11 @@ def test_specific_multi_cell_has_the_right_meat(multiple_regions):
     f = multiple_regions
     assert allclose(f.meat, np.array([[0, 1, 1],
                                       [0, 1, 1]]))
+
+
+def test_specific_multi_cell_has_the_right_power_shape(multiple_regions):
+    f = multiple_regions
+    assert allclose(f.power_shape, np.array([1,1,1,1]))
 
 
 def test_specific_multi_cell_has_the_right_contacts(multiple_regions):
@@ -130,17 +138,16 @@ def _some_config():
     y = 51.4 * mm
     dz = np.diff(z)
     dx = np.diff(x)
+    power_shape = np.ones((len(z) - 1, len(x) - 1))
 
     T = np.full((len(dz)) * (len(dx)) + 2 * len(dz), 100)
     T_cool = np.array((20, 40))
     h_left, h_right = np.array([1e5]), np.array([1e5])
 
-    fuel = Fuel(z, x, Solid(density=3000, specific_heat=700,
-                            conductivity=240), y_length=y)
+    fuel = Fuel(z, x, Solid(density=3000, specific_heat=700,conductivity=240), y_length=y, power_shape=power_shape)
     agr = Aggregator.from_decoupled(
         fuel,
-        funcs={fuel: dict(T_left=T_cool, T_right=T_cool,
-                          h_left=h_left, h_right=h_right)}
+        funcs={fuel: dict(T_left=T_cool, T_right=T_cool, h_left=h_left, h_right=h_right)}
         )
     return agr, fuel, T, T_cool
 
@@ -177,7 +184,8 @@ def test_initialization_of_Fuel_with_one_known_example():
     cells = z_N * x_N
     z = np.arange(z_N + 1)
     x = np.arange(x_N + 1)
-    F = Fuel(z, x, mock_solid, y_length=1)
+    power_shape = np.ones((z_N, x_N))
+    F = Fuel(z, x, mock_solid, y_length=1, power_shape=power_shape)
     assert np.all(F.x_contacts == np.inf)
     assert F.variables == dict(
         T=slice(0, cells),
@@ -229,11 +237,12 @@ def test_derivative_of_one_cell_follows_the_r_diffusion_kernel(T, T_left, T_righ
     dr = r2 - r1
 
     z = np.arange(2)
+    power_shape = np.zeros((len(z) - 1, len(x) - 1))
     input = np.array((T, T_left, T_right))
 
-    fuel = Fuel(z, x, mock_solid, y_length=1, heat_func=r_diffusion)
+    fuel = Fuel(z, x, mock_solid, y_length=1, heat_func=r_diffusion, power_shape=power_shape)
     result = fuel.calculate(input,
-                            power=np.zeros_like(T),
+                            power=0,
                             T_left=np.array([T_left]),
                             T_right=np.array([T_right]),
                             h_left=np.array([np.inf]),
@@ -261,11 +270,12 @@ def test_derivative_of_one_cell_follows_the_rz_diffusion_kernel(
 
     z = np.array([z1, z1 + dz])
     dz = z[1] - z[0]
+    power_shape = np.zeros((len(z) - 1, len(x) - 1))
     input = np.array((T, T_left, T_right))
 
-    fuel = Fuel(z, x, mock_solid, y_length=1, heat_func=rz_diffusion)
+    fuel = Fuel(z, x, mock_solid, y_length=1, heat_func=rz_diffusion, power_shape=power_shape)
     result = fuel.calculate(input,
-                            power=np.zeros_like(T),
+                            power=0,
                             T_left=np.array([T_left]),
                             T_right=np.array([T_right]),
                             T_bottom=np.array([T_bottom]),
@@ -304,10 +314,11 @@ def test_annulus_given_wall_temperatures(temps=(45, 75), edges=(1, 3)):
     r_boundaries = np.linspace(*edges, num=cells + 1)
     r = pair_mean_1d(r_boundaries)
     z_boundaries = np.arange(2)
+    power_shape = np.ones((len(z_boundaries) - 1, len(r_boundaries) - 1))
 
     T_exp = (Ts1 - Ts2) * np.log(r / r2) / np.log(r1 / r2) + Ts2
 
-    fuel = Fuel(z_boundaries, r_boundaries, mock_solid, y_length=1, heat_func=r_diffusion)
+    fuel = Fuel(z_boundaries, r_boundaries, mock_solid, y_length=1, heat_func=r_diffusion, power_shape=power_shape)
     d = dict(T_left=Ts1, T_right=Ts2, h_left=np.inf, h_right=np.inf, power=0)
     agr = Aggregator.from_decoupled(fuel, funcs={fuel: d})
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, (Ts1 + Ts2) / 2)))

@@ -353,7 +353,7 @@ def developing_laminar_h_spl(*, coolant: Liquid, mdot: KgPerS, A: Meter2,
     """
     re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
     pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
-    x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(0.75 * aspect_ratio / 0.3257))
+    x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
     nudev = _nusselt_coefficient_developing(x_star)
     nusselt = two_sided_heating_nusselt(aspect_ratio, nudev)
     return nusselt * coolant.conductivity / Dh

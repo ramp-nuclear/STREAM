@@ -2,6 +2,7 @@ from typing import Sequence
 
 import hypothesis.strategies as st
 import numpy as np
+import pytest
 from hypothesis import given
 from hypothesis.extra.numpy import arrays
 
@@ -34,6 +35,25 @@ def test_unpack_correctly_unpacks_data(lst):
     assert np.allclose(output, np.array(lst))
     assert np.allclose(more_output, np.array(lst))
 
+def _give_me_values(*, some_input, more_input):
+    return some_input, more_input
+
+@given(st.lists(st.floats(allow_nan=False)))
+def test_unpack_correctly_excludes_parameters(lst):
+    input_dict = dict(enumerate(lst))
+    kwargs = dict(some_input=input_dict, more_input=input_dict)
+
+    output, more_output = unpacked(_give_me_values, exclude=["more_input"])(**kwargs)
+    assert np.array_equal(np.atleast_1d(output), list(more_output.values()))
+    assert more_output == input_dict
+
+def test_unpack_exclusion_errors_on_missing_variable_name():
+    input_dict = dict(enumerate(range(1,6)))
+    kwargs = dict(some_input=input_dict, more_input=input_dict)
+
+    missing = "missing_variable_name"
+    with pytest.raises(KeyError, match=missing):
+        unpacked(_give_me_values, exclude=[missing])(**kwargs)
 
 dictvals = st.dictionaries(
     st.integers(),

@@ -13,6 +13,7 @@ try:
 except FileNotFoundError:
     pytest.skip("Standards of decay heat not available, skipping this file", allow_module_level=True)
 
+from stream.calculations.point_kinetics import ReactivityController
 from stream.utilities import factor, just
 from .conftest import pos_medium_floats
 
@@ -61,8 +62,7 @@ def test_fission_decay_heat_is_constant_for_critical_core(L, ls, bs):
     assert np.allclose(
         fissions.profile(time=time, generation_time=L, delayed_groups_decay_rates=ls,
                          delayed_neutron_fractions=bs,
-                         input_reactivity_func=just(0.0))(time, np.inf), 1.0)
-
+                         controls=ReactivityController(just(0.0)))(time, np.inf), 1.0)
 
 @settings(deadline=None)
 @given(st.floats(1e-5, 1e-2, allow_nan=False, allow_infinity=False),
@@ -73,6 +73,6 @@ def test_fission_decay_heat_is_decreasing_for_subcritical_core(L, ls, bs):
 
     ff = fissions.profile(time=time, generation_time=L, delayed_groups_decay_rates=ls,
                           delayed_neutron_fractions=bs,
-                          input_reactivity_func=just(-0.001))
+                          controls=ReactivityController(just(-0.001)))
 
     assert np.all(np.diff(ff(time, np.inf)) <= 0)

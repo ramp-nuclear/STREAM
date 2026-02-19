@@ -7,15 +7,60 @@ The main idea behind these implementations is that the graphical structure of an
 :class:`.Aggregator` object can be utilized to deduce the Jacobian sparsity, at least
 across :class:`.Calculation` boundaries.
 """
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Protocol, Literal, TypeVar
 
 import numpy as np
+
 from stream import Aggregator, Calculation
+from stream.units import Array1D, Array2D, Value
 
 __all__ = ["DAE_jacobian", "ALG_jacobian"]
 
+StepStrategyWithydot = Callable[[Array1D, Array1D], Array1D]
+StepStrategy = Callable[[Array1D], Array1D]
+T = TypeVar("T", bound=Value)
 
-def DAE_jacobian(agr: Aggregator, step_strategy=None) -> Callable:
+
+def _default_step_strategy(y: T, *_) -> T: return 1e-12 + 1e-6 * np.abs(y)
+
+
+def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:
+    indices = np.arange(len(agr))
+    a = {i: [calculation]
+         for calculation, section in agr.sections.items()
+         for i in indices[section]}
+    for v, d in agr.external.items():
+        for name, ud in d.items():
+            for u, place in ud.items():
+                for i in np.atleast_1d(indices[place]):
+                    a[i].append(v)
+    return a
+
+
+def _inner(fy, h, t, yh, associated_calculations, *, agr, jac, cj=None):
+    for j, hj in enumerate(h):
+        yh[j] += hj
+        fyh = fy.copy()
+        for c in associated_calculations[j]:
+            fyh[agr.sections[c]] = agr._op("calculate", yh, t, c)
+
+        jac[:, j] = (fyh - fy) / hj
+        if cj is not None:
+            jac[j, j] -= cj * agr.mass[j]
+        yh[j] -= hj
+    return jac if cj is None else 0
+
+
+class JacFuncDAE(Protocol):
+    """Protocol for the signature one should expect from the returned function."""
+    def __call__(self, t, y: np.ndarray, ydot: Value, Gy: Value, cj: Value, J: Array2D) -> Literal[0]:
+        """A function that edits the Jacobian J as its output using the current solver values.
+        This signature is required by the DAE solver and not of our choice.
+        """
+        ...
+
+
+def DAE_jacobian(agr: Aggregator, step_strategy: StepStrategyWithydot = _default_step_strategy) -> JacFuncDAE:
     r"""
     A function for creating a one-sided approximation of the Jacobian of
     an :class:`Aggregator` functional. The Jacobian is defined as follows:
@@ -55,57 +100,31 @@ def DAE_jacobian(agr: Aggregator, step_strategy=None) -> Callable:
         :math:`J(t, y, \dot{y}, G(t, y, \dot{y}), \sigma, \text{result})`,
         matching the required SUNDIALS format.
     """
-    step_strategy = step_strategy or (lambda y, yd: 1e-12 + 1e-6 * np.abs(y))
     associated_calculations = _associated_calculations(agr)
 
-    def jac_func(t, y, ydot, Gy, cj, J):
+    def _jac_func(t, y: np.ndarray, ydot: Value, Gy: Value, cj: Value, J: Array2D) -> Literal[0]:
         h = step_strategy(y, ydot)
         Fy = Gy + agr.mass * ydot
-        yh = y.copy()
-        for j, hj in enumerate(h):
-            yh[j] += hj
-            Fyh = Fy.copy()
-            for c in associated_calculations[j]:
-                Fyh[agr.sections[c]] = agr._op("calculate", yh, t, c)
+        _inner(Fy, h, t, y.copy(), associated_calculations, agr=agr, jac=J, cj=cj)
+        return 0  # This function edits J which is how the data actually comes out.
 
-            J[:, j] = (Fyh - Fy) / hj
-            J[j, j] -= cj * agr.mass[j]
-            yh[j] -= hj
-        return 0
-
-    return jac_func
+    return _jac_func
 
 
-def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:
-    indices = np.arange(len(agr))
-    a = {i: [calculation]
-         for calculation, section in agr.sections.items()
-         for i in indices[section]}
-    for v, d in agr.external.items():
-        for name, ud in d.items():
-            for u, place in ud.items():
-                for i in np.atleast_1d(indices[place]):
-                    a[i].append(v)
-    return a
+class JacFuncALG(Protocol):
+    """Protocol for the jacobian calculation function used in the algebraic solver.
+    It computes the jacobian at a given time and a given state, with the aggregator baked in."""
+    def __call__(self, y, t=0) -> Array2D:
+        ...
 
 
-def ALG_jacobian(agr: Aggregator, step_strategy=None) -> Callable:
-    step_strategy = step_strategy or (lambda y: 1e-12 + 1e-6 * np.abs(y))
+def ALG_jacobian(agr: Aggregator, step_strategy: StepStrategy = _default_step_strategy) -> JacFuncALG:
     associated_calculations = _associated_calculations(agr)
-    J = np.empty((len(agr), len(agr)))
+    jac = np.empty((len(agr), len(agr)))
 
-    def jac_func(y, t=0):
+    def _jac_func(y: np.ndarray, t=0) -> Array2D:
         h = step_strategy(y)
-        yh = y.copy()
         Fy = agr.compute(y, t)
-        for j, hj in enumerate(h):
-            yh[j] += hj
-            Fyh = Fy.copy()
-            for c in associated_calculations[j]:
-                Fyh[agr.sections[c]] = agr._op("calculate", yh, t, c)
+        return _inner(Fy, h, t, y.copy(), associated_calculations, agr=agr, jac=jac)
 
-            J[:, j] = (Fyh - Fy) / hj
-            yh[j] -= hj
-        return J
-
-    return jac_func
+    return _jac_func
