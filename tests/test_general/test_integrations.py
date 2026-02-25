@@ -157,8 +157,8 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
             F: dict(power=P, h_left=h)
             })
     y0 = np.full(agr.vector_length, T0)
-    y0[agr.var_index(C, "pressure")] = -1e4
-    state = agr.save(agr.solve_steady(y0))
+    y0[agr.var_index(C, "pressure")] = np.sum(C.pressure(T=T0, Tw=T0, mdot=mdot))
+    state = agr.save(agr.solve_steady(y0, jac=ALG_jacobian(agr)))
     Tc_calculated = state[C.name]["T_cool"]
     Tw_calculated = state[F.name]["T_wall_left"]
     Tf_calculated = np.squeeze(state[F.name]["T"])
@@ -867,7 +867,8 @@ def test_inertia_with_two_parallel_resistors(k1, k2):
     
     flows = {pump: mdot0, R1: mdot0 / sr(k1, k2), R2: mdot0 / sr(k2, k1)}
     guess = guess_hydraulic_steady_state(K, flows, T)
-    steady = agr.save(agr.solve_steady(guess))
+    guess[pump.name]["pressure"] = k1 * flows[R1] ** 2
+    steady = agr.save(agr.solve_steady(guess, jac=ALG_jacobian(agr)))
 
     total_k = steady[pump.name]["pressure"] / mdot0 ** 2
     assert np.isclose(total_k, k1*k2 / (np.sqrt(k1) + np.sqrt(k2)) ** 2)

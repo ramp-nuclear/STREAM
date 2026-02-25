@@ -426,7 +426,7 @@ def generic_2d_diffusion(T: Celsius, T_walls: Walls, s: Solid, power: Watt,
     return (flow + power) / (s.density * s.specific_heat * volumes)
 
 
-stacks = x_stack, z_stack = np.column_stack, np.row_stack
+stacks = x_stack, z_stack = np.column_stack, np.vstack
 diffs = x_diff, z_diff = np.diff, partial(np.diff, axis=0)
 pair_means = x_pair_mean, z_pair_mean = pair_mean, partial(pair_mean, axis=0)
 
