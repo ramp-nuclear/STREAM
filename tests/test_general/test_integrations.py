@@ -156,7 +156,7 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
             C: dict(mdot=mdot, Tin=T0, p_abs=1e5, h_right=(h := 1.)),
             F: dict(power=P, h_left=h)
             })
-    y0 = np.full(agr.vector_length, T0)
+    y0 = np.full(agr.vector_length, T0 + 1)
     y0[agr.var_index(C, "pressure")] = np.sum(C.pressure(T=T0, Tw=T0, mdot=mdot))
     state = agr.save(agr.solve_steady(y0, jac=ALG_jacobian(agr)))
     Tc_calculated = state[C.name]["T_cool"]
