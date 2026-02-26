@@ -84,19 +84,48 @@ def _gmake(e: list[tuple[str, str, str, tuple[str, ...]]]) -> MultiDiGraph:
     return g
 
 
-edges = st.tuples(names, names, names, st.lists(names, min_size=1).map(tuple))
-graphs = st.builds(_gmake, st.lists(edges, min_size=1))
+class _InterList(frozenset):
+    def __eq__(self, other):
+        return not self.isdisjoint(other)
+
+    def __hash__(self):
+        return hash(None)
+
+
+edges = st.tuples(names, names, names, st.lists(names, min_size=1, unique=True).map(tuple))
+graphs = st.builds(_gmake, st.lists(edges, min_size=1, unique_by=lambda x: _InterList(x[-1])))
 kirchoffs = st.builds(calcs.Kirchhoff, graphs, name=names)
-kirchoffs_w_deriv = st.builds(calcs.KirchhoffWDerivatives, graphs, name=names)
+kirchoffs_w_deriv = st.builds(calcs.KirchhoffWDerivatives, graph=graphs, name=names)
 
 
-@given(st.one_of(channels, channels_and_contacts, flappers, fuels, frictions, gravities,
-                 pdrops, regfrics, resistors, res_sums, heat_exchangers, inductors,
-                 junctions, point_kinetics, pumps, kirchoffs,
-                 kirchoffs_w_deriv))
-def test_calculations_are_cloud_pickleable(calc):
+strats = {"Channel":          channels,
+          "ChannelsContacts": channels_and_contacts,
+          "Flapper":          flappers, 
+          "Fuel":             fuels, 
+          "Friction":         frictions, 
+          "Gravity":          gravities,
+          "PressureDrop":     pdrops, 
+          "RegularFriction":  regfrics, 
+          "Resistor":         resistors, 
+          "ResistorSum":      res_sums, 
+          "HeatExchanger":    heat_exchangers, 
+          "Inductor":         inductors,
+          "Junction":         junctions, 
+          "PointKinetics":    point_kinetics, 
+          "Pump":             pumps, 
+          "Kirchoff":         kirchoffs,
+          "KirchoffWDeriv":   kirchoffs_w_deriv
+          }
+
+
+def _test_calculations_are_cloud_pickleable(calc):
     try:
         cloudpickle.dumps(calc)
     except TypeError:
         print(calc)
         raise
+
+
+for name, strat in strats.items():
+    globals()[f"test_cloudpickle_dumps_for_{name}"] = given(strat)(_test_calculations_are_cloud_pickleable)
+

@@ -139,6 +139,14 @@ HydraulicStrategy = Callable[[KgPerS, Celsius], Pascal]
 HydraulicStrategyMap = dict[Calculation, HydraulicStrategy]
 
 
+def _float_values(d: dict[str, Value],
+                  keys: Iterable[str],
+                  inner_key: str = "pressure") -> Iterable[float]:
+    for key in keys:
+        y = d[key][inner_key]
+        yield y if isinstance(y, (float, int)) else y.item()
+
+
 def guess_hydraulic_steady_state(
         k: Kirchhoff, mdots: dict[Calculation, KgPerS], temperature: Celsius,
         strategy: HydraulicStrategyMap | None = None) -> State:
@@ -200,7 +208,7 @@ def guess_hydraulic_steady_state(
     junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
     T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
     Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
-    p = np.fromiter((pressures[comp.name]['pressure'] for comp in k.components),
+    p = np.fromiter(_float_values(pressures, map(lambda x: x.name, k.components)),
                     dtype=float, count=len(k.components))
 
     a = np.zeros(len(k))
@@ -253,7 +261,7 @@ def check_gravity_mismatch(k: Kirchhoff, temperature: Celsius = 10.0,
                                 if isinstance(p, Pump)}
     hs = guess_hydraulic_steady_state(k, md, temperature, strategy)
     s = State.merge(hs, deal_with_pressure_pumps)
-    p = np.fromiter((s[comp.name]['pressure'] for comp in comps),
+    p = np.fromiter(_float_values(s, map(lambda x: x.name, comps)),
                     dtype=float, count=len(comps))
     p_errors = k.kvl_errors(p) / head
     almost_zeros = np.isclose(0.0, p_errors, atol=tol)

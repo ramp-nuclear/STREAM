@@ -216,7 +216,7 @@ class PointKinetics(Calculation):
         self.temp_worth = temp_worth or {}
         self.T0 = ref_temp or {}
         self.m = len(self.lambdak)
-        self.dollar = np.sum(self.betak)
+        self.dollar = np.sum(self.betak).item()
         self.controls = controls or ReactivityController()
 
         self._A = np.zeros((self.m + 1, self.m + 1))
@@ -269,7 +269,7 @@ class PointKinetics(Calculation):
             the change in power and the delayed power fractions
         """
         rhoc = self.controls.worth(t)
-        rho = self.reactivity(T or {}, rhoc)
+        rho = self.reactivity(T if T is not None else {}, rhoc)
         self._s[0] = (source / self.Lambda if source is not None else 0.)
         self._A[0, 0] = (rho - self.dollar) / self.Lambda
         return self._A @ variables + self._s
@@ -347,7 +347,7 @@ def temperature_reactivity(T: dict[Calculation, Array],
     rho: float
         Calculated reactivity
     """
-    return -sum(np.dot(w, T[k] - T0[k]) for k, w in weights.items())
+    return -sum(np.dot(w, T[k] - T0[k]).item() for k, w in weights.items())
 
 
 @curry

@@ -109,7 +109,7 @@ def cosine_shape(x: Array1D, ppf: float = np.pi / 2, *,
     ll = x[-1] - x[0]
     # Safe because we know fsolve returns a float-able for this input deck.
     # noinspection PyTypeChecker
-    h: float = float(fsolve(lambda _x: np.sinc(_x / np.pi) - 1 / ppf, x0=1e-3))
+    h: float = fsolve(lambda _x: np.sinc(_x / np.pi) - 1 / ppf, x0=1e-3).item()
     a = 2 * h / ll
     b = ppf / ll
     return _integrated_cell_cosine_value(a, b, xmax, x)

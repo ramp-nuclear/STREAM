@@ -35,7 +35,7 @@ def parse_value(records: DataFrame) -> Value:
     records = records.sort_values(by=['i', 'j'])
     match (len(records.i.values), len(records.j.values)):
         case (1, 1):
-            return float(records.value.values)
+            return records.value.values.item()
         case (1, _):
             return np.array(records.value.values)
         case _:
