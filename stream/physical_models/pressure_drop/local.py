@@ -19,7 +19,7 @@ def _table_interp(re_numbers: Array1D, area_ratios: Array1D, f_factors: Array2D,
                   area_ratio: float, re: float) -> float:
     if np.min(area_ratios) <= area_ratio <= 1:
         interp = RegularGridInterpolator((re_numbers, area_ratios), f_factors)
-        return float(interp([float(re), area_ratio]))
+        return interp([float(re), area_ratio]).item()
     elif area_ratio < 0:
         raise ValueError(f"Area ratio cannot be negative. {area_ratio=} is.")
     else:

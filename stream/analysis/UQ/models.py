@@ -319,7 +319,7 @@ class UQModel(_UQModel):
 
 @delayed(pure=True)
 def _join(*dfs):
-    return concat(dfs, ignore_index=True, copy=False)
+    return concat(dfs, ignore_index=True)
 
 
 class DASKUQModel(_UQModel):
