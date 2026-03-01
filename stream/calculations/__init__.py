@@ -7,9 +7,9 @@ the heat diffusion descriptor, and :class:`.PointKinetics`,
 the point-reactor neutronics descriptor.
 """
 
-from .channel import Channel, ChannelAndContacts
-from .flapper import Flapper
-from .heat_diffusion import Fuel, Solid
+from .channel import Channel as Channel, ChannelAndContacts as ChannelAndContacts
+from .flapper import Flapper as Flapper
+from .heat_diffusion import Fuel as Fuel, Solid as Solid
 from .ideal import *
-from .kirchhoff import Junction, Kirchhoff, KirchhoffWDerivatives
-from .point_kinetics import PointKinetics, PointKineticsWInput
+from .kirchhoff import Junction as Junction, Kirchhoff as Kirchhoff, KirchhoffWDerivatives as KirchhoffWDerivatives
+from .point_kinetics import PointKinetics as PointKinetics, PointKineticsWInput as PointKineticsWInput

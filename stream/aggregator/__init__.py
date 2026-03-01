@@ -19,13 +19,13 @@ The main scheme is neatly presented in :ref:`Documentation`.
 
 from .aggregator import *
 from .constraints import *
-from .solution import Solution
+from .solution import Solution as Solution
 from .utils import (
-    VARS,
-    BaseAgr,
-    ExternalFunctions,
-    add_variables,
-    draw_aggregator,
-    non_unique_calculations,
-    vars_,
+    VARS as VARS,
+    BaseAgr as BaseAgr,
+    ExternalFunctions as ExternalFunctions,
+    add_variables as add_variables,
+    draw_aggregator as draw_aggregator,
+    non_unique_calculations as non_unique_calculations,
+    vars_ as vars_,
 )

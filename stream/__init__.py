@@ -17,13 +17,13 @@ from rich.logging import RichHandler
 
 from .aggregator import *
 from .calculation import *
-from .state import State
+from .state import State as State
 from .jacobians import *
 from .pipe_geometry import *
 from .physical_models import *
 from .analysis import *
 from .substances import *
-from .calculations import Solid
+from .calculations import Solid as Solid
 
 logger = logging.getLogger("stream")
 logger.addHandler(RichHandler(log_time_format="[%X]"))

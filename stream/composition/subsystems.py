@@ -1,7 +1,7 @@
 """Helper functions for creating steady state initial guesses for small and specific subsystems"""
 
 import logging
-from typing import Callable
+from typing import Callable, Iterable
 
 import numpy as np
 from cytoolz import keymap
@@ -20,7 +20,7 @@ from stream.calculations import (
 )
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.state import State
-from stream.units import Celsius, KgPerS, Pascal, Watt
+from stream.units import Celsius, KgPerS, Pascal, Watt, Value
 from stream.utilities import just
 
 __all__ = [

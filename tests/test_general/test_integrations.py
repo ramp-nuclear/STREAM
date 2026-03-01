@@ -546,7 +546,7 @@ def test_pump_and_current_source(p, mdot):
     y0 = np.full(len(AGR), 0.0)
     y0[AGR.var_index(K, K.component_edge(P))] = mdot
     y0[AGR.var_index(K, K.component_edge(Flow))] = mdot
-    y0[AGR.var_index(I, "pressure")] = -p
+    y0[AGR.var_index(Flow, "pressure")] = -p
     y0[AGR.var_index(P, "pressure")] = p
 
     assert np.allclose(AGR.compute(y0), 0)
