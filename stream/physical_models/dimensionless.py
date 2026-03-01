@@ -19,7 +19,7 @@ from stream.units import (
     Value,
     WPerM2K,
     WPerMK,
-    )
+)
 
 
 __all__ = ["flow_regimes", "Gr", "Nu", "Pe", "Pr", "Ra", "Re", "Re_mdot"]
@@ -227,7 +227,7 @@ def Gr(
     >>> Gr(rho=1, mu=1, beta=1, T=50, Twall=50, Dh=1)
     0.0
     """
-    return rho ** 2 * g * beta * (Twall - T) * Dh ** 3 / mu ** 2
+    return rho**2 * g * beta * (Twall - T) * Dh**3 / mu**2
 
 
 @njit
@@ -281,9 +281,7 @@ def Ra(
 
 
 @njit
-def flow_regimes(
-    re: np.ndarray, bounds: tuple[Value, Value]
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+def flow_regimes(re: np.ndarray, bounds: tuple[Value, Value]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Turbulent, Laminar and Interim regimes are determined by the Reynolds No.
 

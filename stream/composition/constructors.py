@@ -1,4 +1,5 @@
 r"""Various alternative constructors for some calculations"""
+
 from typing import Literal, Sequence, Protocol
 
 import numpy as np
@@ -13,12 +14,12 @@ __all__ = ["Calculation_factory", "ResistorFromKnownPoint"]
 
 
 def ResistorFromKnownPoint(
-        dp: Pascal = None,
-        mdot: KgPerS = None,
-        behavior: Literal["constant", "linear", "parabolic"] = "parabolic",
-        name: str = None,
-        **kwargs,
-        ) -> DPCalculation:
+    dp: Pascal = None,
+    mdot: KgPerS = None,
+    behavior: Literal["constant", "linear", "parabolic"] = "parabolic",
+    name: str = None,
+    **kwargs,
+) -> DPCalculation:
     r"""Construct a resistor to flow from a known point in the :math:`(\Delta p, \dot{m})` phase space.
 
     Parameters
@@ -47,42 +48,38 @@ def ResistorFromKnownPoint(
     0.0
     """
 
-    assert (dp is not None or mdot is not None), \
-        "At least one of (dp, mdot) must be specified"
+    assert dp is not None or mdot is not None, "At least one of (dp, mdot) must be specified"
 
     if behavior == "constant":
         return Pump(pressure=dp, mdot0=mdot, name=name)
 
-    assert (dp is not None and mdot is not None), \
-        "For non-ideal current or head sources, dp must be specified"
+    assert dp is not None and mdot is not None, "For non-ideal current or head sources, dp must be specified"
     if behavior == "linear":
         return Resistor(resistance=-dp / mdot, name=name)
     if behavior == "parabolic":
-        assert (dp <= 0), "A resistor with a parabolic dp(mdot) " \
-                          "dependence can not be positive"
+        assert dp <= 0, "A resistor with a parabolic dp(mdot) dependence can not be positive"
         rho0 = kwargs["fluid"].density(kwargs.pop("Tin"))
         return Friction(
-            f=2 * abs(dp) * rho0 / (mdot ** 2),
+            f=2 * abs(dp) * rho0 / (mdot**2),
             length=1.0,
             hydraulic_diameter=1.0,
             area=1.0,
             name=name,
             **kwargs,
-            )
+        )
     raise ValueError(f"Behavior type for point based resistor unknown: {behavior}")
 
 
 class _CalcFactory(Protocol):
-    def __call__(self, name: str | None = None) -> Calculation:
-        ...
+    def __call__(self, name: str | None = None) -> Calculation: ...
 
 
 def Calculation_factory(
-        calculate: Functional,
-        mass_vector: Sequence[bool],
-        variables: dict[str, Place],
-        unpack: bool = True,
-        ) -> _CalcFactory:
+    calculate: Functional,
+    mass_vector: Sequence[bool],
+    variables: dict[str, Place],
+    unpack: bool = True,
+) -> _CalcFactory:
     r"""A simple :class:`~stream.calculation.Calculation` factory.
 
     This factory does not support non-default methods `load`, `save`, `should_continue`.

@@ -9,10 +9,12 @@ from .aggregator import Aggregator
 
 __all__ = ["CONSTRAINT", "create_constraints"]
 
+
 class CONSTRAINT(Enum):
     """Possible values for IDA for sign constraints.
     See the sundials documentation for explanation of these values
     """
+
     negative = -2.0
     non_positive = -1.0
     none = 0.0
@@ -22,6 +24,7 @@ class CONSTRAINT(Enum):
 
 _VARTYPE = Iterable[str] | None
 
+
 class _ConstraintTypes(TypedDict, total=False):
     negative: _VARTYPE
     non_positive: _VARTYPE
@@ -29,17 +32,19 @@ class _ConstraintTypes(TypedDict, total=False):
     non_negative: _VARTYPE
     positive: _VARTYPE
 
-def create_constraints(agr: Aggregator,
-                       default_sign: CONSTRAINT = CONSTRAINT.none,
-                       **kwargs: Unpack[_ConstraintTypes]
-                       ) -> np.ndarray:
+
+def create_constraints(
+    agr: Aggregator,
+    default_sign: CONSTRAINT = CONSTRAINT.none,
+    **kwargs: Unpack[_ConstraintTypes],
+) -> np.ndarray:
     """
     Create a constraint array, as expected by IDA
     Currently, we support sign constraints in DAE mode only.
     Defaults to no sign constraint for all variables.
-    
+
     Meant to be used as the `contraints_type` option for `differential_algebraic`.
-    
+
     Parameters
     ----------
     agr: Aggregator
@@ -48,14 +53,16 @@ def create_constraints(agr: Aggregator,
         The default option to set all variables to, if not specified in kwargs.
     kwargs: _ConstraintTypes
         The variables to set to each of the possible CONSTRAINT values.
-    
+
     Returns
     -------
     np.ndarray
         Array with the same shape as `agr.graph`, with sign contraints.
     """
-    assert mutually_exclusive(list(kwargs.values())), "Keyword list must be mutually exclusive - a variable cannot be in more than one category"
-    
+    assert mutually_exclusive(list(kwargs.values())), (
+        "Keyword list must be mutually exclusive - a variable cannot be in more than one category"
+    )
+
     constraint_state = State.uniform(agr.graph, default_sign.value)
 
     for sign, variables in kwargs.items():
@@ -64,8 +71,5 @@ def create_constraints(agr: Aggregator,
         if variables is not None:
             state = State.uniform(agr.graph, CONSTRAINT.__getitem__(sign).value, *variables)
             constraint_state = State.merge(constraint_state, state)
-    
+
     return np.array(agr.load(constraint_state))
-
-
-

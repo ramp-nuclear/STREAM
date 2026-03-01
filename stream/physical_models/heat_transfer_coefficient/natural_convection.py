@@ -1,22 +1,40 @@
 """Natural Convection Single Phase Heat Transfer Coefficient"""
+
 import numpy as np
 from numba import njit
 
 from stream.physical_models.dimensionless import Ra
 from stream.substances import Liquid
-from stream.units import KgPerM3, PaS, JPerKgK, WPerMK, PerC, Celsius, Meter, Value, WPerM2K
+from stream.units import (
+    KgPerM3,
+    PaS,
+    JPerKgK,
+    WPerMK,
+    PerC,
+    Celsius,
+    Meter,
+    Value,
+    WPerM2K,
+)
 
 
 @njit
 def _Elenbaas(
-        rho: KgPerM3, mu: PaS, cp: JPerKgK, k: WPerMK, beta: PerC, T: Celsius, Twall: Celsius,
-        Lh: Meter, S: Meter) -> Value:
+    rho: KgPerM3,
+    mu: PaS,
+    cp: JPerKgK,
+    k: WPerMK,
+    beta: PerC,
+    T: Celsius,
+    Twall: Celsius,
+    Lh: Meter,
+    S: Meter,
+) -> Value:
     ra = Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)
-    return (1 / 24) * ra * (S / Lh) * (1 - np.exp(- 35 * Lh / (ra * S))) ** 0.75
+    return (1 / 24) * ra * (S / Lh) * (1 - np.exp(-35 * Lh / (ra * S))) ** 0.75
 
 
-def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Celsius, Lh: Meter,
-                   **_) -> WPerM2K:
+def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Celsius, Lh: Meter, **_) -> WPerM2K:
     r"""A semi-empirical correlation for :class:`~.SinglePhaseLiquidHTC` made by
     Elenbaas [1]_ [2]_ for the case of `symmetrically heated, isothermal plates`:
 
@@ -48,6 +66,15 @@ def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Ce
     """
     S = depth
     k = coolant.conductivity
-    Nu = _Elenbaas(rho=coolant.density, mu=coolant.viscosity, cp=coolant.specific_heat, k=k,
-                   beta=coolant.thermal_expansion, T=T_cool, Twall=T_wall, Lh=Lh, S=S)
+    Nu = _Elenbaas(
+        rho=coolant.density,
+        mu=coolant.viscosity,
+        cp=coolant.specific_heat,
+        k=k,
+        beta=coolant.thermal_expansion,
+        T=T_cool,
+        Twall=T_wall,
+        Lh=Lh,
+        S=S,
+    )
     return (k / S) * Nu

@@ -12,6 +12,7 @@ system objects as nodes, and connected by edges depicting the connected cycles.
     Virtual (SISO) junctions may be created as needed, and may be any hashable.
 
 """
+
 import logging
 from itertools import chain, count, takewhile
 from typing import Any, Callable, Hashable, Sequence, Iterable
@@ -35,9 +36,13 @@ logger = logging.getLogger("stream.kirchhoff")
 class Kirchhoff(Calculation):
     """Dictates flow in a given circuit for an incompressible liquid"""
 
-    def __init__(self, graph: MultiDiGraph, *abs_pressure_comps: Hashable,
-                 reference_node: tuple[Hashable, Pascal] = None,
-                 name: str = 'Kirchhoff'):
+    def __init__(
+        self,
+        graph: MultiDiGraph,
+        *abs_pressure_comps: Hashable,
+        reference_node: tuple[Hashable, Pascal] = None,
+        name: str = "Kirchhoff",
+    ):
         r"""
         Parameters
         ----------
@@ -78,8 +83,7 @@ class Kirchhoff(Calculation):
         if reference_node and reference_node[0] not in graph:
             raise KeyError(f"The reference node {reference_node} wasn't in the graph")
         if difference := (set(abs_pressure_comps) - set(self._edge_components)):
-            raise KeyError("Some of the absolute pressure components were not in the "
-                           f"graph: {difference}")
+            raise KeyError(f"Some of the absolute pressure components were not in the graph: {difference}")
 
         self.components = dict(zip(self._edge_components, count()))
         self._var_book = {comp: i for i, comp in self._edge_num_components}
@@ -95,57 +99,58 @@ class Kirchhoff(Calculation):
         self._kvl = build_kvl_matrix(graph, self.components)
         self.abs_pressure_comps = abs_pressure_comps or ()
         self.ref_node, self.ref_pressure = reference_node or (None, [])
-        self._abs_pressure_book = {('p_abs', comp): i + self._n for i, comp
-                                   in enumerate(self.abs_pressure_comps)}
-        self.ref_mdots = {asks: self._edge_book[(u, v, k)]
-                          for u, v, k, asking in
-                          graph.edges(data='ref_mdot_for', keys=True)
-                          if asking is not None for asks in asking}
+        self._abs_pressure_book = {("p_abs", comp): i + self._n for i, comp in enumerate(self.abs_pressure_comps)}
+        self.ref_mdots = {
+            asks: self._edge_book[(u, v, k)]
+            for u, v, k, asking in graph.edges(data="ref_mdot_for", keys=True)
+            if asking is not None
+            for asks in asking
+        }
 
         self._abs_matrix = build_paths(
-            graph, self.components, self.ref_node, self._component_edge,
-            *abs_pressure_comps
-            )
+            graph,
+            self.components,
+            self.ref_node,
+            self._component_edge,
+            *abs_pressure_comps,
+        )
 
         self._vars = keymap(to_str, self._edge_book | self._abs_pressure_book)
 
         logger.log(
             STREAM_DEBUG,
-            f"New Kirchhoff with {self.nodes_count} nodes and {self.edges_count} edges"
-            )
+            f"New Kirchhoff with {self.nodes_count} nodes and {self.edges_count} edges",
+        )
 
     @property
     def _edge_components(self) -> Iterable:
-        """Iterable of the components on the edges in the graph.
-
-        """
+        """Iterable of the components on the edges in the graph."""
         yield from (v[1] for v in self._edge_num_components)
 
     @property
     def _edge_num_components(self) -> Iterable[tuple[int, Any]]:
-        """Iterable of the edge numbers and their components.
-
-        """
+        """Iterable of the edge numbers and their components."""
         view = self.g.edges(data=COMPS, keys=True)
         for i, (_, _, _, comps) in enumerate(view):
             for comp in comps:
                 yield i, comp
 
     # noinspection PyMethodOverriding
-    def calculate(self, variables: Sequence[KgPerS], *,
-                  pressure) -> Array1D:
-        pressure = np.fromiter((pressure[comp] for comp in self.components),
-                               dtype=float, count=len(self.components))
-        abs_eqs = (self.ref_pressure + self._abs_matrix @ pressure
-                   - np.asarray(variables[self._n:]))
+    def calculate(self, variables: Sequence[KgPerS], *, pressure) -> Array1D:
+        pressure = np.fromiter(
+            (pressure[comp] for comp in self.components),
+            dtype=float,
+            count=len(self.components),
+        )
+        abs_eqs = self.ref_pressure + self._abs_matrix @ pressure - np.asarray(variables[self._n :])
 
         return concat(
-            (self._kcl @ np.asarray(variables[:self._n]))[:-1],
+            (self._kcl @ np.asarray(variables[: self._n]))[:-1],
             self._kvl @ pressure,
-            abs_eqs)
+            abs_eqs,
+        )
 
-    def indices(self, variable: Name, asking=None
-                ) -> Place | dict[Calculation, Place]:
+    def indices(self, variable: Name, asking=None) -> Place | dict[Calculation, Place]:
         r"""For a given variable name, return its position in the vector.
 
         - If the calculation asking is :class:`.Junction` which is present at
@@ -268,7 +273,7 @@ def to_graph_for_cycles(g: MultiGraph) -> Graph:
         object whose MultiEdges have been transformed as explained above
     """
     m = Graph()
-    for (u, v, k, data) in g.edges(data=True, keys=True):
+    for u, v, k, data in g.edges(data=True, keys=True):
         m.add_edge(u, vn := _VirtualNode(), **data)
         m.add_edge(vn, v)
     return m
@@ -373,11 +378,8 @@ def build_kcl_matrix(g: MultiDiGraph) -> csr_matrix:
     return nx.incidence_matrix(g, oriented=True, weight="signify")
 
 
-def build_paths(g: MultiDiGraph, comps_order, source, component_edge,
-                *targets) -> csr_matrix:
-    r"""Building a matrix containing the path (by component) from a source node to target *components*.
-
-    """
+def build_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets) -> csr_matrix:
+    r"""Building a matrix containing the path (by component) from a source node to target *components*."""
     m = dok_matrix((len(targets), len(comps_order)))
 
     for i, target in enumerate(targets):
@@ -391,9 +393,7 @@ def build_paths(g: MultiDiGraph, comps_order, source, component_edge,
             # Then, from u along edge, add components until target is reached
             comps_in_edge = takewhile(lambda c: c is not target, g.edges[edge][COMPS])
 
-        comps_from_path = (
-            comp for edge in pairwise(path) for comp in g.edges[(*edge, 0)][COMPS]
-            )
+        comps_from_path = (comp for edge in pairwise(path) for comp in g.edges[(*edge, 0)][COMPS])
 
         comps = chain(comps_from_path, comps_in_edge)
         m[i, [comps_order[comp] for comp in comps]] = 1
@@ -427,20 +427,24 @@ class Junction(Calculation):
     def indices(self, variable: Name, asking=None) -> Place:
         allowed = {"Tin", "Tin_minus"}
         if variable not in allowed:
-            raise KeyError(f"Junction indices raise for everything but {allowed}, which does not include the variable {variable} or the asking {asking}")
+            raise KeyError(
+                f"Junction indices raise for everything but {allowed}, which does not include the variable {variable} or the asking {asking}"
+            )
         return 0
 
     @property
-    def mass_vector(self) -> Sequence[bool]: return False,
+    def mass_vector(self) -> Sequence[bool]:
+        return (False,)
 
-    def __len__(self) -> int: return 1
+    def __len__(self) -> int:
+        return 1
 
     @property
-    def variables(self) -> dict[str, Place]: return dict(Tin=0)
+    def variables(self) -> dict[str, Place]:
+        return dict(Tin=0)
 
     # noinspection PyMethodOverriding
-    def calculate(self, variables: Sequence[Celsius],
-                  *, Tin, Tin_minus=None, mdot) -> Array1D:
+    def calculate(self, variables: Sequence[Celsius], *, Tin, Tin_minus=None, mdot) -> Array1D:
         r"""Computes divergence from total mixing of temperatures in junction,
         defined as
 
@@ -465,14 +469,12 @@ class Junction(Calculation):
         """
 
         def _f(_g: Callable[[Calculation, float, float], float]) -> float:
-            return (sum(_g(k, v, T) for k, T in Tin.items()
-                        if (v := mdot[k]) >= 0)
-                    - sum(_g(k, v, T) for k, T in Tin_minus.items()
-                          if (v := mdot[k]) < 0)
-                    )
+            return sum(_g(k, v, T) for k, T in Tin.items() if (v := mdot[k]) >= 0) - sum(
+                _g(k, v, T) for k, T in Tin_minus.items() if (v := mdot[k]) < 0
+            )
 
-        incoming_mdot = _f(lambda k, md, T: md * self.weights.get(k, 1.))
-        weighted_Tin = _f(lambda k, md, T: md * T * self.weights.get(k, 1.))
+        incoming_mdot = _f(lambda k, md, T: md * self.weights.get(k, 1.0))
+        weighted_Tin = _f(lambda k, md, T: md * T * self.weights.get(k, 1.0))
         weighted_Tin /= incoming_mdot or 1.0
 
         return weighted_Tin - np.asarray(variables)
@@ -496,9 +498,9 @@ def to_str(key: str | tuple) -> str:
             case var, node:
                 return f"({var} of {node})"
             case a, b, i:
-                return f'({a} -> {b}, {i})'
+                return f"({a} -> {b}, {i})"
             case a, b, i, "mdot2":
-                return f'({a} -> {b}, mdot2 {i})'
+                return f"({a} -> {b}, mdot2 {i})"
             case _:
                 raise ValueError(f"The tuple has to be of a very specific form. Not {key}")
     else:
@@ -510,8 +512,7 @@ def _comps_closest(j: Junction, g: MultiDiGraph, var_book) -> dict:
         return (u is j) or (v is j)
 
     sub = nx.subgraph_view(g, filter_edge=_filter)
-    return {(comp := comps[0 if u is j else -1]): var_book[comp]
-            for u, v, comps in sub.edges(data=COMPS)}
+    return {(comp := comps[0 if u is j else -1]): var_book[comp] for u, v, comps in sub.edges(data=COMPS)}
 
 
 class KirchhoffWDerivatives(Kirchhoff):
@@ -530,11 +531,14 @@ class KirchhoffWDerivatives(Kirchhoff):
     ~stream.calculations.inertia.Inertia
     """
 
-    def __init__(self, graph: MultiDiGraph, *abs_pressure_comps: Hashable,
-                 reference_node: tuple[Hashable, Pascal] = None,
-                 name: str = 'Kirchhoff'):
-        super().__init__(graph, *abs_pressure_comps,
-                         reference_node=reference_node, name=name)
+    def __init__(
+        self,
+        graph: MultiDiGraph,
+        *abs_pressure_comps: Hashable,
+        reference_node: tuple[Hashable, Pascal] = None,
+        name: str = "Kirchhoff",
+    ):
+        super().__init__(graph, *abs_pressure_comps, reference_node=reference_node, name=name)
         self._n_ = super().__len__()
 
     def indices(self, variable: Name, asking=None) -> Place:
@@ -542,12 +546,13 @@ class KirchhoffWDerivatives(Kirchhoff):
             return super().indices("mdot", asking=asking) + self._n_
         return super().indices(variable, asking=asking)
 
-    def __len__(self): return self._n_ + self._n
+    def __len__(self):
+        return self._n_ + self._n
 
     @property
     def mass_vector(self) -> Sequence[bool]:
         M = np.zeros(len(self), dtype=bool)
-        M[:self._n] = True
+        M[: self._n] = True
         return M
 
     @property
@@ -556,10 +561,9 @@ class KirchhoffWDerivatives(Kirchhoff):
         mdots2 = {(*k, "mdot2"): v + self._n_ for k, v in mdots.items()}
         return super().variables | keymap(to_str, mdots2)
 
-    def calculate(self, variables: Sequence[float], *,
-                  pressure) -> Array1D:
-        super_vars = variables[:self._n_]
-        mdots2 = variables[-self._n:]
+    def calculate(self, variables: Sequence[float], *, pressure) -> Array1D:
+        super_vars = variables[: self._n_]
+        mdots2 = variables[-self._n :]
         algebraic = super().calculate(super_vars, pressure=pressure)
         return concat(mdots2, algebraic)
 
@@ -569,4 +573,4 @@ class KirchhoffWDerivatives(Kirchhoff):
             mdot=slice(0, self._n),
             abs_pressure=slice(self._n, self._n_),
             mdot2=slice(self._n_, len(self)),
-            )
+        )

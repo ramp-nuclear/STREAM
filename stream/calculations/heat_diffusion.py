@@ -76,6 +76,7 @@ are :math:`r`-dependent. Specifically:
 The thermal resistance is then computed in the same manner using the distances
 between cell centers :math:`\Delta r, \Delta z`.
 """
+
 import logging
 import pickle
 from dataclasses import astuple, dataclass
@@ -90,20 +91,44 @@ from numba import njit
 from stream.calculation import Calculation, unpacked, CalcState
 from stream.physical_models.heat_transfer_coefficient import wall_temperature
 from stream.units import (
-    Array1D, Array2D, Celsius, CPerS, JPerKgK, KgPerM3, M2KPerW,
-    Meter, Meter2, Meter3, Name, Place, Value, Watt, WPerM2, WPerM2K, WPerMK,
-    )
+    Array1D,
+    Array2D,
+    Celsius,
+    CPerS,
+    JPerKgK,
+    KgPerM3,
+    M2KPerW,
+    Meter,
+    Meter2,
+    Meter3,
+    Name,
+    Place,
+    Value,
+    Watt,
+    WPerM2,
+    WPerM2K,
+    WPerMK,
+)
 from stream.utilities import (
-    dataclass_map, harmonic_mean as in_parallel, if_is, pair_mean, STREAM_DEBUG,
-    )
+    dataclass_map,
+    harmonic_mean as in_parallel,
+    if_is,
+    pair_mean,
+    STREAM_DEBUG,
+)
 
 logger = logging.getLogger("stream.fuel")
 
-__all__ = ["cylindrical_areas_volumes", "Fuel",
-           "r_diffusion", "rz_diffusion",
-           "x_diffusion", "xz_diffusion",
-           "Solid", "Walls",
-           ]
+__all__ = [
+    "cylindrical_areas_volumes",
+    "Fuel",
+    "r_diffusion",
+    "rz_diffusion",
+    "x_diffusion",
+    "xz_diffusion",
+    "Solid",
+    "Walls",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,14 +144,12 @@ class Walls:
 
     @property
     def x(self):
-        """The x (lateral) values of the walls
-        """
+        """The x (lateral) values of the walls"""
         return self.left, self.right
 
     @property
     def z(self):
-        """The z (axial) values of the walls.
-        """
+        """The z (axial) values of the walls."""
         return self.top, self.bottom
 
 
@@ -172,10 +195,16 @@ class Solid:
         return cls(*(f.reshape(array.shape) for f in fields))
 
 
-def x_diffusion(T: Celsius, T_walls: Walls,
-                material: Solid, power: Watt,
-                x: Meter, z: Meter,
-                contacts: Sequence[WPerM2K], y: Meter) -> CPerS:
+def x_diffusion(
+    T: Celsius,
+    T_walls: Walls,
+    material: Solid,
+    power: Watt,
+    x: Meter,
+    z: Meter,
+    contacts: Sequence[WPerM2K],
+    y: Meter,
+) -> CPerS:
     """1D heat diffusion (`x`) in a 2D mesh (`x`, `z`)
 
     Calculates the temporal derivative of temperatures
@@ -214,15 +243,27 @@ def x_diffusion(T: Celsius, T_walls: Walls,
     volumes = y * np.outer(dz, dx)
 
     return generic_2d_diffusion(
-        T=T, T_walls=T_walls, s=material, power=power, dr=(dx, dz),
-        areas=(x_areas,), volumes=volumes, contacts=contacts)
+        T=T,
+        T_walls=T_walls,
+        s=material,
+        power=power,
+        dr=(dx, dz),
+        areas=(x_areas,),
+        volumes=volumes,
+        contacts=contacts,
+    )
 
 
-def xz_diffusion(T: Celsius, T_walls: Walls,
-                 material: Solid, power: Watt,
-                 x: Meter, z: Meter,
-                 contacts: Sequence[WPerM2K],
-                 y: Meter) -> CPerS:
+def xz_diffusion(
+    T: Celsius,
+    T_walls: Walls,
+    material: Solid,
+    power: Watt,
+    x: Meter,
+    z: Meter,
+    contacts: Sequence[WPerM2K],
+    y: Meter,
+) -> CPerS:
     """2D heat diffusion in a 2D mesh (`x`, `z`)
 
     Calculates the temporal derivative of temperatures
@@ -265,8 +306,15 @@ def xz_diffusion(T: Celsius, T_walls: Walls,
     volumes = y * np.outer(dz, dx)
 
     return generic_2d_diffusion(
-        T=T, T_walls=T_walls, s=material, power=power, dr=(dx, dz),
-        areas=(x_areas, z_areas), volumes=volumes, contacts=contacts)
+        T=T,
+        T_walls=T_walls,
+        s=material,
+        power=power,
+        dr=(dx, dz),
+        areas=(x_areas, z_areas),
+        volumes=volumes,
+        contacts=contacts,
+    )
 
 
 @njit
@@ -310,10 +358,16 @@ def cylindrical_areas_volumes(r: Meter, z: Meter) -> tuple[Meter2, Meter2, Meter
     return r_areas, z_areas, volumes
 
 
-def rz_diffusion(T: Celsius, T_walls: Walls,
-                 material: Solid, power: Watt,
-                 x: Meter, z: Meter,
-                 contacts: Sequence[WPerM2K], **_) -> CPerS:
+def rz_diffusion(
+    T: Celsius,
+    T_walls: Walls,
+    material: Solid,
+    power: Watt,
+    x: Meter,
+    z: Meter,
+    contacts: Sequence[WPerM2K],
+    **_,
+) -> CPerS:
     """2D heat diffusion in a 2D cylindrical mesh (`r`, `z`).
     Assumes azimuthal symmetry.
 
@@ -346,14 +400,27 @@ def rz_diffusion(T: Celsius, T_walls: Walls,
     dz = np.diff(z)
     r_areas, z_areas, volumes = cylindrical_areas_volumes(r=x, z=z)
     return generic_2d_diffusion(
-        T=T, T_walls=T_walls, s=material, power=power, dr=(dx, dz),
-        areas=(r_areas, z_areas), volumes=volumes, contacts=contacts)
+        T=T,
+        T_walls=T_walls,
+        s=material,
+        power=power,
+        dr=(dx, dz),
+        areas=(r_areas, z_areas),
+        volumes=volumes,
+        contacts=contacts,
+    )
 
 
-def r_diffusion(T: Celsius, T_walls: Walls,
-                material: Solid, power: Watt,
-                x: Meter, z: Meter,
-                contacts: Sequence[WPerM2K], **_) -> CPerS:
+def r_diffusion(
+    T: Celsius,
+    T_walls: Walls,
+    material: Solid,
+    power: Watt,
+    x: Meter,
+    z: Meter,
+    contacts: Sequence[WPerM2K],
+    **_,
+) -> CPerS:
     """1D heat diffusion (`r`) in a 2D cylindrical mesh (`r`, `z`).
     Assumes azimuthal symmetry.
 
@@ -386,14 +453,27 @@ def r_diffusion(T: Celsius, T_walls: Walls,
     dz = np.diff(z)
     r_areas, z_areas, volumes = cylindrical_areas_volumes(r=x, z=z)
     return generic_2d_diffusion(
-        T=T, T_walls=T_walls, s=material, power=power, dr=(dx, dz),
-        areas=(r_areas,), volumes=volumes, contacts=contacts)
+        T=T,
+        T_walls=T_walls,
+        s=material,
+        power=power,
+        dr=(dx, dz),
+        areas=(r_areas,),
+        volumes=volumes,
+        contacts=contacts,
+    )
 
 
-def generic_2d_diffusion(T: Celsius, T_walls: Walls, s: Solid, power: Watt,
-                         dr: Sequence[Meter], areas: Sequence[Meter2],
-                         volumes: Meter3,
-                         contacts: Sequence[WPerM2K]) -> CPerS:
+def generic_2d_diffusion(
+    T: Celsius,
+    T_walls: Walls,
+    s: Solid,
+    power: Watt,
+    dr: Sequence[Meter],
+    areas: Sequence[Meter2],
+    volumes: Meter3,
+    contacts: Sequence[WPerM2K],
+) -> CPerS:
     """
     Calculate the temporal derivative of temperatures
     according to the heat equation.
@@ -431,10 +511,12 @@ diffs = x_diff, z_diff = np.diff, partial(np.diff, axis=0)
 pair_means = x_pair_mean, z_pair_mean = pair_mean, partial(pair_mean, axis=0)
 
 
-def _x_bulk(a): return a[:, 1:-1]
+def _x_bulk(a):
+    return a[:, 1:-1]
 
 
-def _z_bulk(a): return a[1:-1, :]
+def _z_bulk(a):
+    return a[1:-1, :]
 
 
 bulks = _x_bulk, _z_bulk
@@ -446,8 +528,7 @@ edges = (left, right, top, bottom)
 
 
 @cached(cache={}, key=lambda *args, **kwargs: pickle.dumps((args, kwargs)))
-def _resistances(dr: Sequence[Meter], contacts: Sequence[WPerM2K], k: WPerMK
-                 ) -> Sequence[M2KPerW]:
+def _resistances(dr: Sequence[Meter], contacts: Sequence[WPerM2K], k: WPerMK) -> Sequence[M2KPerW]:
     """
     Compute heat resistance at each cell face, given medium conductivity
     at each cell and contact heat transfer coefficient at each cell face.
@@ -470,19 +551,19 @@ def _resistances(dr: Sequence[Meter], contacts: Sequence[WPerM2K], k: WPerMK
     rs = [ds / k for ds in np.meshgrid(*dr)]
     cs = contacts
 
-    faces = (r.take(**edge) / 2 + 1 / c.take(**edge) for edge, r, c
-             in zip(edges, interleave(rs, rs), interleave(cs, cs)))
+    faces = (
+        r.take(**edge) / 2 + 1 / c.take(**edge) for edge, r, c in zip(edges, interleave(rs, rs), interleave(cs, cs))
+    )
 
-    edges_in_bulk = (p_mean(r) + 1 / bulk(c) for r, c, p_mean, bulk
-                     in zip(rs, cs, pair_means, bulks))
+    edges_in_bulk = (p_mean(r) + 1 / bulk(c) for r, c, p_mean, bulk in zip(rs, cs, pair_means, bulks))
 
-    return [stack((face1, bulk_faces, face2))
-            for bulk_faces, (face1, face2), stack
-            in zip(edges_in_bulk, chunked(faces, 2), stacks)]
+    return [
+        stack((face1, bulk_faces, face2))
+        for bulk_faces, (face1, face2), stack in zip(edges_in_bulk, chunked(faces, 2), stacks)
+    ]
 
 
-def _fluxes(T: Celsius, T_walls: Walls, resistances: Sequence[M2KPerW]
-            ) -> Sequence[WPerM2]:
+def _fluxes(T: Celsius, T_walls: Walls, resistances: Sequence[M2KPerW]) -> Sequence[WPerM2]:
     """
     Given Temperatures at medium and boundaries, and resistances
     Parameters
@@ -498,9 +579,10 @@ def _fluxes(T: Celsius, T_walls: Walls, resistances: Sequence[M2KPerW]
     fluxes: Sequence[WPerM2]
         Heat flux at each cell face, divided into directions (x, z)
     """
-    return [diff(stack((wall1, T, wall2))) / r
-            for diff, stack, (wall1, wall2), r
-            in zip(diffs, stacks, (T_walls.x, T_walls.z), resistances)]
+    return [
+        diff(stack((wall1, T, wall2))) / r
+        for diff, stack, (wall1, wall2), r in zip(diffs, stacks, (T_walls.x, T_walls.z), resistances)
+    ]
 
 
 def _flows(fluxes: Sequence[WPerM2], areas: Sequence[Meter2]) -> Sequence[Watt]:
@@ -523,10 +605,11 @@ def _flows(fluxes: Sequence[WPerM2], areas: Sequence[Meter2]) -> Sequence[Watt]:
         where each entry's length is the number of cells in that dimension
         (that is, 1 less than areas' entries).
     """
-    return [diff(flux * a) for diff, flux, a, in zip(diffs, fluxes, areas)]
+    return [diff(flux * a) for diff, flux, a in zip(diffs, fluxes, areas)]
 
 
-def _fill(val, shape): return np.full(shape, val)
+def _fill(val, shape):
+    return np.full(shape, val)
 
 
 wall_or_default = dataclass_map(Walls, if_is)
@@ -569,14 +652,20 @@ class Fuel(Calculation):
     - ``power_shape`` is assumed uniform.
     """
 
-    def __init__(self, z_boundaries: Meter, x_boundaries: Meter,
-                 material: Solid, y_length: Meter,
-                 power_shape: Array2D,
-                 heat_func: Callable = x_diffusion,
-                 T_wall_func: Callable = wall_temperature,
-                 x_contacts: WPerM2K = None, z_contacts: WPerM2K = None,
-                 meat_indices: Array2D = None,
-                 name: str = 'Fuel'):
+    def __init__(
+        self,
+        z_boundaries: Meter,
+        x_boundaries: Meter,
+        material: Solid,
+        y_length: Meter,
+        power_shape: Array2D,
+        heat_func: Callable = x_diffusion,
+        T_wall_func: Callable = wall_temperature,
+        x_contacts: WPerM2K = None,
+        z_contacts: WPerM2K = None,
+        meat_indices: Array2D = None,
+        name: str = "Fuel",
+    ):
         """
         Parameters
         ----------
@@ -606,7 +695,7 @@ class Fuel(Calculation):
             deposited (at meat_indices = 1).
         name: str
             Name of the calculation.
-        
+
         """
         self.name = name
         # Geometry
@@ -627,24 +716,31 @@ class Fuel(Calculation):
         self.z_contacts = if_is(z_contacts, np.full(shape + [1, 0], np.inf))
         self.meat = if_is(meat_indices, np.ones(shape))
 
-        last_contacts = Walls(left=self.x_contacts[:, 0],
-                              right=self.x_contacts[:, -1],
-                              top=self.z_contacts[0, :],
-                              bottom=self.z_contacts[-1, :])
+        last_contacts = Walls(
+            left=self.x_contacts[:, 0],
+            right=self.x_contacts[:, -1],
+            top=self.z_contacts[0, :],
+            bottom=self.z_contacts[-1, :],
+        )
         k = self.material.conductivity
-        to_walls_conductivity = Walls(left=2 * k[:, 0] / self.dx[0],
-                                      right=2 * k[:, -1] / self.dx[-1],
-                                      top=2 * k[0, :] / self.dz[0],
-                                      bottom=2 * k[-1, :] / self.dz[-1])
+        to_walls_conductivity = Walls(
+            left=2 * k[:, 0] / self.dx[0],
+            right=2 * k[:, -1] / self.dx[-1],
+            top=2 * k[0, :] / self.dz[0],
+            bottom=2 * k[-1, :] / self.dz[-1],
+        )
         self.h_to_wall = in_par_walls(to_walls_conductivity, last_contacts)
         self.power_shape = power_shape.flatten()
 
         # Equations
-        self.heat_eq = partial(heat_func,
-                               material=self.material,
-                               x=self.x_bounds, z=self.z_bounds,
-                               contacts=(self.x_contacts, self.z_contacts),
-                               y=self.y_length)
+        self.heat_eq = partial(
+            heat_func,
+            material=self.material,
+            x=self.x_bounds,
+            z=self.z_bounds,
+            contacts=(self.x_contacts, self.z_contacts),
+            y=self.y_length,
+        )
         self.walls_eq = dataclass_map(Walls, T_wall_func)
 
         # Variables
@@ -652,16 +748,24 @@ class Fuel(Calculation):
             T=slice(0, n * m),
             T_wall_left=slice(n * m, (1 + n) * m),
             T_wall_right=slice((1 + n) * m, (2 + n) * m),
-            )
+        )
         logger.log(STREAM_DEBUG, f"New {self.name}, {m} by {n}")
 
     @unpacked
-    def calculate(self, variables: np.array, *, power: Watt,
-                  T_left: Celsius = None, T_right: Celsius = None,
-                  T_top: Celsius = None, T_bottom: Celsius = None,
-                  h_left: WPerM2K = None, h_right: WPerM2K = None,
-                  h_top: WPerM2K = None, h_bottom: WPerM2K = None,
-                  ) -> Array1D:
+    def calculate(
+        self,
+        variables: np.array,
+        *,
+        power: Watt,
+        T_left: Celsius = None,
+        T_right: Celsius = None,
+        T_top: Celsius = None,
+        T_bottom: Celsius = None,
+        h_left: WPerM2K = None,
+        h_right: WPerM2K = None,
+        h_top: WPerM2K = None,
+        h_bottom: WPerM2K = None,
+    ) -> Array1D:
         r"""
         Calculating temperatures inside fuel and at the edges.
         If wall temperatures are not given
@@ -701,12 +805,8 @@ class Fuel(Calculation):
         power_mat[self.meat == 1] = power * self.power_shape
 
         T_last_cell = Walls(left=T[:, 0], right=T[:, -1], top=T[0, :], bottom=T[-1, :])
-        h_extraneous = wall_or_default(
-            Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom)
-            )
-        T_extraneous = wall_or_default(
-            Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom), T_last_cell
-            )
+        h_extraneous = wall_or_default(Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom))
+        T_extraneous = wall_or_default(Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom), T_last_cell)
 
         T_walls = self.walls_eq(T_extraneous, T_last_cell, h_extraneous, self.h_to_wall)
 
@@ -722,12 +822,12 @@ class Fuel(Calculation):
             T_top=self._indices[-1, :],
             T_bottom=self._indices[0, :],
             T=self._indices[self.meat == 1],
-            )[variable]
+        )[variable]
 
     @property
     def mass_vector(self) -> Sequence[bool]:
         mass = np.ones(len(self), dtype=bool)
-        mass[self.n * self.m:] = False
+        mass[self.n * self.m :] = False
         return mass
 
     def __len__(self) -> int:
@@ -735,14 +835,15 @@ class Fuel(Calculation):
         return (2 + self.n) * self.m
 
     @property
-    def variables(self) -> dict[str, Place]: return self._vars
+    def variables(self) -> dict[str, Place]:
+        return self._vars
 
     def save(self, vector: Sequence[float], **_) -> CalcState:
         state = super().save(vector, **_)
-        state['T'] = state['T'].reshape(self.shape)
+        state["T"] = state["T"].reshape(self.shape)
         return state
 
     def load(self, state: CalcState) -> Array1D:
-        return super().load(state=state | {'T': np.asarray(state['T']).flatten()})
+        return super().load(state=state | {"T": np.asarray(state["T"]).flatten()})
 
     load.__doc__ = Calculation.load.__doc__

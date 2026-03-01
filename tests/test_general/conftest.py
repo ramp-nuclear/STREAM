@@ -8,12 +8,8 @@ from stream.units import mm
 from stream.utilities import normalize
 
 normal_floats = floats(allow_infinity=False, allow_nan=False)
-medium_floats = floats(
-    allow_infinity=False, allow_nan=False, max_value=1e6, min_value=-1e6
-)
-pos_medium_floats = floats(
-    allow_infinity=False, allow_nan=False, max_value=1e6, min_value=1e-6
-)
+medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=-1e6)
+pos_medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=1e-6)
 non_neg_medium_integers = integers(max_value=int(1e6), min_value=0)
 pos_floats = floats(0, allow_nan=False, allow_infinity=False, exclude_min=True)
 
@@ -46,15 +42,12 @@ def MTR_fuel_and_channel(z_N: int, fuel_N: int, clad_N: int) -> tuple[Fuel, Chan
         material=material,
         meat_indices=meat,
         power_shape=normalize(np.ones(z_N * fuel_N)),
-        y_length=meat_width
-        )
+        y_length=meat_width,
+    )
 
     channel_depth = 2 * mm
     channel_width = 70 * mm
-    pipe = EffectivePipe.rectangular(length=1,
-                                     edge1=channel_depth,
-                                     edge2=channel_width,
-                                     heated_edge=meat_width)
+    pipe = EffectivePipe.rectangular(length=1, edge1=channel_depth, edge2=channel_width, heated_edge=meat_width)
     C = ChannelAndContacts(z_boundaries=zb, fluid=light_water, pipe=pipe)
 
     return F, C

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from stream.units import (DecayHeatFunction, MeVPerFission, MeVPerS, PerS, Second)
+from stream.units import DecayHeatFunction, MeVPerFission, MeVPerS, PerS, Second
 
 __all__ = ["read", "Standard", "Source", "contribution", "fp_inner_"]
 
@@ -40,8 +40,7 @@ def write(standard: Standard, source: Source, data: pd.DataFrame):
     data.to_csv(_to_filepath(standard, source), index=False)
 
 
-def _process_standard(standard: Standard, source: Source
-                      ) -> tuple[PerS, MeVPerS]:
+def _process_standard(standard: Standard, source: Source) -> tuple[PerS, MeVPerS]:
     df = read(standard, source)
     alpha: MeVPerS = df.alpha.to_numpy()
     lamda: PerS = df.lamda.to_numpy()
@@ -85,10 +84,10 @@ def contribution(standard: Standard, source: Source) -> DecayHeatFunction:
 
 
 def fp_inner_(
-        t: Second,
-        T: Second,
-        lamda: PerS,
-        alpha: MeVPerS,
+    t: Second,
+    T: Second,
+    lamda: PerS,
+    alpha: MeVPerS,
 ) -> MeVPerFission:
     r"""Implements :eq:`FP`, the decay heat stemming from fission products decays.
 
@@ -115,7 +114,4 @@ def fp_inner_(
     array([1.])
     """
 
-    return (
-            (alpha / lamda) * (-np.expm1(-lamda * T))
-            @ np.exp(-np.outer(lamda, t))
-    )
+    return (alpha / lamda) * (-np.expm1(-lamda * T)) @ np.exp(-np.outer(lamda, t))

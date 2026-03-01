@@ -93,7 +93,7 @@ cm = 1e-2 * meter
 mm = 1e-3 * meter
 hour = 3600 * second
 gram = 1e-3
-cm3 = cm ** 3
+cm3 = cm**3
 
 # Factors
 mega = 1e6

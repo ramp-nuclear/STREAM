@@ -5,6 +5,7 @@ Reporting
 A set of utilities for analysing an :ref:`Aggregator` system before solving or as part
 of a debugging process
 """
+
 from enum import Enum
 from inspect import Parameter, signature
 from typing import Callable, Iterator, Literal
@@ -16,20 +17,24 @@ from stream import Calculation
 from stream.aggregator import Aggregator
 
 
-def _filter_vars(agr: Aggregator, c: Calculation,
-                 condition: Callable[[Aggregator, Calculation, str, Parameter], bool]):
+def _filter_vars(
+    agr: Aggregator,
+    c: Calculation,
+    condition: Callable[[Aggregator, Calculation, str, Parameter], bool],
+):
     """Filters out variable names according to a given condition"""
-    return [name for name, param in signature(c.calculate).parameters.items()
-            if condition(agr, c, name, param)]
+    return [name for name, param in signature(c.calculate).parameters.items() if condition(agr, c, name, param)]
 
 
 def _check_unset(agr: Aggregator, c: Calculation, name: str, param: Parameter) -> bool:
     """Checks whether an input (name, parameter) is included in the Aggregator. `kwargs`
     are regarded as set, since they are provisional.
     """
-    return ((param.kind is not Parameter.VAR_KEYWORD)
-            and (name not in agr.external.get(c, []))
-            and (name not in agr.funcs.get(c, [])))
+    return (
+        (param.kind is not Parameter.VAR_KEYWORD)
+        and (name not in agr.external.get(c, []))
+        and (name not in agr.funcs.get(c, []))
+    )
 
 
 def _check_missing(agr: Aggregator, c: Calculation, name: str, param: Parameter) -> bool:
@@ -46,9 +51,9 @@ def _entries(agr: Aggregator) -> Iterator:
             str(c),
             type(c).__name__,
             f"{section.start} - {section.stop}",
-            ', '.join(_filter_vars(agr, c, _check_unset)[1:]),
-            ', '.join(_filter_vars(agr, c, _check_set_externally)),
-            ', '.join(_filter_vars(agr, c, _check_missing)[1:])
+            ", ".join(_filter_vars(agr, c, _check_unset)[1:]),
+            ", ".join(_filter_vars(agr, c, _check_set_externally)),
+            ", ".join(_filter_vars(agr, c, _check_missing)[1:]),
         )
 
 
@@ -67,11 +72,7 @@ def _rich_table_format(agr: Aggregator) -> Table:
 
 
 def description(agr: Aggregator) -> str:
-    return (
-        f"Contains {len(agr)} Equations, "
-        f"{len(agr.graph.nodes)} Nodes, "
-        f"{len(agr.graph.edges)} Edges.\n"
-    )
+    return f"Contains {len(agr)} Equations, {len(agr.graph.nodes)} Nodes, {len(agr.graph.edges)} Edges.\n"
 
 
 def _markdown_report(agr: Aggregator) -> str:
@@ -90,9 +91,10 @@ class Printer(Enum):
     RAW = "raw"
 
 
-def report(agr: Aggregator,
-           printer: Printer | Literal["jupyter", "terminal", "raw"] = Printer.JUPYTER
-           ) -> None:
+def report(
+    agr: Aggregator,
+    printer: Printer | Literal["jupyter", "terminal", "raw"] = Printer.JUPYTER,
+) -> None:
     r"""Print a report with useful information regarding an :ref:`Aggregator`
 
     Parameters
@@ -142,5 +144,7 @@ def report(agr: Aggregator,
         case Printer.RAW | Printer.RAW.value:
             print(_markdown_report(agr))
         case _:
-            raise ValueError(f"Printer '{printer}' is not registered, please use one "
-                             f"of the following: {list(v.value for v in Printer)}")
+            raise ValueError(
+                f"Printer '{printer}' is not registered, please use one "
+                f"of the following: {list(v.value for v in Printer)}"
+            )

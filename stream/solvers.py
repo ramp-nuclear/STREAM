@@ -24,6 +24,7 @@ to achieve a higher level of proficiency.
    +---------+--------------------------+-------------------------------+
 
 """
+
 import logging
 from typing import Callable, Sequence
 
@@ -103,7 +104,7 @@ def differential_algebraic(
     Returns
     -------
     solution: tuple[Array2D, Array1D]
-        The solution matrix: [time, variable], and the vector of times 
+        The solution matrix: [time, variable], and the vector of times
         in which it was calculated.
     """
 
@@ -156,17 +157,13 @@ def _dae_setup(
     return solve, time, y0, yp0
 
 
-def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array1D
-                         ) -> tuple[Array2D, Array1D]:
+def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array1D) -> tuple[Array2D, Array1D]:
     solution = solve(time, y0, yp0)
     t_end = time[-1]
     t, y, ydot = solution.values
     while (t_stopped := t[-1]) < t_end:
         new_time = concat([t_stopped], time[time > t_stopped])
-        logger.info(
-            "Continuous mode is on, restarted simulation from previous end time"
-            f" {t_stopped:.5f}."
-        )
+        logger.info(f"Continuous mode is on, restarted simulation from previous end time {t_stopped:.5f}.")
         try:
             new_solution = solve(new_time, y[-1], ydot[-1])
         except TransientRuntimeError as e:
@@ -214,13 +211,12 @@ def algebraic(
     solution: Array
         The solution matrix at requested times: [time, variable].
     """
+
     def _solve(_vec, _t):
         _sol = opt.root(F, _vec, (_t,), **options)
         if not _sol["success"]:
             timestr = f"At t={_t:.3f}, " if _t is not None else ""
-            raise AlgRuntimeError(
-                f"{timestr}Root Finding failed with the following message:\n" + _sol["message"]
-            )
+            raise AlgRuntimeError(f"{timestr}Root Finding failed with the following message:\n" + _sol["message"])
         return _sol.x
 
     if time is not None:

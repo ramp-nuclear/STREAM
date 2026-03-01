@@ -5,23 +5,43 @@ from typing import Literal, Protocol, Sequence
 import numpy as np
 
 from stream.physical_models.dimensionless import flow_regimes, Re_mdot, Gr
-from stream.physical_models.heat_transfer_coefficient.laminar import developing_laminar_h_spl, constant_Nusselt_h_spl, \
-    fully_developed_laminar_h_spl
-from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
-from stream.physical_models.heat_transfer_coefficient.turbulent import Dittus_Boelter_h_spl
+from stream.physical_models.heat_transfer_coefficient.laminar import (
+    developing_laminar_h_spl,
+    constant_Nusselt_h_spl,
+    fully_developed_laminar_h_spl,
+)
+from stream.physical_models.heat_transfer_coefficient.natural_convection import (
+    Elenbaas_h_spl,
+)
+from stream.physical_models.heat_transfer_coefficient.turbulent import (
+    Dittus_Boelter_h_spl,
+)
 from stream.substances import Liquid, LiquidFuncs
-from stream.units import (Celsius, KgPerS, Meter, Meter2, Value, WPerM2K, Pascal)
+from stream.units import Celsius, KgPerS, Meter, Meter2, Value, WPerM2K, Pascal
 from stream.utilities import lin_interp
 
 
 class SinglePhaseLiquidHTCExArgs(Protocol):
-    def __call__(self, *, coolant: Liquid, mdot: KgPerS, Dh: Meter, A: Meter2,
-                 T_cool: Celsius, T_wall: Celsius, coolant_funcs: LiquidFuncs,
-                 pressure: Pascal,
-                 # The following are here to weaken the constraint only, use with caution.
-                 h_spl=None, q_scb=None, film=None, incipience=None, partial_scb=None,
-                 develop_length=None,
-                 **_) -> WPerM2K:
+    def __call__(
+        self,
+        *,
+        coolant: Liquid,
+        mdot: KgPerS,
+        Dh: Meter,
+        A: Meter2,
+        T_cool: Celsius,
+        T_wall: Celsius,
+        coolant_funcs: LiquidFuncs,
+        pressure: Pascal,
+        # The following are here to weaken the constraint only, use with caution.
+        h_spl=None,
+        q_scb=None,
+        film=None,
+        incipience=None,
+        partial_scb=None,
+        develop_length=None,
+        **_,
+    ) -> WPerM2K:
         """Same as :class:`~.SinglePhaseLiquidHTC` except it accepts any additional
         keyword parameters.
         """
@@ -29,18 +49,18 @@ class SinglePhaseLiquidHTCExArgs(Protocol):
 
 
 def regime_dependent_h_spl(
-        coolant: Liquid,
-        mdot: KgPerS,
-        Dh: Meter,
-        A: Meter2,
-        T_cool: Celsius,
-        T_wall: Celsius,
-        re_bounds: tuple[Value, Value],
-        coolant_funcs: LiquidFuncs,
-        laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
-        turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
-        natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
-        **kwargs,
+    coolant: Liquid,
+    mdot: KgPerS,
+    Dh: Meter,
+    A: Meter2,
+    T_cool: Celsius,
+    T_wall: Celsius,
+    re_bounds: tuple[Value, Value],
+    coolant_funcs: LiquidFuncs,
+    laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
+    turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
+    natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
+    **kwargs,
 ) -> WPerM2K:
     r"""A flow-regime-dependent single phase heat transfer coefficient function.
 
@@ -87,8 +107,18 @@ def regime_dependent_h_spl(
 
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
 
-    inp = dict(coolant=coolant, mdot=mdot, Dh=Dh, A=A,
-               T_cool=T_cool, T_wall=T_wall, coolant_funcs=coolant_funcs) | kwargs
+    inp = (
+        dict(
+            coolant=coolant,
+            mdot=mdot,
+            Dh=Dh,
+            A=A,
+            T_cool=T_cool,
+            T_wall=T_wall,
+            coolant_funcs=coolant_funcs,
+        )
+        | kwargs
+    )
     h = np.empty(len(T_cool))
 
     h_turb = turbulent(**inp)
@@ -98,10 +128,16 @@ def regime_dependent_h_spl(
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
-    gr = Gr(coolant.density, mu := coolant.viscosity, coolant.thermal_expansion,
-            T_cool, T_wall, Dh)
+    gr = Gr(
+        coolant.density,
+        mu := coolant.viscosity,
+        coolant.thermal_expansion,
+        T_cool,
+        T_wall,
+        Dh,
+    )
     re_film = Re_mdot(mdot, A, Dh, mu)
-    nat = gr / (re_film ** 2) > 1
+    nat = gr / (re_film**2) > 1
     if np.any(nat):
         h[nat] = natural(**(inp | dict(coolant=coolant_funcs.to_properties(T_cool))))[nat]
 
@@ -109,7 +145,11 @@ def regime_dependent_h_spl(
 
 
 def maximal_h_spl(
-        hs: Sequence[SinglePhaseLiquidHTCExArgs] = (Elenbaas_h_spl, Dittus_Boelter_h_spl, developing_laminar_h_spl)
+    hs: Sequence[SinglePhaseLiquidHTCExArgs] = (
+        Elenbaas_h_spl,
+        Dittus_Boelter_h_spl,
+        developing_laminar_h_spl,
+    ),
 ) -> SinglePhaseLiquidHTCExArgs:
     """Creates a new SinglePhaseLiquidHTCExArgs function, which returns the maximal value out of the given functions.
 
@@ -124,13 +164,33 @@ def maximal_h_spl(
         A SPL HTC function with maximal values
     """
 
-    def _max_h(*, coolant: Liquid, mdot: KgPerS, Dh: Meter, A: Meter2,
-               T_cool: Celsius, T_wall: Celsius, coolant_funcs: LiquidFuncs, **kwargs) -> WPerM2K:
-        return reduce(np.maximum, (
-            h(coolant=coolant, mdot=mdot, Dh=Dh, A=A, T_cool=T_cool, T_wall=T_wall,
-              coolant_funcs=coolant_funcs, **kwargs)
-            for h in hs
-        ))
+    def _max_h(
+        *,
+        coolant: Liquid,
+        mdot: KgPerS,
+        Dh: Meter,
+        A: Meter2,
+        T_cool: Celsius,
+        T_wall: Celsius,
+        coolant_funcs: LiquidFuncs,
+        **kwargs,
+    ) -> WPerM2K:
+        return reduce(
+            np.maximum,
+            (
+                h(
+                    coolant=coolant,
+                    mdot=mdot,
+                    Dh=Dh,
+                    A=A,
+                    T_cool=T_cool,
+                    T_wall=T_wall,
+                    coolant_funcs=coolant_funcs,
+                    **kwargs,
+                )
+                for h in hs
+            ),
+        )
 
     return _max_h
 
@@ -157,9 +217,18 @@ class SPLMethod(Enum):
 
 
 def spl_htc(
-        name: SPLMethod | Literal["natural", "laminar", "laminar_constant_nu", "laminar_developed",
-        "turbulent", "regime_dependent", "maximal"],
-        **kwargs) -> SinglePhaseLiquidHTCExArgs:
+    name: SPLMethod
+    | Literal[
+        "natural",
+        "laminar",
+        "laminar_constant_nu",
+        "laminar_developed",
+        "turbulent",
+        "regime_dependent",
+        "maximal",
+    ],
+    **kwargs,
+) -> SinglePhaseLiquidHTCExArgs:
     r"""Create a Single Phase Liquid Heat Transfer Coefficient function chosen from the
     list below with `almost` uniform signatures.
     The main usage of this function is as input for :func:`~.wall_heat_transfer_coeff`.

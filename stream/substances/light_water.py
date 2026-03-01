@@ -18,7 +18,8 @@ from stream.units import (
     NPerM,
     PaS,
     Pascal,
-    WPerMK, PerC,
+    WPerMK,
+    PerC,
 )
 from stream.utilities import to_Fahrenheit
 
@@ -47,7 +48,7 @@ def _viscosity(T: Celsius) -> PaS:
     B = 8.705317e-3
     C = -0.088832314
     D = -9.657e-7
-    return np.exp((A + C * T) / (1 + B * T + D * T ** 2))
+    return np.exp((A + C * T) / (1 + B * T + D * T**2))
 
 
 @njit
@@ -77,7 +78,7 @@ def _specific_heat(T: Celsius) -> JPerKgK:
     B = -1.67507e-3
     C = -0.03189591
     D = -2.8748e-6
-    return np.sqrt((A + C * T) / (1 + B * T + D * T ** 2)) * kilo
+    return np.sqrt((A + C * T) / (1 + B * T + D * T**2)) * kilo
 
 
 @njit
@@ -102,7 +103,7 @@ def _conductivity(T: Celsius) -> WPerMK:
     B = 1.8774171e-3
     C = -8.1790e-6
     D = 5.66294775e-9
-    return np.abs(A + B * T + C * T ** 2 + D * T ** 3)
+    return np.abs(A + B * T + C * T**2 + D * T**3)
 
 
 @njit
@@ -129,7 +130,7 @@ def _density(T: Celsius) -> KgPerM3:
     B = -0.046283
     C = -7.9738e-4
     TF = to_Fahrenheit(T)
-    return np.abs(A + B * TF + C * TF ** 2)
+    return np.abs(A + B * TF + C * TF**2)
 
 
 @njit
@@ -160,7 +161,7 @@ def _thermal_expansion(T: Celsius) -> PerC:
     B = -0.046283
     C = -7.9738e-4
     TF = to_Fahrenheit(T)
-    return - 1.8 * (B + 2 * C * TF) / _density(T)
+    return -1.8 * (B + 2 * C * TF) / _density(T)
 
 
 @njit
@@ -193,7 +194,7 @@ def _sat_temperature(P: Pascal) -> Celsius:
     B = -0.1063030
     C = 24.2278298
     D = 2.951e-4
-    return (A + C * X) / (1 + B * X + D * X ** 2)
+    return (A + C * X) / (1 + B * X + D * X**2)
 
 
 @njit
@@ -220,7 +221,7 @@ def _latent_heat(T: Celsius) -> JPerKg:
     B = -11742.337953
     C = 6.336845
     D = -0.049241
-    return 1e3 * np.sqrt(np.abs(A + B * T + C * T ** 2 + D * T ** 3))
+    return 1e3 * np.sqrt(np.abs(A + B * T + C * T**2 + D * T**3))
 
 
 @njit
@@ -247,7 +248,7 @@ def _surface_tension(T: Celsius) -> NPerM:
     A = 235.8e-3
     B = 1.256
     C = -0.625
-    return A * (X ** B) * np.abs(1 + C * X)
+    return A * (X**B) * np.abs(1 + C * X)
 
 
 @njit
@@ -278,9 +279,7 @@ def _vapor_density(T: Celsius) -> KgPerM3:
     F = -4.227966e-8
     G = 2.867976e-7
     H = 2.594175e-11
-    return (A + C * T + E * T ** 2 + G * T ** 3) / (
-        1 + B * T + D * T ** 2 + F * T ** 3 + H * T ** 4
-    )
+    return (A + C * T + E * T**2 + G * T**3) / (1 + B * T + D * T**2 + F * T**3 + H * T**4)
 
 
 light_water = LiquidFuncs(

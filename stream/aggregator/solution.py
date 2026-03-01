@@ -6,6 +6,7 @@ import numpy as np
 
 from stream.units import Array1D, Array2D, Value
 
+
 @dataclass(slots=True, frozen=True)
 class Solution:
     """The result of asking an :class:`.Aggregator` to solve a system of equations.
@@ -19,6 +20,7 @@ class Solution:
         Shaped as (len(time), len(state_vector))
 
     """
+
     time: Array1D
     data: Array2D
 

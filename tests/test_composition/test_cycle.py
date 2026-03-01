@@ -4,8 +4,13 @@ import pytest
 from stream.aggregator import VARS, CalculationGraph
 from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
 from stream.composition.cycle import (
-    flow_edge, flow_graph, flow_graph_to_aggregator, in_parallel, in_series,
-    kirchhoffify)
+    flow_edge,
+    flow_graph,
+    flow_graph_to_aggregator,
+    in_parallel,
+    in_series,
+    kirchhoffify,
+)
 
 
 def test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs():
@@ -135,9 +140,7 @@ def test_flow_graph_to_agr_for_2_junctions_2_comps_has_correct_edges():
 
 def test_flow_graph_to_agr_for_2_junction_and_a_virtual_junction_has_correct_edges():
     # noinspection PyTypeChecker
-    fg = flow_graph(
-        flow_edge((J0 := Junction(), "A"), 1), flow_edge(("A", J1 := Junction()), 2)
-    )
+    fg = flow_graph(flow_edge((J0 := Junction(), "A"), 1), flow_edge(("A", J1 := Junction()), 2))
     a = flow_graph_to_aggregator(fg)
 
     assert a.graph[J0][1][VARS] == ("Tin",)

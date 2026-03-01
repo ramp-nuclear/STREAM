@@ -7,8 +7,14 @@ from stream.physical_models.dimensionless import Re_mdot, flow_regimes
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
 from stream.units import (
-    Celsius, KgPerS, Meter2, KgPerM3, Meter, Pascal, Value,
-    )
+    Celsius,
+    KgPerS,
+    Meter2,
+    KgPerM3,
+    Meter,
+    Pascal,
+    Value,
+)
 from stream.utilities import lin_interp
 
 
@@ -42,7 +48,7 @@ def turbulent_friction(re: Value, epsilon: Value = 0) -> Value:
     >>> turbulent_friction(5.0)
     0.0
     """
-    inlog = np.log10(epsilon + 21.25 / re ** 0.9)
+    inlog = np.log10(epsilon + 21.25 / re**0.9)
     outlog = np.log10(epsilon / 3.7 + (2.51 / re) * (1.14 - 2 * inlog))
     return np.nan_to_num((-2 * outlog) ** -2)
 
@@ -68,13 +74,11 @@ def Blasius_friction(re: Value) -> Value:
     >>> Blasius_friction(10_000)
     0.03164
     """
-    return 0.3164 / re ** 0.25
+    return 0.3164 / re**0.25
 
 
 @njit
-def Darcy_Weisbach_pressure_by_mdot(
-        mdot: KgPerS, rho: KgPerM3, f: Value, L: Meter, Dh: Meter, A: Meter2
-        ) -> Pascal:
+def Darcy_Weisbach_pressure_by_mdot(mdot: KgPerS, rho: KgPerM3, f: Value, L: Meter, Dh: Meter, A: Meter2) -> Pascal:
     r"""
     The Darcy-Weisbach equation relates pressure loss due to
     friction in pipe flow to the average velocity of an incompressible fluid:
@@ -118,7 +122,7 @@ def Darcy_Weisbach_pressure_by_mdot(
     >>> Darcy_Weisbach_pressure_by_mdot(mdot=-1., rho=1, f=1, L=1, Dh=1, A=1)
     -0.5
     """
-    return f * (mdot * np.abs(mdot) / (2 * rho * A ** 2)) * (L / Dh)
+    return f * (mdot * np.abs(mdot) / (2 * rho * A**2)) * (L / Dh)
 
 
 @njit
@@ -149,7 +153,7 @@ def viscosity_correction(heat_wet_ratio: Value, mu_ratio: Value) -> Value:
     >>> viscosity_correction(1., 2.)
     1.4948492486349383
     """
-    return 1 + heat_wet_ratio * (mu_ratio ** 0.58 - 1)
+    return 1 + heat_wet_ratio * (mu_ratio**0.58 - 1)
 
 
 def rectangular_laminar_correction(aspect_ratio: float) -> Value:
@@ -183,11 +187,8 @@ def rectangular_laminar_correction(aspect_ratio: float) -> Value:
     """
     assert 0.0 <= aspect_ratio <= 1.0, f"{aspect_ratio = } must be non-negative and less than 1"
     return (
-                   0.88919
-                   + 87.656
-                   * ((1 + aspect_ratio * (np.sqrt(2) - 1)) / (4 * (1 + aspect_ratio)) - np.sqrt(
-               2) / 8) ** 1.9
-           ) ** (-1)
+        0.88919 + 87.656 * ((1 + aspect_ratio * (np.sqrt(2) - 1)) / (4 * (1 + aspect_ratio)) - np.sqrt(2) / 8) ** 1.9
+    ) ** (-1)
 
 
 @njit
@@ -209,18 +210,17 @@ def laminar_friction(re: Value) -> Value:
 
 
 def regime_dependent_friction(
-        T_cool: Celsius,
-        T_wall: Celsius,
-        mdot: KgPerS,
-        fluid: LiquidFuncs,
-        pipe: EffectivePipe,
-        re_bounds: tuple[float, float],
-        k_R: float,
-        k_H: Callable[[float, float], float] | None = None,
-        turbulent: Callable[[Value], Value] = turbulent_friction,
-        laminar: Callable[[Value], Value] = laminar_friction,
-
-        ) -> Value:
+    T_cool: Celsius,
+    T_wall: Celsius,
+    mdot: KgPerS,
+    fluid: LiquidFuncs,
+    pipe: EffectivePipe,
+    re_bounds: tuple[float, float],
+    k_R: float,
+    k_H: Callable[[float, float], float] | None = None,
+    turbulent: Callable[[Value], Value] = turbulent_friction,
+    laminar: Callable[[Value], Value] = laminar_friction,
+) -> Value:
     r"""A flow-regime-dependent friction coefficient function.
 
     Parameters
@@ -277,7 +277,7 @@ def regime_dependent_friction(
         y1=f_lam[inter],
         y2=f_turb[inter],
         x=re_bulk[inter],
-        )
+    )
     f[turb] = f_turb[turb]
 
     heat_wet_ratio = pipe.heated_perimeter / pipe.wet_perimeter
@@ -286,24 +286,23 @@ def regime_dependent_friction(
     return f * (1.0 if k_H is None else k_H(heat_wet_ratio, mu_ratio))
 
 
-GeneralDarcyFactor = Callable[[Celsius, Celsius, KgPerS,
-                               LiquidFuncs, EffectivePipe], Value]
+GeneralDarcyFactor = Callable[[Celsius, Celsius, KgPerS, LiquidFuncs, EffectivePipe], Value]
 _DARCY_NAMES = {
     (_REGIME := "regime_dependent"): None,
     "laminar": laminar_friction,
     "turbulent": turbulent_friction,
     "Blasius": Blasius_friction,
-    }
+}
 
 
 def _re_friction(f: Callable[[Value, dict], Value], **kwargs) -> GeneralDarcyFactor:
     def _f(
-            T_cool: Celsius,
-            T_wall: Celsius,
-            mdot: KgPerS,
-            fluid: LiquidFuncs,
-            pipe: EffectivePipe,
-            ) -> Value:
+        T_cool: Celsius,
+        T_wall: Celsius,
+        mdot: KgPerS,
+        fluid: LiquidFuncs,
+        pipe: EffectivePipe,
+    ) -> Value:
         mu = fluid.viscosity(T_cool)
         re = Re_mdot(mdot=mdot, A=pipe.area, L=pipe.hydraulic_diameter, mu=mu)
         return f(re, **kwargs)
@@ -333,8 +332,8 @@ def _re_friction(f: Callable[[Value, dict], Value], **kwargs) -> GeneralDarcyFac
 
 
 def friction_factor(
-        name: Literal["regime_dependent", "laminar", "turbulent", "Blasius"], **kwargs
-        ) -> GeneralDarcyFactor:
+    name: Literal["regime_dependent", "laminar", "turbulent", "Blasius"], **kwargs
+) -> GeneralDarcyFactor:
     r"""Create a Darcy friction factor chosen from the list below with uniform signatures.
     The main usage of this function is as input for :func:`pressure_diff`.
 
@@ -369,16 +368,15 @@ def friction_factor(
         Darcy friction factor
     """
     if name == _REGIME:
+
         def _regime_dependent(
-                T_cool: Celsius,
-                T_wall: Celsius,
-                mdot: KgPerS,
-                fluid: LiquidFuncs,
-                pipe: EffectivePipe,
-                ) -> Value:
-            return regime_dependent_friction(
-                T_cool, T_wall, mdot, fluid, pipe, **kwargs
-                )
+            T_cool: Celsius,
+            T_wall: Celsius,
+            mdot: KgPerS,
+            fluid: LiquidFuncs,
+            pipe: EffectivePipe,
+        ) -> Value:
+            return regime_dependent_friction(T_cool, T_wall, mdot, fluid, pipe, **kwargs)
 
         _regime_dependent.__name__ = regime_dependent_friction.__name__
         _regime_dependent.__doc__ = regime_dependent_friction.__doc__

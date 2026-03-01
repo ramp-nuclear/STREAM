@@ -7,6 +7,7 @@ The main idea behind these implementations is that the graphical structure of an
 :class:`.Aggregator` object can be utilized to deduce the Jacobian sparsity, at least
 across :class:`.Calculation` boundaries.
 """
+
 from typing import Callable, Sequence, Protocol, Literal, TypeVar
 
 import numpy as np
@@ -21,14 +22,13 @@ StepStrategy = Callable[[Array1D], Array1D]
 T = TypeVar("T", bound=Value)
 
 
-def _default_step_strategy(y: T, *_) -> T: return 1e-12 + 1e-6 * np.abs(y)
+def _default_step_strategy(y: T, *_) -> T:
+    return 1e-12 + 1e-6 * np.abs(y)
 
 
 def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:
     indices = np.arange(len(agr))
-    a = {i: [calculation]
-         for calculation, section in agr.sections.items()
-         for i in indices[section]}
+    a = {i: [calculation] for calculation, section in agr.sections.items() for i in indices[section]}
     for v, d in agr.external.items():
         for name, ud in d.items():
             for u, place in ud.items():
@@ -53,6 +53,7 @@ def _inner(fy, h, t, yh, associated_calculations, *, agr, jac, cj=None):
 
 class JacFuncDAE(Protocol):
     """Protocol for the signature one should expect from the returned function."""
+
     def __call__(self, t, y: np.ndarray, ydot: Value, Gy: Value, cj: Value, J: Array2D) -> Literal[0]:
         """A function that edits the Jacobian J as its output using the current solver values.
         This signature is required by the DAE solver and not of our choice.
@@ -114,8 +115,8 @@ def DAE_jacobian(agr: Aggregator, step_strategy: StepStrategyWithydot = _default
 class JacFuncALG(Protocol):
     """Protocol for the jacobian calculation function used in the algebraic solver.
     It computes the jacobian at a given time and a given state, with the aggregator baked in."""
-    def __call__(self, y, t=0) -> Array2D:
-        ...
+
+    def __call__(self, y, t=0) -> Array2D: ...
 
 
 def ALG_jacobian(agr: Aggregator, step_strategy: StepStrategy = _default_step_strategy) -> JacFuncALG:

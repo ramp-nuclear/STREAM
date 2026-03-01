@@ -51,6 +51,7 @@ References
     Nuclear Science and technology, vol. 35, no. 12, pp. 943-951, 1998.
 .. [#BPR] CONVEC v 3.40, section 7.2.4, page 20, Revision II
 """
+
 from typing import Callable
 
 import numpy as np
@@ -60,7 +61,17 @@ from stream.physical_models.dimensionless import Pe
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import Liquid
 from stream.units import (
-    Celsius, JPerKgK, KgPerS, Meter, MPerS, MPerS2, Pascal, Watt, WPerM2, g as gravity, Value,
+    Celsius,
+    JPerKgK,
+    KgPerS,
+    Meter,
+    MPerS,
+    MPerS2,
+    Pascal,
+    Watt,
+    WPerM2,
+    g as gravity,
+    Value,
     Meter2,
 )
 from stream.utilities import directed
@@ -73,7 +84,7 @@ __all__ = [
     "Sudo_Kaminaga_CHF",
     "Whittle_Forgan_OFI",
     "boiling_power",
-    ]
+]
 
 
 def Saha_Zuber_OSV(T_bulk: Celsius, coolant: Liquid, u: MPerS, Dh: Meter) -> WPerM2:
@@ -122,7 +133,7 @@ def Saha_Zuber_OSV(T_bulk: Celsius, coolant: Liquid, u: MPerS, Dh: Meter) -> WPe
         L=Dh,
         cp=(cp := coolant.specific_heat),
         k=(k := coolant.conductivity),
-        )
+    )
     G = rho * np.abs(u)
     Nu_c = 455
     St_c = 0.0065
@@ -130,10 +141,16 @@ def Saha_Zuber_OSV(T_bulk: Celsius, coolant: Liquid, u: MPerS, Dh: Meter) -> WPe
 
 
 def Saha_Zuber_OSV_computed_bulk(
-        T_inlet: Celsius, coolant: Liquid, mdot: KgPerS, Dh: Meter, area: Meter2,
-        heated_perimeter: Meter, flux_shape: Value, dz: Meter,
-        flux_enworse: float = 1.,
-        ) -> WPerM2:
+    T_inlet: Celsius,
+    coolant: Liquid,
+    mdot: KgPerS,
+    Dh: Meter,
+    area: Meter2,
+    heated_perimeter: Meter,
+    flux_shape: Value,
+    dz: Meter,
+    flux_enworse: float = 1.0,
+) -> WPerM2:
     r"""
     Calculates the minimal q'' heat flux at which OSV occurs, according to
     Saha & Zuber (1974) [#SahaZuber]_ (see :func:`Saha_Zuber_OSV`), but the bulk temperature is
@@ -210,7 +227,7 @@ def Saha_Zuber_OSV_computed_bulk(
         L=Dh,
         cp=(cp := coolant.specific_heat),
         k=(k := coolant.conductivity),
-        )
+    )
     Nu_c = 455
     St_c = 0.0065
 
@@ -218,16 +235,16 @@ def Saha_Zuber_OSV_computed_bulk(
     cumulative = np.cumsum(directed(flux_shape * dz, mdot))
     power_factor = directed(heated_perimeter / (np.abs(mdot) * cp), mdot)
     shape_factor = cumulative / directed(flux_shape * flux_enworse, mdot)
-    denominator = 1. + coefficient * power_factor * shape_factor
+    denominator = 1.0 + coefficient * power_factor * shape_factor
     return directed(coefficient * dT / denominator, mdot)
 
 
 def boiling_power(
-        mdot: KgPerS,
-        T_sat: Celsius,
-        Tin: Celsius,
-        cp_in: JPerKgK,
-        ) -> Watt:
+    mdot: KgPerS,
+    T_sat: Celsius,
+    Tin: Celsius,
+    cp_in: JPerKgK,
+) -> Watt:
     r"""The limit for "Boiling power ratio" as per TERMIC(CONVEC) [#BPR]_ - ratio of the channel power leading to
     saturated water temperature at the channel outlet to the current channel power:
 
@@ -255,12 +272,12 @@ def boiling_power(
 
 
 def Whittle_Forgan_OFI(
-        mdot: KgPerS,
-        sat_temperature: Pascal,
-        inlet_temperature: Celsius,
-        pipe: EffectivePipe,
-        cp: Callable[[Celsius], JPerKgK],
-        ) -> Watt:
+    mdot: KgPerS,
+    sat_temperature: Pascal,
+    inlet_temperature: Celsius,
+    pipe: EffectivePipe,
+    cp: Callable[[Celsius], JPerKgK],
+) -> Watt:
     r"""The limit for "Onset of Flow Instability" as per Whittle and Forgan [#WF]_,
     but with a correction by Fabréga [#FabregaFrench]_.
     In essence, power for OFI is given by:
@@ -294,18 +311,16 @@ def Whittle_Forgan_OFI(
     G = np.abs(mdot) / pipe.area
     G /= 10  # G must be in CGS, sadly.
     cp_int = quad(cp, inlet_temperature, sat_temperature)[0]  # type: ignore
-    return (np.abs(mdot) * cp_int
-            / (1. + 3.15 * (pipe.hydraulic_diameter / pipe.length) * (1.08 * G) ** 0.29)
-            )
+    return np.abs(mdot) * cp_int / (1.0 + 3.15 * (pipe.hydraulic_diameter / pipe.length) * (1.08 * G) ** 0.29)
 
 
 def Sudo_Kaminaga_CHF(
-        T_bulk: Celsius,
-        sat_coolant: Liquid,
-        mdot: KgPerS,
-        pipe: EffectivePipe,
-        g: MPerS2 = gravity,
-        ) -> WPerM2:
+    T_bulk: Celsius,
+    sat_coolant: Liquid,
+    mdot: KgPerS,
+    pipe: EffectivePipe,
+    g: MPerS2 = gravity,
+) -> WPerM2:
     r"""The limit heat flux for CHF according to Kaminaga et al. [#Sudo]_.
 
     Parameters
@@ -422,11 +437,7 @@ def _SKq3(A_ratio, w, lamda, dT_inlet, rho_v, rho_l):
     Nuclear Science and Technology, Vol. 35, No. 12, pages 943-951, 1998.
 
     """
-    return (0.7
-            * A_ratio
-            * np.sqrt(w / lamda)
-            * (1 + dT_inlet)
-            / (1 + (rho_v / rho_l) ** 0.25) ** 2)
+    return 0.7 * A_ratio * np.sqrt(w / lamda) * (1 + dT_inlet) / (1 + (rho_v / rho_l) ** 0.25) ** 2
 
 
 def _SKq4(G_star, dT_outlet):
@@ -459,11 +470,7 @@ def Mirshak_CHF(T_bulk: Celsius, T_sat: Celsius, pressure: Pascal, v: MPerS) -> 
     q'': WPerM2
         Heat flux where Critical Heat Flux (CHF) begins
     """
-    return (1.51e6
-            * (1 + 0.1198 * v)
-            * (1 + 0.00914 * (T_sat - T_bulk))
-            * (1 + 0.19e-5 * pressure)
-            )
+    return 1.51e6 * (1 + 0.1198 * v) * (1 + 0.00914 * (T_sat - T_bulk)) * (1 + 0.19e-5 * pressure)
 
 
 def Fabrega_CHF(Tin: Celsius, T_sat: Celsius, Dh: Meter) -> WPerM2:

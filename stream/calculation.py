@@ -3,6 +3,7 @@ A module defining what is a :class:`Calculation`, in the sense of a first order 
 differential and algebraic system of equation. A :class:`Calculation` is a subset of
 such a system.
 """
+
 from abc import abstractmethod
 from functools import wraps
 from typing import Any, Optional, Protocol, runtime_checkable, Sequence, Iterable
@@ -14,7 +15,7 @@ from stream.units import Array1D, Name, Place, Value
 from stream.utilities import flatten_values
 
 
-__all__ = ["Calculation", "unpacked", 'CalcState']
+__all__ = ["Calculation", "unpacked", "CalcState"]
 CalcState = dict[Name, Value]
 
 
@@ -81,9 +82,7 @@ class Calculation(Protocol):
         """
         raise NotImplementedError
 
-    def indices(
-            self, variable: Name, asking: Optional["Calculation"] = None
-            ) -> Place | dict[Name, Place]:
+    def indices(self, variable: Name, asking: Optional["Calculation"] = None) -> Place | dict[Name, Place]:
         """For a given variable name, return the appropriate positions in the vector
 
         Parameters
@@ -243,7 +242,6 @@ def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
         np.arrays or as floats and not a dictionary
     """
 
-    
     def _unpacked(_calculate):
         @wraps(_calculate)
         def _unpack(*args, **kwargs):
@@ -251,13 +249,15 @@ def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
                 excluded_kwargs = {k: kwargs.pop(k) for k in exclude}
                 return _calculate(*args, **valmap(_concat, kwargs) | excluded_kwargs)
             except KeyError as e:
-                raise KeyError(f"While unpacking in {_calculate}, 'exclude' got a variable name which was not recieved by {_calculate}. Variable name: {e}")
+                raise KeyError(
+                    f"While unpacking in {_calculate}, 'exclude' got a variable name which was not recieved by {_calculate}. Variable name: {e}"
+                )
             except BaseException as e:
                 e.args = (f"Error found at {_calculate}: {e.args[0]}", *e.args[1:])
                 raise
 
         return _unpack
-    
+
     if calculate is not None:
         # Used as @unpacked
         return _unpacked(calculate)

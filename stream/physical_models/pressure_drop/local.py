@@ -11,38 +11,50 @@ import numpy as np
 from numba import njit
 from scipy.interpolate import RegularGridInterpolator
 
-from stream.units import Meter2, Value, KgPerS, KgPerM3, Pascal, Array1D, Array2D, Radians
+from stream.units import (
+    Meter2,
+    Value,
+    KgPerS,
+    KgPerM3,
+    Pascal,
+    Array1D,
+    Array2D,
+    Radians,
+)
 from stream.utilities import lin_interp
 
 
-def _table_interp(re_numbers: Array1D, area_ratios: Array1D, f_factors: Array2D,
-                  area_ratio: float, re: float) -> float:
+def _table_interp(
+    re_numbers: Array1D,
+    area_ratios: Array1D,
+    f_factors: Array2D,
+    area_ratio: float,
+    re: float,
+) -> float:
     if np.min(area_ratios) <= area_ratio <= 1:
         interp = RegularGridInterpolator((re_numbers, area_ratios), f_factors)
         return interp([float(re), area_ratio]).item()
     elif area_ratio < 0:
         raise ValueError(f"Area ratio cannot be negative. {area_ratio=} is.")
     else:
-        raise ValueError("Smaller area must be smaller than the larger area."
-                         f"{area_ratio=} is not <=1!")
+        raise ValueError(f"Smaller area must be smaller than the larger area.{area_ratio=} is not <=1!")
 
 
 _tabulated_area_ratios = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
 _idelchik_4_2_re = np.array([10, 15, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 3e3, 3300])
 
 _idelchik_4_2_f = np.array(
-    [[3.10, 3.20, 3.00, 2.40, 2.15, 1.95, 1.70, 1.65, 1.70, 2.00, 1.60, 1.00, 0.81],
-     [3.10, 3.20, 2.80, 2.20, 1.85, 1.65, 1.40, 1.30, 1.30, 1.60, 1.25, 0.70, 0.64],
-     [3.10, 3.10, 2.60, 2.00, 1.60, 1.40, 1.20, 1.10, 1.10, 1.30, 0.95, 0.60, 0.50],
-     [3.10, 3.00, 2.40, 1.80, 1.50, 1.30, 1.10, 1.00, 0.85, 1.05, 0.80, 0.40, 0.36],
-     [3.10, 2.80, 2.30, 1.65, 1.35, 1.15, 0.90, 0.75, 0.65, 0.90, 0.65, 0.30, 0.25],
-     [3.10, 2.70, 2.15, 1.55, 1.25, 1.05, 0.80, 0.60, 0.40, 0.60, 0.50, 0.20, 0.16]]
-    )
+    [
+        [3.10, 3.20, 3.00, 2.40, 2.15, 1.95, 1.70, 1.65, 1.70, 2.00, 1.60, 1.00, 0.81],
+        [3.10, 3.20, 2.80, 2.20, 1.85, 1.65, 1.40, 1.30, 1.30, 1.60, 1.25, 0.70, 0.64],
+        [3.10, 3.10, 2.60, 2.00, 1.60, 1.40, 1.20, 1.10, 1.10, 1.30, 0.95, 0.60, 0.50],
+        [3.10, 3.00, 2.40, 1.80, 1.50, 1.30, 1.10, 1.00, 0.85, 1.05, 0.80, 0.40, 0.36],
+        [3.10, 2.80, 2.30, 1.65, 1.35, 1.15, 0.90, 0.75, 0.65, 0.90, 0.65, 0.30, 0.25],
+        [3.10, 2.70, 2.15, 1.55, 1.25, 1.05, 0.80, 0.60, 0.40, 0.60, 0.50, 0.20, 0.16],
+    ]
+)
 
-_idelchik_local_expansion_interp = partial(_table_interp,
-                                           _idelchik_4_2_re,
-                                           _tabulated_area_ratios,
-                                           _idelchik_4_2_f.T)
+_idelchik_local_expansion_interp = partial(_table_interp, _idelchik_4_2_re, _tabulated_area_ratios, _idelchik_4_2_f.T)
 
 
 @njit
@@ -80,12 +92,18 @@ def expansion_factor(aratio) -> float:
     return (1 - aratio) ** 2
 
 
-def _sudden_area_factor(max_re: float, min_re: float, min_re_val: float, max_ar: float,
-                        min_ar: float, infval: float,
-                        analytic: Callable[[float], float],
-                        table_interp: Callable[[float, float], float],
-                        aratio: float,
-                        re: float):
+def _sudden_area_factor(
+    max_re: float,
+    min_re: float,
+    min_re_val: float,
+    max_ar: float,
+    min_ar: float,
+    infval: float,
+    analytic: Callable[[float], float],
+    table_interp: Callable[[float, float], float],
+    aratio: float,
+    re: float,
+):
     if re >= max_re:
         return analytic(aratio)
     elif re >= min_re and min_ar <= aratio <= max_ar:
@@ -103,18 +121,18 @@ def _sudden_area_factor(max_re: float, min_re: float, min_re_val: float, max_ar:
         return v1
 
 
-sudden_expansion_factor = partial(_sudden_area_factor,
-                                  np.max(_idelchik_4_2_re),
-                                  np.min(_idelchik_4_2_re),
-                                  _idelchik_4_2_f[0, 0],
-                                  np.max(_tabulated_area_ratios),
-                                  np.min(_tabulated_area_ratios),
-                                  1.,
-                                  expansion_factor,
-                                  _idelchik_local_expansion_interp
-                                  )
-sudden_expansion_factor.__doc__ = (
-    r"""The Idelchik Table 4.2 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
+sudden_expansion_factor = partial(
+    _sudden_area_factor,
+    np.max(_idelchik_4_2_re),
+    np.min(_idelchik_4_2_re),
+    _idelchik_4_2_f[0, 0],
+    np.max(_tabulated_area_ratios),
+    np.min(_tabulated_area_ratios),
+    1.0,
+    expansion_factor,
+    _idelchik_local_expansion_interp,
+)
+sudden_expansion_factor.__doc__ = r"""The Idelchik Table 4.2 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
     
     The table used is bounded by :math:`A_1/A_2 \in [0.1, 0.6]` and :math:`\text{Re} \in [10, 3300]`. 
     Within those boundaries, linear interpolation is performed.
@@ -136,7 +154,7 @@ sudden_expansion_factor.__doc__ = (
         Area ratio in [0,1]
     re: float
         Reynolds number
-    """)
+    """
 
 
 @njit
@@ -154,40 +172,41 @@ def contraction_factor(aratio: Value) -> Value:
         Area ratio in [0,1]
 
     """
-    return 0.5 * (1. - aratio) ** 0.75
+    return 0.5 * (1.0 - aratio) ** 0.75
 
 
 _idelchik_4_10_re = np.array([10, 20, 30, 40, 50, 100, 200, 500, 1e3, 2e3, 4e3, 5e3, 1e4])
 
 # This is the original data
-_idelchik_4_10_f = np.array([
-    [5.00, 3.20, 2.40, 2.00, 1.80, 1.30, 1.04, 0.82, 0.64, 0.50, 0.80, 0.75, 0.50],
-    [5.00, 3.10, 2.30, 1.84, 1.62, 1.20, 0.95, 0.70, 0.50, 0.40, 0.60, 0.60, 0.40],
-    [5.00, 2.95, 2.15, 1.70, 1.50, 1.10, 0.85, 0.60, 0.44, 0.30, 0.55, 0.55, 0.35],
-    [5.00, 2.80, 2.00, 1.60, 1.40, 1.00, 0.78, 0.50, 0.35, 0.25, 0.45, 0.50, 0.30],
-    [5.00, 2.70, 1.80, 1.46, 1.30, 0.90, 0.65, 0.42, 0.30, 0.20, 0.40, 0.42, 0.25],
-    [5.00, 2.60, 1.70, 1.35, 1.20, 0.80, 0.56, 0.35, 0.24, 0.15, 0.35, 0.35, 0.20],
-    ])
+_idelchik_4_10_f = np.array(
+    [
+        [5.00, 3.20, 2.40, 2.00, 1.80, 1.30, 1.04, 0.82, 0.64, 0.50, 0.80, 0.75, 0.50],
+        [5.00, 3.10, 2.30, 1.84, 1.62, 1.20, 0.95, 0.70, 0.50, 0.40, 0.60, 0.60, 0.40],
+        [5.00, 2.95, 2.15, 1.70, 1.50, 1.10, 0.85, 0.60, 0.44, 0.30, 0.55, 0.55, 0.35],
+        [5.00, 2.80, 2.00, 1.60, 1.40, 1.00, 0.78, 0.50, 0.35, 0.25, 0.45, 0.50, 0.30],
+        [5.00, 2.70, 1.80, 1.46, 1.30, 0.90, 0.65, 0.42, 0.30, 0.20, 0.40, 0.42, 0.25],
+        [5.00, 2.60, 1.70, 1.35, 1.20, 0.80, 0.56, 0.35, 0.24, 0.15, 0.35, 0.35, 0.20],
+    ]
+)
 # For Re=1e4, we change the original values, so they match `contraction_factor`
 _idelchik_4_10_f[:, -1] = contraction_factor(_tabulated_area_ratios)
 
-_idelchik_local_contraction_interp = partial(_table_interp,
-                                             _idelchik_4_10_re,
-                                             _tabulated_area_ratios,
-                                             _idelchik_4_10_f.T)
+_idelchik_local_contraction_interp = partial(
+    _table_interp, _idelchik_4_10_re, _tabulated_area_ratios, _idelchik_4_10_f.T
+)
 
-sudden_contraction_factor = partial(_sudden_area_factor,
-                                    np.max(_idelchik_4_10_re),
-                                    np.min(_idelchik_4_10_re),
-                                    _idelchik_4_10_f[0, 0],
-                                    np.max(_tabulated_area_ratios),
-                                    np.min(_tabulated_area_ratios),
-                                    0.5,
-                                    contraction_factor,
-                                    _idelchik_local_contraction_interp
-                                    )
-sudden_contraction_factor.__doc__ = (
-    r"""The Idelchik Table 4.10 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
+sudden_contraction_factor = partial(
+    _sudden_area_factor,
+    np.max(_idelchik_4_10_re),
+    np.min(_idelchik_4_10_re),
+    _idelchik_4_10_f[0, 0],
+    np.max(_tabulated_area_ratios),
+    np.min(_tabulated_area_ratios),
+    0.5,
+    contraction_factor,
+    _idelchik_local_contraction_interp,
+)
+sudden_contraction_factor.__doc__ = r"""The Idelchik Table 4.10 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_
     
     The table used is bounded by :math:`A_2/A_1 \in [0.1, 0.6]` and :math:`\text{Re} \in [10, 10000]`. 
     Within those boundaries, linear interpolation is performed.
@@ -211,16 +230,15 @@ sudden_contraction_factor.__doc__ = (
         Reynolds number
     
     """
-    )
 
 
 def local_pressure_factor(
-        *,
-        mdot: KgPerS,
-        positive_flow: Callable[[...], float],
-        negative_flow: Callable[[...], float],
-        **kwargs
-        ):
+    *,
+    mdot: KgPerS,
+    positive_flow: Callable[[...], float],
+    negative_flow: Callable[[...], float],
+    **kwargs,
+):
     r"""Considering :math:`\dot{m}`, returns ``K`` pressure coefficient of
     ``positive_flow(A1, A2)`` or ``negative_flow(A1, A2)``.
 
@@ -297,7 +315,7 @@ def local_pressure_by_mdot(mdot: KgPerS, rho: KgPerM3, f: Value, A: Meter2) -> P
     >>> local_pressure_by_mdot(0., 1000., 1., 1.)
     0.0
     """
-    return f * (mdot * np.abs(mdot) / (2 * rho * A ** 2))
+    return f * (mdot * np.abs(mdot) / (2 * rho * A**2))
 
 
 @njit
@@ -335,7 +353,7 @@ def mdot_by_local_pressure(dp: Pascal, rho: KgPerM3, f: Value, A: Meter2) -> KgP
     >>> mdot_by_local_pressure(dp=-1., rho=1., f=2., A=1.)
     -1.0
     """
-    return np.sign(dp) * np.sqrt(np.abs(dp) * (2 * rho * A ** 2) / f)
+    return np.sign(dp) * np.sqrt(np.abs(dp) * (2 * rho * A**2) / f)
 
 
 def bend_factor(angle: Radians, relative_curvature: float, re: float) -> float:
@@ -371,7 +389,7 @@ def bend_factor(angle: Radians, relative_curvature: float, re: float) -> float:
     """
     a1 = _angle_effect(angle)
     b1 = _relative_curvature_effect(relative_curvature)
-    c1 = 1.
+    c1 = 1.0
 
     k_re = _reynolds_number_effect(re, relative_curvature)
 
@@ -400,11 +418,26 @@ def _relative_curvature_effect(relative_curvature: float) -> float:
         raise ValueError("Relative curvature must be greater than 0.5.")
 
     power = -2.5 if (0.5 <= relative_curvature < 1.0) else -0.5
-    return 0.21 * (relative_curvature ** power)
+    return 0.21 * (relative_curvature**power)
 
 
 # Taken from I.E. Idelchik, Handbook of Hydraulic Resistance, 4th Edition, Diagram 6.1(e), Page 426
-_reynolds_numbers = np.array([0.1e5, 0.14e5, 0.2e5, 0.3e5, 0.4e5, 0.6e5, 0.8e5, 1.0e5, 1.4e5, 2.0e5, 3.0e5, 4.0e5])
+_reynolds_numbers = np.array(
+    [
+        0.1e5,
+        0.14e5,
+        0.2e5,
+        0.3e5,
+        0.4e5,
+        0.6e5,
+        0.8e5,
+        1.0e5,
+        1.4e5,
+        2.0e5,
+        3.0e5,
+        4.0e5,
+    ]
+)
 _reynolds_number_effect_low = np.array([1.40, 1.33, 1.26, 1.19, 1.14, 1.09, 1.06, 1.04, 1.0, 1.0, 1.0, 1.0])
 _reynolds_number_effect_mid = np.array([1.67, 1.58, 1.49, 1.40, 1.34, 1.26, 1.21, 1.19, 1.17, 1.14, 1.06, 1.0])
 _reynolds_number_effect_high = np.array([2.00, 1.89, 1.77, 1.64, 1.56, 1.46, 1.38, 1.30, 1.15, 1.02, 1.0, 1.0])

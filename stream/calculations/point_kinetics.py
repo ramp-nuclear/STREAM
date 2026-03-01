@@ -1,6 +1,7 @@
 """
 A calculation for the point kinetics neutronics model
 """
+
 import logging
 from typing import Sequence, TypeVar
 
@@ -10,8 +11,17 @@ from cytoolz.functoolz import curry
 from stream import Calculation
 from stream.calculation import CalcState, unpacked
 from stream.units import (
-    Array, Array1D, Celsius, Name, PerC, PerS, Place, Second, Watt, WPerS
-    )
+    Array,
+    Array1D,
+    Celsius,
+    Name,
+    PerC,
+    PerS,
+    Place,
+    Second,
+    Watt,
+    WPerS,
+)
 from stream.utilities import just
 
 from enum import Enum, StrEnum
@@ -19,8 +29,8 @@ from typing import Protocol
 
 logger = logging.getLogger(__name__)
 
-class InputReactivity(Protocol):
 
+class InputReactivity(Protocol):
     def __call__(self, state: Enum, t_state: Second, t: Second, **_) -> float:
         """
         Parameters
@@ -39,12 +49,14 @@ class InputReactivity(Protocol):
         """
         pass
 
+
 S = TypeVar("S", bound=Enum)
+
 
 class StateMachine(Protocol):
     """Reactor control state machine. Assued Markovian"""
 
-    def __call__(self, state: S, t: Second, power: Watt, dPdt:WPerS, **kwargs) -> S:
+    def __call__(self, state: S, t: Second, power: Watt, dPdt: WPerS, **kwargs) -> S:
         """
         Parameters
         ----------
@@ -64,32 +76,37 @@ class StateMachine(Protocol):
         """
         pass
 
+
 class OneWayToSCRAM(StrEnum):
     NORMAL = "NORMAL"
     SCRAM = "SCRAM"
+
 
 class ReactivityController:
     r"""Input to :class:`PointKinetics` which depicts the reactivity worth inserted
     due to the reactor control system or postulated events. The control system is
     modelled as a :class:`StateMachine`. This system can include the
     Reactor Protection System (RPS), Reactor Control and Monitoring System (RCMS) and such.
-    
-    The state machine is completely user defined such through an 'Enum' class. Then, 
+
+    The state machine is completely user defined such through an 'Enum' class. Then,
     two functionalities are requited:
     1. The reactivity worth response of the controller :math:`w_c(s, t_s, t)` where
        :math:`s` the current state, :math:`t_s` the time in which this state was invoked,
        and :math:`t` the current time.
-    2. The state machine transfer function :math:`p: s \rightarrow s'` where `p` receives 
+    2. The state machine transfer function :math:`p: s \rightarrow s'` where `p` receives
        :math:`p(s, t, P, \dot{P}, ...)` provided by :class:`PointKinetics` during simulation.
 
     After simulation, the `log` attribute of this class contains the history of states, which can be used for analysis and plotting.
     """
 
-    def __init__(self, input_reactivity: InputReactivity | None = None,
-                 state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),
-                 initial_state: S = OneWayToSCRAM.NORMAL,
-                 initial_time: Second = 0.0,
-                 abort_states: set[S] | None = None):
+    def __init__(
+        self,
+        input_reactivity: InputReactivity | None = None,
+        state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),
+        initial_state: S = OneWayToSCRAM.NORMAL,
+        initial_time: Second = 0.0,
+        abort_states: set[S] | None = None,
+    ):
         r"""
         Parameters
         ----------
@@ -98,7 +115,7 @@ class ReactivityController:
             :math:`s` the current state, :math:`t_s` the time in which this state was invoked,
             and :math:`t` the current time. If None, then no reactivity is inserted.
         state_machine: StateMachine
-            The state machine transfer function :math:`p: s \rightarrow s'` where `p` receives 
+            The state machine transfer function :math:`p: s \rightarrow s'` where `p` receives
             :math:`p(s, t, P, \dot{P}, ...)` provided by :class:`PointKinetics` during simulation.
             If None, then the state machine is static and does not change state.
         initial_state: Enum
@@ -120,32 +137,31 @@ class ReactivityController:
         if self.state != s:
             self.state = s
             self.t_state = t
-            self.log.append((s,t))
+            self.log.append((s, t))
             logger.info(f"Control State set to {s} at {t = }")
         return S
-    
+
     def should_continue(self, t: Second) -> bool:
-        abort = (self.state in self.abort_states and t == self.t_state)
+        abort = self.state in self.abort_states and t == self.t_state
         return not abort
-    
+
     def worth(self, t: Second) -> float:
         """Reactivity worth inserted by the controller as function of time"""
         return self.input_reactivity(self.state, self.t_state, t)
-    
+
     def worth_history(self, t: Second) -> float:
         sn, tn = self.log[0]
         for i in range(1, len(self.log)):
-            sp, tp = self.log[i-1]
+            sp, tp = self.log[i - 1]
             sn, tn = self.log[i]
             if tp <= t < tn:
                 return self.input_reactivity(sp, tp, t)
         return self.input_reactivity(sn, tn, t)
-    
+
     def reset(self):
         self.state, self.t_state = self.log[0]
         self.log = [self.log[0]]
         return self
-
 
 
 class PointKinetics(Calculation):
@@ -184,13 +200,16 @@ class PointKinetics(Calculation):
     corresponding coolant and fuel elements.
     """
 
-    def __init__(self, generation_time: Second,
-                 delayed_neutron_fractions: Array1D,
-                 delayed_groups_decay_rates: PerS,
-                 temp_worth: dict[Calculation, PerC] | None = None,
-                 ref_temp: dict[Calculation, Celsius] | None = None,
-                 controls: ReactivityController | None = None,
-                 name: str = 'PK'):
+    def __init__(
+        self,
+        generation_time: Second,
+        delayed_neutron_fractions: Array1D,
+        delayed_groups_decay_rates: PerS,
+        temp_worth: dict[Calculation, PerC] | None = None,
+        ref_temp: dict[Calculation, Celsius] | None = None,
+        controls: ReactivityController | None = None,
+        name: str = "PK",
+    ):
         """
         Parameters
         ----------
@@ -226,8 +245,7 @@ class PointKinetics(Calculation):
             self._A[k, k] = -self.lambdak[k - 1]
             self._A[k, 0] = self.betak[k - 1] / self.Lambda
 
-    def reactivity(self, T: dict[Calculation, Array1D],
-                   input_reactivity: float) -> float:
+    def reactivity(self, T: dict[Calculation, Array1D], input_reactivity: float) -> float:
         """Calculate the reactivity, given temperature feedback
 
         Parameters
@@ -241,15 +259,18 @@ class PointKinetics(Calculation):
         rho: float
             Calculated reactivity
         """
-        return input_reactivity + temperature_reactivity(
-            T=T, T0=self.T0, weights=self.temp_worth)
+        return input_reactivity + temperature_reactivity(T=T, T0=self.T0, weights=self.temp_worth)
 
     @unpacked(exclude=("T",))
-    def calculate(self, variables: Sequence[float], *,
-                  T: dict[Calculation, Celsius] | None = None,
-                  source: Watt | None = None,
-                  t: Second,
-                  **kwargs) -> Array1D:
+    def calculate(
+        self,
+        variables: Sequence[float],
+        *,
+        T: dict[Calculation, Celsius] | None = None,
+        source: Watt | None = None,
+        t: Second,
+        **kwargs,
+    ) -> Array1D:
         r"""Calculate :math:`\frac{d}{dt}(P, \vec{C}_k)`
 
         Parameters
@@ -270,16 +291,16 @@ class PointKinetics(Calculation):
         """
         rhoc = self.controls.worth(t)
         rho = self.reactivity(T if T is not None else {}, rhoc)
-        self._s[0] = (source / self.Lambda if source is not None else 0.)
+        self._s[0] = source / self.Lambda if source is not None else 0.0
         self._A[0, 0] = (rho - self.dollar) / self.Lambda
         return self._A @ variables + self._s
 
     # noinspection PyProtocol
-    def should_continue(self, variables: Sequence[float],*, t: Second, **kwargs) -> bool:
+    def should_continue(self, variables: Sequence[float], *, t: Second, **kwargs) -> bool:
         return self.controls.should_continue(t)
 
     @unpacked(exclude=("T",))
-    def change_state(self, variables: Sequence[float],*, t: Second, **kwargs):
+    def change_state(self, variables: Sequence[float], *, t: Second, **kwargs):
         power = variables[self.indices("power")]
         dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("power")]
         self.controls.change_state(t, power, dPdt, **kwargs)
@@ -297,8 +318,7 @@ class PointKinetics(Calculation):
 
     # noinspection PyMethodOverriding
     @unpacked(exclude=("T",))
-    def save(self, vector: Sequence[float], *, T=None, source=None, t,
-             **kwargs) -> CalcState:
+    def save(self, vector: Sequence[float], *, T=None, source=None, t, **kwargs) -> CalcState:
         """Given input for "calculate" (which is a legal state of the system), tag the information,
         i.e. create a "State" and return it.
 
@@ -321,15 +341,15 @@ class PointKinetics(Calculation):
         rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T or {}, rhoc)
         state["reactivity"] = rho
-        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t,
-                                       **kwargs)[self.indices("power")]
+        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("power")]
         return state
 
 
-def temperature_reactivity(T: dict[Calculation, Array],
-                           T0: dict[Calculation, Array],
-                           weights: dict[Calculation, Array],
-                           ) -> float:
+def temperature_reactivity(
+    T: dict[Calculation, Array],
+    T0: dict[Calculation, Array],
+    weights: dict[Calculation, Array],
+) -> float:
     r"""Calculate the reactivity, given temperature feedback
 
     .. math:: \rho = - \sum_i \vec{w}_i \cdot (\vec{T}-\vec{T}_0)_i
@@ -368,11 +388,16 @@ class PointKineticsWInput(PointKinetics):
     """
 
     @unpacked(exclude=("T",))
-    def calculate(self, variables: Sequence[float], *,
-                  T: dict[Calculation, Celsius] = None,
-                  source: Watt | None = None,
-                  t: Second,
-                  power_input: Watt | None = None, **kwargs) -> Array1D:
+    def calculate(
+        self,
+        variables: Sequence[float],
+        *,
+        T: dict[Calculation, Celsius] = None,
+        source: Watt | None = None,
+        t: Second,
+        power_input: Watt | None = None,
+        **kwargs,
+    ) -> Array1D:
         vals = np.empty(len(self))
         vals[:-1] = super().calculate(variables[:-1], source=source, T=T, t=t, **kwargs)
         vals[-1] = variables[0] + power_input - variables[-1]
@@ -382,7 +407,8 @@ class PointKineticsWInput(PointKinetics):
     def mass_vector(self) -> Sequence[bool]:
         return [True] * (self.m + 1) + [False]
 
-    def __len__(self): return self.m + 2
+    def __len__(self):
+        return self.m + 2
 
     @property
     def variables(self) -> dict[Name, Place]:

@@ -17,7 +17,7 @@ Division = Calculation_factory(lambda z, *, x: z / x, [False], dict(z=0))
 
 add = Addition(name="Add")
 multiply = Multiplication(name="Multiply")
-divide = Division(name='Divide')
+divide = Division(name="Divide")
 
 
 @given(st.lists(st.floats(allow_nan=False)))
@@ -26,7 +26,7 @@ def test_unpack_correctly_unpacks_data(lst):
     kwargs = dict(
         some_input=dict(enumerate(lst)),
         more_input=dict(enumerate(map(np.array, lst))),
-        )
+    )
 
     def give_me_values(*, some_input, more_input):
         return some_input, more_input
@@ -35,8 +35,10 @@ def test_unpack_correctly_unpacks_data(lst):
     assert np.allclose(output, np.array(lst))
     assert np.allclose(more_output, np.array(lst))
 
+
 def _give_me_values(*, some_input, more_input):
     return some_input, more_input
+
 
 @given(st.lists(st.floats(allow_nan=False)))
 def test_unpack_correctly_excludes_parameters(lst):
@@ -47,20 +49,23 @@ def test_unpack_correctly_excludes_parameters(lst):
     assert np.array_equal(np.atleast_1d(output), list(more_output.values()))
     assert more_output == input_dict
 
+
 def test_unpack_exclusion_errors_on_missing_variable_name():
-    input_dict = dict(enumerate(range(1,6)))
+    input_dict = dict(enumerate(range(1, 6)))
     kwargs = dict(some_input=input_dict, more_input=input_dict)
 
     missing = "missing_variable_name"
     with pytest.raises(KeyError, match=missing):
         unpacked(_give_me_values, exclude=[missing])(**kwargs)
 
+
 dictvals = st.dictionaries(
     st.integers(),
-    st.one_of(arrays(dtype=float, shape=st.integers(1, 10),
-                     elements=st.floats(allow_nan=False)),
-              st.floats(allow_nan=False))
-    )
+    st.one_of(
+        arrays(dtype=float, shape=st.integers(1, 10), elements=st.floats(allow_nan=False)),
+        st.floats(allow_nan=False),
+    ),
+)
 
 
 @given(dictvals)
@@ -68,8 +73,7 @@ def test_concat_is_at_most_1d(d):
     assert np.ndim(_concat(d)) <= 1
 
 
-list_arrays = st.lists(arrays(dtype=float, shape=st.integers(1, 10),
-                              elements=st.floats(allow_nan=False)))
+list_arrays = st.lists(arrays(dtype=float, shape=st.integers(1, 10), elements=st.floats(allow_nan=False)))
 
 
 @given(list_arrays)
@@ -88,7 +92,7 @@ def test_default_save_has_correct_output_for_one_structure(val):
 
 
 def _vardict(arr: np.ndarray) -> Sequence[slice]:
-    alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     indices = set(np.argwhere(arr).flatten())
     starts = sorted({0} | indices)
     ends = sorted({len(arr)} | indices)
@@ -98,7 +102,7 @@ def _vardict(arr: np.ndarray) -> Sequence[slice]:
 
 arrlengths = st.shared(st.integers(1, 20), key="length")
 boolarrs = arrays(bool, arrlengths, elements=st.booleans())
-valarrs = arrays(float, arrlengths, elements=st.floats(0., 10., allow_nan=False))
+valarrs = arrays(float, arrlengths, elements=st.floats(0.0, 10.0, allow_nan=False))
 vardicts = boolarrs.map(_vardict)
 emptyfunc = st.just(lambda y, **_: np.zeros(y.shape))
 calctypes = st.builds(Calculation_factory, emptyfunc, boolarrs, vardicts)
@@ -106,8 +110,7 @@ calcs = calctypes.map(lambda x: x())
 
 
 @given(calcs, valarrs)
-def test_default_save_is_compatible_with_calc_variables(
-        calc: Calculation, arr: np.ndarray):
+def test_default_save_is_compatible_with_calc_variables(calc: Calculation, arr: np.ndarray):
     state = calc.save(arr)
     for v, place in calc.variables.items():
         assert np.allclose(arr[place], state[v])
@@ -120,6 +123,5 @@ def test_default_load_for_one_structure(val):
 
 
 @given(calcs, valarrs)
-def test_default_load_is_inverse_of_default_save(
-        calc: Calculation, arr: np.ndarray):
+def test_default_load_is_inverse_of_default_save(calc: Calculation, arr: np.ndarray):
     assert np.allclose(calc.load(calc.save(arr)), arr)

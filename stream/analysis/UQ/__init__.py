@@ -1,6 +1,4 @@
-"""Uncertainty quantification analysis tools.
-
-"""
+"""Uncertainty quantification analysis tools."""
 
 from .models import UQModel, DASKUQModel
 from .uncertainty import Uncertuple, Uncertainty

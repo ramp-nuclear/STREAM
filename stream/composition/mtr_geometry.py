@@ -11,6 +11,7 @@ The combination of calculations into an MTR-like setup, containing:
 
 The created objects are CalculationGraph objects which may be combined to eventually create an executable scheme.
 """
+
 from copy import deepcopy
 from typing import Sequence, Iterable, Literal, Callable
 
@@ -31,12 +32,10 @@ __all__ = [
     "symmetric_plate",
     "x_boundaries",
     "uniform_x_power_shape",
-    ]
+]
 
 
-def plate(
-        channel_l: ChannelAndContacts, channel_r: ChannelAndContacts, fuel: Fuel
-        ) -> CalculationGraph:
+def plate(channel_l: ChannelAndContacts, channel_r: ChannelAndContacts, fuel: Fuel) -> CalculationGraph:
     """
     Build a fuel "plate" setup and its surroundings using the following components:
 
@@ -62,14 +61,12 @@ def plate(
                 (channel_r, fuel, vars_("T_right", "h_right")),
                 (fuel, channel_l, vars_("T_right")),
                 (fuel, channel_r, vars_("T_left")),
-                ]
-            )
+            ]
         )
+    )
 
 
-def chain_fuels_channels(
-        channels: Sequence[ChannelAndContacts], fuels: Sequence[Fuel]
-        ) -> CalculationGraph:
+def chain_fuels_channels(channels: Sequence[ChannelAndContacts], fuels: Sequence[Fuel]) -> CalculationGraph:
     """
     Build a setup of interchanging fuel plates and channels by order of appearance.
     This function is to be used for the following geometry only::
@@ -115,14 +112,17 @@ def chain_fuels_channels(
             g.add_edge(channel, fuel_l, variables=("T_right", "h_right"))
         return CalculationGraph(g)
     raise ValueError(
-        "Interchanging Fuel-Channel not possible since the "
-        f"difference: #Channels - #Fuels = {diff}, not +-1"
-        )
+        f"Interchanging Fuel-Channel not possible since the difference: #Channels - #Fuels = {diff}, not +-1"
+    )
 
 
-def _pair_connection(fuel: Fuel, channel: ChannelAndContacts,
-                     funcs: ExternalFunctions | None,
-                     fvars: Iterable[Name], cvars: Iterable[Name]) -> CalculationGraph:
+def _pair_connection(
+    fuel: Fuel,
+    channel: ChannelAndContacts,
+    funcs: ExternalFunctions | None,
+    fvars: Iterable[Name],
+    cvars: Iterable[Name],
+) -> CalculationGraph:
     """Connects a single fuel to a single channel by given variables
 
     Parameters
@@ -143,17 +143,23 @@ def _pair_connection(fuel: Fuel, channel: ChannelAndContacts,
     CalculationGraph
 
     """
-    return CalculationGraph(DiGraph(((fuel, channel, vars_(*fvars)),
-                                     (channel, fuel, vars_(*cvars)),
-                                     )),
-                            funcs)
+    return CalculationGraph(
+        DiGraph(
+            (
+                (fuel, channel, vars_(*fvars)),
+                (channel, fuel, vars_(*cvars)),
+            )
+        ),
+        funcs,
+    )
 
 
-def one_sided_connection(channel: ChannelAndContacts,
-                         fuel: Fuel,
-                         fuel_side: Literal['left', 'right'],
-                         funcs: ExternalFunctions | None = None
-                         ) -> CalculationGraph:
+def one_sided_connection(
+    channel: ChannelAndContacts,
+    fuel: Fuel,
+    fuel_side: Literal["left", "right"],
+    funcs: ExternalFunctions | None = None,
+) -> CalculationGraph:
     """Connects a single fuel to a single channel on one side
 
     .. important::
@@ -189,15 +195,14 @@ def one_sided_connection(channel: ChannelAndContacts,
     CalculationGraph
 
     """
-    fuel_var = {'left': 'T_left', 'right': 'T_right'}[fuel_side]
-    channel_vars = ('T_right', 'h_right', 'T_left', 'h_left')
+    fuel_var = {"left": "T_left", "right": "T_right"}[fuel_side]
+    channel_vars = ("T_right", "h_right", "T_left", "h_left")
     return _pair_connection(fuel, channel, funcs, (fuel_var,), channel_vars)
 
 
-def symmetric_plate(channel: ChannelAndContacts,
-                    fuel: Fuel,
-                    funcs: ExternalFunctions | None = None
-                    ) -> CalculationGraph:
+def symmetric_plate(
+    channel: ChannelAndContacts, fuel: Fuel, funcs: ExternalFunctions | None = None
+) -> CalculationGraph:
     """Create a symmetric plate.
     This is convenient if symmetry or low calculation costs are relevant.
     The objects must already describe the desired geometry.
@@ -217,14 +222,18 @@ def symmetric_plate(channel: ChannelAndContacts,
     -------
     CalculationGraph
     """
-    return _pair_connection(fuel, channel, funcs,
-                            ('T_left', 'T_right'),
-                            ("T_left", "h_left", "T_right", "h_right"))
+    return _pair_connection(
+        fuel,
+        channel,
+        funcs,
+        ("T_left", "T_right"),
+        ("T_left", "h_left", "T_right", "h_right"),
+    )
 
 
 def rod(
-        channel: ChannelAndContacts, channels: int, fuel: Fuel, plates: int
-        ) -> (CalculationGraph, Sequence[ChannelAndContacts], Sequence[Fuel]):
+    channel: ChannelAndContacts, channels: int, fuel: Fuel, plates: int
+) -> (CalculationGraph, Sequence[ChannelAndContacts], Sequence[Fuel]):
     r"""
     Create a rod of interleaving channels and fuel plates, in which all channels, fuel plates are the same.
     This function utilizes :func:`chain_fuels_channels`.
@@ -275,20 +284,25 @@ def x_boundaries(clad_N: int, fuel_N: int, clad_w: Meter, meat_w: Meter) -> Arra
         An array containing the cells boundary placements, beginning with zero.
     """
     if clad_N == 0:
-        x = np.linspace(0 ,meat_w, fuel_N+1)
+        x = np.linspace(0, meat_w, fuel_N + 1)
     else:
         x = concat(
             np.linspace(0, clad_w, clad_N, endpoint=False),
             np.linspace(clad_w, clad_w + meat_w, fuel_N, endpoint=False),
             np.linspace(clad_w + meat_w, 2 * clad_w + meat_w, clad_N + 1),
-            )
+        )
     return x
 
 
 def uniform_x_power_shape(
-        z_N: int, fuel_N: int, clad_N: int, clad_w: Meter, meat_w: Meter, meat_h: Meter,
-        z_shaper: Callable[[Meter], Meter] = cosine_shape,
-        ) -> Array2D:
+    z_N: int,
+    fuel_N: int,
+    clad_N: int,
+    clad_w: Meter,
+    meat_w: Meter,
+    meat_h: Meter,
+    z_shaper: Callable[[Meter], Meter] = cosine_shape,
+) -> Array2D:
     r"""Create a ``power_shape`` for :class:`~.Fuel` in which the distribution along the x-axis is uniform,
     and controlled by ``z_shaper`` along the z-axis. Utilizes :func:`x_boundaries`.
 

@@ -3,12 +3,8 @@ from hypothesis.strategies import floats, integers
 
 
 normal_floats = floats(allow_infinity=False, allow_nan=False)
-medium_floats = floats(
-    allow_infinity=False, allow_nan=False, max_value=1e6, min_value=-1e6
-)
-pos_medium_floats = floats(
-    allow_infinity=False, allow_nan=False, max_value=1e6, min_value=1e-6
-)
+medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=-1e6)
+pos_medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=1e-6)
 non_neg_medium_integers = integers(max_value=int(1e6), min_value=0)
 pos_floats = floats(0, allow_nan=False, allow_infinity=False, exclude_min=True)
 

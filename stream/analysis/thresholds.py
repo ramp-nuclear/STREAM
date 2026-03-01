@@ -16,6 +16,7 @@ ONB_left=onb_left, ONB_right=onb_right)
 >>> #                                               # called in agr
 
 """
+
 from copy import deepcopy
 from inspect import signature
 from typing import Callable, Protocol
@@ -24,7 +25,9 @@ import numpy as np
 
 from stream.aggregator import Aggregator
 from stream.calculations.channel import ChannelVar, Direction, ChannelAndContacts
-from stream.physical_models.heat_transfer_coefficient.temperatures import Bergles_Rohsenow_dT_ONB
+from stream.physical_models.heat_transfer_coefficient.temperatures import (
+    Bergles_Rohsenow_dT_ONB,
+)
 from stream.physical_models.thresholds import (
     Saha_Zuber_OSV_computed_bulk as _Saha_Zuber_OSV,
     boiling_power as _boiling_power,
@@ -46,14 +49,20 @@ class ThresholdFunction(Protocol):
 
     """
 
-    def __call__(self, *, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe,
-                 dz: Meter, **_,
-                 ) -> Value:
-        ...
+    def __call__(
+        self,
+        *,
+        state: CalcState,
+        fluid: LiquidFuncs,
+        pipe: EffectivePipe,
+        dz: Meter,
+        **_,
+    ) -> Value: ...
 
 
-def threshold_analysis(**funcs: ThresholdFunction
-                       ) -> Callable[[State, Aggregator, str], State]:
+def threshold_analysis(
+    **funcs: ThresholdFunction,
+) -> Callable[[State, Aggregator, str], State]:
     """A factory to create a function that can analyze an aggregator's State
     to yield a new State with threshold values.
 
@@ -74,14 +83,18 @@ def threshold_analysis(**funcs: ThresholdFunction
         substate = s[calc]
         kw = {}
         channel: ChannelAndContacts = agg[calc]  # type: ignore
-        protocol_params = filter(lambda x: x not in {'self', 'state', '_'},
-                                 signature(ThresholdFunction.__call__).parameters.keys())
+        protocol_params = filter(
+            lambda x: x not in {"self", "state", "_"},
+            signature(ThresholdFunction.__call__).parameters.keys(),
+        )
         for attr in protocol_params:
             try:
                 kw[attr] = getattr(channel, attr)
             except AttributeError:
-                raise AttributeError(f"The aggregator's {calc} calculation did not have a {attr} "
-                                     "attribute, and it should have because we analyze channels")
+                raise AttributeError(
+                    f"The aggregator's {calc} calculation did not have a {attr} "
+                    "attribute, and it should have because we analyze channels"
+                )
         for key, func in funcs.items():
             substate[key] = func(state=substate, **kw)
         return s
@@ -92,7 +105,9 @@ def threshold_analysis(**funcs: ThresholdFunction
 STS = StateTimeseries
 
 
-def transient_threshold_analysis(**funcs: ThresholdFunction) -> Callable[[STS, Aggregator, str], STS]:
+def transient_threshold_analysis(
+    **funcs: ThresholdFunction,
+) -> Callable[[STS, Aggregator, str], STS]:
     """A factory to create a function that can analyze an aggregator's StateTimeseries
     to yield a new StateTimeseries with threshold values.
 
@@ -119,9 +134,9 @@ def transient_threshold_analysis(**funcs: ThresholdFunction) -> Callable[[STS, A
 
 
 def _tw(state: CalcState, direction: Direction, tbulk: Celsius, inhomogeneity_factor) -> Celsius:
-    if ChannelVar.get('heatflux', direction) in state:
-        q = state[ChannelVar.get('heatflux', direction)] * inhomogeneity_factor
-        h = state[ChannelVar.get('h', direction)]
+    if ChannelVar.get("heatflux", direction) in state:
+        q = state[ChannelVar.get("heatflux", direction)] * inhomogeneity_factor
+        h = state[ChannelVar.get("h", direction)]
         return tbulk + q / h
     return -np.inf
 
@@ -146,14 +161,22 @@ def twall_limit(*, state: CalcState, inhomogeneity_factor: float = 1.0, **_) -> 
 
     """
     tbulk = state[ChannelVar.tbulk]
-    twall_right, twall_left = (_tw(state, direction, tbulk, inhomogeneity_factor)
-                               for direction in (Direction.right, Direction.left))
+    twall_right, twall_left = (
+        _tw(state, direction, tbulk, inhomogeneity_factor) for direction in (Direction.right, Direction.left)
+    )
     return np.maximum(twall_right, twall_left)
 
 
-def Saha_Zuber_OSV(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe, dz: Meter,
-                   direction: Direction, inhomogeneity_factor: float = 1.,
-                   **_) -> WPerM2:
+def Saha_Zuber_OSV(
+    *,
+    state: CalcState,
+    fluid: LiquidFuncs,
+    pipe: EffectivePipe,
+    dz: Meter,
+    direction: Direction,
+    inhomogeneity_factor: float = 1.0,
+    **_,
+) -> WPerM2:
     """A wrapper for Saha & Zuber based OSV.
 
     For details, see the underlying :func:`~stream.physical_models.thresholds.Saha_Zuber_OSV`.
@@ -186,12 +209,20 @@ def Saha_Zuber_OSV(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe,
     tb = state[ChannelVar.tbulk]
     tin = state[ChannelVar.tin]
     pressure = state[ChannelVar.static_pressure]
-    q = state[ChannelVar.get('heatflux', direction=direction)]
+    q = state[ChannelVar.get("heatflux", direction=direction)]
     coolant = fluid.to_properties(tb, pressure)
     mdot = state[ChannelVar.mass_flow]
-    return _Saha_Zuber_OSV(T_inlet=tin, coolant=coolant, mdot=mdot, Dh=pipe.hydraulic_diameter,
-                           area=pipe.area, heated_perimeter=pipe.heated_perimeter,
-                           flux_shape=q, dz=dz, flux_enworse=inhomogeneity_factor)
+    return _Saha_Zuber_OSV(
+        T_inlet=tin,
+        coolant=coolant,
+        mdot=mdot,
+        Dh=pipe.hydraulic_diameter,
+        area=pipe.area,
+        heated_perimeter=pipe.heated_perimeter,
+        flux_shape=q,
+        dz=dz,
+        flux_enworse=inhomogeneity_factor,
+    )
 
 
 def boiling_power(*, state: CalcState, fluid: LiquidFuncs, **__) -> Watt:
@@ -222,8 +253,7 @@ def boiling_power(*, state: CalcState, fluid: LiquidFuncs, **__) -> Watt:
     return _boiling_power(mdot=mdot, T_sat=tsat, Tin=tin, cp_in=cp_in)
 
 
-def Whittle_Forgan_OFI(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe, **_
-                       ) -> Watt:
+def Whittle_Forgan_OFI(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe, **_) -> Watt:
     """A wrapper for the :func:`~stream.physical_models.thresholds.Whittle_Forgan_OFI` function.
 
     See Also
@@ -249,12 +279,23 @@ def Whittle_Forgan_OFI(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectiveP
     pressure = state[ChannelVar.static_pressure]
     tin = state[ChannelVar.tin]
     tsat = fluid.sat_temperature(pressure[-1 if mdot >= 0 else 0])
-    return _Whittle_Forgan_OFI(mdot=mdot, sat_temperature=tsat, inlet_temperature=tin,
-                               pipe=pipe, cp=fluid.specific_heat)
+    return _Whittle_Forgan_OFI(
+        mdot=mdot,
+        sat_temperature=tsat,
+        inlet_temperature=tin,
+        pipe=pipe,
+        cp=fluid.specific_heat,
+    )
 
 
-def Sudo_Kaminaga_CHF(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe,
-                      gravity: MPerS2 = g, **_) -> WPerM2:
+def Sudo_Kaminaga_CHF(
+    *,
+    state: CalcState,
+    fluid: LiquidFuncs,
+    pipe: EffectivePipe,
+    gravity: MPerS2 = g,
+    **_,
+) -> WPerM2:
     """A wrapper for the :func:`~stream.physical_models.thresholds.Sudo_Kaminaga_CHF` function.
 
     See Also
@@ -347,12 +388,14 @@ def Fabrega_CHF(*, state: CalcState, fluid: LiquidFuncs, pipe: EffectivePipe, **
     return _Fabrega_CHF(Tin=tin, T_sat=tsat, Dh=pipe.hydraulic_diameter)
 
 
-def Bergles_Rohsenow_T_ONB(*, state: CalcState,
-                           direction: Direction,
-                           onb_factor: float = 1.,
-                           inhomogeneity_factor: float = 1.,
-                           **_
-                           ) -> Celsius:
+def Bergles_Rohsenow_T_ONB(
+    *,
+    state: CalcState,
+    direction: Direction,
+    onb_factor: float = 1.0,
+    inhomogeneity_factor: float = 1.0,
+    **_,
+) -> Celsius:
     r"""A wrapper for :func:`~stream.physical_models.heat_transfer_coefficient.temperatures.Bergles_Rohsenow_T_ONB`
 
     The wall temperature at which ONB would occur according to Bergles and Rohsenow.
@@ -381,8 +424,8 @@ def Bergles_Rohsenow_T_ONB(*, state: CalcState,
     """
     pressure = state[ChannelVar.static_pressure]
     tbulk = state[ChannelVar.tbulk]
-    h = state[ChannelVar.get('h', direction)]
-    q = state[ChannelVar.get('heatflux', direction)] * inhomogeneity_factor
+    h = state[ChannelVar.get("h", direction)]
+    q = state[ChannelVar.get("heatflux", direction)] * inhomogeneity_factor
     twall = tbulk + (q / h)
     tsat = light_water.sat_temperature(pressure)
     br = factor(Bergles_Rohsenow_dT_ONB, by=onb_factor)

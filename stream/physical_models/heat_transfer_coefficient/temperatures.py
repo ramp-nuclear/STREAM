@@ -6,9 +6,7 @@ from numba import njit
 from stream.units import Celsius, WPerM2K, Pascal, WPerM2
 
 
-def wall_temperature(
-        T_cool: Celsius, T_clad: Celsius, h_cool: WPerM2K, h_clad: WPerM2K
-        ) -> Celsius:
+def wall_temperature(T_cool: Celsius, T_clad: Celsius, h_cool: WPerM2K, h_clad: WPerM2K) -> Celsius:
     r"""
     Computes the interface temperature, under the assumption that the interface's thermal inertia is 0, thus
     incoming and outgoing fluxes should be equal. Then temperature differences should behave as follows:
@@ -104,7 +102,7 @@ def Bergles_Rohsenow_dT_ONB(pressure: Pascal, q_spl: WPerM2) -> Celsius:
 
     """
     p = pressure / 1e5
-    return 0.556 * (q_spl / 1082 / p ** 1.156) ** (0.463 * p ** 0.0234)
+    return 0.556 * (q_spl / 1082 / p**1.156) ** (0.463 * p**0.0234)
 
 
 @njit
