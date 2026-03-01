@@ -15,9 +15,7 @@ jobs:
     steps:
     - uses: actions/cheackout@v4
     - name: Ruff check
-      uses: astral-sh/ruff-action@v3
-      run: |
-        ruff check
+    - uses: astral-sh/ruff-action@v3
 
   build:
     runs-on: ubuntu-latest
