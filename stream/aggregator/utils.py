@@ -39,10 +39,10 @@ class BaseAgr(Protocol):
             Edges to connect between the two graphs of the objects with connection data.
 
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def __add__(self, other: "BaseAgr") -> "BaseAgr":
-        raise NotImplemented
+        raise NotImplementedError
     
     
 def non_unique_calculations(g: DiGraph) -> dict[str, list[Calculation]]:

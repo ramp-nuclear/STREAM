@@ -2,7 +2,7 @@
 A calculation for the point kinetics neutronics model
 """
 import logging
-from typing import Callable, Sequence, TypeVar
+from typing import Sequence, TypeVar
 
 import numpy as np
 from cytoolz.functoolz import curry
@@ -12,7 +12,7 @@ from stream.calculation import CalcState, unpacked
 from stream.units import (
     Array, Array1D, Celsius, Name, PerC, PerS, Place, Second, Watt, WPerS
     )
-from stream.utilities import just, STREAM_DEBUG, to_array
+from stream.utilities import just
 
 from enum import Enum, StrEnum
 from typing import Protocol

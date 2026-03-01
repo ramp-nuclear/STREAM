@@ -48,13 +48,13 @@ def ResistorFromKnownPoint(
     """
 
     assert (dp is not None or mdot is not None), \
-        f"At least one of (dp, mdot) must be specified"
+        "At least one of (dp, mdot) must be specified"
 
     if behavior == "constant":
         return Pump(pressure=dp, mdot0=mdot, name=name)
 
     assert (dp is not None and mdot is not None), \
-        f"For non-ideal current or head sources, dp must be specified"
+        "For non-ideal current or head sources, dp must be specified"
     if behavior == "linear":
         return Resistor(resistance=-dp / mdot, name=name)
     if behavior == "parabolic":

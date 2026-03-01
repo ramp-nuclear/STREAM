@@ -14,7 +14,7 @@ from stream.state import State, StateTimeseries, DictState
 from stream.units import Array1D, Array2D, Name, Place, Second
 from stream.utilities import concat, offset, STREAM_DEBUG
 from .solution import Solution
-from .utils import VARS, BaseAgr, ExternalFunctions, add_variables, draw_aggregator, non_unique_calculations, vars_, partition, map_externals
+from .utils import VARS, BaseAgr, ExternalFunctions, draw_aggregator, non_unique_calculations, partition, map_externals
 
 __all__ = ["Aggregator", "CalculationGraph", "NonUniqueCalculationNameError"]
 

@@ -707,8 +707,8 @@ def test_inertia_with_friction_in_PCS_coastdown():
                    funcs={resistor: dict(Tin=T)})
     AB = K.component_edge(pump)
     BA = K.component_edge(resistor)
-    ab2 = f"(A -> B, mdot2 0)"
-    ba2 = f"(B -> A, mdot2 0)"
+    ab2 = "(A -> B, mdot2 0)"
+    ba2 = "(B -> A, mdot2 0)"
     assert ab2 in K.variables, (ab2, list(K.variables.keys()))
     assert ba2 in K.variables, (ba2, list(K.variables.keys()))
 

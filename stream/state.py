@@ -4,7 +4,7 @@ Basically a 2-deep nested dict with str keys and the inner values are Value
 objects. We provide additional useful methods in the same namespace.
 
 """
-from functools import reduce, wraps
+from functools import reduce
 from itertools import chain
 from operator import or_
 from typing import Iterable, Any, IO, Callable, TypeVar

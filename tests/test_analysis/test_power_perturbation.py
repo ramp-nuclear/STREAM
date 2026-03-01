@@ -3,7 +3,7 @@
 """
 import hypothesis.strategies as st
 import numpy as np
-from hypothesis import given, reproduce_failure
+from hypothesis import given
 from hypothesis.extra.numpy import arrays
 
 from stream.analysis.UQ.power_perturbations import local_power_shift

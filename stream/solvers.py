@@ -33,7 +33,7 @@ from scipy import optimize as opt
 from scipy.integrate import solve_ivp
 
 from stream.units import Array, Array1D, Array2D, Functional
-from stream.utilities import concat, ignore_warnings, STREAM_DEBUG
+from stream.utilities import concat, ignore_warnings
 
 logger = logging.getLogger("stream.aggregator")
 

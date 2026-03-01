@@ -1,5 +1,4 @@
 r"""Functions for creating a fission-following decay heat profile"""
-from typing import Callable
 
 import numpy as np
 
