@@ -21,6 +21,10 @@ jobs:
         environment-file: allreq.yml
         environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
         post-cleanup: 'all'
+    - name: Test doctests
+      run: |
+        pytest -v --doctest-modules stream
+      shell: micromamba-shell {0}
     - name: Test with pytest
       run: |
         cd tests
