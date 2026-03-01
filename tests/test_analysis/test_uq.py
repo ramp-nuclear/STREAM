@@ -141,6 +141,7 @@ def test_uq_with_multiple_features_is_longer_than_1_feature(u):
     assert len(candidate[0].compute()) > len(_simplemodel(**params))
 
 
+@pytest.mark.graphs
 @pytest.mark.parametrize("persist", (True, False))
 def test_dask_uq_graph_by_regression(persist, image_regression):
     params = {'vec': np.array([1., 2., 3.]), 'v1': 2., 'v2': 3.}
