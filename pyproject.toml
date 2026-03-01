@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stream"
+authors = [
+    {name = "Nuclear RAMP team", email = "nuclear.ramp.dev@gmail.com"},
+]
+description = "System-level Thermohydraulics Code for reactor analysis using modular DAE coupling of components"
+readme = "README.md"
+version = "1.1.0"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "cachetools",
+    "cytoolz",
+    "ipython",
+    "matplotlib",
+    "more-itertools",
+    "networkx",
+    "numba",
+    "numpy",
+    "pandas",
+    "rich",
+    "scikits.odes",
+    "scipy",
+    "dask",
+    "pyyaml"
+]
+
+[project.optional-dependencies]
+test = [
+    "cloudpickle",
+    "hypothesis",
+    "pytest",
+    "pytest-regressions",
+    "graphviz"
+]
+
+[tool.setuptools.packages.find]
+include = ['stream*']
+exclude = ['tests*']
+
+[tool.setuptools.package-data]
+stream = ["*.csv"]
+
+[tool.setuptools_scm]
