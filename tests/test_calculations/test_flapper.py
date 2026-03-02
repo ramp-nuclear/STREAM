@@ -1,10 +1,11 @@
-from hypothesis import given, settings
 import numpy as np
 import pytest
+from hypothesis import given, settings
 
 from stream.calculations import Flapper
 from stream.substances import light_water
 from stream.utilities import directed_Tin
+
 from .conftest import medium_floats
 
 

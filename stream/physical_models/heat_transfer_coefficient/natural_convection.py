@@ -6,15 +6,15 @@ from numba import njit
 from stream.physical_models.dimensionless import Ra
 from stream.substances import Liquid
 from stream.units import (
-    KgPerM3,
-    PaS,
-    JPerKgK,
-    WPerMK,
-    PerC,
     Celsius,
+    JPerKgK,
+    KgPerM3,
     Meter,
+    PaS,
+    PerC,
     Value,
     WPerM2K,
+    WPerMK,
 )
 
 

@@ -19,6 +19,7 @@ from stream.state import State
 from stream.substances import heavy_water, light_water
 from stream.substances.mocks import mock_liquid_funcs
 from stream.utilities import just
+
 from .conftest import are_close, pos_medium_floats
 
 mock_eff_pipe = EffectivePipe(length=1, heated_perimeter=1 / 4, wet_perimeter=1 / 4, area=1)

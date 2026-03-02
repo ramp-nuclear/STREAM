@@ -6,14 +6,14 @@ from hypothesis.strategies import floats, lists
 from stream.aggregator import Aggregator
 from stream.calculations import PointKinetics
 from stream.calculations.point_kinetics import (
+    OneWayToSCRAM,
     PointKineticsWInput,
     temperature_reactivity,
-    OneWayToSCRAM,
 )
 from stream.composition import Calculation_factory
-from stream.utilities import just, identity
-from .conftest import are_close, medium_floats, pos_floats
+from stream.utilities import identity, just
 
+from .conftest import are_close, medium_floats, pos_floats
 
 U235_lambdak = np.array([55.72, 22.72, 6.22, 2.3, 0.618, 0.23])
 mock_calc = Calculation_factory(just(1.0), [False], {})(name="mock")

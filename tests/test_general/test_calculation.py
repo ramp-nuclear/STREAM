@@ -7,9 +7,8 @@ from hypothesis import given
 from hypothesis.extra.numpy import arrays
 
 from stream import unpacked
-from stream.calculation import _concat, Calculation
+from stream.calculation import Calculation, _concat
 from stream.composition import Calculation_factory
-
 
 Addition = Calculation_factory(lambda y, *, x: y + x, [False], dict(y=0))
 Multiplication = Calculation_factory(lambda x, *, y: x * y, [False], dict(x=0))

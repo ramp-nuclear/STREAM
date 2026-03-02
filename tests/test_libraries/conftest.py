@@ -1,5 +1,5 @@
-from hypothesis.strategies import floats, integers
 import numpy as np
+from hypothesis.strategies import floats, integers
 
 from stream import EffectivePipe
 

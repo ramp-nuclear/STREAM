@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
 from stream.units import DecayHeatFunction, MeVPerFission, MeVPerS, PerS, Second
 
 __all__ = ["read", "Standard", "Source", "contribution", "fp_inner_"]

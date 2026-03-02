@@ -23,8 +23,8 @@ from stream.units import (
     NPerM,
     PaS,
     Pascal,
-    WPerMK,
     PerC,
+    WPerMK,
 )
 
 __all__ = ["Liquid", "LiquidFuncs"]

@@ -1,13 +1,13 @@
 from enum import Enum
-from functools import reduce, partial
+from functools import partial, reduce
 from typing import Literal, Protocol, Sequence
 
 import numpy as np
 
-from stream.physical_models.dimensionless import flow_regimes, Re_mdot, Gr
+from stream.physical_models.dimensionless import Gr, Re_mdot, flow_regimes
 from stream.physical_models.heat_transfer_coefficient.laminar import (
-    developing_laminar_h_spl,
     constant_Nusselt_h_spl,
+    developing_laminar_h_spl,
     fully_developed_laminar_h_spl,
 )
 from stream.physical_models.heat_transfer_coefficient.natural_convection import (
@@ -17,7 +17,7 @@ from stream.physical_models.heat_transfer_coefficient.turbulent import (
     Dittus_Boelter_h_spl,
 )
 from stream.substances import Liquid, LiquidFuncs
-from stream.units import Celsius, KgPerS, Meter, Meter2, Value, WPerM2K, Pascal
+from stream.units import Celsius, KgPerS, Meter, Meter2, Pascal, Value, WPerM2K
 from stream.utilities import lin_interp
 
 

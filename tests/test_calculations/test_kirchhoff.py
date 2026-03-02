@@ -10,13 +10,14 @@ from networkx import MultiDiGraph
 
 from stream.aggregator import Aggregator
 from stream.calculations.kirchhoff import (
-    build_kvl_matrix,
     Junction,
     Kirchhoff,
     KirchhoffWDerivatives,
+    build_kvl_matrix,
     to_graph_for_cycles,
     to_str,
 )
+
 from .conftest import are_close, pos_medium_floats
 
 

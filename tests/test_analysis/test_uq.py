@@ -6,19 +6,20 @@ from itertools import chain
 import hypothesis.strategies as st
 import numpy as np
 import pytest
-from dask import visualize, delayed
+from dask import delayed, visualize
 from hypothesis import given, settings
 from pandas import DataFrame
 from scipy.constants import atmosphere
 from scipy.optimize import root_scalar
 
 from stream.aggregator import Aggregator
-from stream.analysis.UQ import Uncertainty, UQModel, DASKUQModel
-from stream.calculations import ChannelAndContacts, Pump, HeatExchanger
-from stream.composition import flow_graph_to_agr_and_k, flow_graph, flow_edge as edge
+from stream.analysis.UQ import DASKUQModel, Uncertainty, UQModel
+from stream.calculations import ChannelAndContacts, HeatExchanger, Pump
+from stream.composition import flow_edge as edge
+from stream.composition import flow_graph, flow_graph_to_agr_and_k
 from stream.physical_models.thresholds import Sudo_Kaminaga_CHF
 from stream.pipe_geometry import EffectivePipe
-from stream.state import to_dataframe, State
+from stream.state import State, to_dataframe
 from stream.substances import light_water
 from stream.units import Array1D, cm, mm
 from stream.utilities import just

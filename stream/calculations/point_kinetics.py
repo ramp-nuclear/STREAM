@@ -3,7 +3,8 @@ A calculation for the point kinetics neutronics model
 """
 
 import logging
-from typing import Sequence, TypeVar
+from enum import Enum, StrEnum
+from typing import Protocol, Sequence, TypeVar
 
 import numpy as np
 from cytoolz.functoolz import curry
@@ -23,9 +24,6 @@ from stream.units import (
     WPerS,
 )
 from stream.utilities import just
-
-from enum import Enum, StrEnum
-from typing import Protocol
 
 logger = logging.getLogger(__name__)
 

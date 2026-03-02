@@ -8,19 +8,19 @@ from cytoolz import keymap
 
 from stream import Calculation
 from stream.calculations import (
-    Pump,
-    DPCalculation,
     Channel,
     ChannelAndContacts,
+    DPCalculation,
     Fuel,
+    Junction,
     Kirchhoff,
     PointKinetics,
     PointKineticsWInput,
-    Junction,
+    Pump,
 )
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.state import State
-from stream.units import Celsius, KgPerS, Pascal, Watt, Value
+from stream.units import Celsius, KgPerS, Pascal, Value, Watt
 from stream.utilities import just
 
 __all__ = [

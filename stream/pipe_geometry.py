@@ -6,12 +6,11 @@ A pipe geometry interface used by different calculations, defined through
 """
 
 from dataclasses import dataclass, field
-from typing import TypeVar, Literal
+from typing import Literal, TypeVar
 
 import numpy as np
 
 from stream.units import Meter, Meter2
-
 
 __all__ = ["EffectivePipe"]
 

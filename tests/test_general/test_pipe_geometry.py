@@ -1,5 +1,6 @@
 import numpy as np
 from hypothesis import given
+
 from stream.pipe_geometry import EffectivePipe
 from tests.test_general.conftest import pos_medium_floats
 

@@ -7,12 +7,12 @@ of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 
 from functools import partial
 from itertools import chain
-from typing import Callable, Sequence, Protocol
+from typing import Callable, Protocol, Sequence
 
 import numpy as np
 from numba import njit
 
-from stream.calculation import unpacked, CalcState, Calculation
+from stream.calculation import CalcState, Calculation, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.dimensionless import Re_mdot
 from stream.physical_models.pressure_drop import (
@@ -22,33 +22,32 @@ from stream.physical_models.pressure_drop import (
     local_pressure_factor,
 )
 from stream.physical_models.pressure_drop.friction import (
-    regime_dependent_friction,
     laminar_friction,
+    regime_dependent_friction,
     turbulent_friction,
 )
 from stream.physical_models.pressure_drop.local import (
-    sudden_expansion_factor,
-    sudden_contraction_factor,
     bend_factor,
+    sudden_contraction_factor,
+    sudden_expansion_factor,
 )
 from stream.pipe_geometry import EffectivePipe
 from stream.substances.liquid import LiquidFuncs
 from stream.units import (
     Celsius,
-    g,
+    KgPerM3,
+    KgPerM4S,
+    KgPerM7,
     KgPerS,
     Meter,
     Meter2,
     MPerS2,
-    PerMS,
     Pascal,
-    KgPerM3,
-    KgPerM7,
-    KgPerM4S,
+    PerMS,
     Radians,
+    g,
 )
 from stream.utilities import summed
-
 
 __all__ = [
     "DPCalculation",

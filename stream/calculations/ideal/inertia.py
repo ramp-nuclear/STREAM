@@ -24,8 +24,7 @@ References
 from typing import Callable
 
 from stream.calculations.ideal.ideal import LumpedComponent
-from stream.units import PerM, KgPerS, KgPerS2, Pascal
-
+from stream.units import KgPerS, KgPerS2, Pascal, PerM
 
 __all__ = ["bilinear", "Inertia"]
 

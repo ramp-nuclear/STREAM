@@ -20,10 +20,9 @@ from typing import Sequence
 
 import numpy as np
 
-from stream import unpacked, Calculation
-from stream.units import Array1D, Celsius, KgPerS, Name, Place, Pascal
+from stream import Calculation, unpacked
+from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
 from stream.utilities import directed_Tin
-
 
 __all__ = ["LumpedComponent"]
 

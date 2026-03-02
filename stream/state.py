@@ -8,13 +8,13 @@ objects. We provide additional useful methods in the same namespace.
 from functools import reduce
 from itertools import chain
 from operator import or_
-from typing import Iterable, Any, IO, Callable, TypeVar
+from typing import IO, Any, Callable, Iterable, TypeVar
 
 import numpy as np
 import yaml
+from cytoolz.dicttoolz import keyfilter, valfilter, valmap
 from pandas import DataFrame
 
-from cytoolz.dicttoolz import keyfilter, valfilter, valmap
 from stream.calculation import CalcState, Calculation
 from stream.units import Value
 

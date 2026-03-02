@@ -1,14 +1,13 @@
 r"""Various alternative constructors for some calculations"""
 
-from typing import Literal, Sequence, Protocol
+from typing import Literal, Protocol, Sequence
 
 import numpy as np
 
 from stream import Calculation, unpacked
 from stream.calculations import Friction, Pump, Resistor
 from stream.calculations.ideal.resistors import DPCalculation
-from stream.units import Functional, Array1D, KgPerS, Pascal, Place
-
+from stream.units import Array1D, Functional, KgPerS, Pascal, Place
 
 __all__ = ["Calculation_factory", "ResistorFromKnownPoint"]
 

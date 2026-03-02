@@ -8,7 +8,7 @@ The main idea behind these implementations is that the graphical structure of an
 across :class:`.Calculation` boundaries.
 """
 
-from typing import Callable, Sequence, Protocol, Literal, TypeVar
+from typing import Callable, Literal, Protocol, Sequence, TypeVar
 
 import numpy as np
 

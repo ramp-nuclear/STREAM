@@ -2,10 +2,10 @@ from functools import partial
 
 import pytest
 
-from stream.substances import light_water
-from stream.calculations import Pump, Gravity, Junction, Resistor
+from stream.calculations import Gravity, Junction, Pump, Resistor
 from stream.composition import FlowGraph, flow_edge
 from stream.composition.subsystems import GravityMismatchError
+from stream.substances import light_water
 from stream.units import standard_acceleration as g
 
 G = partial(Gravity, light_water)

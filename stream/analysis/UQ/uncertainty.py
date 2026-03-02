@@ -1,10 +1,9 @@
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 import numpy as np
 from cytoolz import valfilter
 
 from stream.units import Value
-
 
 Uncertuple = tuple[Value, Value]
 

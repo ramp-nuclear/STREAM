@@ -10,7 +10,7 @@ from enum import Enum
 from inspect import Parameter, signature
 from typing import Callable, Iterator, Literal
 
-from IPython.display import display, Markdown
+from IPython.display import Markdown, display
 from rich.table import Table
 
 from stream import Calculation

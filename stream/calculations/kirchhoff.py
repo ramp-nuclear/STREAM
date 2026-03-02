@@ -15,7 +15,7 @@ system objects as nodes, and connected by edges depicting the connected cycles.
 
 import logging
 from itertools import chain, count, takewhile
-from typing import Any, Callable, Hashable, Sequence, Iterable
+from typing import Any, Callable, Hashable, Iterable, Sequence
 
 import networkx as nx
 import numpy as np
@@ -26,8 +26,7 @@ from scipy.sparse import csr_matrix, dok_matrix
 
 from stream import Calculation
 from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
-from stream.utilities import concat, STREAM_DEBUG
-
+from stream.utilities import STREAM_DEBUG, concat
 
 COMPS = "comps"
 logger = logging.getLogger("stream.kirchhoff")

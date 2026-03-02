@@ -1,8 +1,8 @@
 import numpy as np
 from hypothesis.strategies import floats, integers
 
-from stream import Solid, EffectivePipe, light_water
-from stream.calculations import Fuel, ChannelAndContacts
+from stream import EffectivePipe, Solid, light_water
+from stream.calculations import ChannelAndContacts, Fuel
 from stream.composition import x_boundaries
 from stream.units import mm
 from stream.utilities import normalize

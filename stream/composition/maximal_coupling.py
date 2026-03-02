@@ -3,7 +3,7 @@ from typing import Callable
 
 from networkx import DiGraph
 
-from stream.aggregator import vars_, CalculationGraph
+from stream.aggregator import CalculationGraph, vars_
 from stream.calculation import Calculation
 from stream.utilities import just
 

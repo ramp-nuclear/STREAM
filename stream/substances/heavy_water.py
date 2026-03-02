@@ -6,8 +6,8 @@ as given in [#simantov]_. The user facing function is of type
 <class 'stream.substances.liquid.LiquidFuncs'>
 """
 
-from numba import njit
 import numpy as np
+from numba import njit
 
 from stream.substances import LiquidFuncs
 from stream.units import (
@@ -18,8 +18,8 @@ from stream.units import (
     NPerM,
     PaS,
     Pascal,
-    WPerMK,
     PerC,
+    WPerMK,
 )
 from stream.utilities import to_Fahrenheit
 

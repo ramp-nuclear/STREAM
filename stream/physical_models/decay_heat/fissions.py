@@ -9,7 +9,6 @@ from stream.composition import point_kinetics_steady_state
 from stream.units import Array1D, DecayHeatFunction, PerS, Second, Value
 from stream.utilities import identity
 
-
 __all__ = ["profile", "profile_from_pk"]
 
 

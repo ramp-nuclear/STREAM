@@ -10,7 +10,7 @@ import warnings
 from contextlib import contextmanager
 from functools import partial, reduce, singledispatch
 from operator import add
-from typing import Any, Callable, Iterable, Sequence, Type, TypeVar, Protocol, ParamSpec
+from typing import Any, Callable, Iterable, ParamSpec, Protocol, Sequence, Type, TypeVar
 
 import numpy as np
 from cytoolz import valmap
@@ -28,7 +28,6 @@ except ImportError:
 from scipy.optimize import fsolve
 
 from stream.units import Array, Array1D, Celsius, Fahrenheit, KgPerS, Place, Value
-
 
 STREAM_DEBUG = 11
 

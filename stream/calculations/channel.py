@@ -11,11 +11,11 @@ from typing import Sequence, TypeVar
 
 import numpy as np
 
-from stream.calculation import Calculation, unpacked, CalcState
-from stream.physical_models.dimensionless import Re_mdot, Gr, Pe
+from stream.calculation import CalcState, Calculation, unpacked
+from stream.physical_models.dimensionless import Gr, Pe, Re_mdot
 from stream.physical_models.heat_transfer_coefficient import (
-    wall_heat_transfer_coeff,
     SinglePhaseLiquidHTCExArgs,
+    wall_heat_transfer_coeff,
 )
 from stream.physical_models.pressure_drop import pressure_diff, static_pressure
 from stream.pipe_geometry import EffectivePipe
@@ -30,10 +30,10 @@ from stream.units import (
     Name,
     Pascal,
     Place,
-    WPerM2K,
     WPerM2,
+    WPerM2K,
 )
-from stream.utilities import directed, directed_Tin, STREAM_DEBUG, pair_mean_1d
+from stream.utilities import STREAM_DEBUG, directed, directed_Tin, pair_mean_1d
 
 __all__ = [
     "Channel",

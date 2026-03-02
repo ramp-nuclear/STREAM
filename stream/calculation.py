@@ -6,14 +6,13 @@ such a system.
 
 from abc import abstractmethod
 from functools import wraps
-from typing import Any, Optional, Protocol, runtime_checkable, Sequence, Iterable
+from typing import Any, Iterable, Optional, Protocol, Sequence, runtime_checkable
 
 import numpy as np
 from cytoolz.dicttoolz import valmap
 
 from stream.units import Array1D, Name, Place, Value
 from stream.utilities import flatten_values
-
 
 __all__ = ["Calculation", "unpacked", "CalcState"]
 CalcState = dict[Name, Value]

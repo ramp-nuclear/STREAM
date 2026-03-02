@@ -1,7 +1,6 @@
 import numpy as np
 from hypothesis.strategies import floats, integers
 
-
 normal_floats = floats(allow_infinity=False, allow_nan=False)
 medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=-1e6)
 pos_medium_floats = floats(allow_infinity=False, allow_nan=False, max_value=1e6, min_value=1e-6)

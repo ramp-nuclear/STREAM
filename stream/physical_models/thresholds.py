@@ -65,14 +65,16 @@ from stream.units import (
     JPerKgK,
     KgPerS,
     Meter,
+    Meter2,
     MPerS,
     MPerS2,
     Pascal,
+    Value,
     Watt,
     WPerM2,
+)
+from stream.units import (
     g as gravity,
-    Value,
-    Meter2,
 )
 from stream.utilities import directed
 

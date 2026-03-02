@@ -1,7 +1,7 @@
 import numpy as np
 
-from stream.composition.mtr_geometry import chain_fuels_channels
 from stream.aggregator import vars_
+from stream.composition.mtr_geometry import chain_fuels_channels
 
 
 def test_chaining_one_channel_more_than_fuels_has_correct_graph_for_specific_case():

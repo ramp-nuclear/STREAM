@@ -1,12 +1,12 @@
 from collections import defaultdict
-from typing import Protocol, Iterable, Sequence
+from typing import Iterable, Protocol, Sequence
 
 from more_itertools import unique_everseen
 from networkx import DiGraph
 
 from stream.calculation import Calculation
-from stream.units import Name, FunctionOfTime, Place
-from stream.utilities import uppercase_numeric_only, offset
+from stream.units import FunctionOfTime, Name, Place
+from stream.utilities import offset, uppercase_numeric_only
 
 VARS = "variables"
 ExternalFunctions = dict[Calculation, dict[Name, FunctionOfTime]]
@@ -91,8 +91,8 @@ def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
     """
     node_options = node_options or {}
     edge_options = edge_options or {}
-    from matplotlib import rc_context
     import networkx as nx
+    from matplotlib import rc_context
 
     # noinspection SpellCheckingInspection
     with rc_context({r"text.usetex": False}):

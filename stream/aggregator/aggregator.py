@@ -6,22 +6,23 @@ from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
 from cytoolz import valmap
-from networkx import compose, DiGraph
+from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
 from stream.solvers import algebraic, differential, differential_algebraic
-from stream.state import State, StateTimeseries, DictState
+from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
-from stream.utilities import concat, offset, STREAM_DEBUG
+from stream.utilities import STREAM_DEBUG, concat, offset
+
 from .solution import Solution
 from .utils import (
     VARS,
     BaseAgr,
     ExternalFunctions,
     draw_aggregator,
+    map_externals,
     non_unique_calculations,
     partition,
-    map_externals,
 )
 
 __all__ = ["Aggregator", "CalculationGraph", "NonUniqueCalculationNameError"]

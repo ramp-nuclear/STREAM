@@ -10,7 +10,7 @@ from hypothesis.strategies import floats, integers
 from networkx import DiGraph
 from scipy.constants import g
 
-from stream.aggregator import vars_, Aggregator, CalculationGraph
+from stream.aggregator import Aggregator, CalculationGraph, vars_
 from stream.calculations import (
     Channel,
     ChannelAndContacts,
@@ -29,26 +29,29 @@ from stream.calculations import (
     Resistor,
     VolumetricFlowResistor,
 )
-from stream.calculations.ideal.ideal import LumpedComponent
 from stream.calculations.flapper import continuously_differentiable_relaxation as cdr
+from stream.calculations.ideal.ideal import LumpedComponent
 from stream.composition import guess_hydraulic_steady_state
 from stream.composition.cycle import (
     flow_edge,
     flow_graph,
-    flow_graph_to_agr_and_k as agr_k,
     kirchhoffify,
+)
+from stream.composition.cycle import (
+    flow_graph_to_agr_and_k as agr_k,
 )
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.jacobians import ALG_jacobian, DAE_jacobian
-from stream.physical_models.pressure_drop import pressure_diff, friction_factor
+from stream.physical_models.pressure_drop import friction_factor, pressure_diff
 from stream.pipe_geometry import EffectivePipe
 from stream.state import State
 from stream.substances import light_water
 from stream.substances.mocks import mock_liquid_funcs, mock_solid
 from stream.units import cm, hour
-from stream.utilities import just, summed, identity, strictly_monotonous as mono
+from stream.utilities import identity, just, summed
+from stream.utilities import strictly_monotonous as mono
 
-from .conftest import are_close, pos_medium_floats, MTR_fuel_and_channel
+from .conftest import MTR_fuel_and_channel, are_close, pos_medium_floats
 
 
 @settings(deadline=None)

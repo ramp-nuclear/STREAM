@@ -3,7 +3,7 @@
 import numpy as np
 from numba import njit
 
-from stream.units import Celsius, WPerM2K, Pascal, WPerM2
+from stream.units import Celsius, Pascal, WPerM2, WPerM2K
 
 
 def wall_temperature(T_cool: Celsius, T_clad: Celsius, h_cool: WPerM2K, h_clad: WPerM2K) -> Celsius:

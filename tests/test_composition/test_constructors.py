@@ -8,6 +8,7 @@ from hypothesis.strategies import sampled_from
 from stream.aggregator import Aggregator
 from stream.composition.constructors import Calculation_factory, ResistorFromKnownPoint
 from stream.substances import light_water
+
 from .conftest import are_close, pos_medium_floats
 
 

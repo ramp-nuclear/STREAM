@@ -2,9 +2,9 @@
 
 import numpy as np
 
-from stream.physical_models.dimensionless import Re_mdot, Pr
+from stream.physical_models.dimensionless import Pr, Re_mdot
 from stream.substances import Liquid
-from stream.units import Value, WPerM2K, Meter, KgPerS, Meter2
+from stream.units import KgPerS, Meter, Meter2, Value, WPerM2K
 
 #: For parallel plates in laminar flow, the Nusselt number is constant,
 #: depending on the boundary conditions. See

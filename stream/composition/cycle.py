@@ -11,22 +11,22 @@ from cytoolz import keymap
 from networkx import DiGraph, MultiDiGraph
 from networkx.utils import pairwise
 
+from stream import State
 from stream.aggregator import (
-    Aggregator,
-    CalculationGraph,
-    BaseAgr,
     VARS,
-    vars_,
+    Aggregator,
+    BaseAgr,
+    CalculationGraph,
     ExternalFunctions,
     add_variables,
+    vars_,
 )
 from stream.calculation import Calculation
 from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
 from stream.calculations.kirchhoff import COMPS
 from stream.composition import guess_hydraulic_steady_state
-from stream import State
-from stream.composition.subsystems import check_gravity_mismatch, HydraulicStrategyMap
-from stream.units import Pascal, KgPerS, Celsius
+from stream.composition.subsystems import HydraulicStrategyMap, check_gravity_mismatch
+from stream.units import Celsius, KgPerS, Pascal
 from stream.utilities import summed
 
 __all__ = [

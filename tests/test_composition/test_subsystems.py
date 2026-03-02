@@ -5,13 +5,13 @@ from hypothesis import given, settings
 from hypothesis.extra.numpy import arrays
 
 from stream.calculations import (
-    Resistor,
-    Pump,
+    Inertia,
+    Junction,
+    KirchhoffWDerivatives,
     PointKinetics,
     PointKineticsWInput,
-    Inertia,
-    KirchhoffWDerivatives,
-    Junction,
+    Pump,
+    Resistor,
 )
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.composition import Calculation_factory, FlowGraph, flow_edge
@@ -19,9 +19,10 @@ from stream.composition.subsystems import (
     point_kinetics_steady_state,
     symmetric_plate_steady_state,
 )
-from stream.units import pcm
 from stream.substances import light_water
+from stream.units import pcm
 from stream.utilities import just
+
 from .conftest import MTR_fuel_and_channel
 
 

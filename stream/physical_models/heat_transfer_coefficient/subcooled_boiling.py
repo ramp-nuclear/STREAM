@@ -1,9 +1,9 @@
 import numpy as np
 from numba import njit
 
-from stream.units import Celsius, WPerM2, g, Value
+from stream.physical_models.dimensionless import Pr, flow_regimes
 from stream.substances import Liquid
-from stream.physical_models.dimensionless import flow_regimes, Pr
+from stream.units import Celsius, Value, WPerM2, g
 from stream.utilities import lin_interp
 
 

@@ -6,7 +6,6 @@ from numba import njit
 
 from stream.units import (
     Celsius,
-    g as local_gravity,
     JPerKgK,
     KgPerM3,
     KgPerS,
@@ -20,7 +19,9 @@ from stream.units import (
     WPerM2K,
     WPerMK,
 )
-
+from stream.units import (
+    g as local_gravity,
+)
 
 __all__ = ["flow_regimes", "Gr", "Nu", "Pe", "Pr", "Ra", "Re", "Re_mdot"]
 

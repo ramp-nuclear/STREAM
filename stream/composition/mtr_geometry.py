@@ -13,15 +13,15 @@ The created objects are CalculationGraph objects which may be combined to eventu
 """
 
 from copy import deepcopy
-from typing import Sequence, Iterable, Literal, Callable
+from typing import Callable, Iterable, Literal, Sequence
 
 import numpy as np
 from more_itertools import interleave_longest, windowed
 from networkx import DiGraph
 
-from stream.aggregator import CalculationGraph, vars_, ExternalFunctions
+from stream.aggregator import CalculationGraph, ExternalFunctions, vars_
 from stream.calculations import ChannelAndContacts, Fuel
-from stream.units import Array1D, Meter, Name, Array2D
+from stream.units import Array1D, Array2D, Meter, Name
 from stream.utilities import concat, cosine_shape
 
 __all__ = [

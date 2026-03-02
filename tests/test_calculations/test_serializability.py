@@ -15,7 +15,6 @@ from stream.calculations.heat_diffusion import Solid
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water as lw
 
-
 light_water = st.just(lw)
 reg_floats = st.floats(
     min_value=1e-2,

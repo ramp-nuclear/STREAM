@@ -4,7 +4,8 @@ from functools import partial
 
 import numpy as np
 import pytest
-from hypothesis import given, strategies as st, settings
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from hypothesis.strategies import SearchStrategy
 from scipy.constants import day, hour, week
 
@@ -24,8 +25,8 @@ except FileNotFoundError:
 
 from stream.calculations.point_kinetics import ReactivityController
 from stream.utilities import factor, just
-from .conftest import pos_medium_floats
 
+from .conftest import pos_medium_floats
 
 Q = 200.0
 try:

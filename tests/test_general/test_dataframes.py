@@ -4,12 +4,13 @@ import hypothesis.extra.numpy as stnp
 import hypothesis.strategies as st
 import numpy as np
 import pytest
-from hypothesis import given, settings, HealthCheck
+from hypothesis import HealthCheck, given, settings
 from networkx import DiGraph
 from pandas import DataFrame
 
-from stream.aggregator import Solution, Aggregator, vars_
-from stream.state import to_dataframe, from_dataframe, State, StateTimeseries
+from stream.aggregator import Aggregator, Solution, vars_
+from stream.state import State, StateTimeseries, from_dataframe, to_dataframe
+
 from .test_calculation import add, multiply
 
 

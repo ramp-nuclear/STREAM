@@ -1,17 +1,19 @@
 import numpy as np
 import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 from hypothesis.extra.numpy import arrays
 
 from stream.composition import uniform_x_power_shape
 from stream.utilities import (
     cosine_shape,
+    cosine_shape_by_zero_endpoints,
     just,
     offset,
     pair_mean,
     pair_mean_1d,
-    cosine_shape_by_zero_endpoints,
 )
+
 from .conftest import are_close, non_neg_medium_integers
 
 

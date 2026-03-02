@@ -1,15 +1,16 @@
 """Tools to generate UQ models"""
 
 from functools import reduce
-from typing import Callable, TypeVar, Iterable
+from typing import Callable, Iterable, TypeVar
 
 import numpy as np
 from dask import delayed
 from dask.delayed import Delayed
 from pandas import DataFrame, concat
 
-from stream.units import Value, Array1D, Array2D
-from .uncertainty import Uncertuple, Uncertainty
+from stream.units import Array1D, Array2D, Value
+
+from .uncertainty import Uncertainty, Uncertuple
 
 Model = Callable[[...], DataFrame]
 DelayedModel = Callable[[...], Delayed]

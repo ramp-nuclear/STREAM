@@ -7,13 +7,14 @@ from stream.calculations.channel import ChannelAndContacts
 from stream.physical_models.thresholds import (
     Fabrega_CHF,
     Mirshak_CHF,
+    Saha_Zuber_OSV,
     Sudo_Kaminaga_CHF,
     Whittle_Forgan_OFI,
-    Saha_Zuber_OSV,
     boiling_power,
 )
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
+
 from .conftest import mock_pipe
 
 

@@ -20,7 +20,6 @@ from typing import Callable
 import numpy as np
 from scipy.constants import g as standard_acceleration
 
-
 # Data Sets
 Array1D = np.ndarray
 Array2D = np.ndarray

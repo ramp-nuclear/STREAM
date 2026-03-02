@@ -8,13 +8,12 @@ from typing import Callable, Sequence
 
 import numpy as np
 
-from stream import unpacked, Calculation
+from stream import Calculation, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.pressure_drop import mdot_by_local_pressure
 from stream.substances import LiquidFuncs
 from stream.units import Array1D, Celsius, KgPerS, Meter2, PerS, Second
-from stream.utilities import directed_Tin, STREAM_DEBUG
-
+from stream.utilities import STREAM_DEBUG, directed_Tin
 
 __all__ = ["Flapper", "legacy_relaxation", "continuously_differentiable_relaxation"]
 

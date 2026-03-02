@@ -4,17 +4,18 @@ import hypothesis.strategies as st
 import numpy as np
 import pytest
 from hypothesis import given, settings
+
 from stream.calculations import (
+    Bend,
     Gravity,
     HeatExchanger,
     LocalPressureDrop,
     Pump,
     Resistor,
     ResistorSum,
-    Bend,
 )
 from stream.substances import light_water
-from stream.utilities import summed, just
+from stream.utilities import just, summed
 
 from .conftest import medium_floats, normal_floats, pos_medium_floats
 

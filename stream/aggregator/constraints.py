@@ -5,6 +5,7 @@ import numpy as np
 
 from stream.state import State
 from stream.utilities import mutually_exclusive
+
 from .aggregator import Aggregator
 
 __all__ = ["CONSTRAINT", "create_constraints"]

@@ -5,26 +5,27 @@ from typing import Sequence
 import numpy as np
 import pytest
 from hypothesis import given
-from hypothesis.strategies import floats, text, nothing, one_of
+from hypothesis.strategies import floats, nothing, one_of, text
 from networkx import DiGraph
 from networkx.utils import graphs_equal
 
 from stream.aggregator import (
-    vars_,
-    NonUniqueCalculationNameError,
-    add_variables,
+    CONSTRAINT,
     Aggregator,
     CalculationGraph,
+    NonUniqueCalculationNameError,
+    add_variables,
     create_constraints,
-    CONSTRAINT,
+    vars_,
 )
 from stream.calculation import Calculation, unpacked
 from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
 from stream.units import Place
+
 from .conftest import are_close, medium_floats
-from .test_calculation import add, multiply, divide, Addition
+from .test_calculation import Addition, add, divide, multiply
 
 
 @pytest.fixture(scope="module")

@@ -10,16 +10,17 @@ from stream.calculations.heat_diffusion import (
     Fuel,
     Solid,
     Walls,
-    xz_diffusion,
     cylindrical_areas_volumes,
-    rz_diffusion,
     r_diffusion,
+    rz_diffusion,
     x_diffusion,
+    xz_diffusion,
 )
 from stream.state import State
 from stream.substances.mocks import mock_solid
 from stream.units import cm, mm
 from stream.utilities import concat, pair_mean_1d
+
 from .conftest import are_close, pos_medium_floats
 
 

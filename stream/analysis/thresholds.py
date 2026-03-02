@@ -24,22 +24,32 @@ from typing import Callable, Protocol
 import numpy as np
 
 from stream.aggregator import Aggregator
-from stream.calculations.channel import ChannelVar, Direction, ChannelAndContacts
+from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction
 from stream.physical_models.heat_transfer_coefficient.temperatures import (
     Bergles_Rohsenow_dT_ONB,
 )
 from stream.physical_models.thresholds import (
-    Saha_Zuber_OSV_computed_bulk as _Saha_Zuber_OSV,
-    boiling_power as _boiling_power,
-    Whittle_Forgan_OFI as _Whittle_Forgan_OFI,
-    Sudo_Kaminaga_CHF as _Sudo_Kaminaga_CHF,
-    Mirshak_CHF as _Mirshak_CHF,
     Fabrega_CHF as _Fabrega_CHF,
 )
+from stream.physical_models.thresholds import (
+    Mirshak_CHF as _Mirshak_CHF,
+)
+from stream.physical_models.thresholds import (
+    Saha_Zuber_OSV_computed_bulk as _Saha_Zuber_OSV,
+)
+from stream.physical_models.thresholds import (
+    Sudo_Kaminaga_CHF as _Sudo_Kaminaga_CHF,
+)
+from stream.physical_models.thresholds import (
+    Whittle_Forgan_OFI as _Whittle_Forgan_OFI,
+)
+from stream.physical_models.thresholds import (
+    boiling_power as _boiling_power,
+)
 from stream.pipe_geometry import EffectivePipe
-from stream.state import State, CalcState, StateTimeseries
+from stream.state import CalcState, State, StateTimeseries
 from stream.substances import LiquidFuncs, light_water
-from stream.units import WPerM2, Watt, MPerS2, g, Celsius, Value, Meter
+from stream.units import Celsius, Meter, MPerS2, Value, Watt, WPerM2, g
 from stream.utilities import factor
 
 

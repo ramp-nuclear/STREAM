@@ -1,5 +1,5 @@
-from networkx import DiGraph, MultiDiGraph
 import pytest
+from networkx import DiGraph, MultiDiGraph
 
 from stream.aggregator import VARS, CalculationGraph
 from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives

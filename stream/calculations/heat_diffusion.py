@@ -88,7 +88,7 @@ from cachetools import cached
 from more_itertools import chunked, interleave
 from numba import njit
 
-from stream.calculation import Calculation, unpacked, CalcState
+from stream.calculation import CalcState, Calculation, unpacked
 from stream.physical_models.heat_transfer_coefficient import wall_temperature
 from stream.units import (
     Array1D,
@@ -110,11 +110,13 @@ from stream.units import (
     WPerMK,
 )
 from stream.utilities import (
+    STREAM_DEBUG,
     dataclass_map,
-    harmonic_mean as in_parallel,
     if_is,
     pair_mean,
-    STREAM_DEBUG,
+)
+from stream.utilities import (
+    harmonic_mean as in_parallel,
 )
 
 logger = logging.getLogger("stream.fuel")

@@ -8,10 +8,10 @@ from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
 from stream.units import (
     Celsius,
-    KgPerS,
-    Meter2,
     KgPerM3,
+    KgPerS,
     Meter,
+    Meter2,
     Pascal,
     Value,
 )

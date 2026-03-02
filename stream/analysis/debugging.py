@@ -5,8 +5,8 @@ from functools import partial, reduce
 from typing import Container
 
 from stream.aggregator import Aggregator
-from stream.state import State
 from stream.calculations import Kirchhoff
+from stream.state import State
 from stream.units import Value
 
 

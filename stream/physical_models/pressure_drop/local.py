@@ -12,14 +12,14 @@ from numba import njit
 from scipy.interpolate import RegularGridInterpolator
 
 from stream.units import (
-    Meter2,
-    Value,
-    KgPerS,
-    KgPerM3,
-    Pascal,
     Array1D,
     Array2D,
+    KgPerM3,
+    KgPerS,
+    Meter2,
+    Pascal,
     Radians,
+    Value,
 )
 from stream.utilities import lin_interp
 

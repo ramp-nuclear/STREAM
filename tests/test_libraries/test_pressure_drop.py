@@ -7,37 +7,38 @@ from functools import partial
 import hypothesis.strategies as st
 import numpy as np
 import pytest
-from hypothesis import given, settings, assume
+from hypothesis import assume, given, settings
 from scipy.constants import g
 
-from stream.pipe_geometry import EffectivePipe
 from stream.calculations import LocalPressureDrop
 from stream.physical_models.pressure_drop import (
-    pressure_diff,
     Darcy_Weisbach_pressure_by_mdot,
     friction_factor,
+    pressure_diff,
 )
 from stream.physical_models.pressure_drop.friction import (
+    _DARCY_NAMES,
+    laminar_friction,
+    rectangular_laminar_correction,
+    regime_dependent_friction,
     turbulent_friction,
     viscosity_correction,
-    rectangular_laminar_correction,
-    laminar_friction,
-    regime_dependent_friction,
-    _DARCY_NAMES,
 )
 from stream.physical_models.pressure_drop.local import (
-    mdot_by_local_pressure,
+    bend_factor,
+    contraction_factor,
     expansion_factor,
+    local_pressure_by_mdot,
+    mdot_by_local_pressure,
     sudden_contraction_factor,
     sudden_expansion_factor,
-    local_pressure_by_mdot,
-    contraction_factor,
-    bend_factor,
 )
+from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
 from stream.substances.mocks import mock_liquid_funcs
 from stream.utilities import lin_interp
-from .conftest import pos_medium_floats, mock_pipe, normal_floats
+
+from .conftest import mock_pipe, normal_floats, pos_medium_floats
 
 
 @pytest.mark.parametrize(

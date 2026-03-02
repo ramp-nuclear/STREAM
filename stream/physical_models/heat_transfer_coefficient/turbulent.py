@@ -2,9 +2,9 @@
 
 from numba import njit
 
-from stream.physical_models.dimensionless import Re_mdot, Pr
+from stream.physical_models.dimensionless import Pr, Re_mdot
 from stream.substances import Liquid
-from stream.units import KgPerS, Meter, Meter2, WPerM2K, Value
+from stream.units import KgPerS, Meter, Meter2, Value, WPerM2K
 
 
 @njit

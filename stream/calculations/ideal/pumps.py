@@ -4,8 +4,7 @@ import numpy as np
 
 from stream.calculation import unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
-from stream.units import KgPerS, Pascal, Celsius, Array1D
-
+from stream.units import Array1D, Celsius, KgPerS, Pascal
 
 __all__ = ["Pump"]
 
