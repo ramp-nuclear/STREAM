@@ -6,15 +6,24 @@ from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
 from cytoolz import valmap
-from networkx import compose, DiGraph
+from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
 from stream.solvers import algebraic, differential, differential_algebraic
-from stream.state import State, StateTimeseries, DictState
+from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
-from stream.utilities import concat, offset, STREAM_DEBUG
+from stream.utilities import STREAM_DEBUG, concat, offset
+
 from .solution import Solution
-from .utils import VARS, BaseAgr, ExternalFunctions, add_variables, draw_aggregator, non_unique_calculations, vars_, partition, map_externals
+from .utils import (
+    VARS,
+    BaseAgr,
+    ExternalFunctions,
+    draw_aggregator,
+    map_externals,
+    non_unique_calculations,
+    partition,
+)
 
 __all__ = ["Aggregator", "CalculationGraph", "NonUniqueCalculationNameError"]
 
@@ -22,15 +31,14 @@ logger = logging.getLogger("stream.aggregator")
 
 
 class NonUniqueCalculationNameError(ValueError):
-    """Error to signify that calculations in an aggregator were not uniquely named.
+    """Error to signify that calculations in an aggregator were not uniquely named."""
 
-    """
     pass
 
 
 class ProgressBarLike(Protocol):
-    """What a progresbar must supply to not crash. Hopefully its methods have something to do with updating a display of a progressbar...
-    """
+    """What a progresbar must supply to not crash. Hopefully its methods have something to do with updating a display of a progressbar..."""
+
     def update(self, s: int) -> None:
         """Method to update the state of the progress bar.
         Parameters
@@ -39,7 +47,7 @@ class ProgressBarLike(Protocol):
             The step number to update it.
         """
         ...
-    
+
     def finish(self) -> None:
         """Method to finalize and close the progressbar."""
         ...
@@ -87,8 +95,7 @@ class Aggregator:
 
         """
         if non_unique := non_unique_calculations(graph):
-            raise NonUniqueCalculationNameError(
-                f"Calculations were not uniquely named: {non_unique}")
+            raise NonUniqueCalculationNameError(f"Calculations were not uniquely named: {non_unique}")
         self.graph = graph
         self.funcs = funcs or {}
         self.sections, self.vector_length = partition(graph.nodes)
@@ -109,8 +116,7 @@ class Aggregator:
         draw_aggregator(self.graph, node_options, edge_options)
 
     @classmethod
-    def from_decoupled(cls, *nodes: Calculation,
-                       funcs: ExternalFunctions | None = None) -> "Aggregator":
+    def from_decoupled(cls, *nodes: Calculation, funcs: ExternalFunctions | None = None) -> "Aggregator":
         r"""Instantiate an Aggregator from calculations, which are not connected.
 
         Parameters
@@ -129,11 +135,11 @@ class Aggregator:
 
     @classmethod
     def connect(
-            cls,
-            a: BaseAgr,
-            b: BaseAgr,
-            *edges: tuple[Calculation, Calculation, Iterable[Name]],
-            ) -> "Aggregator":
+        cls,
+        a: BaseAgr,
+        b: BaseAgr,
+        *edges: tuple[Calculation, Calculation, Iterable[Name]],
+    ) -> "Aggregator":
         """
         Connect two Aggregator objects. In case of a clash, the second object
         prevails. If ``edges`` contains an edge already in either ``a.graph``
@@ -202,8 +208,7 @@ class Aggregator:
             out[section] = self._op("calculate", y, t, node)
         return out
 
-    def _node_external(self, node: Calculation, y: Sequence[float], t: Second
-                       ) -> dict[str, dict[Calculation, Any]]:
+    def _node_external(self, node: Calculation, y: Sequence[float], t: Second) -> dict[str, dict[Calculation, Any]]:
         """Arrange the external parameters for a node at a given time.
         This includes both parameters for which other nodes are responsible,
         and for which input functions are provided. These input functions are
@@ -223,13 +228,16 @@ class Aggregator:
         external arguments: dict[str, dict[Calculation, Any]]
             to be passed as kwargs.
         """
-        external = valmap(partial(valmap, y.__getitem__),
-                          self.external.get(node, {}))
-        evaluated_functions = {name: {node: f(t) if callable(f) else f}
-                               for name, f in self.funcs.get(node, {}).items()}
+        external = valmap(partial(valmap, y.__getitem__), self.external.get(node, {}))
+        evaluated_functions = {name: {node: f(t) if callable(f) else f} for name, f in self.funcs.get(node, {}).items()}
         return external | evaluated_functions
 
-    def _root(self, y: Sequence[float], t: Second = 0, progressbar: ProgressBarLike | None = None) -> Array1D:
+    def _root(
+        self,
+        y: Sequence[float],
+        t: Second = 0,
+        progressbar: ProgressBarLike | None = None,
+    ) -> Array1D:
         r"""A function called in transient simulation, whenever a point in time
         is found, that is, when the roots of all constraints
         :math:`\vec{F}(\vec{y},t)=0` are found. This method allows calculations
@@ -256,8 +264,11 @@ class Aggregator:
         if progressbar is not None:
             progressbar.update(int(1e3 * t))
         list(map(partial(self._op, "change_state", y, t), self.graph))
-        sc = np.fromiter(map(partial(self._op, "should_continue", y, t),
-                            self.graph), dtype=bool, count=self._nodes_num)
+        sc = np.fromiter(
+            map(partial(self._op, "should_continue", y, t), self.graph),
+            dtype=bool,
+            count=self._nodes_num,
+        )
         if not all(sc):
             stopped = np.array(self.graph)[~sc]
             logger.warning(f"At t = {t:.5f}, the simulation has been stopped by {stopped}")
@@ -266,12 +277,12 @@ class Aggregator:
     @overload
     def load(self, s: DictState) -> Array1D:
         """Loads a dictionary based state to the functional vector it represents.
-        
+
         Parameters
         ----------
         s: DictState
             The state from (possibly) a saved solution, or a guess
-            
+
         Returns
         -------
         Array1D
@@ -281,12 +292,12 @@ class Aggregator:
     @overload
     def load(self, s: StateTimeseries) -> Solution:
         """Loads a time-series of named states into a 2D vector solution.
-        
+
         Parameters
         ----------
         s: StateTimeseries
             The (possibly) saved named-variable solution
-        
+
         Returns
         -------
         Solution
@@ -345,12 +356,12 @@ class Aggregator:
     @overload
     def save(self, solution: Solution) -> StateTimeseries:
         """Write a 2D vector time-dependent solution as a human-readable object.
-        
+
         Parameters
         ----------
         solution: Solution
             The 2D solution to save
-        
+
         Returns
         -------
         StateTimeseries
@@ -358,10 +369,9 @@ class Aggregator:
         ...
 
     @overload
-    def save(self, solution: Sequence[float],
-             t: Second = 0, strict: bool = False) -> State:
+    def save(self, solution: Sequence[float], t: Second = 0, strict: bool = False) -> State:
         """Write a vector solution with proper names that allow human readable solutions
-        
+
         Parameters
         ----------
         solution: Sequence[float]
@@ -370,7 +380,7 @@ class Aggregator:
             The absolute time at which the solution is given.
         strict: bool
             Flag for wether information beyond the scope of the solution be added
-        
+
         Returns
         -------
         State
@@ -392,11 +402,13 @@ class Aggregator:
             Whether information beyond the vector state variables should be added.
 
         """
-        return (self._parse_solution(solution) if isinstance(solution, Solution)
-                else self._vector_to_state(solution, t, strict))
+        return (
+            self._parse_solution(solution)
+            if isinstance(solution, Solution)
+            else self._vector_to_state(solution, t, strict)
+        )
 
-    def _vector_to_state(self, solution: Sequence[float],
-                         t: Second = 0, strict: bool = False) -> State:
+    def _vector_to_state(self, solution: Sequence[float], t: Second = 0, strict: bool = False) -> State:
         """
         Given input for calculations (which is a legal state of the system),
         tag the information, i.e. create a "State" and return it
@@ -475,15 +487,15 @@ class Aggregator:
         return solution.data[:, self.var_index(node, var_name)]
 
     def solve(
-            self,
-            y0: Array1D | DictState,
-            time: Sequence[float] | None,
-            yp0: Array1D = None,
-            eq_type: Literal["ODE", "DAE", "ALG"] | None = None,
-            *,
-            progressbar: ProgressBarLike | bool = False,
-            **options,
-            ) -> Solution:
+        self,
+        y0: Array1D | DictState,
+        time: Sequence[float] | None,
+        yp0: Array1D = None,
+        eq_type: Literal["ODE", "DAE", "ALG"] | None = None,
+        *,
+        progressbar: ProgressBarLike | bool = False,
+        **options,
+    ) -> Solution:
         """
         For a Differential Algebraic set of eqs. (DAE), the chosen solver is
         IDA from the LLNL SUNDIALS suite, which is kindly wrapped by
@@ -557,7 +569,7 @@ class Aggregator:
                 yp0=yp0,
                 nr_rootfns=self._nodes_num,
                 **options,
-                )
+            )
             if progressbar is not None:
                 progressbar.finish()
         elif eq_type == "ALG":
@@ -610,11 +622,11 @@ class CalculationGraph:
 
     @classmethod
     def connect(
-            cls,
-            a: BaseAgr,
-            b: BaseAgr,
-            *edges: tuple[Calculation, Calculation, Iterable[Name]],
-            ) -> "CalculationGraph":
+        cls,
+        a: BaseAgr,
+        b: BaseAgr,
+        *edges: tuple[Calculation, Calculation, Iterable[Name]],
+    ) -> "CalculationGraph":
         """
         Connect two CalculationGraph objects. In case of a clash, the second object
         prevails. If ``edges`` contains an edge already in either ``a.graph``
@@ -652,9 +664,7 @@ class CalculationGraph:
         return self.connect(self, other)
 
     @classmethod
-    def from_decoupled(cls, *nodes: Calculation,
-                       funcs: ExternalFunctions | None = None
-                       ) -> "CalculationGraph":
+    def from_decoupled(cls, *nodes: Calculation, funcs: ExternalFunctions | None = None) -> "CalculationGraph":
         r"""Instantiate an Aggregator from calculations, which are not connected.
 
         Parameters

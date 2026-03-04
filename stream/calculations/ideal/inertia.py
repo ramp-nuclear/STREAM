@@ -20,11 +20,11 @@ References
 ----------
 .. [#Todreas] Nuclear Systems Volume I, Thermal Hydraulic Fundamentals, Todreas & Kazimi, 2nd edition.
 """
+
 from typing import Callable
 
 from stream.calculations.ideal.ideal import LumpedComponent
-from stream.units import PerM, KgPerS, KgPerS2, Pascal
-
+from stream.units import KgPerS, KgPerS2, Pascal, PerM
 
 __all__ = ["bilinear", "Inertia"]
 
@@ -42,7 +42,7 @@ class Inertia(LumpedComponent):
     Where :math:`L` is the inertia.
     For more information, please see [#Todreas]_"""
 
-    def __init__(self, inertia: PerM, name='Inertia'):
+    def __init__(self, inertia: PerM, name="Inertia"):
         r"""
         Parameters
         ----------
@@ -91,6 +91,7 @@ def bilinear(L0: PerM, mdot0: KgPerS):
     bi : Callable[[KgPerS, ...], PerM]
         The inertia function :math:`L(\dot{m})`
     """
+
     def bi_(mdot, **kwargs):
         return (mdot / mdot0) * L0 if mdot < mdot0 else L0
 

@@ -5,26 +5,32 @@ from typing import Sequence
 import numpy as np
 import pytest
 from hypothesis import given
-from hypothesis.strategies import floats, text, nothing, one_of
+from hypothesis.strategies import floats, nothing, one_of, text
 from networkx import DiGraph
 from networkx.utils import graphs_equal
 
-from stream.aggregator import vars_, NonUniqueCalculationNameError, add_variables, Aggregator, CalculationGraph, create_constraints, CONSTRAINT
+from stream.aggregator import (
+    CONSTRAINT,
+    Aggregator,
+    CalculationGraph,
+    NonUniqueCalculationNameError,
+    add_variables,
+    create_constraints,
+    vars_,
+)
 from stream.calculation import Calculation, unpacked
 from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
 from stream.units import Place
+
 from .conftest import are_close, medium_floats
-from .test_calculation import add, multiply, divide, Addition
+from .test_calculation import Addition, add, divide, multiply
 
 
 @pytest.fixture(scope="module")
 def mock_agr():
-    return Aggregator(DiGraph([
-        (add, multiply, vars_('y')),
-        (multiply, add, vars_('x'))
-    ]))
+    return Aggregator(DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))]))
 
 
 def test_example_aggregator_has_known_shape(mock_agr):
@@ -39,7 +45,10 @@ def test_example_aggregator_has_known_shape(mock_agr):
 
 @given(floats(allow_nan=False), floats(allow_nan=False))
 def test_save(mock_agr, y, x):
-    assert mock_agr.save(solution=(y, x)) == {add.name: {"y": y}, multiply.name: {"x": x}}
+    assert mock_agr.save(solution=(y, x)) == {
+        add.name: {"y": y},
+        multiply.name: {"x": x},
+    }
 
 
 @given(floats(allow_nan=False), floats(allow_nan=False))
@@ -50,8 +59,7 @@ def test_collision_of_calculations_raises_by_example(y, x):
 
 @given(floats(allow_nan=False), floats(allow_nan=False))
 def test_load(mock_agr, y, x):
-    assert np.allclose(mock_agr.load({add.name: {"y": y},
-                                      multiply.name: {"x": x}}), (y, x))
+    assert np.allclose(mock_agr.load({add.name: {"y": y}, multiply.name: {"x": x}}), (y, x))
 
 
 def test_load_reverses_save_by_example(mock_agr):
@@ -94,11 +102,11 @@ def test_aggregator_input_works_as_expected():
     DoNothing = Calculation_factory(
         calculate=lambda y, *, var=None: y + var if var is not None else y,
         mass_vector=np.zeros(5),
-        variables={"var": slice(0, 5)}
+        variables={"var": slice(0, 5)},
     )
 
-    a = DoNothing(name='a')
-    b = DoNothing(name='b')
+    a = DoNothing(name="a")
+    b = DoNothing(name="b")
     assert np.all(a.calculate(np.arange(6)) == np.arange(6))
     agr = Aggregator(DiGraph([(a, b, vars_("var")), (b, a, vars_("var"))]))
     assert np.all(agr.compute(np.arange(10)) == np.tile(np.arange(5.0, 15.0, 2), 2))
@@ -114,8 +122,15 @@ def test_ida_root_functions():
     options = dict(rtol=1e-9)
 
     out, _ = differential_algebraic(
-        F=F, mass=np.ones(1), y0=np.ones(1), time=np.arange(10),
-        yp0=np.ones(1), R=lambda y, t: np.asarray(y < 1000), nr_rootfns=1, **options)
+        F=F,
+        mass=np.ones(1),
+        y0=np.ones(1),
+        time=np.arange(10),
+        yp0=np.ones(1),
+        R=lambda y, t: np.asarray(y < 1000),
+        nr_rootfns=1,
+        **options,
+    )
     assert last_call[1] > np.log(1000)
     assert last_call[0] > 1000
     are_close(np.squeeze(out), np.exp(np.arange(7)))
@@ -142,16 +157,19 @@ def test_ida_continuous_mode():
     class StubbornCalc(Calculation):
         c = count()
         i = 0
-        name = 'Stubborn'
+        name = "Stubborn"
 
         @unpacked
-        def calculate(self, y): return np.asarray(y)
+        def calculate(self, y):
+            return np.asarray(y)
 
         @property
-        def mass_vector(self) -> Sequence[bool]: return True,
+        def mass_vector(self) -> Sequence[bool]:
+            return (True,)
 
         @property
-        def variables(self) -> dict[str, Place]: return dict(y=1)
+        def variables(self) -> dict[str, Place]:
+            return dict(y=1)
 
         @unpacked
         def should_continue(self, y, **kwargs):
@@ -162,8 +180,12 @@ def test_ida_continuous_mode():
             self.i = next(self.c)
 
     agr = Aggregator.from_decoupled(StubbornCalc())
-    sol = agr.solve(y0=np.ones(1), time=(t := np.linspace(0, 10, 100)),
-                    continuous=True, eq_type='DAE')
+    sol = agr.solve(
+        y0=np.ones(1),
+        time=(t := np.linspace(0, 10, 100)),
+        continuous=True,
+        eq_type="DAE",
+    )
     assert np.allclose(sol[:, 0], np.exp(t), rtol=1e-4), sol[:, 0] - np.exp(t)
 
 
@@ -171,15 +193,28 @@ def test_associated_calculations_for_a_known_example(mock_agr):
     assoc = _associated_calculations(mock_agr)
     assert assoc == {0: [add, multiply], 1: [multiply, add]}
 
+
 justx = Calculation_factory(calculate=lambda x, *, y: x, mass_vector=[False], variables={"x": 0})("justx")
 justy = Calculation_factory(calculate=lambda y, *, x: y, mass_vector=[False], variables={"y": 0})("justy")
 
-@pytest.mark.parametrize(["graph", "expectation"],
-                         [
-                             (DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("y"))]), nullcontext()),
-                             (DiGraph([(justx, justy, vars_("missing_variable")), (justy, justx, vars_("y"))]), pytest.raises(KeyError, match="missing_variable")),
-                             (DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("missing_variable"))]), pytest.raises(KeyError, match="missing_variable")),
-                         ])
+
+@pytest.mark.parametrize(
+    ["graph", "expectation"],
+    [
+        (
+            DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("y"))]),
+            nullcontext(),
+        ),
+        (
+            DiGraph([(justx, justy, vars_("missing_variable")), (justy, justx, vars_("y"))]),
+            pytest.raises(KeyError, match="missing_variable"),
+        ),
+        (
+            DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("missing_variable"))]),
+            pytest.raises(KeyError, match="missing_variable"),
+        ),
+    ],
+)
 def test_agr_identifies_missing_variables_in_indices_for_known_examples(graph, expectation):
     with expectation:
         Aggregator(graph)
@@ -187,7 +222,7 @@ def test_agr_identifies_missing_variables_in_indices_for_known_examples(graph, e
 
 @given(s=text(), n=one_of(text(), nothing()))
 def test_add_variables_accepts_added_variables_correctly(s, n):
-    mock_graph = DiGraph([(add, multiply, vars_('y')), (multiply, add, vars_('x'))])
+    mock_graph = DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))])
     original_variables = list(mock_graph[add][multiply]["variables"])
     added_variables = [s, n] if n != s else [s]
     new_variables = [x for x in added_variables if x not in original_variables]
@@ -196,26 +231,39 @@ def test_add_variables_accepts_added_variables_correctly(s, n):
 
 
 def test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist():
-    mock_graph = DiGraph([(add, multiply, vars_('y')), (multiply, add, vars_('x'))])
+    mock_graph = DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))])
     add_variables(mock_graph, add, divide, "w")
     assert (add, divide) in mock_graph.edges()
 
 
 @given(text())
 def test_add_variables_is_idempotent(s):
-    mock_graph = DiGraph([(add, multiply, vars_('y')), (multiply, add, vars_('x'))])
+    mock_graph = DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))])
     add_variables(mock_graph, add, multiply, s)
     graph_prior = mock_graph.copy()
     add_variables(mock_graph, add, multiply, s)
     assert graphs_equal(graph_prior, mock_graph)
 
+
 def test_create_constraints_for_a_known_example():
-    calc = Calculation_factory(lambda v, **_: v - np.array([-1,0,1]), [False] * 3, dict(v_neg=0, v_zero=1, v_pos=2))()
+    calc = Calculation_factory(
+        lambda v, **_: v - np.array([-1, 0, 1]),
+        [False] * 3,
+        dict(v_neg=0, v_zero=1, v_pos=2),
+    )()
     agr = Aggregator.from_decoupled(calc)
-    assert np.all(create_constraints(agr, negative=["v_neg"], positive=["v_pos"]) == np.array([c.value for c in [CONSTRAINT.negative, CONSTRAINT.none, CONSTRAINT.positive]]))
+    assert np.all(
+        create_constraints(agr, negative=["v_neg"], positive=["v_pos"])
+        == np.array([c.value for c in [CONSTRAINT.negative, CONSTRAINT.none, CONSTRAINT.positive]])
+    )
+
 
 def test_create_constraints_with_bad_name_errors_well():
-    calc = Calculation_factory(lambda v, **_: v - np.array([-1,0,1]), [False] * 3, dict(v_neg=0, v_zero=1, v_pos=2))()
+    calc = Calculation_factory(
+        lambda v, **_: v - np.array([-1, 0, 1]),
+        [False] * 3,
+        dict(v_neg=0, v_zero=1, v_pos=2),
+    )()
     agr = Aggregator.from_decoupled(calc)
     with pytest.raises(KeyError, match="moo. Must be one of"):
         create_constraints(agr, moo=["v_neg"], positive=["v_pos"])

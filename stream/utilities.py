@@ -5,17 +5,20 @@ As well as some helper functions regarding mixing, conversions, flux shapes
 and more.
 
 """
+
 import warnings
 from contextlib import contextmanager
 from functools import partial, reduce, singledispatch
 from operator import add
-from typing import Any, Callable, Iterable, Sequence, Type, TypeVar, Protocol, ParamSpec
+from typing import Any, Callable, Iterable, ParamSpec, Protocol, Sequence, Type, TypeVar
 
 import numpy as np
 from cytoolz import valmap
 from numba import njit
+
 # noinspection PyProtectedMember
 from numpy._core._multiarray_umath import normalize_axis_index
+
 try:
     # noinspection PyProtectedMember
     from numpy.lib.function_base import _diff_dispatcher, array_function_dispatch
@@ -25,7 +28,6 @@ except ImportError:
 from scipy.optimize import fsolve
 
 from stream.units import Array, Array1D, Celsius, Fahrenheit, KgPerS, Place, Value
-
 
 STREAM_DEBUG = 11
 
@@ -48,14 +50,16 @@ def _shifted_sin(a: float, mid: float, x: Value):
     return np.sin(a * (x - mid))
 
 
-def _integrated_cell_cosine_value(a: float, b: float, mid: float, x: Array1D
-                                  ) -> Array1D:
+def _integrated_cell_cosine_value(a: float, b: float, mid: float, x: Array1D) -> Array1D:
     return (b / a) * np.diff(_shifted_sin(a, mid, x))
 
 
-def cosine_shape(x: Array1D, ppf: float = np.pi / 2, *,
-                 xmax: float = None,
-                 ) -> Array1D:
+def cosine_shape(
+    x: Array1D,
+    ppf: float = np.pi / 2,
+    *,
+    xmax: float = None,
+) -> Array1D:
     r"""
     Creates a normalized cosine profile for cells whose boundaries are `x`,
     assuming its maximum is achieved at :math:`\ell/2 = (x[-1] + x[0])/2`
@@ -230,8 +234,7 @@ def _length_if_possible(vals):
         return 1
 
 
-def flatten_values(d: dict[Any, Value],
-                   dtype=np.float64) -> Value:
+def flatten_values(d: dict[Any, Value], dtype=np.float64) -> Value:
     """Take a dictionary of values or sequences of values and return a long
     array with all the values in order, flattened out.
 
@@ -369,8 +372,7 @@ def pair_mean_1d(a, prepend=None, append=None):
         res[:-1] = mn
         res[-1] = (append + a[-1]) / 2
     else:
-        raise ValueError("This should be very impossible to reach. "
-                         "If you are here, abandon all hope")
+        raise ValueError("This should be very impossible to reach. If you are here, abandon all hope")
     return res
 
 
@@ -414,25 +416,21 @@ def lin_interp(x1: Value, x2: Value, y1: Value, y2: Value, x: Value) -> Value:
     return y2 + ((y2 - y1) / (x2 - x1)) * (x - x2)
 
 
-_P = ParamSpec('_P')
-_T = TypeVar('_T')
+_P = ParamSpec("_P")
+_T = TypeVar("_T")
 
 
 class _FloatWorthy(Protocol):
-    def __add__(self: _T, other: float) -> _T:
-        ...
+    def __add__(self: _T, other: float) -> _T: ...
 
-    def __radd__(self: _T, other: float) -> _T:
-        ...
+    def __radd__(self: _T, other: float) -> _T: ...
 
-    def __mul__(self: _T, other: float) -> _T:
-        ...
+    def __mul__(self: _T, other: float) -> _T: ...
 
-    def __rmul__(self: _T, other: float) -> _T:
-        ...
+    def __rmul__(self: _T, other: float) -> _T: ...
 
 
-_G = TypeVar('_G', bound=_FloatWorthy)
+_G = TypeVar("_G", bound=_FloatWorthy)
 
 
 def factor(f: Callable[_P, _G], by: float = 1.0, add: float = 0.0) -> Callable[_P, _G]:
@@ -466,7 +464,7 @@ def factor(f: Callable[_P, _G], by: float = 1.0, add: float = 0.0) -> Callable[_
     except AttributeError:
         # noinspection PyUnresolvedReferences
         name = f.func.__name__
-    ff.__name__ = f'{name} * {by:.2g} + {add:.2g}'
+    ff.__name__ = f"{name} * {by:.2g} + {add:.2g}"
     ff.__doc__ = f.__doc__
 
     return ff
@@ -531,9 +529,7 @@ def directed_Tin(Tin: Celsius | None, Tin_minus: Celsius | None, mdot: KgPerS) -
     elif a:
         return Tin_minus
     if np.abs(mdot) < MDOT_INTER_THRESHOLD:
-        return lin_interp(
-            -MDOT_INTER_THRESHOLD, MDOT_INTER_THRESHOLD, Tin_minus, Tin, mdot
-            )
+        return lin_interp(-MDOT_INTER_THRESHOLD, MDOT_INTER_THRESHOLD, Tin_minus, Tin, mdot)
     return Tin if mdot >= 0 else Tin_minus
 
 
@@ -639,6 +635,7 @@ def strictly_monotonous(*arrays: Sequence) -> Array:
     """
     return np.unique(np.sort(concat(*arrays)))
 
+
 def mutually_exclusive(*arrays: Sequence) -> bool:
     """Checks if the arrays provided are mutually exclusive (don't contain the same elements)."""
     all_values = concat(arrays)
@@ -719,12 +716,7 @@ def dataclass_map(dc: Type[T], f: _FieldMap) -> _DataclassMap:
     """
 
     def _dc_f(*instances, **kwargs):
-        return dc(
-            *(
-                f(*(getattr(inst, fld) for inst in instances), **kwargs)
-                for fld in dc.__dataclass_fields__
-                )
-            )
+        return dc(*(f(*(getattr(inst, fld) for inst in instances), **kwargs) for fld in dc.__dataclass_fields__))
 
     _dc_f.__name__ = f.__name__
     _dc_f.__doc__ = f.__doc__

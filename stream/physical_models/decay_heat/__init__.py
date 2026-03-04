@@ -5,7 +5,12 @@ These include the delayed neutron-induced fission, decay of fission products and
 The first is dealt with by the Point Kinetics model (see :class:`~.PointKinetics`)
 """
 
-from stream.physical_models.decay_heat import actinides, activation, fission_products, fissions
+from stream.physical_models.decay_heat import (
+    actinides,
+    activation,
+    fission_products,
+    fissions,
+)
 
 __all__ = [
     "actinides",

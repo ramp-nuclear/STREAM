@@ -13,16 +13,16 @@ If you want to represent a 0-dimensional, no inner-working ``Calculation``, whic
 only serves to have a pressure drop or a temperature change, you may find this
 namespace to be useful.
 """
+
 import logging
 from abc import ABCMeta
 from typing import Sequence
 
 import numpy as np
 
-from stream import unpacked, Calculation
-from stream.units import Array1D, Celsius, KgPerS, Name, Place, Pascal
+from stream import Calculation, unpacked
+from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
 from stream.utilities import directed_Tin
-
 
 __all__ = ["LumpedComponent"]
 
@@ -44,9 +44,15 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
 
     # noinspection PyPep8Naming
     @unpacked
-    def calculate(self, variables: Sequence[float], *, mdot: KgPerS,
-                  Tin: Celsius, Tin_minus: Celsius | None = None,
-                  **kwargs) -> Array1D:
+    def calculate(
+        self,
+        variables: Sequence[float],
+        *,
+        mdot: KgPerS,
+        Tin: Celsius,
+        Tin_minus: Celsius | None = None,
+        **kwargs,
+    ) -> Array1D:
         r"""Compute the algebraic residual values for this Calculation.
 
         Parameters
@@ -69,8 +75,7 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
         errors: Array1D
             The error in ``variables``
         """
-        inputs = dict(dp=variables[1], Tin=directed_Tin(Tin, Tin_minus, mdot),
-                      mdot=mdot) | kwargs
+        inputs = dict(dp=variables[1], Tin=directed_Tin(Tin, Tin_minus, mdot), mdot=mdot) | kwargs
         out = np.empty(2)
         out[0] = variables[0] - self.T_out(**inputs)
         out[1] = variables[1] - self.dp_out(**inputs)
@@ -78,21 +83,22 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
 
     def indices(self, variable: Name, asking=None) -> int:
         return dict(Tin=0, Tin_minus=0, pressure=1)[variable]
+
     indices.__doc__ = Calculation.indices.__doc__
 
     @property
     def mass_vector(self) -> tuple[bool, bool]:
-        """A mass vector, which is just two False values.
-
-        """
+        """A mass vector, which is just two False values."""
         return False, False
 
     @property
     def variables(self) -> dict[Name, Place]:
         return dict(Tin=0, pressure=1)
+
     variables.__doc__ = Calculation.variables.__doc__
 
-    def __len__(self) -> int: return 2
+    def __len__(self) -> int:
+        return 2
 
     # noinspection PyPep8Naming
     def T_out(self, *, Tin: Celsius, **_) -> Celsius:
@@ -121,4 +127,4 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
         Pascal
 
         """
-        return 0.
+        return 0.0

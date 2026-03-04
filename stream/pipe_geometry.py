@@ -4,17 +4,17 @@ Pipe Geometry
 A pipe geometry interface used by different calculations, defined through
 :class:`EffectivePipe`.
 """
+
 from dataclasses import dataclass, field
-from typing import TypeVar, Literal
+from typing import Literal, TypeVar
 
 import numpy as np
 
 from stream.units import Meter, Meter2
 
-
 __all__ = ["EffectivePipe"]
 
-_T = TypeVar('_T', bound="EffectivePipe")
+_T = TypeVar("_T", bound="EffectivePipe")
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +64,7 @@ class EffectivePipe:
        to the Core Cooling of a Research Reactor", JAERI-M 84-073, International
        Meeting on Reduced Enrichment for Research and Test Reactors, Tokai, Japan, 1983.
     """
+
     length: Meter
     heated_perimeter: Meter
     wet_perimeter: Meter
@@ -77,17 +78,24 @@ class EffectivePipe:
     def __post_init__(self):
         object.__setattr__(self, "heated_diameter", 4 * self.area / self.heated_perimeter)
         object.__setattr__(self, "hydraulic_diameter", 4 * self.area / self.wet_perimeter)
-        object.__setattr__(self, "heated_parts", (
-            self.heated_parts if self.heated_parts
-            else (self.heated_perimeter / 2, self.heated_perimeter / 2)))
+        object.__setattr__(
+            self,
+            "heated_parts",
+            (self.heated_parts if self.heated_parts else (self.heated_perimeter / 2, self.heated_perimeter / 2)),
+        )
         assert np.isclose(np.sum(self.heated_parts), self.heated_perimeter, rtol=1e-15), (
             f"The partitions of P_heated: {self.heated_parts} do not sum up to the total within relative tolerance 1e-15"
         )
 
     @classmethod
-    def rectangular(cls, length: Meter, edge1: Meter, edge2: Meter, heated_edge: Meter,
-                    one_sided: Literal['left', 'right', None] = None,
-                    ) -> "EffectivePipe":
+    def rectangular(
+        cls,
+        length: Meter,
+        edge1: Meter,
+        edge2: Meter,
+        heated_edge: Meter,
+        one_sided: Literal["left", "right", None] = None,
+    ) -> "EffectivePipe":
         """Create an EffectivePipe geometry for a channel with a rectangular cross-section,
         which is heated on two opposite sides.
 
@@ -106,8 +114,11 @@ class EffectivePipe:
         -------
         EffectivePipe
         """
-        parts = {'left': (heated_edge, 0.), 'right': (0., heated_edge),
-                 None: (heated_edge, heated_edge)}[one_sided]
+        parts = {
+            "left": (heated_edge, 0.0),
+            "right": (0.0, heated_edge),
+            None: (heated_edge, heated_edge),
+        }[one_sided]
         width = max(edge1, edge2)
         depth = min((edge1, edge2))
         return cls(
@@ -117,8 +128,8 @@ class EffectivePipe:
             area=edge1 * edge2,
             heated_parts=parts,
             width=width,
-            depth=depth
-            )
+            depth=depth,
+        )
 
     @classmethod
     def circular(cls, length: Meter, diameter: Meter):
@@ -140,7 +151,7 @@ class EffectivePipe:
             length=length,
             heated_perimeter=perimeter,
             wet_perimeter=perimeter,
-            area=np.pi * diameter ** 2 / 4,
+            area=np.pi * diameter**2 / 4,
             heated_parts=(perimeter, 0.0),
             width=diameter,
-            )
+        )

@@ -15,7 +15,17 @@ from typing import Callable
 
 from scipy.constants import atm
 
-from stream.units import Celsius, JPerKg, JPerKgK, KgPerM3, NPerM, PaS, Pascal, WPerMK, PerC
+from stream.units import (
+    Celsius,
+    JPerKg,
+    JPerKgK,
+    KgPerM3,
+    NPerM,
+    PaS,
+    Pascal,
+    PerC,
+    WPerMK,
+)
 
 __all__ = ["Liquid", "LiquidFuncs"]
 

@@ -1,1 +1,9 @@
 extend-include = ["*.ipynb"]
+lint.extend-select = ["I"]
+line-length = 120
+
+[lint.per-file-ignores]
+"*.ipynb" = ["E402"]
+"*__init__.py" = ["F403", "I001"]
+"PlanarPendulum.ipynb" = ["E741"]
+"SeriesRLCCircuit.ipynb" = ["E741"]

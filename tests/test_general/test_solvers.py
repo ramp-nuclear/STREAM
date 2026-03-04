@@ -21,7 +21,7 @@ def test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_soluti
     lambdaval = 0.1
     theta0 = np.pi / 3
     x0 = np.sin(theta0)
-    y0 = -((length - x0 ** 2) ** 0.5)
+    y0 = -((length - x0**2) ** 0.5)
     z0 = np.array([x0, y0, 0.0, 0.0, lambdaval])
     zp0 = np.array([0.0, 0.0, lambdaval * x0 / m, (lambdaval * y0 / m) - g, -g])
 
@@ -32,13 +32,13 @@ def test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_soluti
         ydot = v
         udot = k * x
         vdot = k * y - g
-        constraint = u ** 2 + v ** 2 + k * (x ** 2 + y ** 2) - y * g
+        constraint = u**2 + v**2 + k * (x**2 + y**2) - y * g
         return np.array([xdot, ydot, udot, vdot, constraint])
 
     PendulumCalculation = Calculation_factory(
         calculate=calculate,
         mass_vector=4 * [True] + [False],
-        variables=dict(x=0, y=1, u=2, v=3, lamda=4)
+        variables=dict(x=0, y=1, u=2, v=3, lamda=4),
     )
 
     agr = Aggregator.from_decoupled(PendulumCalculation())
@@ -57,7 +57,7 @@ def test_dae_with_undetermined_var_fails_as_TransientRuntimeError():
     ExponentWithUndeterminedVar = Calculation_factory(
         calculate=lambda y: np.array([-y[0], 0.0]),
         mass_vector=[True, False],
-        variables=dict(x=0, free=1)
+        variables=dict(x=0, free=1),
     )
     agr = Aggregator.from_decoupled(ExponentWithUndeterminedVar())
     with pytest.raises(TransientRuntimeError):
@@ -73,9 +73,7 @@ def test_dae_solver_accepts_all_algebraic_calculations():
     def residues(t, y, ydot, result):
         result[:] = [y[0] - y[1], y[0] + y[1]]
 
-    kwargs = dict(
-        compute_initcond="yp0", old_api=False, algebraic_vars_idx=np.arange(2)
-    )
+    kwargs = dict(compute_initcond="yp0", old_api=False, algebraic_vars_idx=np.arange(2))
     solver = dae("ida", residues, **kwargs)
     with ignore_warnings(DeprecationWarning):
         solution = solver.solve(tspan=[0, 0.001], y0=[100, 200], yp0=[-100, 300])

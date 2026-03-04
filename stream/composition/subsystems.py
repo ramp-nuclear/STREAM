@@ -1,18 +1,26 @@
 """Helper functions for creating steady state initial guesses for small and specific subsystems"""
+
 import logging
-from typing import Callable
+from typing import Callable, Iterable
 
 import numpy as np
 from cytoolz import keymap
 
 from stream import Calculation
 from stream.calculations import (
-    Pump, DPCalculation, Channel, ChannelAndContacts, Fuel, Kirchhoff,
-    PointKinetics, PointKineticsWInput, Junction,
+    Channel,
+    ChannelAndContacts,
+    DPCalculation,
+    Fuel,
+    Junction,
+    Kirchhoff,
+    PointKinetics,
+    PointKineticsWInput,
+    Pump,
 )
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.state import State
-from stream.units import Celsius, KgPerS, Pascal, Watt
+from stream.units import Celsius, KgPerS, Pascal, Value, Watt
 from stream.utilities import just
 
 __all__ = [
@@ -30,14 +38,14 @@ logger = logging.getLogger("stream.subsystems")
 
 
 def symmetric_plate_steady_state(
-        c: ChannelAndContacts,
-        f: Fuel,
-        mdot: KgPerS,
-        p_abs: Pascal,
-        power: Watt,
-        Tin: Celsius,
-        initial_guess_iterations: int = 2,
-        **solver_options
+    c: ChannelAndContacts,
+    f: Fuel,
+    mdot: KgPerS,
+    p_abs: Pascal,
+    power: Watt,
+    Tin: Celsius,
+    initial_guess_iterations: int = 2,
+    **solver_options,
 ) -> State:
     r"""Steady state for a :func:`.symmetric_plate` system
 
@@ -54,7 +62,7 @@ def symmetric_plate_steady_state(
     power: Watt
         Desired power
     Tin: Celsius
-         Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -), 
+         Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),
          the inlet temperature is a source term for the (first, last) cell.
     initial_guess_iterations: int
         Before employing a solver, an initial educated guess is assumed. This
@@ -69,10 +77,7 @@ def symmetric_plate_steady_state(
     """
     if initial_guess_iterations < 1:
         raise ValueError(f"Must try at least once to obtain values. Was {initial_guess_iterations}")
-    plate = symmetric_plate(
-        c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin),
-               f: dict(power=power)}
-    ).to_aggregator()
+    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin), f: dict(power=power)}).to_aggregator()
 
     power_mat = np.zeros(f.shape)
     power_mat[f.meat == 1] = power * f.power_shape
@@ -90,17 +95,16 @@ def symmetric_plate_steady_state(
     # Safe because the initial guess iterations are >= 1
     # noinspection PyUnboundLocalVariable
     y0 = plate.load(
-        {f.name: dict(T=T0, T_wall_left=tw0, T_wall_right=tw0),
-         c.name: dict(T_cool=tc0, h_left=h0, h_right=h0, pressure=np.sum(dp0)),
-         }
+        {
+            f.name: dict(T=T0, T_wall_left=tw0, T_wall_right=tw0),
+            c.name: dict(T_cool=tc0, h_left=h0, h_right=h0, pressure=np.sum(dp0)),
+        }
     )
 
     return plate.save(plate.solve_steady(y0, **solver_options))
 
 
-def point_kinetics_steady_state(
-        pk: PointKinetics, power: Watt, power_input: Watt = None
-) -> State:
+def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Watt = None) -> State:
     r"""Zero reactivity steady :class:`.PointKinetics` steady state
 
     Parameters
@@ -132,6 +136,7 @@ def point_kinetics_steady_state(
 
 class MissingFlowError(Exception):
     """Error to signify missing :class:`.Kirchhoff` flow data."""
+
     pass
 
 
@@ -139,17 +144,18 @@ HydraulicStrategy = Callable[[KgPerS, Celsius], Pascal]
 HydraulicStrategyMap = dict[Calculation, HydraulicStrategy]
 
 
-def _float_values(d: dict[str, Value],
-                  keys: Iterable[str],
-                  inner_key: str = "pressure") -> Iterable[float]:
+def _float_values(d: dict[str, Value], keys: Iterable[str], inner_key: str = "pressure") -> Iterable[float]:
     for key in keys:
         y = d[key][inner_key]
         yield y if isinstance(y, (float, int)) else y.item()
 
 
 def guess_hydraulic_steady_state(
-        k: Kirchhoff, mdots: dict[Calculation, KgPerS], temperature: Celsius,
-        strategy: HydraulicStrategyMap | None = None) -> State:
+    k: Kirchhoff,
+    mdots: dict[Calculation, KgPerS],
+    temperature: Celsius,
+    strategy: HydraulicStrategyMap | None = None,
+) -> State:
     r"""A guess for a :class:`.Kirchhoff` derived system, in which the flows are known
 
     .. note:: When a component's pressure difference cannot be **physically** determined from the flow,
@@ -198,8 +204,7 @@ def guess_hydraulic_steady_state(
             case Channel():
                 # Safe because Channel has pressure.
                 # noinspection PyUnresolvedReferences
-                return np.sum(
-                    x.pressure(mdot=m, mdot2=0.0, T=(T := np.full(x.n, temperature)), Tw=T))
+                return np.sum(x.pressure(mdot=m, mdot2=0.0, T=(T := np.full(x.n, temperature)), Tw=T))
             case _:
                 return strategy.get(x, just(0.0))(m, temperature)
 
@@ -208,8 +213,11 @@ def guess_hydraulic_steady_state(
     junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
     T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
     Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
-    p = np.fromiter(_float_values(pressures, map(lambda x: x.name, k.components)),
-                    dtype=float, count=len(k.components))
+    p = np.fromiter(
+        _float_values(pressures, map(lambda x: x.name, k.components)),
+        dtype=float,
+        count=len(k.components),
+    )
 
     a = np.zeros(len(k))
     a[k.variables_by_type["abs_pressure"]] = k.ref_pressure + k._abs_matrix @ p
@@ -221,10 +229,13 @@ class GravityMismatchError(ValueError):
     pass
 
 
-def check_gravity_mismatch(k: Kirchhoff, temperature: Celsius = 10.0,
-                           strategy: HydraulicStrategy | None = None,
-                           tol: float = 1e-5, head: Pascal = 1.0,
-                           ) -> None:
+def check_gravity_mismatch(
+    k: Kirchhoff,
+    temperature: Celsius = 10.0,
+    strategy: HydraulicStrategy | None = None,
+    tol: float = 1e-5,
+    head: Pascal = 1.0,
+) -> None:
     r"""Report if :math:`\sum_{loop}\Delta p(\dot{m}=0) \neq 0` for any loop
 
     Usually, if there are no flows at all and thermally equal, total pressure drops in loops should be trivially zero.
@@ -256,22 +267,17 @@ def check_gravity_mismatch(k: Kirchhoff, temperature: Celsius = 10.0,
     comps = k.components
     md = dict.fromkeys(comps, 0.0)
 
-    deal_with_pressure_pumps = {p.name: dict(pressure=0.0)
-                                for p in comps
-                                if isinstance(p, Pump)}
+    deal_with_pressure_pumps = {p.name: dict(pressure=0.0) for p in comps if isinstance(p, Pump)}
     hs = guess_hydraulic_steady_state(k, md, temperature, strategy)
     s = State.merge(hs, deal_with_pressure_pumps)
-    p = np.fromiter(_float_values(s, map(lambda x: x.name, comps)),
-                    dtype=float, count=len(comps))
+    p = np.fromiter(_float_values(s, map(lambda x: x.name, comps)), dtype=float, count=len(comps))
     p_errors = k.kvl_errors(p) / head
     almost_zeros = np.isclose(0.0, p_errors, atol=tol)
     if np.any(~almost_zeros):
-        bad_loops_components = [
-            (k.loop_components(i), p_errors[i].item())
-            for i in np.flatnonzero(~almost_zeros)
-        ]
+        bad_loops_components = [(k.loop_components(i), p_errors[i].item()) for i in np.flatnonzero(~almost_zeros)]
         raise GravityMismatchError(
             f"There are unclosed loops when flows are 0.\n"
             f"The following is a report of those loop components "
             f"and their aggregate pressure difference (in head = {head} [Pascal]):\n"
-            f"{bad_loops_components}")
+            f"{bad_loops_components}"
+        )

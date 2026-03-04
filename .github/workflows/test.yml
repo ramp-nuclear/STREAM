@@ -10,8 +10,14 @@ on:
     branches: [ "dev" ]
 
 jobs:
-  build:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Ruff check
+      uses: astral-sh/ruff-action@v3
 
+  build:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4

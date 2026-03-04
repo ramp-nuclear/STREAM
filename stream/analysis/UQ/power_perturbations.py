@@ -1,15 +1,15 @@
-"""Tools for jiggling power shapes or outright making them up.
+"""Tools for jiggling power shapes or outright making them up."""
 
-"""
 import numpy as np
 
 from stream.units import Array2D
 
 
-def local_power_shift(dist: Array2D,
-                      relative_shift: float = 1.,
-                      percentile: float = 90.,
-                      ) -> np.array:
+def local_power_shift(
+    dist: Array2D,
+    relative_shift: float = 1.0,
+    percentile: float = 90.0,
+) -> np.array:
     """Raise the q-th percentile power by a given quantity
 
     Parameters

@@ -3,16 +3,14 @@ from typing import Callable
 
 from networkx import DiGraph
 
-from stream.aggregator import vars_, CalculationGraph
+from stream.aggregator import CalculationGraph, vars_
 from stream.calculation import Calculation
 from stream.utilities import just
 
 __all__ = ["maximally_coupled"]
 
 
-def maximally_coupled(
-    *calculations: Calculation, exclude: Callable[[str], bool] = None
-) -> CalculationGraph:
+def maximally_coupled(*calculations: Calculation, exclude: Callable[[str], bool] = None) -> CalculationGraph:
     r"""Connect calculations into an :class:`CalculationGraph` as fully as possible through
     inspection. This is an `opt-out` way of constructing such connections, if you will.
 

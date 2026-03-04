@@ -1,14 +1,14 @@
 import numpy as np
 from numba import njit
 
-from stream.units import Celsius, WPerM2, g, Value
+from stream.physical_models.dimensionless import Pr, flow_regimes
 from stream.substances import Liquid
-from stream.physical_models.dimensionless import flow_regimes, Pr
+from stream.units import Celsius, Value, WPerM2, g
 from stream.utilities import lin_interp
 
 
 def Bergles_Rohsenhow_SCB_heat_flux(
-        T_wall: Celsius, coolant: Liquid, n: float = 1.26, csf: float = 0.011, **_
+    T_wall: Celsius, coolant: Liquid, n: float = 1.26, csf: float = 0.011, **_
 ) -> WPerM2:
     r"""
     Given the wall initial boiling temperature, the heat flux for subcooled
@@ -103,11 +103,11 @@ def McAdams_SCB_heat_flux(T_sat: Celsius, T_wall: Celsius) -> WPerM2:
 
 
 def regime_dependent_q_scb(
-        T_wall: Celsius,
-        coolant: Liquid,
-        re: np.ndarray,
-        re_bounds: tuple[float, float],
-        **_,
+    T_wall: Celsius,
+    coolant: Liquid,
+    re: np.ndarray,
+    re_bounds: tuple[float, float],
+    **_,
 ) -> WPerM2:
     r"""A flow-regime-dependent Subcooled Boiling heat flux function.
 

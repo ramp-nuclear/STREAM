@@ -7,7 +7,7 @@ from tests.test_general.test_aggregator import add
 def test_maximally_coupled_creates_a_correct_graph():
     hx, p = HeatExchanger(25.0), Pump()
 
-    pump_extras = {'pressure', 'mdot0'}
+    pump_extras = {"pressure", "mdot0"}
     agr = maximally_coupled(hx, p, exclude=lambda x: x in pump_extras)
     assert agr.graph[hx][p][VARS] == ("Tin", "Tin_minus")
     assert agr.graph[p][hx][VARS] == ("Tin", "Tin_minus")

@@ -10,19 +10,20 @@ It also includes some predefined thermohydraulic components in the
 :mod:`.calculations` package and correlations for those components
 in :mod:`.substances` and :mod:`.physical_models`.
 """
+
 import logging
 
 from rich.logging import RichHandler
 
 from .aggregator import *
 from .calculation import *
-from .state import State
+from .state import State as State
 from .jacobians import *
 from .pipe_geometry import *
 from .physical_models import *
 from .analysis import *
 from .substances import *
-from .calculations import Solid
+from .calculations import Solid as Solid
 
 logger = logging.getLogger("stream")
 logger.addHandler(RichHandler(log_time_format="[%X]"))

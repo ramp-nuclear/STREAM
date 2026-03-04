@@ -1,16 +1,16 @@
-"""Tools to generate UQ models
+"""Tools to generate UQ models"""
 
-"""
 from functools import reduce
-from typing import Callable, TypeVar, Iterable
+from typing import Callable, Iterable, TypeVar
 
 import numpy as np
 from dask import delayed
 from dask.delayed import Delayed
 from pandas import DataFrame, concat
 
-from stream.units import Value, Array1D, Array2D
-from .uncertainty import Uncertuple, Uncertainty
+from stream.units import Array1D, Array2D, Value
+
+from .uncertainty import Uncertainty, Uncertuple
 
 Model = Callable[[...], DataFrame]
 DelayedModel = Callable[[...], Delayed]
@@ -50,8 +50,9 @@ def _vector_step(x: T, h: T) -> Iterable[T]:
         case np.ndarray(ndim=1), np.ndarray(ndim=1) if x.shape == h.shape:
             yield from np.diag(h) + x
         case _:
-            raise TypeError("x and h must be of the same type, float or 1D ndarray: "
-                            f"{x = }, {h = }, {type(x) = }, {type(h) = }")
+            raise TypeError(
+                f"x and h must be of the same type, float or 1D ndarray: {x = }, {h = }, {type(x) = }, {type(h) = }"
+            )
 
 
 def default_deriv_step(x: T) -> T:
@@ -66,10 +67,12 @@ def default_deriv_step(x: T) -> T:
     return 1e-12 + 1e-6 * np.abs(x)
 
 
-def _as_matrix(nominal,
-               perturbed_solutions: Iterable[Array1D],
-               perturbations: Array1D,
-               length: int = None) -> Array2D:
+def _as_matrix(
+    nominal,
+    perturbed_solutions: Iterable[Array1D],
+    perturbations: Array1D,
+    length: int = None,
+) -> Array2D:
     """Creates a matrix subjacobian representation from perturbed solutions
     and known perturbation values.
 
@@ -88,14 +91,13 @@ def _as_matrix(nominal,
     """
     # noinspection PyPep8Naming
     J = np.empty((len(nominal) if length is None else length, len(perturbations)))
-    for j, (sol, h) in enumerate(zip(perturbed_solutions, perturbations,
-                                     strict=True)):
+    for j, (sol, h) in enumerate(zip(perturbed_solutions, perturbations, strict=True)):
         J[:, j] = (sol - nominal) / h
     return J
 
 
 def _uq_single_jacobian(j, sys, stat) -> Uncertuple:
-    return np.abs(j @ sys), np.sqrt((j ** 2) @ (stat ** 2))
+    return np.abs(j @ sys), np.sqrt((j**2) @ (stat**2))
 
 
 def _uncert_add(x: Uncertuple, y: Uncertuple) -> Uncertuple:
@@ -139,9 +141,7 @@ class _UQModel:
 
     @property
     def parameters(self) -> dict[str, Value]:
-        """The nominal model parameters. Must match the parameters of the model.
-
-        """
+        """The nominal model parameters. Must match the parameters of the model."""
         return self._parameters
 
     @parameters.setter
@@ -176,10 +176,13 @@ class UQModel(_UQModel):
 
     """
 
-    def __init__(self, parameters: dict[str, Value],
-                 model: Model,
-                 nominal: DataFrame = None,
-                 step_strategy: Callable[[T], T] = default_deriv_step):
+    def __init__(
+        self,
+        parameters: dict[str, Value],
+        model: Model,
+        nominal: DataFrame = None,
+        step_strategy: Callable[[T], T] = default_deriv_step,
+    ):
         """
         Parameters
         ----------
@@ -202,9 +205,7 @@ class UQModel(_UQModel):
         return len(self.nominal.value.values)
 
     def evaluate(self, **parameters) -> Array1D:
-        """Evaluate the solver with different parameter values.
-
-        """
+        """Evaluate the solver with different parameter values."""
         return self.model(**(self.parameters | parameters)).value.values
 
     def subjacobian(self, param: str) -> Array2D:
@@ -245,8 +246,7 @@ class UQModel(_UQModel):
         self._cache[param] = result
         return result
 
-    def _uq_single(self, param: str, uncertainty: Uncertainty
-                   ) -> Uncertuple:
+    def _uq_single(self, param: str, uncertainty: Uncertainty) -> Uncertuple:
         """Perform the uncertainty quantification of the model for one
         parameter's uncertainty.
 
@@ -288,8 +288,7 @@ class UQModel(_UQModel):
             given input uncertainties.
 
         """
-        uq_values = (self._uq_single(key, uncertainty)
-                     for key, uncertainty in uncertainties.items())
+        uq_values = (self._uq_single(key, uncertainty) for key, uncertainty in uncertainties.items())
         return reduce(_uncert_add, uq_values, (0, 0))
 
     def uq_attach(self, **uncertainties: Uncertainty) -> DataFrame:
@@ -323,16 +322,17 @@ def _join(*dfs):
 
 
 class DASKUQModel(_UQModel):
-    """A UQ model which is computed asynchronously, using DASK.
+    """A UQ model which is computed asynchronously, using DASK."""
 
-    """
-
-    def __init__(self, parameters: dict[str, Value],
-                 model: Model,
-                 *features: DelayedModel,
-                 feature_length: int = None,
-                 persist: bool = False,
-                 step_strategy: Callable[[T], T] = default_deriv_step):
+    def __init__(
+        self,
+        parameters: dict[str, Value],
+        model: Model,
+        *features: DelayedModel,
+        feature_length: int = None,
+        persist: bool = False,
+        step_strategy: Callable[[T], T] = default_deriv_step,
+    ):
         """
 
         The functions given to this object for the model creation and model features
@@ -383,9 +383,7 @@ class DASKUQModel(_UQModel):
         return _join(*pieces)
 
     def evaluate(self, **parameters) -> Delayed:
-        """Evaluate the solver with different parameter values.
-
-        """
+        """Evaluate the solver with different parameter values."""
         df = self._eval(**parameters)
         return df.value.values
 
@@ -417,16 +415,19 @@ class DASKUQModel(_UQModel):
         x = self.parameters[param]
         h = self.step_strategy(x)
         sols = [self.evaluate(**{param: v}) for v in _vector_step(x, h)]
-        result = _d_as_matrix(self.nominal.value.values, sols, np.atleast_1d(h),
-                              length=self._len)
+        result = _d_as_matrix(self.nominal.value.values, sols, np.atleast_1d(h), length=self._len)
         persist = self.persist if persist is None else persist
         if persist:
             result = result.persist()
         self._cache[param] = result
         return result
 
-    def _uq_single(self, param: str, uncertainty: Uncertainty, persist: bool = None,
-                   ) -> tuple[Delayed, Delayed]:
+    def _uq_single(
+        self,
+        param: str,
+        uncertainty: Uncertainty,
+        persist: bool = None,
+    ) -> tuple[Delayed, Delayed]:
         """Perform the uncertainty quantification of the model for one
         parameter's uncertainty.
 
@@ -450,8 +451,11 @@ class DASKUQModel(_UQModel):
         sys_uncer, stat_uncer = uncertainty.as_absolute(x)
         return _d_uq_single_jacobian(j, sys_uncer, stat_uncer)
 
-    def uq(self, persist: bool = None, **uncertainties: Uncertainty,
-           ) -> tuple[Delayed, Delayed]:
+    def uq(
+        self,
+        persist: bool = None,
+        **uncertainties: Uncertainty,
+    ) -> tuple[Delayed, Delayed]:
         """Performs the uncertainty quantification of the model for a given set
         of uncertainties.
         Assumes the uncertainties of different parameters are independent.
@@ -476,8 +480,7 @@ class DASKUQModel(_UQModel):
         if not uncertainties:
             zd = delayed(0, pure=True)
             return zd, zd
-        uq_values = (self._uq_single(key, uncertainty, persist=persist)
-                     for key, uncertainty in uncertainties.items())
+        uq_values = (self._uq_single(key, uncertainty, persist=persist) for key, uncertainty in uncertainties.items())
         sys, stat = reduce(_d_uncert_add, uq_values, (0, 0))
         # Safe because if the iterator is empty and the initial values persist,
         # we would have returned early with delayed values.

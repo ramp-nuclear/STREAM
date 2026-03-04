@@ -10,8 +10,14 @@ from networkx import MultiDiGraph
 
 from stream.aggregator import Aggregator
 from stream.calculations.kirchhoff import (
-    build_kvl_matrix, Junction, Kirchhoff, KirchhoffWDerivatives,
-    to_graph_for_cycles, to_str)
+    Junction,
+    Kirchhoff,
+    KirchhoffWDerivatives,
+    build_kvl_matrix,
+    to_graph_for_cycles,
+    to_str,
+)
+
 from .conftest import are_close, pos_medium_floats
 
 
@@ -23,7 +29,11 @@ def test_a_multigraph_to_graph_for_cycles():
 
     h = to_graph_for_cycles(g)
 
-    assert [data["name"] for data in h.adj["A"].values()] == ["hi", "hello", "greetings"]
+    assert [data["name"] for data in h.adj["A"].values()] == [
+        "hi",
+        "hello",
+        "greetings",
+    ]
     assert list(h.adj["B"].values()) == [{}, {}, {}]
 
 
@@ -64,12 +74,14 @@ def mock_graph(J) -> MultiDiGraph:
     return g
 
 
-@pytest.fixture(scope='module')
-def J(): return Junction(name='J0'), Junction(name='J1')
+@pytest.fixture(scope="module")
+def J():
+    return Junction(name="J0"), Junction(name="J1")
 
 
-@pytest.fixture(scope='module')
-def K(mock_graph): return Kirchhoff(mock_graph)
+@pytest.fixture(scope="module")
+def K(mock_graph):
+    return Kirchhoff(mock_graph)
 
 
 Edge = list[str]
@@ -78,7 +90,7 @@ Edge = list[str]
 def _make_cycle(values: list[Edge]) -> MultiDiGraph:
     g = MultiDiGraph()
     for i, val in enumerate(values):
-        g.add_edge(str(i), str((i+1) % len(values)), 0, comps=val)
+        g.add_edge(str(i), str((i + 1) % len(values)), 0, comps=val)
     return g
 
 
@@ -86,23 +98,24 @@ def _exclusive(edgelist: list[Edge]) -> bool:
     return len(set(sum(edgelist, start=[]))) == sum(len(v) for v in edgelist)
 
 
-graph_sizes = st.shared(st.integers(2, 20), key='size')
-names = st.text(alphabet='abcdefghijklmnopqrstuvwxyz', min_size=1, max_size=5)
+graph_sizes = st.shared(st.integers(2, 20), key="size")
+names = st.text(alphabet="abcdefghijklmnopqrstuvwxyz", min_size=1, max_size=5)
 complists = st.lists(names, unique=True, min_size=1, max_size=4)
-edges = st.shared(graph_sizes.flatmap(lambda n: st.lists(complists,
-                                                         min_size=n+1,
-                                                         max_size=n+1))
-                  .filter(_exclusive),
-                  key='edges')
+edges = st.shared(
+    graph_sizes.flatmap(lambda n: st.lists(complists, min_size=n + 1, max_size=n + 1)).filter(_exclusive),
+    key="edges",
+)
 comps = edges.map(lambda v: sum(v, start=[]))
 graphs = edges.map(_make_cycle)
 subsets = comps.flatmap(lambda x: st.lists(st.sampled_from(x), unique=True))
-reference_nodes = st.tuples(graphs.flatmap(lambda x: st.sampled_from(list(x.nodes))),
-                            pos_medium_floats)
-kirchhoffs = st.builds(lambda x, y, z: Kirchhoff(x, *y, reference_node=z),
-                       graphs, subsets, reference_nodes)
-k_derivs = st.builds(lambda x, y, z: KirchhoffWDerivatives(x, *y, reference_node=z),
-                     graphs, subsets, reference_nodes)
+reference_nodes = st.tuples(graphs.flatmap(lambda x: st.sampled_from(list(x.nodes))), pos_medium_floats)
+kirchhoffs = st.builds(lambda x, y, z: Kirchhoff(x, *y, reference_node=z), graphs, subsets, reference_nodes)
+k_derivs = st.builds(
+    lambda x, y, z: KirchhoffWDerivatives(x, *y, reference_node=z),
+    graphs,
+    subsets,
+    reference_nodes,
+)
 
 
 @given(st.one_of(kirchhoffs, k_derivs))
@@ -111,8 +124,7 @@ def test_kirchhoff_variable_names_are_strings(k):
 
 
 def test_kvl_matrix_works_on_mock_graph(K):
-    expected_kvl = np.array([[1., 1., 1., 0., 0., 1.],
-                             [1., 1., 1., -1., -1., 0.]])
+    expected_kvl = np.array([[1.0, 1.0, 1.0, 0.0, 0.0, 1.0], [1.0, 1.0, 1.0, -1.0, -1.0, 0.0]])
     test_dp = np.array([1, 1, 1, 1.5, 1.5, -3])
     are_close(K._kvl @ test_dp, expected_kvl @ test_dp)
 
@@ -135,9 +147,7 @@ def test_kirchhoff_indexing_works_on_mock_graph(K, J):
 
 
 def test_kirchhoff_calculate_works_for_mock_graph(K):
-    res = K.calculate(
-        [1, 2, 3], pressure=dict(A=-1.0, B=-1.0, C=-1.0, D=-2.0, E=-1, F=3.0)
-    )
+    res = K.calculate([1, 2, 3], pressure=dict(A=-1.0, B=-1.0, C=-1.0, D=-2.0, E=-1, F=3.0))
     are_close(res, 0.0)
 
 
@@ -177,14 +187,16 @@ def test_Kirchoff_supplies_correct_absolute_pressures_for_one_example(mock_graph
     dps = [1, 3, -4, 5, 7, 8]
     expected = p0 + np.array([0, dps[0], sum(dps[:3])])
     res = K.calculate([1, 2, 3, 0, 0, 0], pressure=dict(zip(comps, dps)))
-    abs_pressures = res[K.edges_count:]
+    abs_pressures = res[K.edges_count :]
     are_close(abs_pressures, expected)
 
 
 def test_kirchoff_save_fits_known_value_for_one_example(K):
-    assert K.save([1, 2, 3]) == {"(J0 -> J1, 0)": 1,
-                                 "(J0 -> J1, 1)": 2,
-                                 "(J1 -> J0, 0)": 3}
+    assert K.save([1, 2, 3]) == {
+        "(J0 -> J1, 0)": 1,
+        "(J0 -> J1, 1)": 2,
+        "(J1 -> J0, 0)": 3,
+    }
 
 
 triplets = st.tuples(pos_medium_floats, pos_medium_floats, pos_medium_floats)

@@ -1,11 +1,11 @@
 import numpy as np
 
-from stream.units import (DecayHeatFunction, PerS, Second, Value)
+from stream.units import DecayHeatFunction, PerS, Second, Value
 
 
 def _activation(t: Second, T: Second, lamda: PerS) -> Value:
-    l = np.atleast_1d(lamda)
-    return (-np.expm1(-l * T)) @ np.exp(-np.outer(l, t))
+    lamda = np.atleast_1d(lamda)
+    return (-np.expm1(-lamda * T)) @ np.exp(-np.outer(lamda, t))
 
 
 def profile(lamda: PerS) -> DecayHeatFunction:

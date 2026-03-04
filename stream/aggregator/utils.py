@@ -1,15 +1,16 @@
 from collections import defaultdict
-from typing import Protocol, Iterable, Sequence
+from typing import Iterable, Protocol, Sequence
 
 from more_itertools import unique_everseen
 from networkx import DiGraph
 
 from stream.calculation import Calculation
-from stream.units import Name, FunctionOfTime, Place
-from stream.utilities import uppercase_numeric_only, offset
+from stream.units import FunctionOfTime, Name, Place
+from stream.utilities import offset, uppercase_numeric_only
 
 VARS = "variables"
 ExternalFunctions = dict[Calculation, dict[Name, FunctionOfTime]]
+
 
 class BaseAgr(Protocol):
     """A protocol for data objects similar to the :class:`~.stream.aggregator.Aggregator`
@@ -17,16 +18,17 @@ class BaseAgr(Protocol):
     These can be used in most places where aggregator creation tools are necessary.
 
     """
+
     graph: DiGraph
     funcs: ExternalFunctions | None
 
     @classmethod
     def connect(
-            cls,
-            a: "BaseAgr",
-            b: "BaseAgr",
-            *edges: tuple[Calculation, Calculation, Iterable[Name]],
-            ) -> "BaseAgr":
+        cls,
+        a: "BaseAgr",
+        b: "BaseAgr",
+        *edges: tuple[Calculation, Calculation, Iterable[Name]],
+    ) -> "BaseAgr":
         """
 
         Parameters
@@ -39,12 +41,12 @@ class BaseAgr(Protocol):
             Edges to connect between the two graphs of the objects with connection data.
 
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def __add__(self, other: "BaseAgr") -> "BaseAgr":
-        raise NotImplemented
-    
-    
+        raise NotImplementedError
+
+
 def non_unique_calculations(g: DiGraph) -> dict[str, list[Calculation]]:
     """Returns which calculations in the graph that are not uniquely named.
 
@@ -63,6 +65,7 @@ def non_unique_calculations(g: DiGraph) -> dict[str, list[Calculation]]:
     for calc in g.nodes:
         d[calc.name].append(calc)
     return {key: val for key, val in d.items() if len(val) > 1}
+
 
 def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
     r"""
@@ -88,8 +91,8 @@ def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
     """
     node_options = node_options or {}
     edge_options = edge_options or {}
-    from matplotlib import rc_context
     import networkx as nx
+    from matplotlib import rc_context
 
     # noinspection SpellCheckingInspection
     with rc_context({r"text.usetex": False}):
@@ -103,7 +106,7 @@ def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
             font_family="serif",
             font_size=12,
             node_shape="s",
-            )
+        )
         kwargs = default | node_options
         nx.draw_networkx(graph, **kwargs)
 
@@ -111,6 +114,7 @@ def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
         default = dict(label_pos=0.2, edge_labels=edge_labels, font_size=10)
         edge_kwargs = default | edge_options
         nx.draw_networkx_edge_labels(graph, kwargs["pos"], **edge_kwargs)
+
 
 def partition(nodes: Sequence[Calculation]) -> tuple[dict[Calculation, slice], int]:
     """
@@ -126,9 +130,9 @@ def partition(nodes: Sequence[Calculation]) -> tuple[dict[Calculation, slice], i
 
 
 def map_externals(
-        edges: Iterable[tuple[Calculation, Calculation, Iterable[str]]],
-        sections: dict[Calculation, slice],
-        ) -> dict[Calculation, dict[str, dict[Calculation, Place]]]:
+    edges: Iterable[tuple[Calculation, Calculation, Iterable[str]]],
+    sections: dict[Calculation, slice],
+) -> dict[Calculation, dict[str, dict[Calculation, Place]]]:
     """
     Go over every edge in the graph, assigning every calculation with its
     outer variables.
@@ -150,11 +154,7 @@ def vars_(*v):
     return {VARS: tuple(v)}
 
 
-def add_variables(graph: DiGraph,
-                  source_calc: Calculation,
-                  target_calc: Calculation,
-                  *added_vars: str) -> None:
-
+def add_variables(graph: DiGraph, source_calc: Calculation, target_calc: Calculation, *added_vars: str) -> None:
     r"""Add variables to the edge (source_calc,target_calc) in a graph.
     If the edge (source_calc,target_calc) doesn't exist, create it.
 

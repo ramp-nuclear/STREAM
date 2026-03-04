@@ -20,7 +20,6 @@ from typing import Callable
 import numpy as np
 from scipy.constants import g as standard_acceleration
 
-
 # Data Sets
 Array1D = np.ndarray
 Array2D = np.ndarray
@@ -93,7 +92,7 @@ cm = 1e-2 * meter
 mm = 1e-3 * meter
 hour = 3600 * second
 gram = 1e-3
-cm3 = cm ** 3
+cm3 = cm**3
 
 # Factors
 mega = 1e6

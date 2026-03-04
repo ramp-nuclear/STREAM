@@ -14,4 +14,5 @@ class HeatExchanger(LumpedComponent):
         self.name = name
         self.T = outlet
 
-    def T_out(self, **_) -> Celsius: return self.T
+    def T_out(self, **_) -> Celsius:
+        return self.T

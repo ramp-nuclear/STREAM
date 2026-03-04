@@ -1,9 +1,10 @@
 """Laminar Single Phase Heat Transfer Coefficient"""
+
 import numpy as np
 
-from stream.physical_models.dimensionless import Re_mdot, Pr
+from stream.physical_models.dimensionless import Pr, Re_mdot
 from stream.substances import Liquid
-from stream.units import Value, WPerM2K, Meter, KgPerS, Meter2
+from stream.units import KgPerS, Meter, Meter2, Value, WPerM2K
 
 #: For parallel plates in laminar flow, the Nusselt number is constant,
 #: depending on the boundary conditions. See
@@ -12,8 +13,7 @@ from stream.units import Value, WPerM2K, Meter, KgPerS, Meter2
 FIXED_TEMPS, FIXED_FLUXES, ONE_FIXED_FLUX_ONE_ADIABATIC = 7.541, 8.235, 5.385
 
 
-def constant_Nusselt_h_spl(*, coolant: Liquid, Dh: Meter, nu: float = FIXED_FLUXES,
-                           **_) -> WPerM2K:
+def constant_Nusselt_h_spl(*, coolant: Liquid, Dh: Meter, nu: float = FIXED_FLUXES, **_) -> WPerM2K:
     r"""A :class:`~.SinglePhaseLiquidHTC` for constant :func:`~.Nu` Number: math:`h = \text{Nu}k/D_h`
 
     Parameters
@@ -64,12 +64,12 @@ def Marco_Han_Nusselt(aspect_ratio: float) -> Value:
     """
     assert 0.0 <= aspect_ratio <= 1.0, f"{aspect_ratio = } must be non-negative and less than 1"
     return FIXED_FLUXES * (
-            1.0
-            - 2.0421 * aspect_ratio
-            + 3.853 * aspect_ratio ** 2
-            - 2.4765 * aspect_ratio ** 3
-            + 1.0578 * aspect_ratio ** 4
-            - 0.1861 * aspect_ratio ** 5
+        1.0
+        - 2.0421 * aspect_ratio
+        + 3.853 * aspect_ratio**2
+        - 2.4765 * aspect_ratio**3
+        + 1.0578 * aspect_ratio**4
+        - 0.1861 * aspect_ratio**5
     )
 
 
@@ -114,17 +114,16 @@ def two_sided_heating_nusselt(aspect_ratio: Value, nu0: float = FIXED_FLUXES) ->
         Chapter VII, Rectangular ducts, Section 3, Page 206, Table 44.
     """
     return nu0 * (
-            1.
-            - 1.4122 * aspect_ratio
-            + 2.3473 * aspect_ratio ** 2
-            - 2.8983 * aspect_ratio ** 3
-            + 2.0629 * aspect_ratio ** 4
-            - 0.6077 * aspect_ratio ** 5
+        1.0
+        - 1.4122 * aspect_ratio
+        + 2.3473 * aspect_ratio**2
+        - 2.8983 * aspect_ratio**3
+        + 2.0629 * aspect_ratio**4
+        - 0.6077 * aspect_ratio**5
     )
 
 
-def fully_developed_laminar_h_spl(*, coolant: Liquid, Dh: Meter, aspect_ratio: float,
-                                  **_) -> WPerM2K:
+def fully_developed_laminar_h_spl(*, coolant: Liquid, Dh: Meter, aspect_ratio: float, **_) -> WPerM2K:
     """A :class:`~.SinglePhaseLiquidHTC` relying on :func:`Marco_Han_Nusselt`
 
     Parameters
@@ -185,65 +184,75 @@ def _nusselt_coefficient_developing(x: Value) -> Value:
         Nuclear Engineering Division, INVAP, December 2003
 
     """
-    return np.where(x <= 2e-4,
-                    1.49 * x ** (-1 / 3),
-                    np.where(x <= 1e-3,
-                             (1.49 * (x ** (-1 / 3))) - 0.4,
-                             8.235 + 8.68 * np.exp(-164 * x) * ((1e3 * x) ** -0.506)
-                             )
-                    )
+    return np.where(
+        x <= 2e-4,
+        1.49 * x ** (-1 / 3),
+        np.where(
+            x <= 1e-3,
+            (1.49 * (x ** (-1 / 3))) - 0.4,
+            8.235 + 8.68 * np.exp(-164 * x) * ((1e3 * x) ** -0.506),
+        ),
+    )
 
 
-_xstar_table34 = np.array(sum([[j * 10 ** (-i) for j in (1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9)]
-                               for i in [6, 5, 4, 3, 2]], start=[]) + [0.1, 0.15, 0.2])
-_nuxh_table34 = np.array([148.773,
-                          129.944,
-                          118.049,
-                          103.110,
-                          93.673,
-                          86.954,
-                          81.824,
-                          77.724,
-                          74.339,
-                          71.477,
-                          69.011,
-                          60.292,
-                          54.787,
-                          47.880,
-                          43.521,
-                          40.419,
-                          38.054,
-                          36.165,
-                          34.607,
-                          33.290,
-                          32.153,
-                          28.154,
-                          25.636,
-                          22.488,
-                          20.512,
-                          19.133,
-                          18.050,
-                          17.205,
-                          16.511,
-                          15.928,
-                          15.427,
-                          13.681,
-                          12.604,
-                          11.299,
-                          10.516,
-                          9.9878,
-                          9.6085,
-                          9.3249,
-                          9.1073,
-                          8.9374,
-                          8.8031,
-                          8.4393,
-                          8.3107,
-                          8.2458,
-                          8.2368,
-                          8.2355,
-                          ]
-                         + 7 * [8.2353])
+_xstar_table34 = np.array(
+    sum(
+        [[j * 10 ** (-i) for j in (1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9)] for i in [6, 5, 4, 3, 2]],
+        start=[],
+    )
+    + [0.1, 0.15, 0.2]
+)
+_nuxh_table34 = np.array(
+    [
+        148.773,
+        129.944,
+        118.049,
+        103.110,
+        93.673,
+        86.954,
+        81.824,
+        77.724,
+        74.339,
+        71.477,
+        69.011,
+        60.292,
+        54.787,
+        47.880,
+        43.521,
+        40.419,
+        38.054,
+        36.165,
+        34.607,
+        33.290,
+        32.153,
+        28.154,
+        25.636,
+        22.488,
+        20.512,
+        19.133,
+        18.050,
+        17.205,
+        16.511,
+        15.928,
+        15.427,
+        13.681,
+        12.604,
+        11.299,
+        10.516,
+        9.9878,
+        9.6085,
+        9.3249,
+        9.1073,
+        8.9374,
+        8.8031,
+        8.4393,
+        8.3107,
+        8.2458,
+        8.2368,
+        8.2355,
+    ]
+    + 7 * [8.2353]
+)
 
 
 def _worsoe_schmidt_leveque_type(x):
@@ -272,8 +281,16 @@ def _worsoe_schmidt_leveque_type(x):
 
     """
     xt = x ** (1 / 3)
-    repv = (0.670960978 * xt + 0.159064137 * (xt ** 2) + 0.12012 * x + 0.12495 * (xt ** 4) + 0.15602 * (xt ** 5)
-            + 0.22176 * (x ** 2) + 0.34932 * (xt ** 7) - 4 * x)
+    repv = (
+        0.670960978 * xt
+        + 0.159064137 * (xt**2)
+        + 0.12012 * x
+        + 0.12495 * (xt**4)
+        + 0.15602 * (xt**5)
+        + 0.22176 * (x**2)
+        + 0.34932 * (xt**7)
+        - 4 * x
+    )
     return 1 / repv
 
 
@@ -304,15 +321,23 @@ def _nusselt_coefficient_interp_developing(x: Value) -> Value:
         Chapter VI, Parallel plates, Section C, Page 181, Table 34
 
     """
-    return np.where(x < _xstar_table34[0],
-                    _worsoe_schmidt_leveque_type(x),
-                    np.interp(x, _xstar_table34, _nuxh_table34, right=8.2353))
+    return np.where(
+        x < _xstar_table34[0],
+        _worsoe_schmidt_leveque_type(x),
+        np.interp(x, _xstar_table34, _nuxh_table34, right=8.2353),
+    )
 
 
-def developing_laminar_h_spl(*, coolant: Liquid, mdot: KgPerS, A: Meter2,
-                             Dh: Meter, develop_length: Meter, aspect_ratio: float,
-                             **_
-                             ) -> WPerM2K:
+def developing_laminar_h_spl(
+    *,
+    coolant: Liquid,
+    mdot: KgPerS,
+    A: Meter2,
+    Dh: Meter,
+    develop_length: Meter,
+    aspect_ratio: float,
+    **_,
+) -> WPerM2K:
     """A :class:`~.SinglePhaseLiquidHTC` relying on A Nusselt number definition
     for thermally developing flow. [#Shah]_
 

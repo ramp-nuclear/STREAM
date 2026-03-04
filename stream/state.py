@@ -4,16 +4,17 @@ Basically a 2-deep nested dict with str keys and the inner values are Value
 objects. We provide additional useful methods in the same namespace.
 
 """
-from functools import reduce, wraps
+
+from functools import reduce
 from itertools import chain
 from operator import or_
-from typing import Iterable, Any, IO, Callable, TypeVar
+from typing import IO, Any, Callable, Iterable, TypeVar
 
 import numpy as np
 import yaml
+from cytoolz.dicttoolz import keyfilter, valfilter, valmap
 from pandas import DataFrame
 
-from cytoolz.dicttoolz import keyfilter, valfilter, valmap
 from stream.calculation import CalcState, Calculation
 from stream.units import Value
 
@@ -32,7 +33,7 @@ def parse_value(records: DataFrame) -> Value:
         This is a float if the array is a scalar, or a numpy array if it is dimensional.
 
     """
-    records = records.sort_values(by=['i', 'j'])
+    records = records.sort_values(by=["i", "j"])
     match (len(records.i.values), len(records.j.values)):
         case (1, 1):
             return records.value.values.item()
@@ -44,13 +45,11 @@ def parse_value(records: DataFrame) -> Value:
             return vector.reshape(shape)
 
 
-_T = TypeVar('_T')
+_T = TypeVar("_T")
 
 
-def _two_deep_value_switch(d: dict[_T, dict],
-                           switch: Callable[[...], Any]) -> dict[_T, dict]:
-    return {k: {k2: switch(v2) for k2, v2 in v.items()}
-            for k, v in d.items()}
+def _two_deep_value_switch(d: dict[_T, dict], switch: Callable[[...], Any]) -> dict[_T, dict]:
+    return {k: {k2: switch(v2) for k2, v2 in v.items()} for k, v in d.items()}
 
 
 ListState = dict[str, dict[str, float | list]]
@@ -58,21 +57,15 @@ DictState = dict[str, CalcState]
 
 
 class State(dict):
-    """A nested dictionary with str keys that connects calculations to a dictionary of the values of their variables.
-
-    """
+    """A nested dictionary with str keys that connects calculations to a dictionary of the values of their variables."""
 
     @classmethod
     def merge(cls, *st: DictState) -> "State":
         """Merge states together. Later states have precedence."""
-        return cls({
-            k: reduce(or_, (s.get(k, {}) for s in st))
-            for k in set(chain(*(s.keys() for s in st)))
-            })
+        return cls({k: reduce(or_, (s.get(k, {}) for s in st)) for k in set(chain(*(s.keys() for s in st)))})
 
     @classmethod
-    def uniform(cls, calculations: Iterable[Calculation], value: Value, *variables: str
-                ) -> "State":
+    def uniform(cls, calculations: Iterable[Calculation], value: Value, *variables: str) -> "State":
         r"""Create a state, or a partial state for given calculations and given
         target variables, which are assigned a uniform value.
 
@@ -91,10 +84,7 @@ class State(dict):
             A partially legal state
         """
         if variables:
-            return cls({
-                c.name: {var: value for var in c.variables if var in variables}
-                for c in calculations
-                })
+            return cls({c.name: {var: value for var in c.variables if var in variables} for c in calculations})
         return cls({c.name: {var: value for var in c.variables} for c in calculations})
 
     def filter_values(self, f: Callable[[Value], bool]) -> "State":
@@ -161,20 +151,28 @@ class State(dict):
         return type(self)({c: valmap(f, d) for c, d in self.items()})
 
     def records(self) -> Iterable[dict[str, Any]]:
-        """Generate records from this state.
-
-        """
+        """Generate records from this state."""
         for calc, variables in self.items():
             for var_name, values in variables.items():
                 if isinstance(values, float):
-                    yield {'calculation': calc, 'variable': var_name,
-                           'i': 0, 'j': 0, 'value': values}
+                    yield {
+                        "calculation": calc,
+                        "variable": var_name,
+                        "i": 0,
+                        "j": 0,
+                        "value": values,
+                    }
                 else:
                     vals = np.atleast_2d(values)
                     for i, oned in enumerate(vals):
                         for j, v in enumerate(oned):
-                            yield {'calculation': calc, 'variable': var_name,
-                                   'i': i, 'j': j, 'value': v}
+                            yield {
+                                "calculation": calc,
+                                "variable": var_name,
+                                "i": i,
+                                "j": j,
+                                "value": v,
+                            }
 
     @classmethod
     def from_dataframe(cls, df: DataFrame) -> "State":
@@ -196,8 +194,7 @@ class State(dict):
 
     @classmethod
     def from_liststate(cls, s: ListState) -> "State":
-        """Make a new State from its serializable list version.
-        """
+        """Make a new State from its serializable list version."""
         d = _two_deep_value_switch(s, lambda x: x if isinstance(x, float) else np.array(x))
         return cls(d)
 
@@ -215,19 +212,13 @@ class State(dict):
         return cls.from_liststate(d)
 
     def to_dataframe(self) -> DataFrame:
-        """Represents a State as a DataFrame
-
-        """
-        return (
-            DataFrame
-            .from_records(self.records())
-            .astype(dict(calculation="category", variable="category", i="uint16", j="uint16"))
-            )
+        """Represents a State as a DataFrame"""
+        return DataFrame.from_records(self.records()).astype(
+            dict(calculation="category", variable="category", i="uint16", j="uint16")
+        )
 
     def listify(self) -> ListState:
-        """Replace all arrays in self with serializable lists
-
-        """
+        """Replace all arrays in self with serializable lists"""
         return _two_deep_value_switch(self, lambda x: x if isinstance(x, float) else x.tolist())
 
     def dump(self, f=None) -> str | None:
@@ -248,7 +239,7 @@ StateTimeseries = dict[float, State]
 def _gen_records_from_timeseries(s: StateTimeseries) -> Iterable[dict[str, Any]]:
     for t, state in s.items():
         for record in state.records():
-            record['time'] = t
+            record["time"] = t
             yield record
 
 
@@ -267,8 +258,7 @@ def to_dataframe(s: DictState | StateTimeseries) -> DataFrame:
 
     """
     has_float_keys = any(isinstance(key, float) for key in s)
-    return (_state_timeseries_to_dataframe(s) if has_float_keys
-            else State(s).to_dataframe())
+    return _state_timeseries_to_dataframe(s) if has_float_keys else State(s).to_dataframe()
 
 
 def _state_timeseries_to_dataframe(s: StateTimeseries) -> DataFrame:
@@ -280,11 +270,9 @@ def _state_timeseries_to_dataframe(s: StateTimeseries) -> DataFrame:
         The solution at different times to turn to a DataFrame
 
     """
-    return (
-        DataFrame
-        .from_records(_gen_records_from_timeseries(s))
-        .astype(dict(calculation="category", variable="category", i="uint16", j="uint16"))
-        )
+    return DataFrame.from_records(_gen_records_from_timeseries(s)).astype(
+        dict(calculation="category", variable="category", i="uint16", j="uint16")
+    )
 
 
 def from_dataframe(df: DataFrame) -> State | StateTimeseries:
@@ -296,8 +284,7 @@ def from_dataframe(df: DataFrame) -> State | StateTimeseries:
         Data to turn into a State
 
     """
-    return (state_timeseries_from_dataframe(df) if 'time' in df.columns
-            else State.from_dataframe(df))
+    return state_timeseries_from_dataframe(df) if "time" in df.columns else State.from_dataframe(df)
 
 
 def state_timeseries_from_dataframe(df: DataFrame) -> StateTimeseries:
@@ -318,10 +305,9 @@ def state_timeseries_from_dataframe(df: DataFrame) -> StateTimeseries:
     .state_timeseries_to_dataframe
 
     """
-    if 'time' not in df.columns:
+    if "time" not in df.columns:
         raise ValueError("The DataFrame given isn't time-related.")
-    return {tv: State.from_dataframe(df[df.time == tv])
-            for tv in set(df.time.values)}
+    return {tv: State.from_dataframe(df[df.time == tv]) for tv in set(df.time.values)}
 
 
 def _filter_vars(f: Callable[[...], bool], state: State, filterer) -> State:

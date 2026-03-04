@@ -1,5 +1,4 @@
 r"""Functions for creating a fission-following decay heat profile"""
-from typing import Callable
 
 import numpy as np
 
@@ -10,15 +9,16 @@ from stream.composition import point_kinetics_steady_state
 from stream.units import Array1D, DecayHeatFunction, PerS, Second, Value
 from stream.utilities import identity
 
-
 __all__ = ["profile", "profile_from_pk"]
 
 
-def profile(time: Second, generation_time: Second,
-            delayed_neutron_fractions: Array1D,
-            delayed_groups_decay_rates: PerS,
-            controls: ReactivityController | None = None,
-            ) -> DecayHeatFunction:
+def profile(
+    time: Second,
+    generation_time: Second,
+    delayed_neutron_fractions: Array1D,
+    delayed_groups_decay_rates: PerS,
+    controls: ReactivityController | None = None,
+) -> DecayHeatFunction:
     r"""
     Parameters
     ----------
@@ -46,8 +46,12 @@ def profile(time: Second, generation_time: Second,
         controls=controls,
     )
     agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, t=identity)})
-    sol = agr.solve(y0 := agr.load(point_kinetics_steady_state(pk, 1e6)),
-                    time, yp0=agr.compute(y0, time[0]), eq_type="DAE")
+    sol = agr.solve(
+        y0 := agr.load(point_kinetics_steady_state(pk, 1e6)),
+        time,
+        yp0=agr.compute(y0, time[0]),
+        eq_type="DAE",
+    )
     prompt = agr.at_times(sol, pk, "power") / 1e6
     CUTOFF = 1e-12
     prompt[prompt < CUTOFF] = 0.0
@@ -71,8 +75,7 @@ def profile(time: Second, generation_time: Second,
     return _fissions
 
 
-def profile_from_pk(time: Second, pk: PointKinetics
-                    ) -> DecayHeatFunction:
+def profile_from_pk(time: Second, pk: PointKinetics) -> DecayHeatFunction:
     r"""
 
     Parameters
@@ -87,7 +90,10 @@ def profile_from_pk(time: Second, pk: PointKinetics
     DecayHeatFunction
         The fission time profile :math:`\text{PK}(t, T)`
     """
-    return profile(time, generation_time=pk.Lambda,
-                   delayed_groups_decay_rates=pk.lambdak,
-                   delayed_neutron_fractions=pk.betak,
-                   input_reactivity_func=pk.input_reactivity)
+    return profile(
+        time,
+        generation_time=pk.Lambda,
+        delayed_groups_decay_rates=pk.lambdak,
+        delayed_neutron_fractions=pk.betak,
+        input_reactivity_func=pk.input_reactivity,
+    )

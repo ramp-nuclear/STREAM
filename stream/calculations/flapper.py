@@ -8,14 +8,12 @@ from typing import Callable, Sequence
 
 import numpy as np
 
-from stream import unpacked, Calculation
+from stream import Calculation, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.pressure_drop import mdot_by_local_pressure
 from stream.substances import LiquidFuncs
-from stream.units import (
-    Array1D, Celsius, KgPerS, Meter2, PerS, Second)
-from stream.utilities import directed_Tin, STREAM_DEBUG
-
+from stream.units import Array1D, Celsius, KgPerS, Meter2, PerS, Second
+from stream.utilities import STREAM_DEBUG, directed_Tin
 
 __all__ = ["Flapper", "legacy_relaxation", "continuously_differentiable_relaxation"]
 
@@ -24,19 +22,19 @@ logger = logging.getLogger(__name__)
 
 def continuously_differentiable_relaxation(x):
     """A continuously differentiable relaxation scheme"""
-    if x <= 0.:
-        return 0.
-    elif x >= 1.:
-        return 1.
-    return -2 * x ** 3 + 3 * x ** 2
+    if x <= 0.0:
+        return 0.0
+    elif x >= 1.0:
+        return 1.0
+    return -2 * x**3 + 3 * x**2
 
 
 def legacy_relaxation(x):
     """Legacy relaxation scheme chosen somewhat arbitrarily"""
-    if x <= 0.:
-        return 0.
-    elif x >= 1.:
-        return 1.
+    if x <= 0.0:
+        return 0.0
+    elif x >= 1.0:
+        return 1.0
     return x / np.sqrt(4 ** (10 * (1 - x)))
 
 
@@ -46,11 +44,17 @@ class Flapper(Calculation):
     state is when :math:`\dot{m} \leq \dot{m}_0` for some user provided
     :math:`\dot{m}_0`"""
 
-    def __init__(self, open_at_current: KgPerS, f: float,
-                 fluid: LiquidFuncs, area: Meter2, open_rate: PerS,
-                 stop_on_open: bool = False,
-                 relaxation: Callable[[float], float] = legacy_relaxation,
-                 name: str = 'Flapper'):
+    def __init__(
+        self,
+        open_at_current: KgPerS,
+        f: float,
+        fluid: LiquidFuncs,
+        area: Meter2,
+        open_rate: PerS,
+        stop_on_open: bool = False,
+        relaxation: Callable[[float], float] = legacy_relaxation,
+        name: str = "Flapper",
+    ):
         r"""
 
         Parameters
@@ -100,9 +104,16 @@ class Flapper(Calculation):
         self._flag = False
 
     @unpacked
-    def calculate(self, variables: Sequence[float], *, mdot: KgPerS,
-                  Tin: Celsius, Tin_minus: Celsius | None = None, t: Second,
-                  **kwargs) -> Array1D:
+    def calculate(
+        self,
+        variables: Sequence[float],
+        *,
+        mdot: KgPerS,
+        Tin: Celsius,
+        Tin_minus: Celsius | None = None,
+        t: Second,
+        **kwargs,
+    ) -> Array1D:
         out = np.empty(2)
         T, dp = variables
 
@@ -112,7 +123,7 @@ class Flapper(Calculation):
         else:
             relax = self.relaxation(float(t - self.t_open) * self.open_rate)
             Tin_d = directed_Tin(Tin, Tin_minus, mdot)
-            mdot_calc = - mdot_by_local_pressure(dp, self._rho(Tin_d), self.f, self._A)
+            mdot_calc = -mdot_by_local_pressure(dp, self._rho(Tin_d), self.f, self._A)
             out[0] = T - Tin_d
             out[1] = mdot - relax * mdot_calc
         return out
@@ -128,13 +139,11 @@ class Flapper(Calculation):
     dp_out = LumpedComponent.dp_out
 
     @unpacked
-    def should_continue(self, variables: Sequence[float],
-                        *, ref_mdot: KgPerS, t: Second, **_) -> bool:
+    def should_continue(self, variables: Sequence[float], *, ref_mdot: KgPerS, t: Second, **_) -> bool:
         return not (self.stop_on_open and self.t_open == t and self._flag)
 
     @unpacked
-    def change_state(self, variables: Sequence[float],
-                     *, ref_mdot: KgPerS, t: Second, **_) -> None:
+    def change_state(self, variables: Sequence[float], *, ref_mdot: KgPerS, t: Second, **_) -> None:
         self._flag = False
         if ref_mdot <= self.mdot0 and np.isposinf(self.t_open):
             self.t_open = float(t)

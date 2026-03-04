@@ -1,9 +1,10 @@
 """Turbulent Single Phase Heat Transfer Coefficient"""
+
 from numba import njit
 
-from stream.physical_models.dimensionless import Re_mdot, Pr
+from stream.physical_models.dimensionless import Pr, Re_mdot
 from stream.substances import Liquid
-from stream.units import KgPerS, Meter, Meter2, WPerM2K, Value
+from stream.units import KgPerS, Meter, Meter2, Value, WPerM2K
 
 
 @njit
@@ -32,12 +33,10 @@ def Dittus_Boelter(re: Value, pr: Value) -> Value:
     >>> Dittus_Boelter(re=1., pr=1.)
     0.023
     """
-    return 0.023 * (re ** 0.8) * (pr ** 0.4)
+    return 0.023 * (re**0.8) * (pr**0.4)
 
 
-def Dittus_Boelter_h_spl(
-        *, coolant: Liquid, mdot: KgPerS, Dh: Meter, A: Meter2, **_
-) -> WPerM2K:
+def Dittus_Boelter_h_spl(*, coolant: Liquid, mdot: KgPerS, Dh: Meter, A: Meter2, **_) -> WPerM2K:
     r"""
     Single phase liquid heat transfer coefficient.
     This is done through the Dittus-Boelter correlation, which holds for certain very high Reynolds.

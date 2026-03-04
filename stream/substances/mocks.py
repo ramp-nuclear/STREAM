@@ -1,6 +1,7 @@
 """
 Mock Substances, whose properties are mostly just 1's
 """
+
 from functools import partial
 
 import numpy as np

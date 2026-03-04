@@ -4,37 +4,50 @@ Their electrical analogs are resistors in an electric circuit, even though most
 of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 
 """
+
 from functools import partial
 from itertools import chain
-from typing import Callable, Sequence, Protocol
+from typing import Callable, Protocol, Sequence
 
 import numpy as np
 from numba import njit
 
-from stream.calculation import unpacked, CalcState, Calculation
+from stream.calculation import CalcState, Calculation, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.dimensionless import Re_mdot
 from stream.physical_models.pressure_drop import (
-    Darcy_Weisbach_pressure_by_mdot, gravity_pressure, local_pressure_by_mdot,
+    Darcy_Weisbach_pressure_by_mdot,
+    gravity_pressure,
+    local_pressure_by_mdot,
     local_pressure_factor,
-    )
+)
 from stream.physical_models.pressure_drop.friction import (
-    regime_dependent_friction,
     laminar_friction,
-    turbulent_friction
-    )
+    regime_dependent_friction,
+    turbulent_friction,
+)
 from stream.physical_models.pressure_drop.local import (
-    sudden_expansion_factor,
+    bend_factor,
     sudden_contraction_factor,
-    bend_factor
-    )
+    sudden_expansion_factor,
+)
 from stream.pipe_geometry import EffectivePipe
 from stream.substances.liquid import LiquidFuncs
 from stream.units import (
-    Celsius, g, KgPerS, Meter, Meter2, MPerS2, PerMS, Pascal, KgPerM3, KgPerM7, KgPerM4S, Radians,
-    )
+    Celsius,
+    KgPerM3,
+    KgPerM4S,
+    KgPerM7,
+    KgPerS,
+    Meter,
+    Meter2,
+    MPerS2,
+    Pascal,
+    PerMS,
+    Radians,
+    g,
+)
 from stream.utilities import summed
-
 
 __all__ = [
     "DPCalculation",
@@ -48,8 +61,8 @@ __all__ = [
     "MultipliableCalculation",
     "RegimeDependentFriction",
     "Screen",
-    "VolumetricFlowResistor"
-    ]
+    "VolumetricFlowResistor",
+]
 
 
 class MultipliableCalculation(Calculation, Protocol):
@@ -60,17 +73,13 @@ class MultipliableCalculation(Calculation, Protocol):
 
     """
 
-    def __mul__(self, other: float) -> "MultipliableCalculation":
-        ...
+    def __mul__(self, other: float) -> "MultipliableCalculation": ...
 
-    def __rmul__(self, other: float) -> "MultipliableCalculation":
-        ...
+    def __rmul__(self, other: float) -> "MultipliableCalculation": ...
 
 
 class DPCalculation(Calculation, Protocol):
-    """A calculation that has a `dp_out` method
-
-    """
+    """A calculation that has a `dp_out` method"""
 
     dp_out = LumpedComponent.dp_out
 
@@ -86,8 +95,7 @@ class ResistorMul:
 
     def __init__(self, factor: float, resistor: DPCalculation):
         if not isinstance(factor, float):
-            raise TypeError(f"Cannot multiply object of type {type(resistor)} "
-                            f"by non-float type {factor}")
+            raise TypeError(f"Cannot multiply object of type {type(resistor)} by non-float type {factor}")
         self.factor = factor
         self.resistor = resistor
 
@@ -129,9 +137,7 @@ def _mul(r: DPCalculation, f: float) -> ResistorMul:
 
 
 def _multiplies(cls):
-    """Adds multiplications that create a ResistorMul object.
-
-    """
+    """Adds multiplications that create a ResistorMul object."""
     cls.__mul__ = _mul
     cls.__rmul__ = _mul
     return cls
@@ -143,30 +149,39 @@ class ResistorSum(LumpedComponent):
     These calculations must leave the temperature unchanged, dealing only with pressure
     drop."""
 
-    def __init__(self, *resistors: DPCalculation, name: str = 'R'):
+    def __init__(self, *resistors: DPCalculation, name: str = "R"):
         self.name = name
-        unrolled_resistors = summed([r.resistors if isinstance(r, ResistorSum) else [r]
-                                     for r in resistors], [])
+        unrolled_resistors = summed([r.resistors if isinstance(r, ResistorSum) else [r] for r in resistors], [])
         self.resistors = unrolled_resistors
 
     def dp_out(self, *, Tin: Celsius, mdot: KgPerS, **kwargs) -> Pascal:
         return sum(r.dp_out(Tin=Tin, mdot=mdot, **kwargs) for r in self.resistors)
 
     @unpacked
-    def should_continue(self, variables: Sequence[float], *, mdot: KgPerS,
-                        Tin: Celsius, Tin_minus: Celsius | None = None,
-                        **kwargs) -> bool:
-        return all(r.should_continue(variables,
-                                     Tin=Tin, Tin_minus=Tin_minus,
-                                     mdot=mdot, **kwargs)
-                   for r in self.resistors)
+    def should_continue(
+        self,
+        variables: Sequence[float],
+        *,
+        mdot: KgPerS,
+        Tin: Celsius,
+        Tin_minus: Celsius | None = None,
+        **kwargs,
+    ) -> bool:
+        return all(
+            r.should_continue(variables, Tin=Tin, Tin_minus=Tin_minus, mdot=mdot, **kwargs) for r in self.resistors
+        )
 
     @unpacked
-    def change_state(self, variables: Sequence[float], *, mdot: KgPerS,
-                     Tin: Celsius, Tin_minus: Celsius | None = None,
-                     **kwargs):
-        [r.change_state(variables, Tin=Tin, Tin_minus=Tin_minus, mdot=mdot, **kwargs)
-         for r in self.resistors]
+    def change_state(
+        self,
+        variables: Sequence[float],
+        *,
+        mdot: KgPerS,
+        Tin: Celsius,
+        Tin_minus: Celsius | None = None,
+        **kwargs,
+    ):
+        [r.change_state(variables, Tin=Tin, Tin_minus=Tin_minus, mdot=mdot, **kwargs) for r in self.resistors]
 
     def __add__(self, other: "ResistorSum") -> "ResistorSum":
         return ResistorSum(*chain(self.resistors, other.resistors), name=self.name)
@@ -178,21 +193,27 @@ class Resistor(LumpedComponent):
     :math:`\Delta p = \dot{m}R` (Ohm's law)
     """
 
-    def __init__(self, resistance: PerMS,
-                 name: str = 'R'):
+    def __init__(self, resistance: PerMS, name: str = "R"):
         self.name = name
         self.r = resistance
 
-    def dp_out(self, *, mdot: KgPerS, **_) -> Pascal: return - self.r * mdot
+    def dp_out(self, *, mdot: KgPerS, **_) -> Pascal:
+        return -self.r * mdot
 
 
 @_multiplies
 class Friction(LumpedComponent):
     """Resistor quadratic in flow using a given friction coefficient"""
 
-    def __init__(self, f: float, fluid: LiquidFuncs, length: Meter,
-                 hydraulic_diameter: Meter, area: Meter2,
-                 name: str = 'Friction'):
+    def __init__(
+        self,
+        f: float,
+        fluid: LiquidFuncs,
+        length: Meter,
+        hydraulic_diameter: Meter,
+        area: Meter2,
+        name: str = "Friction",
+    ):
         r"""
 
         Parameters
@@ -211,8 +232,7 @@ class Friction(LumpedComponent):
         """
         self.name = name
         self.f = f
-        self._dp = partial(Darcy_Weisbach_pressure_by_mdot, L=length,
-                           Dh=hydraulic_diameter, A=area)
+        self._dp = partial(Darcy_Weisbach_pressure_by_mdot, L=length, Dh=hydraulic_diameter, A=area)
         self._rho = fluid.density
 
     def dp_out(self, *, Tin: Celsius, mdot: KgPerS, **_) -> Pascal:
@@ -229,8 +249,13 @@ class Gravity(LumpedComponent):
     .gravity_pressure
     """
 
-    def __init__(self, fluid: LiquidFuncs, disposition: Meter,
-                 gravity: MPerS2 = g, name: str = 'Gravity'):
+    def __init__(
+        self,
+        fluid: LiquidFuncs,
+        disposition: Meter,
+        gravity: MPerS2 = g,
+        name: str = "Gravity",
+    ):
         r"""
 
         Parameters
@@ -261,19 +286,16 @@ class LocalPressureDrop(LumpedComponent):
 
     """
 
-    def __init__(self, fluid: LiquidFuncs, A1: Meter2, A2: Meter2,
-                 name: str = "LocalPD"):
+    def __init__(self, fluid: LiquidFuncs, A1: Meter2, A2: Meter2, name: str = "LocalPD"):
         self.name = name
         self._rho = fluid.density
         self._visc = fluid.viscosity
         self.A1 = A1
         self.A2 = A2
-        self._area_difference = (1 / (A2 ** 2)) - (1 / (A1 ** 2))
+        self._area_difference = (1 / (A2**2)) - (1 / (A1**2))
         factors = (sudden_expansion_factor, sudden_contraction_factor)
         pos, neg = factors if A2 >= A1 else factors[::-1]
-        self.f_calc = partial(local_pressure_factor,
-                              positive_flow=pos, negative_flow=neg
-                              )
+        self.f_calc = partial(local_pressure_factor, positive_flow=pos, negative_flow=neg)
 
     def dp_out(self, *, mdot: KgPerS, Tin: Celsius, **_) -> Pascal:
         rho = self._rho(Tin)
@@ -304,8 +326,8 @@ class LocalPressureDrop(LumpedComponent):
         Tin, dp = vector
         sign = 1 if mdot >= 0 else -1
         density = self._rho(Tin)
-        dynamic_difference = (0.5 * mdot ** 2 / density) * sign * self._area_difference
-        state['static_pressure_drop'] = dp - dynamic_difference
+        dynamic_difference = (0.5 * mdot**2 / density) * sign * self._area_difference
+        state["static_pressure_drop"] = dp - dynamic_difference
         return state
 
 
@@ -318,11 +340,16 @@ class Bend(LumpedComponent):
 
     """
 
-    def __init__(self, fluid: LiquidFuncs,
-                 hydraulic_diameter: Meter, area: Meter2,
-                 bend_radius: Meter, bend_angle: Radians,
-                 friction_func: Callable[[float], float] = turbulent_friction,
-                 name: str = "Bend"):
+    def __init__(
+        self,
+        fluid: LiquidFuncs,
+        hydraulic_diameter: Meter,
+        area: Meter2,
+        bend_radius: Meter,
+        bend_angle: Radians,
+        friction_func: Callable[[float], float] = turbulent_friction,
+        name: str = "Bend",
+    ):
         r"""
 
         Parameters
@@ -368,29 +395,42 @@ class RegimeDependentFriction(LumpedComponent):
     r"""Friction resistor which depends on the Reynolds number,
     see :func:`.regime_dependent_friction`"""
 
-    def __init__(self, pipe: EffectivePipe, fluid: LiquidFuncs,
-                 re_bounds: tuple[float, float], k_R: float,
-                 name: str = 'Friction',
-                 laminar: Callable[[float], float] = laminar_friction,
-                 turbulent: Callable[[float], float] = turbulent_friction,
-                 ):
+    def __init__(
+        self,
+        pipe: EffectivePipe,
+        fluid: LiquidFuncs,
+        re_bounds: tuple[float, float],
+        k_R: float,
+        name: str = "Friction",
+        laminar: Callable[[float], float] = laminar_friction,
+        turbulent: Callable[[float], float] = turbulent_friction,
+    ):
         self.name = name
-        self._dp = partial(Darcy_Weisbach_pressure_by_mdot, L=pipe.length,
-                           Dh=pipe.hydraulic_diameter, A=pipe.area)
+        self._dp = partial(
+            Darcy_Weisbach_pressure_by_mdot,
+            L=pipe.length,
+            Dh=pipe.hydraulic_diameter,
+            A=pipe.area,
+        )
         self._rho = fluid.density
-        self._k_const = (pipe.length / pipe.hydraulic_diameter) / (2 * pipe.area ** 2)
-        self._f = partial(regime_dependent_friction, fluid=fluid, pipe=pipe,
-                          re_bounds=re_bounds, k_R=k_R,
-                          laminar=laminar, turbulent=turbulent
-                          )
+        self._k_const = (pipe.length / pipe.hydraulic_diameter) / (2 * pipe.area**2)
+        self._f = partial(
+            regime_dependent_friction,
+            fluid=fluid,
+            pipe=pipe,
+            re_bounds=re_bounds,
+            k_R=k_R,
+            laminar=laminar,
+            turbulent=turbulent,
+        )
 
     def k(self, mdot, t) -> float:
         f = self._f(T_cool=t, mdot=mdot, T_wall=t)
         return self._rho(t) * f * self._k_const
 
     def dp_out(self, *, Tin: Celsius, mdot: KgPerS, **_) -> Pascal:
-        return -self._dp(mdot=mdot, rho=self._rho(Tin),
-                         f=self._f(T_cool=Tin, mdot=mdot, T_wall=Tin))
+        return -self._dp(mdot=mdot, rho=self._rho(Tin), f=self._f(T_cool=Tin, mdot=mdot, T_wall=Tin))
+
 
 @_multiplies
 class VolumetricFlowResistor(LumpedComponent):
@@ -402,12 +442,13 @@ class VolumetricFlowResistor(LumpedComponent):
 
     """
 
-    def __init__(self,
-                 k: KgPerM7,
-                 name: str,
-                 density_func: Callable[[Celsius], KgPerM3],
-                 klow: KgPerM4S = 0
-                 ):
+    def __init__(
+        self,
+        k: KgPerM7,
+        name: str,
+        density_func: Callable[[Celsius], KgPerM3],
+        klow: KgPerM4S = 0,
+    ):
         """
 
         Parameters
@@ -435,9 +476,14 @@ class VolumetricFlowResistor(LumpedComponent):
 class Screen(LumpedComponent):
     """A resistor to flow due to a circular metal wire mesh"""
 
-    def __init__(self, clear_area: Meter2, total_area: Meter2,
-                 wire_diameter: Meter,
-                 fluid: LiquidFuncs, name: str = "Screen"):
+    def __init__(
+        self,
+        clear_area: Meter2,
+        total_area: Meter2,
+        wire_diameter: Meter,
+        fluid: LiquidFuncs,
+        name: str = "Screen",
+    ):
         r"""A screen-type resistor based on the circular metal wire screen in
         [#IdelchikScreen]_.
 
@@ -496,10 +542,11 @@ class Screen(LumpedComponent):
 
     def dp_out(self, mdot: KgPerS, Tin: Celsius, **kwargs) -> Pascal:
         re = Re_mdot(mdot=mdot, A=self.clear_area, L=self.d_wire, mu=self.fluid.viscosity(Tin))
-        return - Darcy_Weisbach_pressure_by_mdot(
+        return -Darcy_Weisbach_pressure_by_mdot(
             mdot=mdot,
             rho=self.fluid.density(Tin),
             f=self.factor(self.clear_area, self.total_area, re),
-            L=1.0, Dh=1.0,
-            A=self.total_area
-            )
+            L=1.0,
+            Dh=1.0,
+            A=self.total_area,
+        )

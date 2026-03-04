@@ -1,6 +1,7 @@
 """
 Testing global, or integrative, arrangements.
 """
+
 from functools import partial
 
 import numpy as np
@@ -9,29 +10,48 @@ from hypothesis.strategies import floats, integers
 from networkx import DiGraph
 from scipy.constants import g
 
-from stream.aggregator import vars_, Aggregator, CalculationGraph
+from stream.aggregator import Aggregator, CalculationGraph, vars_
 from stream.calculations import (
-    Channel, ChannelAndContacts, Flapper, Friction, Fuel, Gravity,
-    HeatExchanger, Inertia, Junction, Kirchhoff, KirchhoffWDerivatives,
-    LocalPressureDrop, PointKinetics, Pump, Resistor, VolumetricFlowResistor
-    )
-from stream.calculations.ideal.ideal import LumpedComponent
+    Channel,
+    ChannelAndContacts,
+    Flapper,
+    Friction,
+    Fuel,
+    Gravity,
+    HeatExchanger,
+    Inertia,
+    Junction,
+    Kirchhoff,
+    KirchhoffWDerivatives,
+    LocalPressureDrop,
+    PointKinetics,
+    Pump,
+    Resistor,
+    VolumetricFlowResistor,
+)
 from stream.calculations.flapper import continuously_differentiable_relaxation as cdr
+from stream.calculations.ideal.ideal import LumpedComponent
 from stream.composition import guess_hydraulic_steady_state
 from stream.composition.cycle import (
-    flow_edge, flow_graph, flow_graph_to_agr_and_k as agr_k, kirchhoffify,
-    )
+    flow_edge,
+    flow_graph,
+    kirchhoffify,
+)
+from stream.composition.cycle import (
+    flow_graph_to_agr_and_k as agr_k,
+)
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.jacobians import ALG_jacobian, DAE_jacobian
-from stream.physical_models.pressure_drop import pressure_diff, friction_factor
+from stream.physical_models.pressure_drop import friction_factor, pressure_diff
 from stream.pipe_geometry import EffectivePipe
 from stream.state import State
 from stream.substances import light_water
 from stream.substances.mocks import mock_liquid_funcs, mock_solid
 from stream.units import cm, hour
-from stream.utilities import just, summed, identity, strictly_monotonous as mono
+from stream.utilities import identity, just, summed
+from stream.utilities import strictly_monotonous as mono
 
-from .conftest import are_close, pos_medium_floats, MTR_fuel_and_channel
+from .conftest import MTR_fuel_and_channel, are_close, pos_medium_floats
 
 
 @settings(deadline=None)
@@ -46,17 +66,16 @@ def test_pump_resistor_in_series_follows_analytic_solution(T, dp, r):
     fg = flow_graph(
         flow_edge(("A", "B"), P),
         flow_edge(("B", "A"), R),
-        )
+    )
     agr, K = agr_k(fg, {P.name: dict(Tin=T), R.name: dict(Tin=T)})
 
     calculation = agr.solve_steady(
         State.merge(
-            {K.name: {K.component_edge(P): dp / r,
-                      K.component_edge(R): dp / r}},
+            {K.name: {K.component_edge(P): dp / r, K.component_edge(R): dp / r}},
             State.uniform((R, P), T),
-            {R.name: dict(pressure=-dp), P.name: dict(pressure=dp)}
-            )
+            {R.name: dict(pressure=-dp), P.name: dict(pressure=dp)},
         )
+    )
 
     assert np.allclose(calculation, [T, dp, T, -dp, dp / r, dp / r])
 
@@ -68,29 +87,35 @@ def test_parallel_resistors_with_pump_against_analytic_solution(p, r1, r2):
     A simple circuit of an ideal pump and two ideal resistors in parallel.
     """
     P = Pump(pressure=p)
-    R1 = Resistor(resistance=r1, name='R1')
-    R2 = Resistor(resistance=r2, name='R2')
-    J0 = Junction(name='J0')
-    J1 = Junction(name='J1')
+    R1 = Resistor(resistance=r1, name="R1")
+    R2 = Resistor(resistance=r2, name="R2")
+    J0 = Junction(name="J0")
+    J1 = Junction(name="J1")
 
     fg = flow_graph(
         flow_edge((J0, J1), R1),
         flow_edge((J0, J1), R2),
         flow_edge((J1, J0), P),
-        )
+    )
 
     agr, K = agr_k(fg)
     calculation = agr.solve_steady(
         State.merge(
-            {K.name: {K.component_edge(P): p * (r1 + r2) / (r1 * r2),
-                      K.component_edge(R1): p / r1,
-                      K.component_edge(R2): p / r2}},
+            {
+                K.name: {
+                    K.component_edge(P): p * (r1 + r2) / (r1 * r2),
+                    K.component_edge(R1): p / r1,
+                    K.component_edge(R2): p / r2,
+                }
+            },
             State.uniform((J0, J1, R1, R2, P), 1.0),
-            {R1.name: dict(pressure=-p),
-             R2.name: dict(pressure=-p),
-             P.name: dict(pressure=p)}
-            )
+            {
+                R1.name: dict(pressure=-p),
+                R2.name: dict(pressure=-p),
+                P.name: dict(pressure=p),
+            },
         )
+    )
 
     state = agr.save(calculation)
 
@@ -104,15 +129,12 @@ def test_parallel_resistors_with_pump_against_analytic_solution(p, r1, r2):
 def test_resistors_in_series_against_analytic_solution(N, pressure, total_r):
     resistance = total_r / N
     P = Pump(pressure=pressure)
-    J0 = Junction(name='J0')
-    J1 = Junction(name='J1')
+    J0 = Junction(name="J0")
+    J1 = Junction(name="J1")
 
     Rs = [Resistor(resistance, name=str(i)) for i in range(N)]
 
-    fg = flow_graph(
-        flow_edge((J0, J1), *Rs),
-        flow_edge((J1, J0), P)
-        )
+    fg = flow_graph(flow_edge((J0, J1), *Rs), flow_edge((J1, J0), P))
     agr, K = agr_k(fg, funcs={r: dict(Tin=1.0) for r in Rs})
     agr: Aggregator
     T = 1.0
@@ -134,11 +156,16 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
     channel_length = 1.0
     cells = 10
     boundaries = np.linspace(0, channel_length, cells + 1)
-    x_bounds = np.array([0,1])
+    x_bounds = np.array([0, 1])
 
-    power_shape = np.full((cells, len(x_bounds)-1), 1 / cells)
-    pipe = EffectivePipe(length=channel_length, heated_perimeter=1,
-                         wet_perimeter=1, area=1, heated_parts=(0, 1))
+    power_shape = np.full((cells, len(x_bounds) - 1), 1 / cells)
+    pipe = EffectivePipe(
+        length=channel_length,
+        heated_perimeter=1,
+        wet_perimeter=1,
+        area=1,
+        heated_parts=(0, 1),
+    )
     C = Channel(z_boundaries=boundaries, fluid=mock_liquid_funcs, pipe=pipe)
     F = Fuel(
         z_boundaries=boundaries,
@@ -146,16 +173,15 @@ def test_channel_stable_state_with_uniform_heating_increases_linearly(P, mdot, T
         material=mock_solid,
         y_length=1.0,
         power_shape=power_shape,
-        )
+    )
 
     agr = Aggregator(
-        graph=DiGraph([
-            (C, F, vars_('T_left')),
-            (F, C, vars_('T_right'))]),
+        graph=DiGraph([(C, F, vars_("T_left")), (F, C, vars_("T_right"))]),
         funcs={
-            C: dict(mdot=mdot, Tin=T0, p_abs=1e5, h_right=(h := 1.)),
-            F: dict(power=P, h_left=h)
-            })
+            C: dict(mdot=mdot, Tin=T0, p_abs=1e5, h_right=(h := 1.0)),
+            F: dict(power=P, h_left=h),
+        },
+    )
     y0 = np.full(agr.vector_length, T0 + 1)
     y0[agr.var_index(C, "pressure")] = np.sum(C.pressure(T=T0, Tw=T0, mdot=mdot))
     state = agr.save(agr.solve_steady(y0, jac=ALG_jacobian(agr)))
@@ -182,29 +208,26 @@ def test_channel_point_kinetics():
     channel_length = 1.2
     cells = 7
     boundaries = np.linspace(0, channel_length, cells + 1)
-    x_bounds = np.array([0,1])
+    x_bounds = np.array([0, 1])
 
-    power_shape = np.full((cells, len(x_bounds)-1), 1 / cells)
+    power_shape = np.full((cells, len(x_bounds) - 1), 1 / cells)
 
-    pipe = EffectivePipe(
-        length=channel_length, heated_perimeter=1, wet_perimeter=1, area=1
-        )
+    pipe = EffectivePipe(length=channel_length, heated_perimeter=1, wet_perimeter=1, area=1)
     channel_input = dict(
         z_boundaries=boundaries,
         fluid=mock_liquid_funcs,
         pipe=pipe,
         h_wall_func=just(1.0),
-        )
+    )
     fuel_input = dict(
         z_boundaries=boundaries,
         x_boundaries=x_bounds,
         material=mock_solid,
         y_length=1.0,
         power_shape=power_shape,
-        )
-    channels = [ChannelAndContacts(**channel_input, name=f'CC{i}')
-                for i in range(channels_num)]
-    fuels = [Fuel(**fuel_input, name=f'F{i}') for i in range(channels_num)]
+    )
+    channels = [ChannelAndContacts(**channel_input, name=f"CC{i}") for i in range(channels_num)]
+    fuels = [Fuel(**fuel_input, name=f"F{i}") for i in range(channels_num)]
 
     alpha_Tc = {ch: np.random.rand() * np.ones(cells) for ch in channels}
     alpha_Tf = {f: np.random.rand() * np.ones(cells) for f in fuels}
@@ -217,12 +240,13 @@ def test_channel_point_kinetics():
         delayed_neutron_fractions=betak,
         temp_worth=temp_worth,
         ref_temp=dict.fromkeys(temp_worth, T0),
-        )
+    )
     power_control = CalculationGraph.from_decoupled(PK, funcs={PK: dict(t=identity)})
 
-    rods = summed(symmetric_plate(
-        channel, fuel, funcs={channel: dict(mdot=1, Tin=T0 - 10, p_abs=1e5)})
-                  for fuel, channel in zip(fuels, channels))
+    rods = summed(
+        symmetric_plate(channel, fuel, funcs={channel: dict(mdot=1, Tin=T0 - 10, p_abs=1e5)})
+        for fuel, channel in zip(fuels, channels)
+    )
     core = rods + power_control
     initial_state = {}
     for channel, fuel in zip(channels, fuels):
@@ -230,8 +254,7 @@ def test_channel_point_kinetics():
         core.graph.add_edge(fuel, PK, variables=("T",))
         core.graph.add_edge(PK, fuel, variables=("power",))
         initial_state[fuel.name] = dict(T=T0, T_wall_left=T0, T_wall_right=T0)
-        initial_state[channel.name] = dict(
-            T_cool=T0, h_left=1.0, h_right=1.0, pressure=0.0)
+        initial_state[channel.name] = dict(T_cool=T0, h_left=1.0, h_right=1.0, pressure=0.0)
     initial_state[PK.name] = dict(power=1, ck=np.ones_like(lambdak))
     agr: Aggregator = core.to_aggregator()
     solution = agr.solve_steady(initial_state, jac=ALG_jacobian(agr))
@@ -253,24 +276,32 @@ def test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity():
     high_T = 60.0
     low_T = 20.0
 
-    def _tran_p(time): return p0 * np.exp(-time)
+    def _tran_p(time):
+        return p0 * np.exp(-time)
 
-    g1 = Gravity(fluid=light_water, disposition=1.0, name='G1')
-    g2 = Gravity(fluid=light_water, disposition=-1.0, name='G2')
+    g1 = Gravity(fluid=light_water, disposition=1.0, name="G1")
+    g2 = Gravity(fluid=light_water, disposition=-1.0, name="G2")
     pt = Pump()
     r = Resistor(resistance=1e5)
 
     G = DiGraph()
     G.add_nodes_from([pt, r, g1, g2])
-    agr_input = CalculationGraph(G, {pt: dict(Tin=low_T, pressure=_tran_p),
-                                     g1: dict(Tin=high_T),
-                                     g2: dict(Tin=low_T),
-                                     r: dict(Tin=low_T)})
+    agr_input = CalculationGraph(
+        G,
+        {
+            pt: dict(Tin=low_T, pressure=_tran_p),
+            g1: dict(Tin=high_T),
+            g2: dict(Tin=low_T),
+            r: dict(Tin=low_T),
+        },
+    )
 
-    k = Kirchhoff(flow_graph(
-        flow_edge(('A', 'B'), r, g1, g2),
-        flow_edge(('B', 'A'), pt),
-        ))
+    k = Kirchhoff(
+        flow_graph(
+            flow_edge(("A", "B"), r, g1, g2),
+            flow_edge(("B", "A"), pt),
+        )
+    )
     agr = kirchhoffify(agr_input, k).to_aggregator()
 
     initial = agr.solve_steady(np.zeros(len(agr)))
@@ -294,17 +325,17 @@ def test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal():
     should be that of HX1. If it is reversed, the temperature should be
     that of HX2.
     """
-    HX1 = HeatExchanger(outlet=20.0, name='HX1')
-    HX2 = HeatExchanger(outlet=60.0, name='HX2')
+    HX1 = HeatExchanger(outlet=20.0, name="HX1")
+    HX2 = HeatExchanger(outlet=60.0, name="HX2")
     R = Resistor(resistance=1.0)
     P = Pump(pressure=1.0)
-    J0 = Junction(name='J0')
-    J1 = Junction(name='J1')
+    J0 = Junction(name="J0")
+    J1 = Junction(name="J1")
 
     fg = flow_graph(
         flow_edge((J0, J1), HX1, R, HX2),
         flow_edge((J1, J0), P),
-        )
+    )
 
     agr, K = agr_k(fg)
 
@@ -338,12 +369,12 @@ def test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundar
         delayed_groups_decay_rates=np.array([1.0]),
         temp_worth={F: np.full(z_N * fuel_N, 1e-1)},
         ref_temp={F: T0},
-        )
+    )
 
     agr = Aggregator(
         graph=DiGraph([(F, PK, vars_("T")), (PK, F, vars_("power"))]),
         funcs={F: dict(T_left=T0, T_right=T0), PK: dict(t=identity)},
-        )
+    )
 
     y0 = np.zeros(len(agr))
     y0[agr.sections[F]] = 2 * T0
@@ -373,12 +404,12 @@ def test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet()
         delayed_groups_decay_rates=np.array([1.0]),
         temp_worth={C: np.full(z_N, 1e-1)},
         ref_temp={C: T0},
-        )
+    )
 
     power_stuff = CalculationGraph(
         graph=DiGraph([(PK, F, vars_("power")), (C, PK, vars_("T"))]),
         funcs={C: dict(p_abs=2e5, Tin=T0, mdot=0.1), PK: dict(t=identity)},
-        )
+    )
 
     agr = (symmetric_plate(C, F) + power_stuff).to_aggregator()
 
@@ -415,14 +446,14 @@ def test_inertia_through_RL_circuit_follows_analytic_solution(r, inertia):
     fg = flow_graph(
         flow_edge(("A", "B"), L),
         flow_edge(("B", "A"), R),
-        )
+    )
 
     AGR, KD = agr_k(
         fg,
         {R: dict(Tin=0.0), L: dict(Tin=0.0)},
         inertial_comps=(L,),
         k_constructor=KirchhoffWDerivatives,
-        )
+    )
 
     steady = AGR.solve_steady(guess=np.full(len(AGR), 0.0))
     steady[AGR.var_index(KD, KD.component_edge(L))] = 1.0
@@ -438,22 +469,22 @@ def test_inertia_through_RL_circuit_follows_analytic_solution(r, inertia):
 @settings(deadline=None)
 @given(pos_medium_floats, pos_medium_floats, pos_medium_floats, pos_medium_floats)
 def test_kirchhoff_significance_in_two_in_series_resistors(r1, r2, p, signify):
-    R1 = Resistor(resistance=r1, name='R1')
-    R2 = Resistor(resistance=r2, name='R2')
+    R1 = Resistor(resistance=r1, name="R1")
+    R2 = Resistor(resistance=r2, name="R2")
     P = Pump(pressure=p)
 
     fg = flow_graph(
         flow_edge(("A", "B"), R1, signify=signify),
         flow_edge(("B", "A"), R2, P),
-        )
+    )
 
     AGR, K = agr_k(fg)
 
     y0 = np.full(len(AGR), 0.0)
     y0[AGR.var_index(K, K.component_edge(R1))] = m1 = p / (r1 + signify * r2)
     y0[AGR.var_index(K, K.component_edge(R2))] = m2 = m1 * signify
-    y0[AGR.var_index(R1, "pressure")] = - m1 * r1
-    y0[AGR.var_index(R2, "pressure")] = - m2 * r2
+    y0[AGR.var_index(R1, "pressure")] = -m1 * r1
+    y0[AGR.var_index(R2, "pressure")] = -m2 * r2
     y0[AGR.var_index(P, "pressure")] = p
 
     assert np.allclose(AGR.compute(y0), 0)
@@ -474,14 +505,14 @@ def test_kirchhoff_significance_for_many_parallel_edges(r1, r2, p, signify):
     ``R1`` is duplicated ``signify`` times.
     """
 
-    R1s = [Resistor(resistance=r1, name=f'R1-{i}') for i in range(signify)]
-    R2 = Resistor(resistance=r2, name='R2')
+    R1s = [Resistor(resistance=r1, name=f"R1-{i}") for i in range(signify)]
+    R2 = Resistor(resistance=r2, name="R2")
     P = Pump(pressure=p)
-    J0, J1 = Junction(name='J0'), Junction(name='J1')
+    J0, J1 = Junction(name="J0"), Junction(name="J1")
     fg = flow_graph(
         *(flow_edge((J0, J1), R1) for R1 in R1s),
         flow_edge((J1, J0), R2, P),
-        )
+    )
 
     AGR, K = agr_k(fg)
 
@@ -489,9 +520,9 @@ def test_kirchhoff_significance_for_many_parallel_edges(r1, r2, p, signify):
     m1 = p / (r1 + signify * r2)
     for R1 in R1s:
         y0[AGR.var_index(K, K.component_edge(R1))] = m1
-        y0[AGR.var_index(R1, "pressure")] = - m1 * r1
+        y0[AGR.var_index(R1, "pressure")] = -m1 * r1
     y0[AGR.var_index(K, K.component_edge(P))] = m2 = m1 * signify
-    y0[AGR.var_index(R2, "pressure")] = - m2 * r2
+    y0[AGR.var_index(R2, "pressure")] = -m2 * r2
     y0[AGR.var_index(P, "pressure")] = p
 
     state: State = AGR.save(AGR.solve_steady(guess=y0))
@@ -510,15 +541,15 @@ def test_kirchhoff_significance_for_many_parallel_edges(r1, r2, p, signify):
 @given(pos_medium_floats, pos_medium_floats)
 def test_pump_and_current_source(p, mdot):
     fg = flow_graph(
-        flow_edge(("A", "B"), P := Pump(pressure=p, name='P1')),
-        flow_edge(("B", "A"), I := Pump(mdot0=mdot, name='P2')),
-        )
+        flow_edge(("A", "B"), P := Pump(pressure=p, name="P1")),
+        flow_edge(("B", "A"), Flow := Pump(mdot0=mdot, name="P2")),
+    )
 
     AGR, K = agr_k(fg)
     y0 = np.full(len(AGR), 0.0)
     y0[AGR.var_index(K, K.component_edge(P))] = mdot
-    y0[AGR.var_index(K, K.component_edge(I))] = mdot
-    y0[AGR.var_index(I, "pressure")] = -p
+    y0[AGR.var_index(K, K.component_edge(Flow))] = mdot
+    y0[AGR.var_index(Flow, "pressure")] = -p
     y0[AGR.var_index(P, "pressure")] = p
 
     assert np.allclose(AGR.compute(y0), 0)
@@ -533,16 +564,16 @@ def test_flapper_opens_with_ref_mdot():
         fluid=mock_liquid_funcs,
         area=1.0,
         open_rate=1e1,
-        )
+    )
     R = Resistor(resistance=p / mdot0)
 
-    J0, J1 = Junction(name='J0'), Junction(name='J1')
+    J0, J1 = Junction(name="J0"), Junction(name="J1")
 
     fg = flow_graph(
         flow_edge((J0, J1), P := Pump()),
         flow_edge((J1, J0), R, ref_mdot_for=(F,)),
         flow_edge((J1, J0), F),
-        )
+    )
 
     AGR, K = agr_k(
         fg,
@@ -550,9 +581,9 @@ def test_flapper_opens_with_ref_mdot():
             P: dict(pressure=lambda t: p * np.exp(-t), Tin=0.0),
             R: dict(Tin=0.0),
             F: dict(Tin=0.0, t=identity),
-            },
+        },
         ref_mdots=(F,),
-        )
+    )
 
     assert AGR.external[F]["ref_mdot"][K] == AGR.external[R]["mdot"][K]
 
@@ -567,9 +598,7 @@ def test_flapper_opens_with_ref_mdot():
     assert np.allclose(AGR.compute(y0), 0)
     assert np.isinf(F.t_open)
     time = np.linspace(0, 5, 100)
-    transient = AGR.solve(
-        y0=AGR.solve_steady(y0), time=time, eq_type="DAE", max_step_size=1e-3
-        )
+    transient = AGR.solve(y0=AGR.solve_steady(y0), time=time, eq_type="DAE", max_step_size=1e-3)
 
     assert np.isclose(F.t_open, np.log(10.0), rtol=1e-3)
     mdot_F = AGR.at_times(transient, K, K.component_edge(F))
@@ -586,19 +615,21 @@ def test_flapper_and_pump():
         fluid=mock_liquid_funcs,
         area=1.0,
         open_rate=1e1,
-        )
+    )
     F.open(2.5)  # Sets the Flapper to open at a specific time
 
     fg = flow_graph(
         flow_edge(("A", "B"), P := Pump()),
         flow_edge(("B", "A"), F),
-        )
+    )
 
     AGR, K = agr_k(
         fg,
-        funcs={P: dict(pressure=lambda t: p * np.exp(- t), Tin=0.),
-               F: dict(Tin=0., t=identity, ref_mdot=np.inf)},
-        )
+        funcs={
+            P: dict(pressure=lambda t: p * np.exp(-t), Tin=0.0),
+            F: dict(Tin=0.0, t=identity, ref_mdot=np.inf),
+        },
+    )
 
     y0 = np.full(len(AGR), 0.0)
     y0[AGR.var_index(K, K.component_edge(P))] = 0.0
@@ -609,8 +640,7 @@ def test_flapper_and_pump():
     assert np.allclose(AGR.compute(y0), 0)
     time = np.linspace(0, 5, 100)
     sol = AGR.solve(y0=y0, time=time, eq_type="DAE")
-    assert np.all(
-        sol[np.argwhere(time >= F.t_open), AGR.var_index(K, K.component_edge(P))] != 0.)
+    assert np.all(sol[np.argwhere(time >= F.t_open), AGR.var_index(K, K.component_edge(P))] != 0.0)
 
 
 def test_pump_coastdown_allows_channels_to_reverse_flow_direction():
@@ -626,32 +656,34 @@ def test_pump_coastdown_allows_channels_to_reverse_flow_direction():
     T_hot = 80.0
     pipe = EffectivePipe.circular(length=1.0, diameter=D)
     z_bounds = np.linspace(0, pipe.length, 10)
-    dp_func = partial(pressure_diff,
-                      f=friction_factor("regime_dependent", re_bounds=(2000, 5000), k_R=1.))
+    dp_func = partial(
+        pressure_diff,
+        f=friction_factor("regime_dependent", re_bounds=(2000, 5000), k_R=1.0),
+    )
     cold = Channel(
         z_boundaries=z_bounds,
         fluid=light_water,
         pipe=pipe,
         pressure_func=partial(dp_func, g=-g),
-        name='ColdC'
-        )
+        name="ColdC",
+    )
     hot = Channel(
         z_boundaries=z_bounds,
         fluid=light_water,
         pipe=pipe,
         pressure_func=partial(dp_func, g=g),
-        name='HotC'
-        )
+        name="HotC",
+    )
 
-    fg = flow_graph(
-        flow_edge(("A", "B"), P := Pump(mdot0=mdot0), hot), flow_edge(("B", "A"), cold)
-        )
+    fg = flow_graph(flow_edge(("A", "B"), P := Pump(mdot0=mdot0), hot), flow_edge(("B", "A"), cold))
 
     AGR, K = agr_k(
-        fg, funcs={
+        fg,
+        funcs={
             cold: dict(Tin=T_cold, Tin_minus=T_cold),
             hot: dict(Tin=T_hot, Tin_minus=T_hot),
-            })
+        },
+    )
 
     initial_guess = State.merge(
         State.uniform([cold], T_cold, "T_cool"),
@@ -659,15 +691,17 @@ def test_pump_coastdown_allows_channels_to_reverse_flow_direction():
         State.uniform([K], mdot0),
         State.uniform([cold, hot], -1e3, "pressure"),
         {P.name: dict(pressure=1e3, Tin=T_cold)},
-        )
+    )
 
     steady = AGR.solve_steady(initial_guess)
     time = np.linspace(0, 0.05, 1000)
 
     P.mdot0 = None
     AGR.funcs[P] = dict(
-        pressure=lambda t: steady[AGR.var_index(P, 'pressure')] * np.exp(-t),
-        Tin=T_cold, Tin_minus=T_cold)
+        pressure=lambda t: steady[AGR.var_index(P, "pressure")] * np.exp(-t),
+        Tin=T_cold,
+        Tin_minus=T_cold,
+    )
     transient = AGR.solve(steady, time=time, jacfn=DAE_jacobian(AGR))
     assert transient
 
@@ -695,29 +729,34 @@ def test_inertia_with_friction_in_PCS_coastdown():
     Q0 = 2000 / hour
     rho0 = light_water.density(T)
     mdot0 = Q0 * rho0
-    f = 2 * rho0 * dp0 / (mdot0 ** 2)
+    f = 2 * rho0 * dp0 / (mdot0**2)
 
-    resistor = Friction(f=f, fluid=light_water, length=1.,
-                        hydraulic_diameter=1., area=1.)
-    fg = flow_graph(flow_edge(('A', 'B'), pump, flywheel),
-                    flow_edge(('B', 'A'), resistor))
+    resistor = Friction(f=f, fluid=light_water, length=1.0, hydraulic_diameter=1.0, area=1.0)
+    fg = flow_graph(flow_edge(("A", "B"), pump, flywheel), flow_edge(("B", "A"), resistor))
 
-    agr, K = agr_k(fg, inertial_comps=[flywheel],
-                   k_constructor=KirchhoffWDerivatives,
-                   funcs={resistor: dict(Tin=T)})
+    agr, K = agr_k(
+        fg,
+        inertial_comps=[flywheel],
+        k_constructor=KirchhoffWDerivatives,
+        funcs={resistor: dict(Tin=T)},
+    )
     AB = K.component_edge(pump)
     BA = K.component_edge(resistor)
-    ab2 = f"(A -> B, mdot2 0)"
-    ba2 = f"(B -> A, mdot2 0)"
+    ab2 = "(A -> B, mdot2 0)"
+    ba2 = "(B -> A, mdot2 0)"
     assert ab2 in K.variables, (ab2, list(K.variables.keys()))
     assert ba2 in K.variables, (ba2, list(K.variables.keys()))
 
-    steady = agr.save(agr.solve_steady({
-        K.name: {AB: mdot0, ab2: 0., BA: mdot0, ba2: 0.},
-        pump.name: dict(Tin=T, pressure=dp0),
-        resistor.name: dict(Tin=T, pressure=-dp0),
-        flywheel.name: dict(Tin=T, pressure=0.)
-        }))
+    steady = agr.save(
+        agr.solve_steady(
+            {
+                K.name: {AB: mdot0, ab2: 0.0, BA: mdot0, ba2: 0.0},
+                pump.name: dict(Tin=T, pressure=dp0),
+                resistor.name: dict(Tin=T, pressure=-dp0),
+                flywheel.name: dict(Tin=T, pressure=0.0),
+            }
+        )
+    )
 
     pump.p = 0.0  # Immediate Shutdown
     t = np.linspace(0, 300, 100)
@@ -738,23 +777,36 @@ def test_inertia_with_flapper_in_PCS_coastdown():
     Eventually, flow between the open flapper and the resistor should be equal.
     """
     k = 1
-    flapper = Flapper(open_at_current=0., f=2*k, area=1.0, open_rate=1.0,
-                      relaxation=cdr, name="F", fluid=mock_liquid_funcs)
+    flapper = Flapper(
+        open_at_current=0.0,
+        f=2 * k,
+        area=1.0,
+        open_rate=1.0,
+        relaxation=cdr,
+        name="F",
+        fluid=mock_liquid_funcs,
+    )
     flapper.open(t_open := 100.0)
 
     T = 20.0
     flywheel = Inertia(inertia=1e3)
     pump = Pump(mdot0=(mdot0 := 1.0))
-    R = VolumetricFlowResistor(k=k, density_func=just(1.0), name='R')
+    R = VolumetricFlowResistor(k=k, density_func=just(1.0), name="R")
     A = Junction("A")
     B = Junction("B")
 
-    fg = flow_graph(flow_edge((A, B), pump, flywheel),
-                    flow_edge((B, A), R),
-                    flow_edge((B, A), flapper))
+    fg = flow_graph(
+        flow_edge((A, B), pump, flywheel),
+        flow_edge((B, A), R),
+        flow_edge((B, A), flapper),
+    )
 
-    agr, K = agr_k(fg, inertial_comps=[flywheel], k_constructor=KirchhoffWDerivatives,
-                   funcs={R: dict(Tin=T), flapper: dict(t=identity, ref_mdot=np.inf)})
+    agr, K = agr_k(
+        fg,
+        inertial_comps=[flywheel],
+        k_constructor=KirchhoffWDerivatives,
+        funcs={R: dict(Tin=T), flapper: dict(t=identity, ref_mdot=np.inf)},
+    )
 
     flows = {pump: mdot0, R: mdot0, flapper: 0.0}
     guess = guess_hydraulic_steady_state(K, flows, T)
@@ -775,8 +827,7 @@ def test_inertia_with_flapper_in_PCS_coastdown():
     assert np.isclose(mdot_r, mdot_f)
 
 
-sensible_resistors = floats(allow_infinity=False, allow_nan=False, max_value=30,
-                            min_value=0.01)
+sensible_resistors = floats(allow_infinity=False, allow_nan=False, max_value=30, min_value=0.01)
 
 
 def test_inertia_with_transistor_in_PCS_coastdown():
@@ -802,33 +853,39 @@ def test_inertia_with_transistor_in_PCS_coastdown():
                 k = k2
             else:
                 k = (k2 - k_final) * np.exp(-50 * (t - t_open) / t_final) + k_final
-            return - k * mdot ** 2
+            return -k * mdot**2
 
     transistor = Transistor()
 
     T = 20.0
     flywheel = Inertia(inertia=1e3)
     pump = Pump(mdot0=(mdot0 := 1.0))
-    R = VolumetricFlowResistor(k=k1, density_func=just(1.0), name='R')
+    R = VolumetricFlowResistor(k=k1, density_func=just(1.0), name="R")
     A = Junction("A")
     B = Junction("B")
 
-    fg = flow_graph(flow_edge((A, B), pump, flywheel),
-                    flow_edge((B, A), R),
-                    flow_edge((B, A), transistor))
+    fg = flow_graph(
+        flow_edge((A, B), pump, flywheel),
+        flow_edge((B, A), R),
+        flow_edge((B, A), transistor),
+    )
 
-    agr, K = agr_k(fg, inertial_comps=[flywheel], k_constructor=KirchhoffWDerivatives,
-                   funcs={R: dict(Tin=T), transistor: dict(t=identity)})
+    agr, K = agr_k(
+        fg,
+        inertial_comps=[flywheel],
+        k_constructor=KirchhoffWDerivatives,
+        funcs={R: dict(Tin=T), transistor: dict(t=identity)},
+    )
 
-    def sr(a, b): 
-        return 1 + np.sqrt(a/b)
-    
+    def sr(a, b):
+        return 1 + np.sqrt(a / b)
+
     flows = {pump: mdot0, R: mdot0 / sr(k1, k2), transistor: mdot0 / sr(k2, k1)}
     guess = guess_hydraulic_steady_state(K, flows, T)
     steady = agr.save(agr.solve_steady(guess))
 
-    total_k = steady[pump.name]["pressure"] / mdot0 ** 2
-    assert np.isclose(total_k, k1*k2 / (np.sqrt(k1) + np.sqrt(k2)) ** 2)
+    total_k = steady[pump.name]["pressure"] / mdot0**2
+    assert np.isclose(total_k, k1 * k2 / (np.sqrt(k1) + np.sqrt(k2)) ** 2)
 
     pump.p = 0.0  # Immediate Shutdown
     pump.mdot0 = None
@@ -850,28 +907,30 @@ def test_inertia_with_two_parallel_resistors(k1, k2):
     T = 20.0
     flywheel = Inertia(inertia=(inertia := 1e3))
     pump = Pump(mdot0=(mdot0 := 1.0))
-    R1 = VolumetricFlowResistor(k=k1, density_func=just(1.0), name='R1')
-    R2 = VolumetricFlowResistor(k=k2, density_func=just(1.0), name='R2')
+    R1 = VolumetricFlowResistor(k=k1, density_func=just(1.0), name="R1")
+    R2 = VolumetricFlowResistor(k=k2, density_func=just(1.0), name="R2")
     A = Junction("A")
     B = Junction("B")
 
-    fg = flow_graph(flow_edge((A, B), pump, flywheel),
-                    flow_edge((B, A), R1),
-                    flow_edge((B, A), R2))
+    fg = flow_graph(flow_edge((A, B), pump, flywheel), flow_edge((B, A), R1), flow_edge((B, A), R2))
 
-    agr, K = agr_k(fg, inertial_comps=[flywheel], k_constructor=KirchhoffWDerivatives,
-                   funcs={R1: dict(Tin=T)})
+    agr, K = agr_k(
+        fg,
+        inertial_comps=[flywheel],
+        k_constructor=KirchhoffWDerivatives,
+        funcs={R1: dict(Tin=T)},
+    )
 
-    def sr(a, b): 
-        return 1 + np.sqrt(a/b)
-    
+    def sr(a, b):
+        return 1 + np.sqrt(a / b)
+
     flows = {pump: mdot0, R1: mdot0 / sr(k1, k2), R2: mdot0 / sr(k2, k1)}
     guess = guess_hydraulic_steady_state(K, flows, T)
     guess[pump.name]["pressure"] = k1 * flows[R1] ** 2
     steady = agr.save(agr.solve_steady(guess, jac=ALG_jacobian(agr)))
 
-    total_k = steady[pump.name]["pressure"] / mdot0 ** 2
-    assert np.isclose(total_k, k1*k2 / (np.sqrt(k1) + np.sqrt(k2)) ** 2)
+    total_k = steady[pump.name]["pressure"] / mdot0**2
+    assert np.isclose(total_k, k1 * k2 / (np.sqrt(k1) + np.sqrt(k2)) ** 2)
 
     pump.p = 0.0  # Immediate Shutdown
     pump.mdot0 = None
@@ -893,21 +952,18 @@ def test_local_pressure_with_flow_reversal():
     A1, A2 = 1.0, 2.0
     r = LocalPressureDrop(fluid=light_water, A1=A1, A2=A2)
 
-    fg = flow_graph(flow_edge(('A', 'B'), pump),
-                    flow_edge(('B', 'A'), r))
+    fg = flow_graph(flow_edge(("A", "B"), pump), flow_edge(("B", "A"), r))
 
     mdot0 = 3.0
     Tin = 20.0
-    agr, K = agr_k(
-        fg, funcs={pump: dict(mdot0=lambda t: mdot0 - t, Tin=Tin)}
-        )
+    agr, K = agr_k(fg, funcs={pump: dict(mdot0=lambda t: mdot0 - t, Tin=Tin)})
     dp0 = np.abs(r.dp_out(Tin=Tin, mdot=mdot0))
 
     steady = State.merge(
         State.uniform(agr.graph, Tin, "Tin"),
         State.uniform([K], mdot0),
         {pump.name: dict(pressure=dp0), r.name: dict(pressure=-dp0)},
-        )
+    )
     assert np.allclose(agr.compute(agr.load(steady)), 0.0)
 
     time = np.linspace(0, 6, 7)

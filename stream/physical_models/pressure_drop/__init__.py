@@ -10,20 +10,27 @@ from stream.physical_models.pressure_drop.friction import (
     rectangular_laminar_correction,
     turbulent_friction,
     viscosity_correction,
-    )
+)
 from stream.physical_models.pressure_drop.local import (
     contraction_factor,
     expansion_factor,
     local_pressure_by_mdot,
     local_pressure_factor,
     mdot_by_local_pressure,
-    )
+)
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
 from stream.units import (
-    Celsius, KgPerS, KgPerS2, Meter2, KgPerM3, Meter, MPerS2,
-    g as local_gravity, Pascal,
-    )
+    Celsius,
+    KgPerS,
+    KgPerS2,
+    Meter2,
+    KgPerM3,
+    Meter,
+    MPerS2,
+    g as local_gravity,
+    Pascal,
+)
 
 
 __all__ = [
@@ -44,13 +51,11 @@ __all__ = [
     "turbulent_friction",
     "viscosity_correction",
     "static_pressure",
-    ]
+]
 
 
 @njit
-def gravity_pressure(
-        rho: KgPerM3, dh: Meter, g: MPerS2 = local_gravity
-        ) -> Pascal:
+def gravity_pressure(rho: KgPerM3, dh: Meter, g: MPerS2 = local_gravity) -> Pascal:
     r"""
     In the case of an incompressible barotropic fluid at rest, the force exerted by gravity over a fluid column is
     :math:`\Delta p=\rho g\Delta h`
@@ -83,17 +88,17 @@ def gravity_pressure(
 
 
 def pressure_diff(
-        T: Celsius,
-        Tw: Celsius,
-        fluid: LiquidFuncs,
-        mdot: KgPerS,
-        pipe: EffectivePipe,
-        dz: Meter,
-        f: GeneralDarcyFactor = friction_factor("Blasius"),
-        g: MPerS2 = local_gravity,
-        mdot2: KgPerS2 | None = None,
-        **_,
-        ) -> Pascal:
+    T: Celsius,
+    Tw: Celsius,
+    fluid: LiquidFuncs,
+    mdot: KgPerS,
+    pipe: EffectivePipe,
+    dz: Meter,
+    f: GeneralDarcyFactor = friction_factor("Blasius"),
+    g: MPerS2 = local_gravity,
+    mdot2: KgPerS2 | None = None,
+    **_,
+) -> Pascal:
     r"""
     Returns pressure difference. Positive direction is assumed downward.
     This function calculates frictional, inertial, and gravitational pressure drops.
@@ -139,7 +144,7 @@ def pressure_diff(
             Dh=pipe.hydraulic_diameter,
             A=pipe.area,
             f=f(T, Tw, mdot, fluid, pipe),
-            )
+        )
     )
     inertia = 0 if mdot2 is None else -inertia_pressure(mdot2, dz, pipe.area)
     return _friction + gravity + inertia
@@ -171,8 +176,7 @@ def inertia_pressure(mdot2: KgPerS2, dl: Meter, A: Meter2) -> Pascal:
 
 
 @njit
-def static_pressure(pressure: Pascal, mdot: KgPerS, area: Meter2, density: KgPerM3
-                    ) -> Pascal:
+def static_pressure(pressure: Pascal, mdot: KgPerS, area: Meter2, density: KgPerM3) -> Pascal:
     """Calculates the static pressure from the total (static+dynamic) Bernoulli term.
 
     Parameters
@@ -196,4 +200,4 @@ def static_pressure(pressure: Pascal, mdot: KgPerS, area: Meter2, density: KgPer
     0.5
 
     """
-    return pressure - 0.5 * (mdot ** 2) / (density * area ** 2)
+    return pressure - 0.5 * (mdot**2) / (density * area**2)

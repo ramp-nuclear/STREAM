@@ -1,13 +1,12 @@
-"""Tools for debugging Aggregators and States.
+"""Tools for debugging Aggregators and States."""
 
-"""
 import operator
 from functools import partial, reduce
 from typing import Container
 
 from stream.aggregator import Aggregator
-from stream.state import State
 from stream.calculations import Kirchhoff
+from stream.state import State
 from stream.units import Value
 
 
@@ -32,8 +31,7 @@ def debug_derivatives(agr: Aggregator, guess: State) -> State:
     return agr.save(agr.compute(agr.load(guess)), strict=True)
 
 
-def debug_guess_variables(agr: Aggregator, guess: State, variables: Container[str]
-                          ) -> dict[str, Value]:
+def debug_guess_variables(agr: Aggregator, guess: State, variables: Container[str]) -> dict[str, Value]:
     """Show the errors in a variable's guesstimate across all calculations.
 
     This is a subset of debug_derivatives, since that debug tool shows a lot of
@@ -52,7 +50,7 @@ def debug_guess_variables(agr: Aggregator, guess: State, variables: Container[st
     return debug_derivatives(agr, guess).filter_var_names(lambda x: x in variables)
 
 
-debug_guess_pressures = partial(debug_guess_variables, variables={'pressure'})
+debug_guess_pressures = partial(debug_guess_variables, variables={"pressure"})
 
 
 def debug_guess_flows(agr: Aggregator, guess: State) -> dict[str, Value]:
@@ -68,5 +66,5 @@ def debug_guess_flows(agr: Aggregator, guess: State) -> dict[str, Value]:
     """
     kirchhoffs = {c.name for c in agr.graph if isinstance(c, Kirchhoff)}
     dk = debug_derivatives(agr, guess).filter_calculations(lambda c: c in kirchhoffs)
-    dflow = dk.filter_var_names(lambda s: '->' in s)
+    dflow = dk.filter_var_names(lambda s: "->" in s)
     return reduce(operator.or_, dflow.values(), {})

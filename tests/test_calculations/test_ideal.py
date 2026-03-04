@@ -4,10 +4,18 @@ import hypothesis.strategies as st
 import numpy as np
 import pytest
 from hypothesis import given, settings
+
 from stream.calculations import (
-    Gravity, HeatExchanger, LocalPressureDrop, Pump, Resistor, ResistorSum, Bend)
+    Bend,
+    Gravity,
+    HeatExchanger,
+    LocalPressureDrop,
+    Pump,
+    Resistor,
+    ResistorSum,
+)
 from stream.substances import light_water
-from stream.utilities import summed, just
+from stream.utilities import just, summed
 
 from .conftest import medium_floats, normal_floats, pos_medium_floats
 
@@ -59,8 +67,8 @@ temps = st.floats(min_value=25, max_value=50)
 def test_resistor_factor_just_multiplies(r, factor, mdot):
     fric = Resistor(r)
     fricfac = factor * fric
-    p0 = factor * fric.dp_out(mdot=mdot, Tin=25.)
-    p1 = fricfac.dp_out(mdot=mdot, Tin=25.)
+    p0 = factor * fric.dp_out(mdot=mdot, Tin=25.0)
+    p1 = fricfac.dp_out(mdot=mdot, Tin=25.0)
     assert np.allclose(p0, p1)
 
 
@@ -69,10 +77,17 @@ def test_resistor_multiplication_is_symmetric(f, r):
     res = Resistor(r)
     assert res * f == f * res
 
-@given(st.sampled_from(
-    [Resistor(resistance=100),
-     Gravity(light_water, disposition=10.0),
-     LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0)]), pos_medium_floats)
+
+@given(
+    st.sampled_from(
+        [
+            Resistor(resistance=100),
+            Gravity(light_water, disposition=10.0),
+            LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0),
+        ]
+    ),
+    pos_medium_floats,
+)
 def test_resistor_mul_can_be_deepcopied(r, f):
     assert deepcopy(f * r)
 
@@ -85,11 +100,18 @@ def test_hx(outlet, pressure, T, mdot, Tin):
 
 
 @settings(deadline=None)
-@given(st.lists(st.sampled_from(
-    [Resistor(resistance=100),
-     Gravity(light_water, disposition=10.0),
-     LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0)]
-    ), max_size=30))
+@given(
+    st.lists(
+        st.sampled_from(
+            [
+                Resistor(resistance=100),
+                Gravity(light_water, disposition=10.0),
+                LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0),
+            ]
+        ),
+        max_size=30,
+    )
+)
 def test_resistor_sum_calculates_additions_of_different_resistors(rs):
     RS = ResistorSum(*rs)
     result = RS.calculate([0, 0], mdot=5, Tin=0)
@@ -99,14 +121,21 @@ def test_resistor_sum_calculates_additions_of_different_resistors(rs):
 
 
 @settings(deadline=None)
-@given(st.lists(st.sampled_from(
-    [Resistor(resistance=100),
-     Gravity(light_water, disposition=10.0),
-     LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0)]
-    ), min_size=2, max_size=30))
+@given(
+    st.lists(
+        st.sampled_from(
+            [
+                Resistor(resistance=100),
+                Gravity(light_water, disposition=10.0),
+                LocalPressureDrop(fluid=light_water, A1=1.0, A2=2.0),
+            ]
+        ),
+        min_size=2,
+        max_size=30,
+    )
+)
 def test_resistor_sum_from_a_sum_of_resistor_sums(rs):
-    added_RS = ResistorSum(rs[0], name="AddedRS") + summed(
-        tuple(map(ResistorSum, rs[1:])))
+    added_RS = ResistorSum(rs[0], name="AddedRS") + summed(tuple(map(ResistorSum, rs[1:])))
     RS = ResistorSum(*rs)
     result = RS.calculate([0, 0], mdot=5, Tin=0)
 
@@ -130,23 +159,30 @@ def test_arbitrary_resistors_in_resistor_sum(resistances, mdot):
 @given(pos_medium_floats, pos_medium_floats, pos_medium_floats)
 def test_local_pressure_drop_is_always_non_positive(A1, A2, mdot):
     calc = LocalPressureDrop(light_water, A1, A2)
-    dp = calc.dp_out(Tin=25., mdot=mdot)
-    assert dp <= 0.
+    dp = calc.dp_out(Tin=25.0, mdot=mdot)
+    assert dp <= 0.0
 
 
 @settings(deadline=None)
 @given(pos_medium_floats)
 def test_local_pressure_drop_for_expansion_to_infinity(mdot):
-    expansion = LocalPressureDrop(light_water, 1., np.inf)
-    t = 25.
+    expansion = LocalPressureDrop(light_water, 1.0, np.inf)
+    t = 25.0
     rho = light_water.density(t)
-    v = mdot / rho / 1.
-    precalc = 0.5 * rho * v ** 2
+    v = mdot / rho / 1.0
+    precalc = 0.5 * rho * v**2
     assert np.isclose(expansion.dp_out(Tin=t, mdot=mdot), -precalc)
 
 
 @settings(deadline=None)
 @given(pos_medium_floats)
 def test_zero_bend_angle_returns_zero_pressure_drop(mdot):
-    bend = Bend(light_water, hydraulic_diameter=1., area=np.pi**2 / 4, bend_radius=1., bend_angle=0., friction_func=just(1.))
-    assert np.equal(bend.dp_out(mdot=mdot, Tin=25.0), 0.)
+    bend = Bend(
+        light_water,
+        hydraulic_diameter=1.0,
+        area=np.pi**2 / 4,
+        bend_radius=1.0,
+        bend_angle=0.0,
+        friction_func=just(1.0),
+    )
+    assert np.equal(bend.dp_out(mdot=mdot, Tin=25.0), 0.0)
