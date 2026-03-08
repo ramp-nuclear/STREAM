@@ -33,6 +33,10 @@ This can easily become a rather complex system:
 .. image:: /_static/big_agr.png
     :align: center
 
+.. autoclass:: stream.aggregator.Aggregator
+   :members:
+   :no-undoc-members:
+   :show-inheritance:
 
 Solvers
 ~~~~~~~
@@ -50,6 +54,25 @@ Jacobians
 
 State
 ~~~~~
+The solution of a steady state problem is represented as a State object, which is mostly a fancy dict-type.
 
 .. automodule:: stream.state
+   :members:
+
+Solution
+~~~~~~~~
+The solution at different times can be represented bya bunch of States and times, but a compact equivalent object
+is the Solution object.
+
+.. automodule:: stream.aggregator.solution
+   :members:
+
+
+Constraints
+~~~~~~~~~~~
+When solving using the IDA solver, it is possible to constrain the solution. Tools for this can be found in
+:file:`stream.aggregator`
+See the `sundials` package documentation for more details.
+
+.. automodule:: stream.aggregator.constraints
    :members:
