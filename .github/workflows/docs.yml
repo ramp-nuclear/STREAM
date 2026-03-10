@@ -1,0 +1,56 @@
+name: Build and Deploy Sphinx Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup micromamba
+      uses: mamba-org/setup-micromamba@v2.0.6
+      with:
+        environment-file: docs/requirements.yml
+        environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
+        post-cleanup: 'all'
+
+    - name: Install local
+      run: |
+        pip install -e .
+      shell: micromamba-shell {0}
+    
+    - name: Build Sphinx documentation
+      run: |
+        cd docs
+        make html
+        cd ../
+      shell: micromamba-shell {0}
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: docs/build/html
+
+  deploy:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+

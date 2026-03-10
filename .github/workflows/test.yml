@@ -27,6 +27,9 @@ jobs:
         environment-file: allreq.yml
         environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
         post-cleanup: 'all'
+    - name: Install local
+      run: |
+        pip install .
     - name: Test doctests
       run: |
         pytest -v --doctest-modules stream
