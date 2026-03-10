@@ -2,8 +2,6 @@
 Heat Transfer Coefficient
 =========================
 
-.. image:: /_static/regimes.png
-
 For more information regarding limits, please see :ref:`Thresholds`.
 
 **Some explanation regarding the jargon of this module:**

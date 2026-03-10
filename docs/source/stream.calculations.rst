@@ -30,7 +30,6 @@ Summary of Available Calculations
   RegimeDependentFriction
   Resistor
   ResistorSum
-  ConicalContraction
   Bend
   :parts: 1
   :top-classes: stream.calculation.Calculation
@@ -56,7 +55,6 @@ Summary of Available Calculations
     RegimeDependentFriction
     Resistor
     ResistorSum
-    ConicalContraction
     Bend
 
 Heat Diffusion

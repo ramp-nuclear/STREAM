@@ -33,11 +33,3 @@ Kirchhoff Specific Examples
    TheCubeProblem.ipynb
    Parallel thermosyphone driven flow.ipynb
 
-Miscellaneous
--------------
-
-.. toctree::
-    :maxdepth: 1
-
-    DecayHeatUsage.ipynb
-

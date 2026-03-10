@@ -83,8 +83,6 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_sidebars = {"**": ["localtoc.html", "sourcelink.html", "searchbox.html"]}
-html_logo = "_static/STREAM6.png"
-html_favicon = "_static/volcano.png"
 html_theme_options = dict(
     navigation_with_keys=True,
     # canonical_url=,
@@ -111,5 +109,3 @@ html_show_sphinx = False
 html_last_updated_fmt = ""
 
 # -- Options for LaTeX output -------------------------------------------------
-
-latex_logo = "_static/STREAM6.png"

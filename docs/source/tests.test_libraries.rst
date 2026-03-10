@@ -6,21 +6,6 @@ Libraries Tests
    :undoc-members:
    :show-inheritance:
 
-Decay Heat Tests
-----------------
-
-.. currentmodule:: test_libraries.test_decay_heat
-
-.. autosummary::
-   :nosignatures:
-
-    test_decay_heat_contributions_are_monotonous_in_time
-    test_fission_products_timed_contributions_against_known_values
-
-.. automodule:: test_libraries.test_decay_heat
-   :members:
-   :undoc-members:
-
 
 Heat Transfer Coefficient Tests
 -------------------------------

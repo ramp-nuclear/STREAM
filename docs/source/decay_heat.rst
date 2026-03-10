@@ -63,8 +63,6 @@ In the method contained herein this total decay heat per fission event is the su
     The user is left with the responsibility of constructing their own decay heat function, including the fission rate
     and the weighting of each contribution which depends on the component in question.
 
-    An example is provided in :ref:`Using The Decay Heat Subpackage`.
-
 In the following segments, each term of :eq:`FDH`: :ref:`Fissions`, :ref:`Fission Products`, :ref:`Activation` is explained
 and the corresponding functions are linked.
 

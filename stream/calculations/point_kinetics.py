@@ -89,10 +89,10 @@ class ReactivityController:
     The state machine is completely user defined such through an 'Enum' class. Then,
     two functionalities are requited:
     1. The reactivity worth response of the controller :math:`w_c(s, t_s, t)` where
-       :math:`s` the current state, :math:`t_s` the time in which this state was invoked,
-       and :math:`t` the current time.
+    :math:`s` the current state, :math:`t_s` the time in which this state was invoked,
+    and :math:`t` the current time.
     2. The state machine transfer function :math:`p: s \rightarrow s'` where `p` receives
-       :math:`p(s, t, P, \dot{P}, ...)` provided by :class:`PointKinetics` during simulation.
+    :math:`p(s, t, P, \dot{P}, ...)` provided by :class:`PointKinetics` during simulation.
 
     After simulation, the `log` attribute of this class contains the history of states, which can be used for analysis and plotting.
     """
