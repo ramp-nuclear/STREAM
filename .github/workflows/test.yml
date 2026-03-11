@@ -30,6 +30,7 @@ jobs:
     - name: Install local
       run: |
         pip install .
+      shell: micromamba-shell {0}
     - name: Test doctests
       run: |
         pytest -v --doctest-modules stream
