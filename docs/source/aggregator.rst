@@ -8,9 +8,6 @@ Aggregator
 
 Example
 ~~~~~~~
-.. image:: /_static/sample_agr.png
-    :align: left
-
 Consider the attached image. This graph describes the **dependencies** of each
 calculation: *A*, *B*, *C*. Let's consider the Calculation *A*. *A* owns a subset
 of the entire vector :math:`\vec{y}_A\in\vec{y}`, which it receives as input.
@@ -29,9 +26,6 @@ Required variables which are not present on the graph must be provided as
 time-only functions or constants.
 
 This can easily become a rather complex system:
-
-.. image:: /_static/big_agr.png
-    :align: center
 
 .. autoclass:: stream.aggregator.Aggregator
    :members:

@@ -8,9 +8,6 @@ Documentation
 
 As the in-depth documentation is read, one should imagine the following scheme:
 
-.. image:: /_static/STREAM_scheme.png
-   :align: center
-
 
 .. toctree::
    :hidden:

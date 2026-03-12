@@ -1,4 +1,19 @@
 dependencies:
+  - cachetools
+  - cytoolz
+  - ipython
+  - matplotlib
+  - more-itertools
+  - numba
+  - numpy
+  - pandas
+  - python
+  - rich
+  - scikits.odes
+  - scipy
+  - sundials
+  - dask
+  - yaml
   - jupyter
   - mathjax
   - matplotlib

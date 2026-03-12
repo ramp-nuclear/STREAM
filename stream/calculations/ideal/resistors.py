@@ -282,7 +282,7 @@ class Gravity(LumpedComponent):
 class LocalPressureDrop(LumpedComponent):
     """Local pressure drop due to expansion or contraction according to Idelchik chapter 4.
 
-    The appropriate diagrams are 4.2 and 4.10, on pages 246 and 256. [#Idelchik]_
+    The appropriate diagrams are 4.2 and 4.10, on pages 246 and 256. 
 
     """
 
@@ -336,7 +336,7 @@ class Bend(LumpedComponent):
     """Pressure drop due to a low relative curvature bend in a smooth circular/square pipe
     according to Idelchik chapter 6.
 
-    The appropriate diagram is 6.1, on page 424. [#Idelchik]_
+    The appropriate diagram is 6.1, on page 424. 
 
     """
 
