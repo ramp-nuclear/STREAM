@@ -1,6 +1,7 @@
 dependencies:
   - cachetools
   - cytoolz
+  - graphviz
   - ipython
   - matplotlib
   - more-itertools
