@@ -23,7 +23,8 @@
   font-weight="800"
   fill="white"
   stroke="black"
-  stroke-width="1">
+  stroke-width="1"
+  paint-order="stroke fill">
   S
 </text>
 

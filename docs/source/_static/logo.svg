@@ -32,7 +32,8 @@
     letter-spacing="4"
     fill="white"
     stroke="black"
-    stroke-width="1">
+    stroke-width="3"
+    paint-order="stroke fill">
     STREAM
   </text>
 </svg>
