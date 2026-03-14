@@ -1,0 +1,38 @@
+<svg width="720" height="220" viewBox="40 20 640 180" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="streamHeat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2C7BE5"/>
+      <stop offset="100%" stop-color="#FF6B35"/>
+    </linearGradient>
+
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+
+  <!-- Forward parallelogram -->
+  <polygon
+    points="90,30 650,30 610,190 50,190"
+    fill="url(#streamHeat)"
+    filter="url(#softShadow)"
+    stroke="black"
+    stroke-width="4"
+    stroke-linejoin="round"
+  />
+
+  <!-- Wordmark -->
+  <text
+    x="350"
+    y="138"
+    text-anchor="middle"
+    font-family="Inter, Arial, Helvetica, sans-serif"
+    font-size="88"
+    font-weight="800"
+    font-style="italic"
+    letter-spacing="4"
+    fill="white"
+    stroke="black"
+    stroke-width="1">
+    STREAM
+  </text>
+</svg>

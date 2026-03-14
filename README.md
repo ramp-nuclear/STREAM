@@ -1,3 +1,5 @@
+![](docs/source/_static/logo.svg)
+
 # **S**ystem **T**hermohydraulics for **R**eactor **E**valuation, **A**nalysis & **M**odeling
 
 In a sentence: ***STREAM is a versatile, easily extensible, modern nuclear reactor system code***. 
