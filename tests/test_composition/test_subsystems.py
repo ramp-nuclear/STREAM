@@ -18,6 +18,7 @@ from stream.aggregator import Aggregator
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.composition import Calculation_factory, FlowGraph, flow_edge
 from stream.composition.subsystems import (
+    guess_hydraulic_steady_state,
     point_kinetics_steady_state,
     symmetric_plate_steady_state,
 )
@@ -287,3 +288,63 @@ def test_open_flapper_gets_a_physically_consistent_dp_guess():
     # Open flapper: guess must reflect the open-state resistance.
     flapper.open(0.0)
     assert np.isclose(guess_hydraulic_steady_state(K, flows, T)["F"]["pressure"], dp_true)
+
+
+def _gravity_loop():
+    from stream.calculations import Gravity, HeatExchanger
+    from stream.substances import light_water
+
+    j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
+    pump = Pump(mdot0=0.5, name="Pump")
+    hx = HeatExchanger(outlet=40.0, name="HX")
+    hot = Gravity(fluid=light_water, disposition=1.0, name="HotLeg")
+    cold = Gravity(fluid=light_water, disposition=-1.0, name="ColdLeg")
+    fg = FlowGraph(
+        flow_edge((j_top, j_bot), hot),
+        flow_edge((j_bot, j_top), pump, hx, cold),
+        reference_node=(j_top, 2e5),
+    )
+    return fg, dict(j_top=j_top, j_bot=j_bot, pump=pump, hx=hx, hot=hot, cold=cold)
+
+
+def test_hydraulic_guess_scalar_temperature_matches_uniform_mapping():
+    fg, r = _gravity_loop()
+    k = fg.kirchhoff
+    mdots = {c: 0.5 for c in k.components}
+    scalar = guess_hydraulic_steady_state(k, mdots, 40.0)
+    mapping = guess_hydraulic_steady_state(k, mdots, {c: 40.0 for c in list(k.components) + [r["j_top"], r["j_bot"]]})
+    for name in scalar:
+        for var in scalar[name]:
+            assert np.allclose(scalar[name][var], mapping[name][var])
+
+
+def test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density():
+    fg, r = _gravity_loop()
+    k = fg.kirchhoff
+    mdots = {c: 0.5 for c in k.components}
+    temps = {c: 40.0 for c in list(k.components) + [r["j_top"], r["j_bot"]]}
+    temps[r["hot"]] = 90.0
+    state = guess_hydraulic_steady_state(k, mdots, temps)
+    assert state[r["hot"].name]["Tin"] == 90.0
+    assert state[r["cold"].name]["Tin"] == 40.0
+    assert abs(state[r["hot"].name]["pressure"]) < abs(state[r["cold"].name]["pressure"])
+
+
+def test_hydraulic_guess_mapping_puts_a_profile_into_the_channel():
+    f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
+    j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
+    pump = Pump(mdot0=0.5, name="Pump")
+    fg = FlowGraph(flow_edge((j_top, j_bot), c), flow_edge((j_bot, j_top), pump), reference_node=(j_top, 2e5))
+    k = fg.kirchhoff
+    profile = np.linspace(40.0, 60.0, c.n)
+    state = guess_hydraulic_steady_state(k, {c: 0.5, pump: 0.5}, {c: profile, pump: 40.0, j_top: 40.0, j_bot: 60.0})
+    assert np.allclose(state[c.name]["T_cool"], profile)
+    assert state[j_bot.name]["Tin"] == 60.0
+
+
+def test_hydraulic_guess_mapping_missing_a_calculation_names_it():
+    fg, r = _gravity_loop()
+    k = fg.kirchhoff
+    mdots = {c: 0.5 for c in k.components}
+    with pytest.raises(KeyError, match="ColdLeg"):
+        guess_hydraulic_steady_state(k, mdots, {c: 40.0 for c in k.components if c is not r["cold"]})

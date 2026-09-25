@@ -33,6 +33,14 @@ Subsystems
    :show-inheritance:
 
 
+Steady-state guesses
+--------------------
+.. automodule:: stream.composition.steady_state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Loss of Coolant
 ---------------
 .. automodule:: stream.composition.loc
