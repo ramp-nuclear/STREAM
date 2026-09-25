@@ -75,7 +75,10 @@ def symmetric_plate_steady_state(
     initial_guess_iterations: int
         Before employing a solver, an initial educated guess is assumed. This
         guess should become better educated with each iteration controlled by
-        ``precondition``
+        ``precondition``. The iteration floors the wall heat transfer
+        coefficient at the conduction scale ``k/Dh``, so correlations with no
+        conduction floor (e.g. the Elenbaas natural-convection HTC, whose
+        ``h -> 0`` at zero wall superheat) still yield a finite seed.
     solver_options: Dict
         Keyword arguments to control steady state solver behavior
 
@@ -101,9 +104,11 @@ def symmetric_plate_steady_state(
     dT = p_z / (np.abs(mdot) * cp)
     tc0 = Tin + (np.cumsum(dT) if mdot >= 0 else np.cumsum(dT[::-1])[::-1])
     tw0 = tc0
+    # Conduction-scale floor: a zero-floor HTC (e.g. Elenbaas at the tw0=tc0 seed) returns h=0, and the bare division would send tw0 through inf to NaN.
+    h_floor = c.fluid.conductivity(Tin) / c.pipe.hydraulic_diameter
     for _ in range(initial_guess_iterations):
         dp0 = c.pressure(T=tc0, Tw=tw0, mdot=mdot)
-        h0 = c.h_wall(T_wall=tw0, T_cool=tc0, mdot=mdot, pressure=p_abs - dp0)
+        h0 = np.maximum(c.h_wall(T_wall=tw0, T_cool=tc0, mdot=mdot, pressure=p_abs - dp0), h_floor)
         tw0 = (q2t_z / h0) + tc0
     T0 = np.tile(tw0, f.shape[1]).reshape(f.shape[::-1]).T.flatten()
     # Safe because the initial guess iterations are >= 1

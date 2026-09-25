@@ -1,6 +1,8 @@
 """The pump=0 buoyancy-driven natural-convection loop solves to steady state from a
-realistic guess for both a constant and a regime-dependent wall HTC, and lands on
-the same NC state regardless of the (sane) initial guess.
+realistic guess for a constant, a regime-dependent, and a pure-Elenbaas (natural)
+wall HTC, and lands on the same NC state regardless of the (sane) initial guess.
+The loop mass flow is set by the friction law alone, so all three HTC kinds must
+agree on mdot; the HTC choice only moves the wall temperatures.
 
 The Gravity leg runs in both flow directions at pump=0, so it is sandwiched between
 two HX (``hx1 -> grav -> hx2``) to source the cold HX temperature regardless of flow
@@ -13,7 +15,7 @@ import numpy as np
 import pytest
 
 from stream.calculations import (
-    Fuel, Gravity, HeatExchanger, Junction, KirchhoffWDerivatives, Pump, Solid,
+    Fuel, Gravity, HeatExchanger, Junction, KirchhoffWDerivatives, Pump, Resistor, Solid,
 )
 from stream.calculations.channel import ChannelAndContacts
 from stream.composition import (
@@ -56,6 +58,8 @@ def _fuel() -> Fuel:
 def _htc(kind: str):
     if kind == "constant":
         return partial(wall_heat_transfer_coeff, h_spl=spl_htc("laminar_constant_nu"))
+    if kind == "natural":
+        return partial(wall_heat_transfer_coeff, h_spl=spl_htc("natural", Lh=L))
     return partial(wall_heat_transfer_coeff,
                    h_spl=spl_htc("regime_dependent", re_bounds=(2000.0, 5000.0),
                                  aspect_ratio=GAP / W, Lh=L))
@@ -95,7 +99,7 @@ def _mdot(agr, fg, y) -> float:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("kind", ["constant", "regime_dependent"])
+@pytest.mark.parametrize("kind", ["constant", "regime_dependent", "natural"])
 def test_natural_convection_converges(kind):
     """pump=0 buoyancy-driven NC converges to the expected upflow state."""
     agr, fg, channel, fuel, pump = _build(0.0, kind)
@@ -105,7 +109,7 @@ def test_natural_convection_converges(kind):
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("kind", ["constant", "regime_dependent"])
+@pytest.mark.parametrize("kind", ["constant", "regime_dependent", "natural"])
 def test_natural_convection_guess_insensitive(kind):
     """Different sane guesses land on the same NC state (no flakiness)."""
     agr, fg, channel, fuel, pump = _build(0.0, kind)
@@ -113,3 +117,37 @@ def test_natural_convection_guess_insensitive(kind):
              for g in (-0.005, -0.02, -0.05)]
     assert max(mdots) - min(mdots) < 1e-6
     assert mdots[0] == pytest.approx(NC_MDOT, abs=1e-4)
+
+
+@pytest.mark.slow
+def test_throttled_loop_converges_cold():
+    """A heavily throttled NC loop (through-flow at stagnation scale) converges from a
+    cold guess. The old Gr/Re^2 interpolation left this region with a folded wall
+    characteristic (three/zero roots), so no cold solve could land; the monotone
+    composition leaves a unique root."""
+    power = 20.0
+    j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
+    pump = Pump(pressure=0.0, name="Pump")
+    throttle = Resistor(resistance=1e6, name="Throttle")
+    hx1, hx2 = HeatExchanger(outlet=TIN, name="HX1"), HeatExchanger(outlet=TIN, name="HX2")
+    grav = Gravity(fluid=light_water, disposition=-L, name="Grav")
+    channel = ChannelAndContacts(z_boundaries=np.linspace(0.0, L, N + 1),
+                                 fluid=light_water, pipe=EffectivePipe.rectangular(
+                                     length=L, edge1=W, edge2=GAP, heated_edge=W),
+                                 h_wall_func=_htc("regime_dependent"), name="Channel")
+    fuel = _fuel()
+    fg = FlowGraph(
+        flow_edge((j_top, j_bot), channel),
+        flow_edge((j_bot, j_top), pump, throttle, hx1, grav, hx2),
+        inertial_comps=[channel], k_constructor=KirchhoffWDerivatives,
+        abs_pressure_comps=[channel], reference_node=(j_top, P_REF),
+    )
+    agr = fg.aggregator + symmetric_plate(channel, fuel, funcs={fuel: dict(power=power)}).to_aggregator()
+    guess = State.merge(
+        fg.guess_steady_state(mdots={channel: -3e-4, pump: -3e-4}, temperature=TIN),
+        symmetric_plate_steady_state(channel, fuel, mdot=-3e-4, p_abs=P_REF, power=power, Tin=TIN),
+    )
+    y = agr.solve_steady(guess)
+    assert np.linalg.norm(agr.compute(y)) < 1e-6
+    mdot = _mdot(agr, fg, y)
+    assert -1e-3 < mdot < -5e-5

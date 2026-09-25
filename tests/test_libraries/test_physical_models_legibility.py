@@ -36,7 +36,7 @@ def test_regime_dependent_h_spl_nan_re_returns_all_nan():
         coolant=cool, mdot=np.nan, Dh=pipe.hydraulic_diameter, A=pipe.area,
         T_cool=np.array([40.0, 40.0]), T_wall=np.array([50.0, 50.0]),
         re_bounds=(2100, 4000), coolant_funcs=light_water,
-        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03,
+        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03, depth=0.003, Lh=0.6,
     )
     assert np.isnan(h).all()
 
@@ -66,7 +66,7 @@ def test_regime_dependent_h_spl_healthy_run_is_finite():
         coolant=cool, mdot=0.08, Dh=pipe.hydraulic_diameter, A=pipe.area,
         T_cool=np.array([40.0, 40.0]), T_wall=np.array([50.0, 50.0]),
         re_bounds=(2100, 4000), coolant_funcs=light_water,
-        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03,
+        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03, depth=0.003, Lh=0.6,
     )
     assert np.all(np.isfinite(h)) and np.all(h > 0)
 
@@ -272,19 +272,19 @@ def test_healthy_regime_dependent_solve_emits_zero_warnings():
 
 def test_htc_errstate_wrapping_is_scoped_not_global():
     """The surgical errstate wraps must be context-scoped, not process-global: a
-    call that passes through the wrapped phi expression must not disable numpy's
+    call that passes through the wrapped log-Graetz expression must not disable numpy's
     error handling for a genuine invalid divide right afterwards."""
     from stream.physical_models.heat_transfer_coefficient.single_phase import (
         regime_dependent_h_spl,
     )
 
     cool = light_water.to_properties(np.array([40.0, 40.0]))
-    # Healthy call: passes unconditionally through the errstate-wrapped phi block.
+    # Healthy call: passes unconditionally through the errstate-wrapped stagnation-handover block.
     regime_dependent_h_spl(
         coolant=cool, mdot=0.08, Dh=pipe.hydraulic_diameter, A=pipe.area,
         T_cool=np.array([40.0, 40.0]), T_wall=np.array([50.0, 50.0]),
         re_bounds=(2100, 4000), coolant_funcs=light_water,
-        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03,
+        develop_length=np.array([0.3, 0.6]), aspect_ratio=0.03, depth=0.003, Lh=0.6,
     )
     with warnings.catch_warnings(record=True) as w_outside:
         warnings.simplefilter("always")

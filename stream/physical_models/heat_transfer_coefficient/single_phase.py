@@ -4,7 +4,7 @@ from typing import Literal, Protocol, Sequence
 
 import numpy as np
 
-from stream.physical_models.dimensionless import Gr, Re_mdot, flow_regimes
+from stream.physical_models.dimensionless import Re_mdot, flow_regimes
 from stream.physical_models.heat_transfer_coefficient.laminar import (
     constant_Nusselt_h_spl,
     developing_laminar_h_spl,
@@ -58,7 +58,8 @@ def regime_dependent_h_spl(
     T_wall: Celsius,
     re_bounds: tuple[Value, Value],
     coolant_funcs: LiquidFuncs,
-    nat_band: tuple[float, float] = (0.5, 2.0),
+    Lh: Meter,
+    gz_band: tuple[float, float] = (0.01, 0.1),
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
@@ -66,14 +67,22 @@ def regime_dependent_h_spl(
 ) -> WPerM2K:
     r"""A flow-regime-dependent single phase heat transfer coefficient function.
 
-    Given laminar, turbulent and natural regimes heat transfer functions, this function
-    interpolates between turbulent-laminar values, where ``re_bounds`` determines their
-    respective area of applicability, and applies the natural function
-    when :math:`\text{Gr}/\text{Re}^2_\text{film} > 1`.
+    The forced-convection part interpolates linearly on the bulk-evaluated Reynolds
+    number between the ``laminar`` and ``turbulent`` functions, with ``re_bounds``
+    setting the transition band. The laminar function is passed bulk properties,
+    the turbulent one film properties.
 
-    The interpolation is done linearly on the bulk-evaluated Reynolds number.
-    The laminar regime function is passed bulk values, whereas the turbulent function is
-    passed film values.
+    Buoyancy enters by **superposition**, not by substitution: the natural-convection
+    contribution is combined with the forced value through the Churchill cube norm
+    :math:`h = (h_f^3 + h_n^3)^{1/3}` (aiding internal mixed convection only ever
+    *enhances* heat transfer). Finally, when the through-flow renewal genuinely dies —
+    Graetz number :math:`\text{Gz} = \text{Pe}\,D_h/L_h` below ``gz_band`` — the value
+    hands over to the pure ``natural`` (stagnant-channel) function, so a flow-reversal
+    instant recovers the buoyant-cavity limit.
+
+    Every switch here is fed by the flow (Re, Gz), never by the wall superheat the
+    result feeds back into, and the superposition only adds — so :math:`h(T_{wall})
+    \cdot \Delta T` is monotone and a cell's wall balance has a unique root.
 
     Parameters
     ----------
@@ -93,12 +102,20 @@ def regime_dependent_h_spl(
         Boundaries depicting transition between laminar, interim, and turbulent regimes.
     coolant_funcs: LiquidFuncs
         Coolant properties functions.
+    Lh: Meter
+        Heated length, used for the Graetz-number stagnation handover (and passed on
+        to the ``natural`` function).
+    gz_band: tuple[float, float]
+        Graetz-number band over which the composition hands over to the pure
+        ``natural`` function as the through-flow vanishes. The default engages only
+        at genuine stagnation scale (Pe below ~0.1·Lh/Dh); every circulating steady
+        state sits far above it.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
         Turbulent heat transfer coefficient
     natural: SinglePhaseLiquidHTCExArgs
-        Natural convection heat transfer coefficient
+        Natural convection heat transfer coefficient, evaluated with bulk properties.
 
     Returns
     -------
@@ -118,38 +135,29 @@ def regime_dependent_h_spl(
             T_cool=T_cool,
             T_wall=T_wall,
             coolant_funcs=coolant_funcs,
+            Lh=Lh,
         )
         | kwargs
     )
     # nan (not empty): a NaN re leaving every regime mask False propagates NaN detectably, not uninitialised memory.
     h = np.full(len(T_cool), np.nan)
 
+    bulk = coolant_funcs.to_properties(T_cool)
     h_turb = turbulent(**inp)
     h[turb] = h_turb[turb]
     if np.any(lam + inter):
-        h_lam = laminar(**(inp | dict(coolant=coolant_funcs.to_properties(T_cool))))
+        h_lam = laminar(**(inp | dict(coolant=bulk)))
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
-    gr = Gr(
-        coolant.density,
-        mu := coolant.viscosity,
-        coolant.thermal_expansion,
-        T_cool,
-        T_wall,
-        Dh,
-    )
-    re_film = Re_mdot(mdot, A, Dh, mu)
-    # abs(gr) so cooled walls (gr<0) transition too; the 1e-30 re_film floor avoids 0/0 -> nan at stagnation.
-    with np.errstate(invalid="ignore", divide="ignore"):  # inf/inf in a discarded branch
-        phi = np.abs(gr) / np.maximum(re_film, 1e-30) ** 2
-    with np.errstate(divide="ignore"):  # log10(0) -> -inf -> weight 0
-        w_nat = smooth_step(np.log10(phi), np.log10(nat_band[0]), np.log10(nat_band[1]))
-    if np.any(w_nat > 0.0):
-        h_nat = natural(**(inp | dict(coolant=coolant_funcs.to_properties(T_cool))))
-        h = (1.0 - w_nat) * h + w_nat * h_nat
-
-    return h
+    h_nat = natural(**(inp | dict(coolant=bulk)))
+    # Scoped: extreme solver iterates drive inf/0*inf through the cube norm and blend; the NaN/inf result is the caller's rejection signal, not a healthy-path event.
+    with np.errstate(invalid="ignore", over="ignore"):
+        h = np.cbrt(h**3 + h_nat**3)
+        pe = np.abs(re_bulk) * bulk.viscosity * bulk.specific_heat / bulk.conductivity
+        with np.errstate(divide="ignore"):  # log10(0) -> -inf -> weight 0 at true stagnation
+            w_flow = smooth_step(np.log10(pe * Dh / Lh), np.log10(gz_band[0]), np.log10(gz_band[1]))
+        return w_flow * h + (1.0 - w_flow) * h_nat
 
 
 def maximal_h_spl(
@@ -247,9 +255,10 @@ def spl_htc(
         :widths: 20, 80
 
         * - **regime_dependent**
-          - :func:`regime_dependent_h_spl`, which depends on the
-            :func:`~.Re` No., given ``re_bounds``. Laminar, Turbulent and Natural
-            :class:`~.SinglePhaseLiquidHTCExArgs` functions are required.
+          - :func:`regime_dependent_h_spl`: forced part interpolated on the
+            :func:`~.Re` No. over ``re_bounds``, natural part added by Churchill
+            cube-norm superposition, with a Graetz-number handover to the pure
+            natural function at stagnation. Requires ``Lh``.
         * - **laminar**
           - :func:`~.laminar_h_spl`. Requires the ``aspect_ratio = channel_depth / channel_width`` parameter.
         * - **laminar_constant_nu**
