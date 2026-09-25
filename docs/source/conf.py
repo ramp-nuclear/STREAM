@@ -37,6 +37,7 @@ autodoc_inherit_docstrings = False
 mathjax_path = "mathjax/es5/tex-chtml-full.js"
 
 extensions = [
+    "myst_parser",
     "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",

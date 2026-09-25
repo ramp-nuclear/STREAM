@@ -722,7 +722,10 @@ class ChannelAndContacts(Channel):
         variables: Sequence[float]
             Input variables, see :meth:`.ChannelAndContacts.variables`
         T_left, T_right: Celsius
-            Left and right boundary (wall) temperatures
+            Left and right boundary (wall) temperatures. An absent side mirrors
+            the other side's heat transfer coefficient and exchanges zero flux;
+            with neither side wired the channel is adiabatic (both coefficients
+            pinned to 0).
         Tin: Celsius
             Inlet boundary temperature
         Tin_minus: Celsius
@@ -749,6 +752,9 @@ class ChannelAndContacts(Channel):
         h_left = self.h_wall(T_wall=T_left, T_cool=tcool, mdot=mdot, pressure=stat_pressure)
         h_right = self.h_wall(T_wall=T_right, T_cool=tcool, mdot=mdot, pressure=stat_pressure)
         h_left, h_right = _other_if_none(h_left, h_right)  # type: WPerM2K
+        if h_left is None:
+            # No wall wired on either side: an adiabatic channel (h pinned to 0, zero flux).
+            h_left = h_right = 0.0
         q_left, q_right = _heatflux(**T_vecs, h_left=h_left, h_right=h_right)
 
         d = dict(

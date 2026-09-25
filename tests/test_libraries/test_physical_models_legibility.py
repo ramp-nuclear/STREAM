@@ -290,3 +290,20 @@ def test_htc_errstate_wrapping_is_scoped_not_global():
         warnings.simplefilter("always")
         np.array([0.0]) / np.array([0.0])  # genuine invalid divide, must still warn
     assert any(issubclass(wi.category, RuntimeWarning) for wi in w_outside)
+
+
+def test_regime_dependent_friction_zero_flow_guard_is_shape_aware():
+    """The zero-flow early return follows the same contract as the main path
+    (scalar in -> float out, array in -> shape kept) and emits no
+    array-to-scalar DeprecationWarning for array input, zero or not."""
+    from stream.physical_models.pressure_drop.friction import regime_dependent_friction
+
+    common = dict(T_cool=40.0, T_wall=50.0, fluid=light_water, pipe=pipe,
+                  re_bounds=(2100, 4000), k_R=1.0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        scalar = regime_dependent_friction(mdot=0.0, **common)
+        arr = regime_dependent_friction(mdot=np.array([0.0]), **common)
+        regime_dependent_friction(mdot=np.array([0.05]), **common)
+    assert isinstance(scalar, float) and scalar == 0.0
+    assert isinstance(arr, np.ndarray) and arr.shape == (1,) and arr[0] == 0.0

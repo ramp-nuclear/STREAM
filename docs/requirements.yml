@@ -18,6 +18,7 @@ dependencies:
   - jupyter
   - mathjax
   - matplotlib
+  - myst-parser
   - nbsphinx
   - networkx
   - numpydoc

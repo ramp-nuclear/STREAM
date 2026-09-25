@@ -20,6 +20,7 @@ Specifically, research reactors are of interest.
    stream
    Installation
    quickstart
+   failure_modes
    Examples
    Contributing
    tests

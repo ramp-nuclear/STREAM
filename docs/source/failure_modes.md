@@ -227,10 +227,14 @@ negative `disposition`. Getting the sign wrong silently reverses buoyancy.
   buoyancy will use the hot outlet temperature, and suggests the two-HX sandwich.
 
 What it does **not** see: it is direction-blind at nonzero flow, and its topology
-pass has a known limitation — a reverse-flow temperature wired from a *hot junction*
-(rather than being absent) passes the classifier silently. Treat the warning as
-necessary, not sufficient: for a loop that will reverse, verify each gravity leg's
-reversed-flow temperature source yourself.
+pass reads the *flow-graph series chain*, not the finished wiring. For loops built
+with `flow_edge`/`in_series` the chain is the wiring, so the pass is accurate
+there (a hot-junction reverse source **is** flagged). Hand-wiring that diverges
+from the chain is misread in both directions: a `funcs`-supplied constant
+`Tin_minus` (fine for NC) still draws the warning, and a `funcs` override feeding
+something hot behind a heat-exchanger neighbour passes silently. Treat the warning
+as necessary, not sufficient: for a loop that will reverse, verify each gravity
+leg's reversed-flow temperature source yourself.
 
 ---
 

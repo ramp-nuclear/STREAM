@@ -100,3 +100,46 @@ def test_bpr_finite_nonzero_for_one_sided_channel():
     extremes = {np.inf, -np.inf, np.nan, 0.0}
     assert all(isinstance(v, float) for v in bpr)
     assert not any(v in extremes for v in bpr)
+
+
+def _sk_envelope(T_bulk, sat, mdot, pipe, inlet, outlet):
+    """The Sudo-Kaminaga q* envelope with explicitly chosen inlet/outlet cells."""
+    from stream.physical_models.thresholds import _SKq1, _SKq2, _SKq3, _SKq4
+    from stream.units import g
+
+    drho = sat.density - sat.vapor_density
+    hfg, cp, Tsat = sat.latent_heat, sat.specific_heat, sat.sat_temperature
+    lamda = np.sqrt(sat.surface_tension / drho / g)
+    scale = np.sqrt(lamda * drho * sat.vapor_density * g)
+    G_star = mdot / pipe.area / scale
+    A_ratio = pipe.area / (sum(pipe.heated_parts) * pipe.length)
+    dT_in = (cp / hfg) * (Tsat[inlet] - T_bulk[inlet])
+    dT_out = (cp / hfg) * (Tsat[outlet] - T_bulk[outlet])
+    q1 = _SKq1(G_star)
+    q2 = _SKq2(A_ratio=A_ratio, G_star=G_star, dT_inlet=dT_in)
+    q3 = _SKq3(A_ratio=A_ratio, w=pipe.width, lamda=lamda, dT_inlet=dT_in, rho_v=sat.vapor_density, rho_l=sat.density)
+    q4 = _SKq4(G_star=G_star, dT_outlet=dT_out)
+    if np.all(np.asarray(mdot) >= 0):
+        return np.maximum(np.minimum(q2, q4), q3) * hfg * scale
+    return np.maximum(np.maximum(np.minimum(q2, q4), q1), q3) * hfg * scale
+
+
+def test_SK_CHF_reversed_flow_uses_far_end_as_inlet():
+    """Under reversed (negative-mdot) flow the coolant enters at the LAST cell,
+    so the inlet subcooling must come from cell -1 and the outlet subcooling
+    from cell 0 -- not the fixed 0/-1 ends of the forward convention."""
+    sat = light_water.to_properties(np.full(4, 100.0), np.full(4, 1e5))
+    T_bulk = np.array([40.0, 60.0, 80.0, 95.0])
+    got = Sudo_Kaminaga_CHF(T_bulk=T_bulk, sat_coolant=sat, mdot=-1.0, pipe=mock_pipe)
+    expected = _sk_envelope(T_bulk, sat, -1.0, mock_pipe, inlet=-1, outlet=0)
+    assert np.allclose(got, expected)
+
+
+def test_SK_CHF_forward_flow_keeps_cell0_as_inlet():
+    """Forward flow keeps the historical convention exactly: inlet cell 0,
+    outlet cell -1."""
+    sat = light_water.to_properties(np.full(4, 100.0), np.full(4, 1e5))
+    T_bulk = np.array([40.0, 60.0, 80.0, 95.0])
+    got = Sudo_Kaminaga_CHF(T_bulk=T_bulk, sat_coolant=sat, mdot=1.0, pipe=mock_pipe)
+    expected = _sk_envelope(T_bulk, sat, 1.0, mock_pipe, inlet=0, outlet=-1)
+    assert np.allclose(got, expected)

@@ -248,3 +248,37 @@ def test_dist_from_edge_is_nonnegative_for_descending_boundaries():
         # distance depends only on cell widths and flow direction, so it must equal
         # the ascending channel's, whose distances are already correct.
         assert np.allclose(d, asc.dist_from_edge(mdot))
+
+
+def test_wall_less_channel_and_contacts_is_adiabatic():
+    """With neither wall temperature wired, the channel behaves as an unheated
+    (adiabatic) channel: both heat transfer coefficients are pinned to zero and a
+    uniform temperature profile has zero rate of change."""
+    n = 4
+    cc = ChannelAndContacts(
+        z_boundaries=np.linspace(0.0, 0.5, n + 1),
+        fluid=light_water,
+        pipe=EffectivePipe.rectangular(length=0.5, edge1=0.07, edge2=0.002, heated_edge=0.07),
+    )
+    h_guess = 1e4
+    y = np.concatenate([np.full(n, 40.0), [0.0], np.full(n, h_guess), np.full(n, h_guess)])
+    out = cc.calculate(y, Tin=40.0, mdot=0.1, p_abs=2e5)
+    assert np.allclose(out[cc.indices("T_cool")], 0.0)
+    assert np.allclose(out[cc.indices("h_left")], -h_guess)
+    assert np.allclose(out[cc.indices("h_right")], -h_guess)
+
+
+def test_one_sided_channel_and_contacts_keeps_mirrored_h():
+    """A single wired wall stays legal: the given side's coefficient is computed
+    and mirrored onto the absent side, whose heat flux is zero against the bulk."""
+    n = 4
+    cc = ChannelAndContacts(
+        z_boundaries=np.linspace(0.0, 0.5, n + 1),
+        fluid=light_water,
+        pipe=EffectivePipe.rectangular(length=0.5, edge1=0.07, edge2=0.002, heated_edge=0.07),
+    )
+    y = np.concatenate([np.full(n, 40.0), [0.0], np.full(n, 1e4), np.full(n, 1e4)])
+    out = cc.calculate(y, Tin=40.0, mdot=0.1, T_left=np.full(n, 60.0), p_abs=2e5)
+    h_left = out[cc.indices("h_left")] + 1e4
+    assert np.all(h_left > 0.0)
+    assert np.allclose(out[cc.indices("h_left")], out[cc.indices("h_right")])

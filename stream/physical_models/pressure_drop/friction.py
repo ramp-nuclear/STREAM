@@ -268,8 +268,8 @@ def regime_dependent_friction(
     f: Value
         The Darcy friction factor.
     """
-    if float(mdot) == 0.0:
-        return 0.0
+    if np.all(np.asarray(mdot) == 0.0):
+        return 0.0 if np.ndim(mdot) == 0 else np.zeros(np.shape(mdot))
     Dh = pipe.hydraulic_diameter
     A = pipe.area
     mu_bulk = fluid.viscosity(T_cool)

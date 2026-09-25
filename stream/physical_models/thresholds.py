@@ -387,11 +387,14 @@ def Sudo_Kaminaga_CHF(
     Aht = sum(pipe.heated_parts) * pipe.length
     lamda = np.sqrt(sat_coolant.surface_tension / drho / g)
 
+    # The flow enters at cell 0 for non-negative mdot and at the last cell when reversed.
+    inlet, outlet = (0, -1) if np.all(np.asarray(mdot) >= 0) else (-1, 0)
+
     q1 = _SKq1(G_star=(G_star := mdot / pipe.area / np.sqrt(lamda * drho * rho_v * g)))
 
     q2 = _SKq2(
         A_ratio=(A_ratio := pipe.area / Aht),
-        dT_inlet=(dT_inlet := (cp / hfg) * (Tsat[0] - T_bulk[0])),
+        dT_inlet=(dT_inlet := (cp / hfg) * (Tsat[inlet] - T_bulk[inlet])),
         G_star=G_star,
     )
 
@@ -404,7 +407,7 @@ def Sudo_Kaminaga_CHF(
         rho_l=rho_l,
     )
 
-    q4 = _SKq4(G_star=G_star, dT_outlet=(cp / hfg) * (Tsat[-1] - T_bulk[-1]))
+    q4 = _SKq4(G_star=G_star, dT_outlet=(cp / hfg) * (Tsat[outlet] - T_bulk[outlet]))
 
     q_star = np.zeros_like(G_star)
     # Downward

@@ -64,3 +64,12 @@ def test_constant_liquidfuncs_carries_source_validity():
     # A mock source (validity None) stays None through the constant construction.
     clf_none = constant_LiquidFuncs(mock_liquid_funcs, T=20.0, p=1e5)
     assert clf_none.validity is None
+
+
+def test_light_water_cp_tracks_iapws_saturated_liquid():
+    """The specific-heat fit follows the IAPWS saturated-liquid line to <=0.5%
+    over its whole validity range -- including the near-critical climb, so the
+    clamp boundary value cp(350) ~ 10.1 kJ/kgK is physical, not a fit artifact."""
+    iapws_kj = {25: 4.181, 100: 4.216, 200: 4.497, 300: 5.762, 340: 8.208, 350: 10.12}
+    for T, ref in iapws_kj.items():
+        assert np.isclose(float(light_water.specific_heat(float(T))), ref * 1e3, rtol=5e-3)
