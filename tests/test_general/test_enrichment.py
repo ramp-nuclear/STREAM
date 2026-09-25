@@ -99,6 +99,62 @@ def test_enrich_handles_1d_ic_payload_shape():
     assert "p=nan of 'CC' (source: y)" in notes  # scalar -> no "at cell N"
 
 
+# --- domain-violation note -------------------------------------
+
+
+def _channel_agr(T_cool):
+    """A single ChannelAndContacts named 'CC' on light water, plus a raw solve vector
+    whose bulk temperature is ``T_cool`` (used to plant an out-of-domain state)."""
+    import warnings
+
+    import numpy as np
+
+    from stream.calculations import ChannelAndContacts
+    from stream.pipe_geometry import EffectivePipe
+    from stream.substances import light_water
+
+    pipe = EffectivePipe.rectangular(0.6, 0.06, 0.003, 0.003)
+    Z = np.linspace(0.0, 0.6, 5)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        C = ChannelAndContacts(Z, light_water, pipe)
+        agr = Aggregator.from_decoupled(
+            C, funcs={C: dict(mdot=0.05, T_left=80.0, T_right=80.0, Tin=80.0, p_abs=1e5)}
+        )
+    vec = agr.load(
+        {C.name: dict(T_cool=np.full(4, T_cool), pressure=0.0, h_left=np.full(4, 1e4), h_right=np.full(4, 1e4))}
+    )
+    return C, agr, vec
+
+
+def test_enrich_attaches_domain_note_for_out_of_domain_state():
+    """A failure whose ``err.y`` carries a far-out-of-range temperature gets a
+    'domain violations' note naming the variable/cell/calc and the validity range."""
+    import warnings
+
+    C, agr, vec = _channel_agr(-287.0)
+    err = AlgRuntimeError("boom")
+    err.y = vec
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        agr._enrich_failure(err)
+    notes = _notes(err)
+    assert "domain violations" in notes
+    assert "T_cool=-287" in notes and "outside validity [0.1, 350] °C" in notes and "'CC'" in notes
+
+
+def test_enrich_attaches_no_domain_note_on_healthy_state():
+    import warnings
+
+    C, agr, vec = _channel_agr(80.0)
+    err = AlgRuntimeError("boom")
+    err.y = vec
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        agr._enrich_failure(err)
+    assert "domain violations" not in _notes(err)
+
+
 # --- cascade failure (solve_steady) enrichment -------------------------------
 
 

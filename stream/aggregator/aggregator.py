@@ -1028,32 +1028,29 @@ class Aggregator:
         return solution.data[:, self.var_index(node, var_name)]
 
     def _enrich_failure(self, err: BaseException) -> None:
-        r"""Decorate an in-flight solver failure with domain-term notes (§3.2).
+        r"""Decorate an in-flight solver failure with domain-term notes.
 
-        Runs **only** on the failure path and entirely inside ``try/except``,
-        with each probe guarded on its own (P8): a probe that itself fails can
-        never mask or suppress the error it explains, and the error always
-        propagates with whatever notes did attach. Notes only — the message and
-        ``args`` are never touched (P4). Best-effort, it appends:
+        Best-effort and side-effect-free on the error's message: each probe is
+        guarded on its own, so a probe that fails cannot mask the error it
+        explains, and the error propagates with whatever notes attached. It only
+        appends notes; the message and ``args`` are left as-is. It appends:
 
         1. non-finite locations of the failure state (and, when computable, its
-           residual) — ``T_wall=nan at cell 3 of 'CC' (source: y)`` (B3);
-        2. the top-3 *scaled* worst residuals (kills the G5-09 unit-domination);
-        3. a saturation crossing plus the ``stop_at_saturation`` hint — this is
-           what closes the B5/G5-02 discoverability gap.
-
-        A domain-violation note (``domain_report``) is wired in W4.
+           residual) — ``T_wall=nan at cell 3 of 'CC' (source: y)``;
+        2. the top-3 *scaled* worst residuals;
+        3. a saturation crossing plus the ``stop_at_saturation`` hint;
+        4. fluid-domain violations (``domain_report``) — a variable outside its
+           fluid's declared validity range, or a negative static pressure.
         """
         try:
             y_attr = getattr(err, "y", None)
             if y_attr is None:
                 return
             y = np.asarray(y_attr, dtype=float)
-            row = y[-1] if y.ndim == 2 else y  # 1-D IC-recovery payloads exist (W1d)
+            row = y[-1] if y.ndim == 2 else y
             t_attr = getattr(err, "t", None)
             t_fail = float(np.atleast_1d(t_attr)[-1]) if t_attr is not None else 0.0
 
-            # Note 1 — non-finite locations (source y and, when computable, F).
             try:
                 try:
                     F = self.compute(row, t_fail)
@@ -1106,7 +1103,32 @@ class Aggregator:
             except Exception:
                 pass
 
-            # Note 4 — domain violations (domain_report): wired in W4.
+            # Lazy import: same import-cycle reason as the saturation import above.
+            try:
+                from stream.analysis.thresholds import domain_report
+
+                if y.ndim == 2 and t_attr is not None:
+                    violations = domain_report(y, self, times=np.asarray(t_attr))
+                else:
+                    violations = domain_report(row, self)
+                if violations:
+                    entries = []
+                    for v in violations:
+                        where = f"at cell {v.cell} " if v.cell is not None else ""
+                        if isinstance(v.bound, tuple):
+                            lo, hi = v.bound
+                            entries.append(
+                                f"{v.variable}={v.value:g} {where}of {v.calc_name!r} "
+                                f"outside validity [{lo:g}, {hi:g}] °C"
+                            )
+                        else:
+                            entries.append(f"{v.variable}={v.value:g} {where}of {v.calc_name!r} (pressure < 0)")
+                    shown = entries[:8]
+                    if len(entries) > 8:
+                        shown.append(f"... and {len(entries) - 8} more")
+                    err.add_note("domain violations: " + "; ".join(shown))
+            except Exception:
+                pass
         except Exception:
             pass
 
@@ -1151,6 +1173,15 @@ class Aggregator:
         -------
         solution: Solution
             Calculated vector at requested times: [time, variable].
+
+        Notes
+        -----
+        In ``ALG`` quasi-static mode (``eq_type='ALG'`` with a ``time`` grid, i.e. a
+        sequence of steady solves along the grid), **row 0 of the returned solution
+        is the initial guess, not a solved state** — each subsequent row is solved
+        from the one before it, but the first is passed through unsolved. Read
+        results from row 1 onward, or drop row 0, when the initial guess is not
+        itself a solution.
 
         References
         ----------
@@ -1348,6 +1379,15 @@ class Aggregator:
         -------
         solution: Array1D
             Calculated vector.
+
+        Notes
+        -----
+        This never calls :meth:`Calculation.change_state`: it solves for the state
+        vector only. Stateful components (a :class:`~stream.calculations.flapper.Flapper`
+        latch, a controller's internal state) therefore stay at whatever they were
+        before the call — they are **not** synced to the steady solution. If a
+        component's residual depends on such internal state, set it deliberately
+        before solving, or run a short transient afterwards to let the events fire.
         """
         if not isinstance(guess, np.ndarray):
             guess = self.load(guess)

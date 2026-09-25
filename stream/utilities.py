@@ -34,6 +34,16 @@ STREAM_DEBUG = 11
 
 
 def harmonic_mean(*a: Value, axis=1):
+    r"""Reciprocal of the sum of reciprocals, :math:`\left(\sum_i 1/a_i\right)^{-1}`.
+
+    This is the right combiner for thermal resistances in series: layer
+    conductances :math:`a_i = 1/R_i` combine so that the resistances add
+    (:math:`R = \sum_i 1/a_i`), and the equivalent conductance is
+    :math:`1/\sum_i (1/a_i)`. The reciprocals summing — not the values — is what
+    makes it "harmonic". (It drops the textbook :math:`1/n`: this is a series
+    combination rule, not an average; ``heat_diffusion`` aliases it ``in_parallel``
+    for the dual case where the ``a_i`` are resistances combined in parallel.)
+    """
     m = np.column_stack(a)
     return 1 / np.sum((1 / m), axis=axis)
 
@@ -261,13 +271,9 @@ def flatten_values(d: dict[Any, Value], dtype=np.float64) -> Value:
 
 @contextmanager
 def ignore_warnings(warn_type: Type[Warning]):
-    warnings.filterwarnings("ignore", category=warn_type)
-    yield
-    try:
-        # noinspection PyUnresolvedReferences
-        warnings.filters.pop()
-    except IndexError:
-        pass
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=warn_type)
+        yield
 
 
 @array_function_dispatch(_diff_dispatcher)

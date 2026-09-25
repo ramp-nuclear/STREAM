@@ -243,9 +243,11 @@ def test_reversed_flow_temperature_guess_uses_suffix_cumsum(monkeypatch):
     assert not np.allclose(tc0, reversed_prefix)
 
 
+# Deliberately overrides edge-routed Tin via funcs (fixed-boundary idiom) -> shadow warning.
+@pytest.mark.filterwarnings("ignore:funcs for .* shadow edge-routed")
 def test_open_flapper_gets_a_physically_consistent_dp_guess():
     """A closed Flapper's dp is undetermined (0.0), but an OPEN Flapper carrying known
-    flow has a computable dp; the guess must use it instead of the DPCalculation 0.0 (G3)."""
+    flow has a computable dp; the guess must use it instead of the DPCalculation 0.0."""
     from stream.calculations import Flapper
     from stream.calculations.flapper import continuously_differentiable_relaxation as cdr
     from stream.calculations.ideal.resistors import VolumetricFlowResistor

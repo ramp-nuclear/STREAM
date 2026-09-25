@@ -151,6 +151,8 @@ def test_dask_uq_graph_by_regression(persist, image_regression):
         image_regression.check(f.read(), diff_threshold=1)
 
 
+# Deliberately overrides edge-routed Tin via funcs (fixed-boundary idiom) -> shadow warning.
+@pytest.mark.filterwarnings("ignore:funcs for .* shadow edge-routed")
 def test_uq_improves_with_mdot_for_simple_channel():
     hx = HeatExchanger(20.0)
     z = np.linspace(0, 50, 101) * cm

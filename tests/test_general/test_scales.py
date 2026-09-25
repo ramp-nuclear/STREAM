@@ -6,15 +6,13 @@ exercised: owned names routed by ``variables`` and the Kirchhoff family routed
 by ``variables_by_type``.
 """
 
-import logging
-
 import numpy as np
 import pytest
 
 from stream.calculations import Junction, Pump, Resistor
 from stream.composition import FlowGraph, flow_edge
 from stream.scales import DEFAULT_SCALES, scale_vector
-from stream.utilities import offset
+from stream.utilities import STREAM_DEBUG, offset
 
 
 @pytest.fixture
@@ -92,7 +90,7 @@ def test_override_wins_for_exactly_its_positions(system):
 def test_unknown_name_defaults_to_one_and_logs(system, caplog):
     """A variable absent from the registry falls back to 1.0 and is reported."""
     registry = {k: v for k, v in DEFAULT_SCALES.items() if k != "Tin"}
-    with caplog.at_level(logging.INFO, logger="stream.scales"):
+    with caplog.at_level(STREAM_DEBUG, logger="stream.scales"):
         typ = scale_vector(system, registry=registry)
     tin_idx = next(
         offset(node.variables["Tin"], section.start)
@@ -102,6 +100,8 @@ def test_unknown_name_defaults_to_one_and_logs(system, caplog):
     assert typ[tin_idx] == 1.0
     records = [r for r in caplog.records if r.name == "stream.scales"]
     assert records and any("Tin" in r.getMessage() for r in records)
+    # per-variable solve chatter belongs at STREAM_DEBUG, not INFO
+    assert all(r.levelno == STREAM_DEBUG for r in records)
 
 
 def test_custom_registry_is_honored(system):

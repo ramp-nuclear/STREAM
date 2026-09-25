@@ -97,6 +97,9 @@ class LiquidFuncs:
         Liquid-Vapor transition specific latent heat
     thermal_expansion: Callable[[Celsius], PerC]
         Thermal volume expansion coefficient
+    validity: tuple[Celsius, Celsius] | None
+        Liquid-phase temperature range ``(T_min, T_max)`` over which the fits are
+        trusted, or ``None`` when undeclared (mocks).
     """
 
     density: Callable[[Celsius], KgPerM3]
@@ -108,6 +111,7 @@ class LiquidFuncs:
     latent_heat: Callable[[Celsius], JPerKg]
     conductivity: Callable[[Celsius], WPerMK]
     thermal_expansion: Callable[[Celsius], PerC]
+    validity: tuple[Celsius, Celsius] | None = None
 
     def to_properties(self, T: Celsius, p: Pascal = atm) -> Liquid:
         """

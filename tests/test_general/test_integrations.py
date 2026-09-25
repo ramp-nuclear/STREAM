@@ -5,10 +5,16 @@ Testing global, or integrative, arrangements.
 from functools import partial
 
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis.strategies import floats, integers
 from networkx import DiGraph
 from scipy.constants import g
+
+# These integration tests deliberately override edge-routed Tin/Tin_minus with funcs
+# (the fixed-temperature boundary idiom), which trips the shadow warning at
+# construction. Quiet it on exactly these tests; library users keep the loud collision.
+_shadow_override = pytest.mark.filterwarnings("ignore:funcs for .* shadow edge-routed")
 
 from stream.aggregator import Aggregator, CalculationGraph, vars_
 from stream.calculations import (
@@ -127,6 +133,7 @@ def test_parallel_resistors_with_pump_against_analytic_solution(p, r1, r2):
     assert np.isclose(total_flow, p / total_resistance)
 
 
+@_shadow_override
 @settings(deadline=None)
 @given(integers(1, 100), *2 * [floats(1e-2, 1e3, allow_nan=False, allow_infinity=False)])
 def test_resistors_in_series_against_analytic_solution(N, pressure, total_r):
@@ -431,6 +438,7 @@ def test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet()
     assert np.allclose(state[C.name]["T_cool"], T0)
 
 
+@_shadow_override
 @settings(deadline=None)
 @given(*2 * [integers(1, 10)])
 def test_inertia_through_RL_circuit_follows_analytic_solution(r, inertia):
@@ -558,6 +566,7 @@ def test_pump_and_current_source(p, mdot):
     assert np.allclose(AGR.compute(y0), 0)
 
 
+@_shadow_override
 def test_flapper_opens_with_ref_mdot():
     mdot0 = 1.0
     p = 1.0
@@ -637,6 +646,7 @@ def _coastdown_flapper_system():
     return AGR, F, K, AGR.solve_steady(y0)
 
 
+@_shadow_override
 def test_flapper_opening_time_is_grid_and_tolerance_invariant():
     """E1/E2/E3: a boolean rootfn cannot be bisected, so the flapper opening
     latched at internal BDF step ends -> tolerance- and grid-dependent (benchmark
@@ -657,6 +667,7 @@ def test_flapper_opening_time_is_grid_and_tolerance_invariant():
         assert np.isclose(t_open, np.log(10.0), atol=1e-3)
 
 
+@_shadow_override
 def test_flapper_and_pump():
     mdot0 = 1.0
     p = 1.0
@@ -694,6 +705,7 @@ def test_flapper_and_pump():
     assert np.all(sol[np.argwhere(time >= F.t_open), AGR.var_index(K, K.component_edge(P))] != 0.0)
 
 
+@_shadow_override
 def test_pump_coastdown_allows_channels_to_reverse_flow_direction():
     """
     Let us assume the following system: two channels standing upright where
@@ -768,6 +780,7 @@ def test_pump_coastdown_allows_channels_to_reverse_flow_direction():
     assert np.isclose(AGR.funcs[P]["pressure"](t_zero), gravity_pressure_difference)
 
 
+@_shadow_override
 def test_inertia_with_friction_in_PCS_coastdown():
     r"""This test is equivalent
     to :ref:`Primary Cooling System Coastdown`.
@@ -820,6 +833,7 @@ def test_inertia_with_friction_in_PCS_coastdown():
     assert np.allclose(mdotc, mdota)
 
 
+@_shadow_override
 def test_inertia_with_flapper_in_PCS_coastdown():
     r"""This test is conceptually equivalent
     to :ref:`Primary Cooling System Coastdown`, only this time another branch is added,
@@ -887,6 +901,7 @@ def test_inertia_with_flapper_in_PCS_coastdown():
 sensible_resistors = floats(allow_infinity=False, allow_nan=False, max_value=30, min_value=0.01)
 
 
+@_shadow_override
 def test_inertia_with_transistor_in_PCS_coastdown():
     r"""This test is conceptually equivalent
     to :ref:`Primary Cooling System Coastdown`. This time another branch is added,
@@ -960,6 +975,7 @@ def test_inertia_with_transistor_in_PCS_coastdown():
     assert agr.solve(y0, time=time, atol=atol)
 
 
+@_shadow_override
 @settings(deadline=None)
 @given(sensible_resistors, sensible_resistors)
 def test_inertia_with_two_parallel_resistors(k1, k2):
@@ -1007,6 +1023,7 @@ def test_inertia_with_two_parallel_resistors(k1, k2):
     assert np.allclose(mdotc, mdota)
 
 
+@_shadow_override
 def test_local_pressure_with_flow_reversal():
     """Testing a simple circuit in which a local pressure drop experiences flow
     reversal

@@ -13,8 +13,6 @@ in :mod:`.substances` and :mod:`.physical_models`.
 
 import logging
 
-from rich.logging import RichHandler
-
 from .aggregator import *
 from .calculation import *
 from .state import State as State
@@ -25,5 +23,29 @@ from .analysis import *
 from .substances import *
 from .calculations import Solid as Solid
 
-logger = logging.getLogger("stream")
-logger.addHandler(RichHandler(log_time_format="[%X]"))
+# Libraries attach only a NullHandler so importing STREAM emits nothing on its own; call enable_rich_logging to opt in.
+logging.getLogger("stream").addHandler(logging.NullHandler())
+
+
+def enable_rich_logging(level: int = logging.INFO):
+    """Route the ``"stream"`` logger through a Rich handler and set its level.
+
+    The library default is silent (a :class:`logging.NullHandler`); call this to
+    restore the timestamped, colorized console output. It is idempotent -- a
+    repeat call re-uses the single Rich handler rather than stacking another, and
+    just updates the level.
+
+    Parameters
+    ----------
+    level : int
+        Logger level to set. ``logging.INFO`` (the default) surfaces events,
+        restarts and stops; ``stream.utilities.STREAM_DEBUG`` (11) additionally
+        opens the per-construction / per-solve chatter.
+    """
+    from rich.logging import RichHandler
+
+    logger = logging.getLogger("stream")
+    for handler in [h for h in logger.handlers if isinstance(h, RichHandler)]:
+        logger.removeHandler(handler)
+    logger.addHandler(RichHandler(log_time_format="[%X]"))
+    logger.setLevel(level)

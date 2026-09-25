@@ -293,4 +293,5 @@ light_water = LiquidFuncs(
     latent_heat=_latent_heat,
     conductivity=_conductivity,
     thermal_expansion=_thermal_expansion,
+    validity=(0.1, 350.0),
 )

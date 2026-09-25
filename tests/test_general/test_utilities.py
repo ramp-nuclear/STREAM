@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 from hypothesis import given, settings
@@ -8,6 +10,7 @@ from stream.composition import uniform_x_power_shape
 from stream.utilities import (
     cosine_shape,
     cosine_shape_by_zero_endpoints,
+    ignore_warnings,
     just,
     offset,
     pair_mean,
@@ -168,3 +171,47 @@ def test_uniform_x_power_shape_works_with_clad_N_equals_zero(z_N, fuel_N, clad_w
     power_shape = uniform_x_power_shape(z_N, fuel_N, 0, clad_w, meat_w, meat_h)
     assert power_shape.shape == (z_N, fuel_N)
     assert np.allclose(np.sum(power_shape, axis=0), 1 / fuel_N)
+
+
+# --- ignore_warnings: full save/restore on warnings.catch_warnings ---
+
+
+def test_ignore_warnings_restores_the_filter_state_exactly():
+    """A user's own filter survives the context and no ignore filter leaks after."""
+    with warnings.catch_warnings():
+        warnings.resetwarnings()
+        warnings.filterwarnings("error", category=FutureWarning)  # a user policy
+        before = list(warnings.filters)
+        with ignore_warnings(DeprecationWarning):
+            pass
+        # exact restore: the sentinel is intact and nothing was popped or left behind
+        assert list(warnings.filters) == before
+
+
+def test_ignore_warnings_suppresses_the_target_category_inside_only():
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # everything raises by default
+        with ignore_warnings(DeprecationWarning):
+            warnings.warn("suppressed here", DeprecationWarning)  # must not raise
+        # once the context exits the "error" policy is back in force
+        with pytest.raises(DeprecationWarning):
+            warnings.warn("raised again", DeprecationWarning)
+
+
+def test_ignore_warnings_restores_on_exception_and_when_nested():
+    with warnings.catch_warnings():
+        warnings.resetwarnings()
+        warnings.filterwarnings("error", category=FutureWarning)
+        before = list(warnings.filters)
+        # an exception out of the body still restores the filter stack
+        with pytest.raises(RuntimeError):
+            with ignore_warnings(DeprecationWarning):
+                raise RuntimeError("boom")
+        assert list(warnings.filters) == before
+        # nested contexts unwind layer by layer back to the original state
+        with ignore_warnings(DeprecationWarning):
+            mid = list(warnings.filters)
+            with ignore_warnings(UserWarning):
+                pass
+            assert list(warnings.filters) == mid
+        assert list(warnings.filters) == before

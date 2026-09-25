@@ -297,4 +297,5 @@ heavy_water = LiquidFuncs(
     latent_heat=_latent_heat,
     conductivity=_conductivity,
     thermal_expansion=_thermal_expansion,
+    validity=(3.8, 300.0),
 )

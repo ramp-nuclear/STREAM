@@ -2,6 +2,7 @@
 Mock Substances, whose properties are mostly just 1's
 """
 
+from dataclasses import replace
 from functools import partial
 
 import numpy as np
@@ -11,7 +12,7 @@ from stream.substances import Liquid, LiquidFuncs
 from stream.units import Celsius, Pascal
 from stream.utilities import uniform_dataclass
 
-mock_liquid_funcs = uniform_dataclass(LiquidFuncs, np.ones_like)
+mock_liquid_funcs = replace(uniform_dataclass(LiquidFuncs, np.ones_like), validity=None)
 mock_liquid = uniform_dataclass(Liquid, 1.0)
 mock_solid = uniform_dataclass(Solid, 1.0)
 
@@ -51,5 +52,7 @@ def constant_LiquidFuncs(fluid: LiquidFuncs, T: Celsius, p: Pascal) -> LiquidFun
         **{
             fld: partial(np.full_like, fill_value=getattr(evaluated, fld), dtype=float)
             for fld in LiquidFuncs.__dataclass_fields__
-        }
+            if fld != "validity"
+        },
+        validity=fluid.validity,
     )

@@ -11,6 +11,7 @@ from inspect import Parameter, signature
 from typing import Callable, Iterator, Literal
 
 from IPython.display import Markdown, display
+from rich.console import Console
 from rich.table import Table
 
 from stream import Calculation
@@ -27,11 +28,17 @@ def _filter_vars(
 
 
 def _check_unset(agr: Aggregator, c: Calculation, name: str, param: Parameter) -> bool:
-    """Checks whether an input (name, parameter) is included in the Aggregator. `kwargs`
-    are regarded as set, since they are provisional.
+    """Whether a wireable input (name, parameter) is neither graph- nor func-supplied.
+
+    Only keyword-only parameters are wireable: the leading positional parameters —
+    the state slice and any ``t`` — are supplied by the solver, never by the graph
+    or ``funcs``, so they are excluded by kind rather than stripped by position.
+    This is what keeps the state slice out of the Unset/Missing columns without
+    dropping a real unset variable when the state param is itself func-supplied.
+    ``**kwargs`` are regarded as set (they are provisional).
     """
     return (
-        (param.kind is not Parameter.VAR_KEYWORD)
+        (param.kind is Parameter.KEYWORD_ONLY)
         and (name not in agr.external.get(c, []))
         and (name not in agr.funcs.get(c, []))
     )
@@ -51,9 +58,9 @@ def _entries(agr: Aggregator) -> Iterator:
             str(c),
             type(c).__name__,
             f"{section.start} - {section.stop}",
-            ", ".join(_filter_vars(agr, c, _check_unset)[1:]),
+            ", ".join(_filter_vars(agr, c, _check_unset)),
             ", ".join(_filter_vars(agr, c, _check_set_externally)),
-            ", ".join(_filter_vars(agr, c, _check_missing)[1:]),
+            ", ".join(_filter_vars(agr, c, _check_missing)),
         )
 
 
@@ -137,10 +144,17 @@ def report(
     """
     match printer:
         case Printer.JUPYTER | Printer.JUPYTER.value:
-            display(Markdown(_markdown_report(agr)))
+            from IPython import get_ipython
+
+            if get_ipython() is None:
+                # No live notebook frontend: display(Markdown(...)) only prints the object repr, so fall back to the terminal renderer.
+                report(agr, Printer.TERMINAL)
+            else:
+                display(Markdown(_markdown_report(agr)))
         case Printer.TERMINAL | Printer.TERMINAL.value:
             print(description(agr))
-            display(_rich_table_format(agr))
+            # Render with rich directly: outside a notebook, display() prints the Table's repr instead of drawing it.
+            Console().print(_rich_table_format(agr))
         case Printer.RAW | Printer.RAW.value:
             print(_markdown_report(agr))
         case _:

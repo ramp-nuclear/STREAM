@@ -3,6 +3,7 @@ from typing import Callable, Literal
 import numpy as np
 from numba import njit
 
+from stream.errors import StreamError, hint_block
 from stream.physical_models.dimensionless import Re_mdot, flow_regimes
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
@@ -16,6 +17,14 @@ from stream.units import (
     Value,
 )
 from stream.utilities import lin_interp
+
+
+class ZeroFlowFrictionError(StreamError, ZeroDivisionError):
+    """A turbulent friction correlation was evaluated at exactly zero flow (Re=0).
+
+    Inherits ``ZeroDivisionError`` so existing ``except ZeroDivisionError`` callers
+    keep catching it, while ``except StreamError`` gains the domain context.
+    """
 
 
 @njit
@@ -264,7 +273,9 @@ def regime_dependent_friction(
     Dh = pipe.hydraulic_diameter
     A = pipe.area
     mu_bulk = fluid.viscosity(T_cool)
-    re_bulk = np.atleast_1d(Re_mdot(mdot=mdot, A=A, L=Dh, mu=mu_bulk))
+    re_raw = Re_mdot(mdot=mdot, A=A, L=Dh, mu=mu_bulk)
+    scalar = np.ndim(re_raw) == 0
+    re_bulk = np.atleast_1d(re_raw)
 
     f = np.empty(len(re_bulk))
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
@@ -284,7 +295,11 @@ def regime_dependent_friction(
     heat_wet_ratio = pipe.heated_perimeter / pipe.wet_perimeter
     mu_ratio = fluid.viscosity(T_wall) / mu_bulk
 
-    return f * (1.0 if k_H is None else k_H(heat_wet_ratio, mu_ratio))
+    result = f * (1.0 if k_H is None else k_H(heat_wet_ratio, mu_ratio))
+    # Scalar in, scalar out: atleast_1d forced shape-(1,), which trips NumPy's array-to-scalar deprecation downstream.
+    if scalar and result.size == 1:
+        return float(result[0])
+    return result
 
 
 GeneralDarcyFactor = Callable[[Celsius, Celsius, KgPerS, LiquidFuncs, EffectivePipe], Value]
@@ -306,7 +321,19 @@ def _re_friction(f: Callable[[Value, dict], Value], **kwargs) -> GeneralDarcyFac
     ) -> Value:
         mu = fluid.viscosity(T_cool)
         re = Re_mdot(mdot=mdot, A=pipe.area, L=pipe.hydraulic_diameter, mu=mu)
-        return f(re, **kwargs)
+        try:
+            return f(re, **kwargs)
+        except ZeroDivisionError as e:
+            raise ZeroFlowFrictionError(
+                f"{f.__name__} is undefined at Re={re} (mdot={mdot}): this friction "
+                f"correlation divides by the Reynolds number, which is 0 at zero flow. "
+                f"Use the regime_dependent friction (it returns 0 at mdot=0), or avoid "
+                f"evaluating at exactly zero flow."
+                + hint_block(
+                    "friction_factor('regime_dependent', ...) for a zero-flow-safe factor",
+                    "offset stagnation to a small signed mdot (e.g. +/-1e-3)",
+                )
+            ) from e
 
     _f.__name__ = f.__name__
     _f.__doc__ = f.__doc__ + (

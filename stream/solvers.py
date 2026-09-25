@@ -94,14 +94,24 @@ class TransientRuntimeError(StreamError, RuntimeError):
     """RuntimeError which occurred during a transient simulation,
     mostly because of solver convergence problems.
 
-    Data for debugging the error may be extracted by::
+    The failure state is attached for post-mortem: ``e.y`` (the reached
+    trajectory, or a single failing state), ``e.t`` (its times) and ``e.ydot``.
+    Bridge it into a readable state with
+    :meth:`~stream.aggregator.Aggregator.state_from`::
 
         try:
-            # error raising simulation
+            ...                                    # error-raising simulation
         except TransientRuntimeError as e:
-            t, y, ydot = e.t, e.y, e.ydot
-            results = Solution(t, y)
-            raise e
+            history = agr.state_from((e.t, e.y))   # 2-D trajectory -> StateTimeseries
+            last = history[max(history)]           # pick the failing row
+            raise
+
+    On an IC-stage (consistent-initial-condition) DAE failure there is no
+    trajectory, so ``e.y`` is instead the *single* failing state recovered from
+    IDA's error record (a note on the exception says so); bridge that 1-D vector
+    with ``agr.state_from(e.y)`` (equivalently ``agr.save(e.y)``) to get one
+    :class:`~stream.state.State`. ``agr.state_from((e.t, e.y))`` is the same as
+    ``agr.save(Solution(e.t, e.y))`` for the 2-D case.
 
     When the failure comes from the IDA (DAE) backend, ``flag`` holds the numeric
     SUNDIALS status (e.g. ``-4``) and ``symbol`` the ``IDA_*`` name (e.g.

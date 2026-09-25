@@ -17,6 +17,7 @@ ONB_left=onb_left, ONB_right=onb_right)
 
 """
 
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from inspect import signature
@@ -26,6 +27,7 @@ import numpy as np
 
 from stream.aggregator import Aggregator, Solution
 from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction, SaturationReachedError
+from stream.errors import StreamError
 from stream.physical_models.heat_transfer_coefficient.temperatures import (
     Bergles_Rohsenow_dT_ONB,
 )
@@ -222,29 +224,225 @@ def first_saturation_crossing(result, agg: Aggregator, *, times=None):
     return (None, crossings) if crossings else None
 
 
+# A raw solve vector/trajectory carries no convergence status, so a checker's verdict may reflect a mid-iteration excursion, not a solution.
+_ITERATE_SENTENCE = "input may be a non-converged iterate — verify against a converged solution"
+
+
+def _is_raw_iterate(result) -> bool:
+    """True when the checker input is a raw solve vector/trajectory (a bare
+    :class:`numpy.ndarray`), rather than a status-bearing :class:`Solution` or a
+    saved :class:`~stream.state.State`."""
+    return isinstance(result, np.ndarray)
+
+
+def _finalize_message(message: str, note: str, raw: bool) -> str:
+    """Prepend ``note`` and append the non-converged-iterate caveat (when ``raw``)."""
+    if note:
+        message = note + message
+    if raw:
+        message = f"{message} {_ITERATE_SENTENCE}"
+    return message
+
+
 def raise_on_saturation(result, agg: Aggregator, *, times=None, note: str = "") -> None:
     """Raise :class:`SaturationReachedError` if any channel's bulk coolant is at or
     past saturation in ``result`` (the worst-offending channel, earliest time for a
     trajectory). No-op otherwise. Use after a steady solve, or on a caught
     transient/steady failure's state, to attribute it in domain terms; ``note`` is
-    prepended to the message (e.g. ``"no converged steady solution — "``)."""
+    prepended to the message (e.g. ``"no converged steady solution — "``).
+
+    When ``result`` is a raw solve vector/trajectory (a bare array, not a
+    :class:`~stream.aggregator.Solution` or :class:`~stream.state.State`), the
+    message gains one caveat that the input may be a non-converged iterate."""
     found = first_saturation_crossing(result, agg, times=times)
     if found is None:
         return
     _t, crossings = found
     worst = max(crossings, key=lambda c: max(np.subtract(c.T_bulk, c.Tsat)))
     err = SaturationReachedError(worst.channel, worst.cells, worst.T_bulk, worst.Tsat)
-    if note:
-        err.message = note + err.message
-        err.args = (err.message, *err.args[1:])
+    message = _finalize_message(err.message, note, _is_raw_iterate(result))
+    if message != err.message:
+        err.message = message
+        err.args = (message, *err.args[1:])
     raise err
+
+
+@dataclass(frozen=True)
+class DomainViolation:
+    """One out-of-domain cell of a Calculation's fluid state.
+
+    Attributes
+    ----------
+    calc_name: str
+        Name of the Calculation whose state is out of domain.
+    variable: str
+        The offending state variable (e.g. ``'T_cool'`` or ``'static_pressure'``).
+    cell: int | None
+        Cell index within the variable, or ``None`` for a scalar variable.
+    value: float
+        The offending value (°C for temperatures, Pa for pressure).
+    bound: tuple[float, float] | float
+        The violated bound: the fluid validity ``(T_min, T_max)`` range for a
+        temperature, or the scalar ``0.0`` floor for a static pressure.
+    t: float | None
+        Time of the violation for a trajectory; ``None`` for a single State.
+    """
+
+    calc_name: str
+    variable: str
+    cell: int | None
+    value: float
+    bound: tuple[float, float] | float
+    t: float | None
+
+
+class DomainValidityError(StreamError, RuntimeError):
+    """A fluid state lies outside its declared validity domain.
+
+    Raised post-hoc by :func:`raise_on_domain`, never on a solve path.
+    ``StreamError``-family, so ``except StreamError`` catches it."""
+
+
+def _pressure_variable(cs) -> str | None:
+    """The state variable to check for a non-negative absolute pressure: the
+    canonical static pressure if present, else the first ``*pressure*`` variable
+    that is not the signed pressure-*drop* (which is legitimately negative)."""
+    if ChannelVar.static_pressure in cs:
+        return ChannelVar.static_pressure
+    for var in cs:
+        if "pressure" in str(var).lower() and str(var) != str(ChannelVar.pressure_drop):
+            return var
+    return None
+
+
+def _domain_violations_in_state(state, agg: Aggregator, t) -> list[DomainViolation]:
+    """Out-of-domain cells in one State: for every node whose ``fluid`` declares a
+    ``validity`` range, its ``T*`` variables against that range and its static
+    pressure against ``>= 0``. Non-finite values count as out of domain."""
+    violations: list[DomainViolation] = []
+    for node in agg.graph:
+        validity = getattr(getattr(node, "fluid", None), "validity", None)
+        if validity is None:
+            continue
+        cs = state.get(node.name)
+        if cs is None:
+            continue
+        lo, hi = float(validity[0]), float(validity[1])
+        for var, value in cs.items():
+            if not str(var).startswith("T"):
+                continue
+            arr = np.atleast_1d(np.asarray(value, dtype=float))
+            scalar = arr.size == 1
+            for i, v in enumerate(arr):
+                if not np.isfinite(v) or v < lo or v > hi:
+                    violations.append(
+                        DomainViolation(node.name, str(var), None if scalar else i, float(v), (lo, hi), t)
+                    )
+        p_var = _pressure_variable(cs)
+        if p_var is not None:
+            arr = np.atleast_1d(np.asarray(cs[p_var], dtype=float))
+            scalar = arr.size == 1
+            for i, v in enumerate(arr):
+                if not np.isfinite(v) or v < 0.0:
+                    violations.append(
+                        DomainViolation(node.name, str(p_var), None if scalar else i, float(v), 0.0, t)
+                    )
+    return violations
+
+
+def domain_report(result, agg: Aggregator, *, times=None) -> list[DomainViolation]:
+    """Fluid-domain violations in ``result``. Accepts the same inputs as the
+    saturation checkers (a :class:`~stream.state.State`,
+    :class:`~stream.state.StateTimeseries`, raw solve vector/trajectory, or a
+    :class:`~stream.aggregator.Solution`).
+
+    Only nodes exposing a ``fluid`` whose ``validity`` range is declared are
+    scanned; a node's variables whose names start with ``T`` are checked against
+    that range, and its static pressure against ``>= 0``. A converged-but-invalid
+    state and a failed iterate are both caught. For a trajectory, violations are
+    reported per time, earliest first."""
+    data = _as_states(result, agg, times)
+    if _is_timeseries(data):
+        out: list[DomainViolation] = []
+        for t in sorted(data):
+            out.extend(_domain_violations_in_state(data[t], agg, float(t)))
+        return out
+    return _domain_violations_in_state(data, agg, None)
+
+
+def _domain_severity(v: DomainViolation) -> float:
+    """How far outside its bound a violation is (worst wins in ``raise_on_domain``)."""
+    if not np.isfinite(v.value):
+        return np.inf
+    if isinstance(v.bound, tuple):
+        lo, hi = v.bound
+        return max(lo - v.value, v.value - hi)
+    return -v.value  # pressure floor at 0: the more negative, the worse
+
+
+def _domain_message(v: DomainViolation) -> str:
+    where = f"at cell {v.cell} " if v.cell is not None else ""
+    if isinstance(v.bound, tuple):
+        lo, hi = v.bound
+        return (
+            f"{v.variable} = {v.value:g} °C {where}of {v.calc_name!r} is outside the "
+            f"fluid validity range [{lo:g}, {hi:g}] °C"
+        )
+    return (
+        f"{v.variable} = {v.value:g} Pa {where}of {v.calc_name!r} is negative "
+        "(a static/absolute pressure must be >= 0)"
+    )
+
+
+def raise_on_domain(result, agg: Aggregator, *, times=None, note: str = "") -> None:
+    """Raise :class:`DomainValidityError` if any fluid state in ``result`` is outside
+    its declared validity domain (the worst excursion, earliest time for a
+    trajectory). No-op otherwise. Mirrors :func:`raise_on_saturation`: use it after
+    a steady solve or on a caught failure's state to attribute it in domain terms;
+    ``note`` is prepended, and a raw-array input gains the non-converged-iterate
+    caveat."""
+    violations = domain_report(result, agg, times=times)
+    if not violations:
+        return
+    times_present = [v.t for v in violations if v.t is not None]
+    if times_present:
+        earliest = min(times_present)
+        candidates = [v for v in violations if v.t == earliest]
+    else:
+        candidates = violations
+    worst = max(candidates, key=_domain_severity)
+    message = _finalize_message(_domain_message(worst), note, _is_raw_iterate(result))
+    raise DomainValidityError(message)
+
+
+# Below any physical convective coefficient: only a numerically-zero wall coupling (a stagnant / natural-convection cell) trips the q/h blow-up guard.
+_H_STAGNANT = 1e-9
+
+
+def _wall_temp_limit(tbulk: Celsius, q: WPerM2, h, where: str) -> Celsius:
+    r"""``tbulk + q/h``, but NaN — with one warning — at cells where ``h`` is
+    numerically zero. A stagnant / natural-convection cell has no defined wall-
+    temperature limit; returning ``q/h``'s ``inf`` there gives a nonsense number
+    with no hint of the cause."""
+    h_arr = np.asarray(h, dtype=float)
+    stagnant = np.abs(h_arr) <= _H_STAGNANT
+    if not stagnant.any():
+        return tbulk + q / h
+    warnings.warn(
+        f"wall-temperature limit undefined at cell(s) {np.flatnonzero(stagnant).tolist()} "
+        f"({where}): h≈0 — a stagnant / natural-convection state; returning NaN there "
+        "instead of a q/h blow-up.",
+        stacklevel=2,
+    )
+    tw = tbulk + q / np.where(stagnant, 1.0, h_arr)
+    return np.where(stagnant, np.nan, tw)
 
 
 def _tw(state: CalcState, direction: Direction, tbulk: Celsius, inhomogeneity_factor) -> Celsius:
     if ChannelVar.get("heatflux", direction) in state:
         q = state[ChannelVar.get("heatflux", direction)] * inhomogeneity_factor
         h = state[ChannelVar.get("h", direction)]
-        return tbulk + q / h
+        return _wall_temp_limit(tbulk, q, h, f"{direction} wall")
     return -np.inf
 
 
@@ -533,7 +731,7 @@ def Bergles_Rohsenow_T_ONB(
     tbulk = state[ChannelVar.tbulk]
     h = state[ChannelVar.get("h", direction)]
     q = state[ChannelVar.get("heatflux", direction)] * inhomogeneity_factor
-    twall = tbulk + (q / h)
+    twall = _wall_temp_limit(tbulk, q, h, f"{direction} wall")
     tsat = light_water.sat_temperature(pressure)
     br = factor(Bergles_Rohsenow_dT_ONB, by=onb_factor)
     return twall - (tsat + br(pressure, q))

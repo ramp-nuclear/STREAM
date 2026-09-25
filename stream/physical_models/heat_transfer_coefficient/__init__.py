@@ -29,6 +29,7 @@ from typing import Protocol
 
 import numpy as np
 
+from stream.errors import StreamError, hint_block
 from stream.physical_models.dimensionless import Re_mdot
 from stream.physical_models.heat_transfer_coefficient.laminar import (
     Marco_Han_Nusselt,
@@ -75,7 +76,12 @@ __all__ = [
     "wall_heat_transfer_coeff",
     "wall_temperature",
     "SinglePhaseLiquidHTCExArgs",
+    "WallTemperatureShapeError",
 ]
+
+
+class WallTemperatureShapeError(StreamError, ValueError):
+    """T_wall and the coolant state disagree on cell count in wall_heat_transfer_coeff."""
 
 
 class SinglePhaseLiquidHTC(Protocol):
@@ -205,6 +211,15 @@ def wall_heat_transfer_coeff(
     h: WPerM2K
         heat transfer coefficient of clad-coolant
     """
+    # Validate early: a length mismatch would otherwise surface as a bare IndexError from T_wall[boiling] deep in the boiling branch.
+    if np.ndim(T_wall) and np.ndim(T_cool) and len(T_wall) != len(T_cool):
+        raise WallTemperatureShapeError(
+            f"T_wall has length {len(T_wall)} but T_cool has length {len(T_cool)}: "
+            f"wall_heat_transfer_coeff computes a per-cell heat transfer coefficient, so "
+            f"T_wall must be scalar (broadcast) or match T_cool cell-for-cell. Align the "
+            f"wall-temperature array to the coolant state (one value per cell)."
+            + hint_block("pass a scalar T_wall, or an array the same length as T_cool")
+        )
     T_film = film(T_cool=T_cool, T_wall=T_wall)
     cool = coolant_funcs.to_properties(T_film, pressure)
     T_sat = np.atleast_1d(cool.sat_temperature)
@@ -233,5 +248,7 @@ def wall_heat_transfer_coeff(
         q_scb_wall = q_scb(T_wall[boiling], sat_cool, re=re)
         q_scb_inc = q_scb(T_wall_inc[boiling], sat_cool, re=re)
 
+        # Copy before the in-place *=: atleast_1d returns the same object for 1-D input, so an aliased just(arr) strategy array would be corrupted across calls.
+        h0 = h0.copy()
         h0[boiling] *= partial_scb(q_spl[boiling], q_scb_wall, q_scb_inc)
     return h0

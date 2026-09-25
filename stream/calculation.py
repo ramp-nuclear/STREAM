@@ -70,7 +70,13 @@ class Calculation(Protocol):
         ----------
         variables: Sequence[float]
             the variables required for the calculation,
-            which the calculation handles itself.
+            which the calculation handles itself. This is a **read-only view**
+            into the solver's state vector: read from it, never write to it.
+            Mutating it (in place, or the arrays a keyword argument unpacks to) is
+            undefined behavior — it can corrupt other calculations' slices and the
+            solver's iterate. Build a new array if you need to transform it. (The
+            contract is documented, not enforced: the view is deliberately left
+            writeable to avoid the per-evaluation cost of locking it.)
 
 
         Requested external variables can be passed via keyword arguments.

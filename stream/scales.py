@@ -11,7 +11,7 @@ import logging
 import numpy as np
 
 from stream.units import Array1D
-from stream.utilities import offset
+from stream.utilities import STREAM_DEBUG, offset
 
 __all__ = ["DEFAULT_SCALES", "scale_vector"]
 
@@ -82,5 +82,5 @@ def scale_vector(
                     if vname not in registry:
                         unregistered.add(vname)
     for name in sorted(unregistered):
-        _logger.info("no nominal scale registered for %r; defaulting to 1.0", name)
+        _logger.log(STREAM_DEBUG, "no nominal scale registered for %r; defaulting to 1.0", name)
     return typ

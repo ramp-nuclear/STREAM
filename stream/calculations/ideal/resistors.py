@@ -275,7 +275,11 @@ class Gravity(LumpedComponent):
             Coolant Functional properties
         disposition: Meter
             :math:`\Delta h`, height difference upon which the pressure
-            difference is incurred
+            difference is incurred. **Positive is downward** (the STREAM sign
+            convention, shared with :func:`~stream.physical_models.pressure_drop.pressure_diff`):
+            a positive ``disposition`` means the outlet sits *below* the inlet, so
+            :meth:`dp_out` is a positive hydrostatic pressure gain from inlet to
+            outlet. For a leg that climbs, pass a negative ``disposition``.
         gravity: MPerS2
             Gravitational acceleration constant
         """
@@ -285,7 +289,12 @@ class Gravity(LumpedComponent):
         self.h = disposition
 
     def dp_out(self, *, Tin: Celsius, **_) -> Pascal:
-        r"""Returns: :math:`\rho(T_{in})g\Delta h`"""
+        r"""Returns: :math:`\rho(T_{in})g\Delta h`.
+
+        Positive ``disposition`` (:math:`\Delta h`) is downward, so a descending
+        leg returns a positive (pressure-gaining) ``dp_out``; a rising leg
+        (negative ``disposition``) returns a negative one.
+        """
         return gravity_pressure(rho=self._rho(Tin), dh=self.h, g=self.g)
 
 

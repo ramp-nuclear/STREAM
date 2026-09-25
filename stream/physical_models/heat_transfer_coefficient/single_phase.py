@@ -121,7 +121,8 @@ def regime_dependent_h_spl(
         )
         | kwargs
     )
-    h = np.empty(len(T_cool))
+    # nan (not empty): a NaN re leaving every regime mask False propagates NaN detectably, not uninitialised memory.
+    h = np.full(len(T_cool), np.nan)
 
     h_turb = turbulent(**inp)
     h[turb] = h_turb[turb]
@@ -139,11 +140,9 @@ def regime_dependent_h_spl(
         Dh,
     )
     re_film = Re_mdot(mdot, A, Dh, mu)
-    # C1 forced<->natural blend over a symmetric factor-2 band in log(|Gr|/Re^2):
-    # abs(gr) so cooled walls (gr<0) transition too; the re_film floor removes the
-    # 0/0 -> nan mis-selection at exact stagnation (gr=0 -> phi=0 -> forced;
-    # gr!=0, re=0 -> phi->inf -> natural). C1, DESIGN §6.1.
-    phi = np.abs(gr) / np.maximum(re_film, 1e-30) ** 2
+    # abs(gr) so cooled walls (gr<0) transition too; the 1e-30 re_film floor avoids 0/0 -> nan at stagnation.
+    with np.errstate(invalid="ignore", divide="ignore"):  # inf/inf in a discarded branch
+        phi = np.abs(gr) / np.maximum(re_film, 1e-30) ** 2
     with np.errstate(divide="ignore"):  # log10(0) -> -inf -> weight 0
         w_nat = smooth_step(np.log10(phi), np.log10(nat_band[0]), np.log10(nat_band[1]))
     if np.any(w_nat > 0.0):
@@ -263,6 +262,14 @@ def spl_htc(
           - :func:`~.Elenbaas_h_spl`. Requires the ``Lh = heated_length`` parameter.
         * - **maximal**
           - Computes the natural, laminar and turbulent HTCs and selects the highest at each cell.
+
+    .. note::
+        ``'natural'`` (and ``'maximal'``, which includes it) use the Elenbaas
+        correlation, whose ``h -> 0`` as ``Ra -> 0`` (wall superheat -> 0). There is
+        **no conduction floor by design** — at a near-stagnation, near-isothermal
+        state the natural-convection coupling collapses to ~0, so a channel using
+        this HTC decouples from its wall there. This is correct physics, not a bug;
+        if a non-zero floor is needed, select a different HTC or add one explicitly.
 
 
     Parameters

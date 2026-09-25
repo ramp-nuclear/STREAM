@@ -140,7 +140,8 @@ def regime_dependent_q_scb(
     q_SCB: WPerM2
         Subcooled boiling heat flux
     """
-    q = np.empty(len(T_wall))
+    # nan (not empty): a NaN re that leaves every regime mask False propagates NaN detectably, not uninitialised memory.
+    q = np.full(len(T_wall), np.nan)
     T_sat = coolant.sat_temperature
 
     lam, inter, turb = flow_regimes(re, re_bounds)

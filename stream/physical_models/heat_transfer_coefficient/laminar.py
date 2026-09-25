@@ -378,10 +378,9 @@ def developing_laminar_h_spl(
     """
     re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
     pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
-    x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
-    # Use the continuous table interpolation rather than the analytic three-piece fit,
-    # which has value jumps at x*=2e-4 and x*=1e-3 that kink the residual during a
-    # flow coastdown as each cell's x* sweeps through them.
+    with np.errstate(invalid="ignore", divide="ignore"):  # re->0 branch discarded by the interp
+        x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
+    # Continuous table interpolation, not the analytic three-piece fit whose value jumps at x*=2e-4, 1e-3 kink the residual during a flow coastdown.
     nudev = _nusselt_coefficient_interp_developing(x_star)
     nusselt = two_sided_heating_nusselt(aspect_ratio, nudev)
     return nusselt * coolant.conductivity / Dh
