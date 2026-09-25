@@ -46,11 +46,12 @@ def turbulent_friction(re: Value, epsilon: Value = 0) -> Value:
     >>> turbulent_friction(1e6)
     0.011649393290640643
     >>> turbulent_friction(5.0)
-    0.0
+    12.8
     """
     inlog = np.log10(epsilon + 21.25 / re**0.9)
     outlog = np.log10(epsilon / 3.7 + (2.51 / re) * (1.14 - 2 * inlog))
-    return np.nan_to_num((-2 * outlog) ** -2)
+    # Below Re~7 the Zigrang-Sylvester argument goes negative (nan_to_num zeroes it), so floor with the laminar 64/Re.
+    return np.maximum(np.nan_to_num((-2 * outlog) ** -2), 64.0 / re)
 
 
 @njit

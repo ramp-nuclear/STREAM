@@ -533,7 +533,10 @@ class ChannelAndContacts(Channel):
         -------
 
         """
-        return self.centers - self.bounds[0] if mdot >= 0 else self.bounds[-1] - self.centers
+        # dz is |diff|, so descending z_boundaries still yield non-negative lengths.
+        if mdot >= 0:
+            return np.cumsum(self.dz) - self.dz / 2
+        return (np.cumsum(self.dz[::-1]) - self.dz[::-1] / 2)[::-1]
 
     def h_wall(self, T_cool: Celsius, T_wall: Celsius, mdot: KgPerS, pressure: Pascal, **_) -> WPerM2K | None:
         if T_wall is None:

@@ -30,7 +30,8 @@ def _Elenbaas(
     Lh: Meter,
     S: Meter,
 ) -> Value:
-    ra = Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)
+    # |Ra|: buoyancy magnitude is symmetric (a colder wall drives NC too). The 1e-30 floor keeps ra>0 through Twall==T (Ra=0 would divide by zero), giving the conduction-limit Nu->0.
+    ra = np.abs(Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)) + 1e-30
     return (1 / 24) * ra * (S / Lh) * (1 - np.exp(-35 * Lh / (ra * S))) ** 0.75
 
 

@@ -133,7 +133,8 @@ def _viscosity(T: Celsius) -> PaS:
     >>> _viscosity(100.)
     0.0003301433604774831
     """
-    TF = to_Fahrenheit(T)
+    # Clamp to the melting point (3.8 C): below it the C/TF + D/TF^2 terms hit a pole at TF=0 and the fit goes negative.
+    TF = to_Fahrenheit(np.maximum(T, 3.8))
     A = -1.111606e-4
     B = 9.46e-8
     C = 0.0873655375

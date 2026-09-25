@@ -180,3 +180,67 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         assert np.allclose(h, turb)
     else:
         assert np.allclose(h, lin_interp(*re_bounds, lam, turb, md))
+
+
+def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
+    """The Elenbaas natural-convection HTC must stay finite when the wall is at or
+    below the coolant temperature (negative/zero Rayleigh), not return NaN."""
+    from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
+    from stream.substances import light_water
+
+    cool = light_water.to_properties(np.array([50.0, 50.0]))
+    kw = dict(coolant=cool, depth=0.003, T_cool=np.array([50.0, 50.0]), Lh=0.6)
+
+    cooled = Elenbaas_h_spl(T_wall=np.array([60.0, 40.0]), **kw)  # +10 K and -10 K
+    assert np.all(np.isfinite(cooled)) and np.all(cooled >= 0)
+    # Buoyancy magnitude is symmetric, so the -10 K cell matches the +10 K one.
+    hot = Elenbaas_h_spl(T_wall=np.array([60.0, 60.0]), **kw)
+    assert np.allclose(cooled, hot)
+    # Isothermal wall -> conduction limit, still finite (not 0/0 NaN).
+    assert np.all(np.isfinite(Elenbaas_h_spl(T_wall=np.array([50.0, 50.0]), **kw)))
+
+
+def test_maximal_h_spl_does_not_propagate_nan_from_cooled_wall():
+    """maximal_h_spl takes np.maximum over correlations including Elenbaas; a cooled
+    cell must not poison it with NaN."""
+    from stream.substances import light_water
+
+    cool = light_water.to_properties(np.array([50.0, 50.0]))
+    h = maximal_h_spl()(
+        coolant=cool,
+        mdot=0.2,
+        Dh=0.005,
+        A=0.001,
+        T_cool=np.array([50.0, 50.0]),
+        T_wall=np.array([60.0, 40.0]),
+        coolant_funcs=light_water,
+        depth=0.003,
+        Lh=0.6,
+        develop_length=np.array([0.1, 0.2]),
+        aspect_ratio=0.1,
+    )
+    assert np.all(np.isfinite(h))
+
+
+def test_developing_laminar_h_is_continuous_across_the_breakpoint():
+    """developing_laminar_h_spl must be continuous in the flow state; the old three-
+    piece Shah Nu fit jumped ~7.6% at x*=1e-3, kinking F(y,t) during a coastdown."""
+    from stream.physical_models.dimensionless import Pr, Re_mdot
+    from stream.physical_models.heat_transfer_coefficient.laminar import developing_laminar_h_spl
+    from stream.substances import light_water
+
+    coolant = light_water.to_properties(np.array([50.0]))
+    mdot, A, Dh, aspect_ratio = 0.02, 1e-3, 5e-3, 0.1
+    re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
+    pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
+    factor = 6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257)
+
+    def h_at(x_star):
+        develop_length = x_star * Dh * re * pr * factor
+        return developing_laminar_h_spl(
+            coolant=coolant, mdot=mdot, A=A, Dh=Dh,
+            develop_length=develop_length, aspect_ratio=aspect_ratio,
+        )
+
+    assert np.allclose(h_at(1e-3 - 1e-6), h_at(1e-3 + 1e-6), rtol=1e-2)
+    assert np.allclose(h_at(2e-4 - 1e-7), h_at(2e-4 + 1e-7), rtol=1e-2)

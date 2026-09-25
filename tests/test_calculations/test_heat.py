@@ -470,3 +470,19 @@ def test_annulus_given_heat_production_and_wall_temperatures(temps=(45, 75), edg
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, np.mean(temps))))
     T_num = steady["Fuel"]["T"][0]
     assert np.allclose(T_num, T_exp)
+
+
+def test_fuel_wired_wall_without_conductance_is_dirichlet_not_adiabatic():
+    """A wall whose temperature is wired but whose conductance is not must couple as a
+    fixed-temperature (h=inf) boundary, not silently fall back to h=1.0 which throttles
+    the coupling to near-adiabatic."""
+    z = np.arange(2)
+    x = np.arange(2)
+    power_shape = np.zeros((1, 1))
+    fuel = Fuel(z, x, mock_solid, y_length=1, power_shape=power_shape)
+    inp = np.array((100.0, 0.0, 0.0))  # meat, T_wall_left, T_wall_right
+    common = dict(power=0, T_left=np.array([300.0]), T_right=np.array([50.0]), h_right=np.array([np.inf]))
+
+    missing_h = fuel.calculate(inp, **common)  # h_left omitted -> None
+    explicit_inf = fuel.calculate(inp, h_left=np.array([np.inf]), **common)
+    assert np.allclose(missing_h, explicit_inf)

@@ -73,7 +73,8 @@ def _specific_heat(T: Celsius) -> JPerKgK:
     >>> _specific_heat(50.)
     4181.4264285644285
     """
-    T = np.abs(T)
+    # Clamp below the ~366 C pole of this saturated-water fit, beyond which the radicand goes negative and sqrt returns NaN.
+    T = np.minimum(np.abs(T), 350.0)
     A = 17.48908904
     B = -1.67507e-3
     C = -0.03189591

@@ -259,3 +259,14 @@ def test_bend_factor_raises_error_when_angle_out_of_range(angle, relative_curvat
 def test_bend_factor_raises_error_when_relative_curvature_out_of_range(angle, relative_curvature, re):
     with pytest.raises(ValueError):
         bend_factor(angle=angle, relative_curvature=relative_curvature, re=re)
+
+
+def test_turbulent_friction_is_floored_by_laminar_at_low_re():
+    """Standalone turbulent_friction must not vanish (nan_to_num -> 0) below Re~7; the
+    laminar 64/Re floors it so it stays positive and monotone at low Re."""
+    assert np.isclose(turbulent_friction(5.0), 64.0 / 5.0)
+    lows = [turbulent_friction(re) for re in (7.0, 15.0, 30.0, 60.0)]
+    assert all(f > 0 for f in lows)
+    assert all(a > b for a, b in zip(lows, lows[1:]))  # monotonically decreasing
+    # High-Re turbulent behaviour is unchanged (floor inactive there).
+    assert np.isclose(turbulent_friction(1e4, 0.0), 0.03087, rtol=1e-3)

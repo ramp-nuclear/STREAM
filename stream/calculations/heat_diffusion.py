@@ -615,6 +615,18 @@ def _fill(val, shape):
 
 
 wall_or_default = dataclass_map(Walls, if_is)
+
+
+def _conductance_or_dirichlet(h, T):
+    """Conductance for a wall: use it if given; a wall whose *temperature* is wired but
+    whose conductance is not is a fixed-temperature (Dirichlet, h=inf) boundary, not the
+    near-adiabatic h=1.0 the plain None default would silently impose."""
+    if h is not None:
+        return h
+    return np.inf if T is not None else 1.0
+
+
+wall_conductance_or_default = dataclass_map(Walls, _conductance_or_dirichlet)
 in_par_walls = dataclass_map(Walls, in_parallel)
 fill_solid = dataclass_map(Solid, _fill)
 
@@ -807,7 +819,10 @@ class Fuel(Calculation):
         power_mat[self.meat == 1] = power * self.power_shape
 
         T_last_cell = Walls(left=T[:, 0], right=T[:, -1], top=T[0, :], bottom=T[-1, :])
-        h_extraneous = wall_or_default(Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom))
+        h_extraneous = wall_conductance_or_default(
+            Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom),
+            Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom),
+        )
         T_extraneous = wall_or_default(Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom), T_last_cell)
 
         T_walls = self.walls_eq(T_extraneous, T_last_cell, h_extraneous, self.h_to_wall)
