@@ -11,6 +11,7 @@ from networkx.utils import graphs_equal
 
 from stream.aggregator import (
     CONSTRAINT,
+    VARS,
     Aggregator,
     CalculationGraph,
     NonUniqueCalculationNameError,
@@ -23,6 +24,7 @@ from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
 from stream.units import Place
+from stream.utilities import mutually_exclusive
 
 from .conftest import are_close, medium_floats
 from .test_calculation import Addition, add, divide, multiply
@@ -139,18 +141,77 @@ def test_ida_root_functions():
 def test_agr_input_connect():
     g_a = DiGraph([(1, 2, vars_("hi"))])
     g_b = DiGraph([(1, 2, vars_("hello"))])
-    # noinspection PyTypeChecker
-    a = CalculationGraph(g_a, {1: 2, 2: 3})
-    # noinspection PyTypeChecker
-    b = CalculationGraph(g_b, {1: 3})
+    # funcs is dict[Calculation, dict[Name, FunctionOfTime]]; inner values are dicts.
+    a = CalculationGraph(g_a, {1: {"a": 2}, 2: {"a": 3}})
+    b = CalculationGraph(g_b, {1: {"a": 3}})
 
     c = a + b
-    assert list(c.graph.edges(data=True)) == list(b.graph.edges(data=True))
-    assert c.funcs == {1: 3, 2: 3}
+    # the shared (1, 2) edge now unions a's and b's routings instead of dropping a's
+    assert list(c.graph.edges(data=True)) == [(1, 2, vars_("hi", "hello"))]
+    assert c.funcs == {1: {"a": 3}, 2: {"a": 3}}
     # noinspection PyTypeChecker
     d = CalculationGraph.connect(a, b, (1, 2, ("welcome",)))
-    assert list(d.graph.edges(data=True)) == [(1, 2, vars_("hello", "welcome"))]
-    assert d.funcs == {1: 3, 2: 3}
+    assert list(d.graph.edges(data=True)) == [(1, 2, vars_("hi", "hello", "welcome"))]
+    assert d.funcs == {1: {"a": 3}, 2: {"a": 3}}
+
+
+def _decay_aggregator():
+    decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables={"v": 0})("A")
+    g = DiGraph()
+    g.add_node(decay)
+    return Aggregator(g)
+
+
+def test_load_reconstructs_a_timeseries_with_integer_time_keys():
+    """K4: load() detected a timeseries via isinstance(key, float), which is False
+    for the np.int64 keys that saving an integer-time solve produces, so a genuine
+    timeseries was misrouted to _vector_from_state and raised a cryptic KeyError."""
+    agr = _decay_aggregator()
+    ts = agr.save(agr.solve(np.array([1.0]), time=[0, 1, 2], eq_type="ODE"))
+    assert all(not isinstance(k, str) for k in ts)  # numeric (np.int64) time keys
+
+    sol = agr.load(ts)  # must reconstruct a Solution, not raise KeyError
+    assert np.array_equal(sol.time, [0, 1, 2])
+    assert sol.data.shape[0] == 3
+
+
+def test_to_dataframe_detects_integer_keyed_timeseries():
+    """K4: the duplicate float-key check in state.to_dataframe misparsed an
+    int-keyed timeseries as a single State (no 'time' column)."""
+    from stream.state import to_dataframe
+
+    agr = _decay_aggregator()
+    ts = agr.save(agr.solve(np.array([1.0]), time=[0, 1, 2], eq_type="ODE"))
+    assert "time" in to_dataframe(ts).columns
+
+
+def test_connect_deep_merges_funcs_for_a_shared_calculation():
+    """K2: connecting two graphs that both carry funcs for the SAME calculation
+    must union the inner name bindings; the shallow af | bf let the second inner
+    dict wholesale replace the first, silently dropping non-clashing bindings."""
+    a = CalculationGraph(DiGraph([(1, 2, vars_("x"))]), {1: {"pressure": lambda t: t, "Tin": 300.0}})
+    b = CalculationGraph(DiGraph([(1, 2, vars_("y"))]), {1: {"Tin": 300.0, "mdot": 1.0}})
+
+    c = a + b
+    assert set(c.funcs[1]) == {"pressure", "Tin", "mdot"}
+
+
+def test_connect_merges_edge_variables_when_both_graphs_share_an_edge():
+    """K3: compose() lets b's edge data replace a's, dropping a's variable
+    routings for a shared edge. connect must union (deduped) both edges' vars."""
+    g1 = CalculationGraph(DiGraph([(1, 2, vars_("T_left", "h_left", "T_right", "h_right"))]))
+    g2 = CalculationGraph(DiGraph([(1, 2, vars_("T_left"))]))
+    expected = {"T_left", "h_left", "T_right", "h_right"}
+    assert set((g1 + g2).graph.edges[1, 2][VARS]) == expected
+    assert set((g2 + g1).graph.edges[1, 2][VARS]) == expected
+
+
+def test_connect_dedups_repeated_explicit_edge_variables():
+    """K3: the explicit-edges merge path must also dedup a name it already routes."""
+    g1 = CalculationGraph(DiGraph([(1, 2, vars_("T_left", "h_left"))]))
+    empty = CalculationGraph(DiGraph())
+    m = CalculationGraph.connect(g1, empty, (1, 2, ("T_left",)))
+    assert m.graph.edges[1, 2][VARS] == ("T_left", "h_left")
 
 
 def test_ida_continuous_mode():
@@ -255,6 +316,29 @@ def test_create_constraints_for_a_known_example():
     assert np.all(
         create_constraints(agr, negative=["v_neg"], positive=["v_pos"])
         == np.array([c.value for c in [CONSTRAINT.negative, CONSTRAINT.none, CONSTRAINT.positive]])
+    )
+
+
+def test_mutually_exclusive_handles_unequal_length_categories():
+    """mutually_exclusive must accept differently-sized categories, not only the
+    accidental equal-length case that flattens into a 2-D array."""
+    assert mutually_exclusive(["mdot_a", "mdot_b"], ["h"])
+    assert not mutually_exclusive(["mdot_a", "mdot_b"], ["mdot_b"])
+
+
+def test_create_constraints_with_unequal_category_sizes():
+    """The documented API — categories of different sizes — must not crash the
+    mutual-exclusivity assertion."""
+    calc = Calculation_factory(
+        lambda v, **_: v - np.zeros(3),
+        [False] * 3,
+        dict(mdot_a=0, mdot_b=1, h=2),
+    )()
+    agr = Aggregator.from_decoupled(calc)
+    result = create_constraints(agr, non_negative=["mdot_a", "mdot_b"], positive=["h"])
+    assert np.all(
+        result
+        == np.array([c.value for c in [CONSTRAINT.non_negative, CONSTRAINT.non_negative, CONSTRAINT.positive]])
     )
 
 

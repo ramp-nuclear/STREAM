@@ -49,13 +49,58 @@ def test_unpack_correctly_excludes_parameters(lst):
     assert more_output == input_dict
 
 
-def test_unpack_exclusion_errors_on_missing_variable_name():
-    input_dict = dict(enumerate(range(1, 6)))
-    kwargs = dict(some_input=input_dict, more_input=input_dict)
+def test_unpack_excluded_but_absent_variable_falls_back_to_default():
+    """An excluded variable that was never routed must fall back to the wrapped
+    function's own default rather than crashing the decorator."""
 
-    missing = "missing_variable_name"
-    with pytest.raises(KeyError, match=missing):
-        unpacked(_give_me_values, exclude=[missing])(**kwargs)
+    def f(*, some_input, maybe=None):
+        return some_input, maybe
+
+    output, maybe = unpacked(f, exclude=["maybe"])(some_input={0: 1.0})
+    assert np.array_equal(np.atleast_1d(output), [1.0])
+    assert maybe is None
+
+
+def test_feedbackless_point_kinetics_calculate_without_T():
+    """PointKinetics.calculate is @unpacked(exclude=("T",)); with default
+    temp_worth/ref_temp (no thermal feedback) T is legitimately absent and must
+    fall back to its None default instead of the decorator crashing on the pop."""
+    from stream.calculations.point_kinetics import PointKinetics
+
+    pk = PointKinetics(
+        generation_time=1e-4,
+        delayed_neutron_fractions=np.array([0.0065]),
+        delayed_groups_decay_rates=np.array([0.08]),
+    )
+    out = pk.calculate(np.array([1.0, 1.0]), t=0.0)  # T absent -> default None
+    assert out.shape == (2,)
+    assert np.all(np.isfinite(out))
+
+
+def test_unpack_does_not_mislabel_a_user_keyerror():
+    """A KeyError raised inside the wrapped body (e.g. a correlation dict miss)
+    must propagate as itself, not be rewritten as a decorator misconfiguration."""
+
+    @unpacked
+    def calc(self=None, **kw):
+        return {"nucleate": 1}["subcooled"]
+
+    with pytest.raises(KeyError) as excinfo:
+        calc(x={0: 1.0})
+    assert "subcooled" in str(excinfo.value)
+    assert "not recieved" not in str(excinfo.value)  # the old misdirecting message
+
+
+def test_unpack_preserves_exception_type_when_args_are_empty():
+    """An exception constructed with no args (e.g. raise RuntimeError()) must
+    surface as its own type, not an IndexError from e.args[0] in the decorator."""
+
+    @unpacked
+    def calc(self=None, **kw):
+        raise RuntimeError()
+
+    with pytest.raises(RuntimeError):
+        calc(x={0: 1.0})
 
 
 dictvals = st.dictionaries(

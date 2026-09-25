@@ -88,10 +88,12 @@ point_kinetics = st.builds(
 pumps = st.builds(calcs.Pump, reg_floats, name=names)
 
 
-def _gmake(e: list[tuple[str, str, str, tuple[str, ...]]]) -> MultiDiGraph:
+def _gmake(comps_per_edge: list[tuple[str, ...]]) -> MultiDiGraph:
+    # A connected, self-loop-free path with disjoint components per edge — the family of
+    # topologies Kirchhoff.__init__ accepts (weakly connected, no self-loops, unique comps).
     g = MultiDiGraph()
-    for u, v, key, c in e:
-        g.add_edge(u, v, key, comps=c)
+    for i, comps in enumerate(comps_per_edge):
+        g.add_edge(str(i), str(i + 1), comps=comps)
     return g
 
 
@@ -103,8 +105,8 @@ class _InterList(frozenset):
         return hash(None)
 
 
-edges = st.tuples(names, names, names, st.lists(names, min_size=1, unique=True).map(tuple))
-graphs = st.builds(_gmake, st.lists(edges, min_size=1, unique_by=lambda x: _InterList(x[-1])))
+comp_tuples = st.lists(names, min_size=1, unique=True).map(tuple)
+graphs = st.builds(_gmake, st.lists(comp_tuples, min_size=1, unique_by=_InterList))
 kirchoffs = st.builds(calcs.Kirchhoff, graphs, name=names)
 kirchoffs_w_deriv = st.builds(calcs.KirchhoffWDerivatives, graph=graphs, name=names)
 

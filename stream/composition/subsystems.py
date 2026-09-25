@@ -11,6 +11,7 @@ from stream.calculations import (
     Channel,
     ChannelAndContacts,
     DPCalculation,
+    Flapper,
     Fuel,
     Junction,
     Kirchhoff,
@@ -19,6 +20,7 @@ from stream.calculations import (
     Pump,
 )
 from stream.composition.mtr_geometry import symmetric_plate
+from stream.physical_models.pressure_drop import local_pressure_by_mdot
 from stream.state import State
 from stream.units import Celsius, KgPerS, Pascal, Value, Watt
 from stream.utilities import just
@@ -84,8 +86,9 @@ def symmetric_plate_steady_state(
     cp = c.fluid.specific_heat(Tin)
     p_z = np.sum(power_mat, 1)
     q2t_z = p_z / (c.pipe.heated_perimeter * c.dz)
-    _tc0 = Tin + np.cumsum(p_z / (np.abs(mdot) * cp))
-    tc0 = _tc0 if mdot >= 0 else _tc0[::-1]
+    # Reverse flow enters from the far end: suffix cumsum, not a reversed prefix cumsum (equal only for symmetric power).
+    dT = p_z / (np.abs(mdot) * cp)
+    tc0 = Tin + (np.cumsum(dT) if mdot >= 0 else np.cumsum(dT[::-1])[::-1])
     tw0 = tc0
     for _ in range(initial_guess_iterations):
         dp0 = c.pressure(T=tc0, Tw=tw0, mdot=mdot)
@@ -197,6 +200,11 @@ def guess_hydraulic_steady_state(
                 # Safe because Pump has x.p.
                 # noinspection PyUnresolvedReferences
                 return x.p or 0.0
+            case Flapper():
+                # Closed flapper (t_open = inf): dp is undetermined, guess 0; open: its open-state resistance law.
+                if np.isposinf(x.t_open):
+                    return 0.0
+                return -local_pressure_by_mdot(m, x.fluid.density(temperature), x.f, x._A)
             case DPCalculation():
                 # Safe because LumpedComponent has dp_out in its protocol.
                 # noinspection PyUnresolvedReferences
@@ -210,6 +218,14 @@ def guess_hydraulic_steady_state(
 
     pressures = {x.name: dict(pressure=_get_dp(x)) for x in k.components}
 
+    def _htc_guess(c: ChannelAndContacts) -> dict[str, Value]:
+        # h_left/h_right are algebraic (residual h_calc - h_var), so any finite guess is self-correcting; one is still needed so the State can be loaded.
+        T = np.full(c.n, temperature)
+        h0 = c.h_wall(T_wall=T, T_cool=T, mdot=k_guess[k.component_edge(c)], pressure=k.ref_pressure or 1e5)
+        return dict(h_left=h0, h_right=h0)
+
+    htc = {c.name: _htc_guess(c) for c in k.components if isinstance(c, ChannelAndContacts)}
+
     junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
     T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
     Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
@@ -222,7 +238,7 @@ def guess_hydraulic_steady_state(
     a = np.zeros(len(k))
     a[k.variables_by_type["abs_pressure"]] = k.ref_pressure + k._abs_matrix @ p
 
-    return State.merge(Ts, pressures, {k.name: k.save(a) | k_guess})
+    return State.merge(Ts, pressures, htc, {k.name: k.save(a) | k_guess})
 
 
 class GravityMismatchError(ValueError):

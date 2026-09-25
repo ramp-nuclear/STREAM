@@ -1,11 +1,12 @@
 import logging
+import numbers
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
 from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
-from cytoolz import valmap
+from cytoolz import unique, valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
@@ -205,7 +206,16 @@ class Aggregator:
         """
         out = np.empty(self.vector_length)
         for node, section in self.sections.items():
-            out[section] = self._op("calculate", y, t, node)
+            result = np.asarray(self._op("calculate", y, t, node))
+            expected = section.stop - section.start
+            if result.size != expected:
+                name = getattr(node, "name", node)
+                raise ValueError(
+                    f"Calculation {name!r} returned {result.size} value(s) for its section of "
+                    f"{expected} variable(s). A scalar or length-1 result would silently broadcast "
+                    f"across the section and solve a different system."
+                )
+            out[section] = result
         return out
 
     def _node_external(self, node: Calculation, y: Sequence[float], t: Second) -> dict[str, dict[Calculation, Any]]:
@@ -314,7 +324,8 @@ class Aggregator:
             The system description to parse.
 
         """
-        has_time = any(isinstance(key, float) for key in s)
+        # StateTimeseries keys are numeric (incl. np.int64/np.float32 that isinstance(float) misses); DictState keys are str.
+        has_time = any(isinstance(key, numbers.Number) for key in s)
         return self._solution_from_states(s) if has_time else self._vector_from_state(s)
 
     def _vector_from_state(self, s: DictState) -> Array1D:
@@ -547,7 +558,7 @@ class Aggregator:
             y0 = self.load(y0)
 
         if eq_type == "ODE":
-            data = differential(F=self.compute, y0=y0, time=time, **options)
+            data, time = differential(F=self.compute, y0=y0, time=time, **options)
         elif eq_type == "DAE":
             if progressbar and isinstance(progressbar, bool):
                 try:
@@ -573,7 +584,12 @@ class Aggregator:
             if progressbar is not None:
                 progressbar.finish()
         elif eq_type == "ALG":
-            data = algebraic(F=self.compute, y0=y0, time=time, R=self._root, **options)
+            if time is None:
+                # Steady root find: wrap the bare vector as a single-row Solution.
+                vector = algebraic(F=self.compute, y0=y0, time=None, R=self._root, **options)
+                data, time = vector[None, :], np.array([0.0])
+            else:
+                data, time = algebraic(F=self.compute, y0=y0, time=time, R=self._root, **options)
         else:
             raise ValueError(f"Unknown method {eq_type}, choose from [ODE, DAE, ALG]")
         return Solution(np.asarray(time), data)
@@ -650,15 +666,21 @@ class CalculationGraph:
             A new CalculationGraph whose graph and functions are composed out of a,b.
         """
         g = compose(a.graph, b.graph)
+        # networkx compose lets b's edge data win; re-union routings for edges present in both graphs.
+        for e in set(a.graph.edges) & set(b.graph.edges):
+            merged_vars = chain(a.graph.edges[e].get(VARS, ()), b.graph.edges[e].get(VARS, ()))
+            g.edges[e][VARS] = tuple(unique(merged_vars))
         for edge in edges:
             u, v, d = edge
             if (e := (u, v)) in g.edges:
-                g.edges[e][VARS] = tuple(chain(g.edges[e][VARS], d))
+                g.edges[e][VARS] = tuple(unique(chain(g.edges[e][VARS], d)))
             else:
                 g.add_edge(u, v, variables=d)
 
         af, bf = a.funcs or {}, b.funcs or {}
-        return CalculationGraph(graph=g, funcs=af | bf or None)
+        # Union the inner name dicts so a shared calculation's bindings are not wholesale replaced.
+        merged = {c: {**af.get(c, {}), **bf.get(c, {})} for c in af.keys() | bf.keys()}
+        return CalculationGraph(graph=g, funcs=merged or None)
 
     def __add__(self, other) -> "CalculationGraph":
         return self.connect(self, other)

@@ -23,8 +23,11 @@ def _relative_percentage(a, b):
     return f"{np.max(np.abs(a - b) / np.abs(b)):.2%}"
 
 
-def MTR_fuel_and_channel(z_N: int, fuel_N: int, clad_N: int) -> tuple[Fuel, ChannelAndContacts]:
-    """Creating an example of an MTR Fuel-Channel duo, for testing purposes"""
+def MTR_fuel_and_channel(z_N: int, fuel_N: int, clad_N: int, z_weight=None) -> tuple[Fuel, ChannelAndContacts]:
+    """Creating an example of an MTR Fuel-Channel duo, for testing purposes.
+
+    ``z_weight`` (length ``z_N``) sets an axial power shape; when omitted the shape is
+    uniform (axially symmetric)."""
     meat_depth = 0.5 * mm
     clad_depth = 0.4 * mm
     meat_width = 70 * mm
@@ -35,7 +38,10 @@ def MTR_fuel_and_channel(z_N: int, fuel_N: int, clad_N: int) -> tuple[Fuel, Chan
     materials[meat] = Solid(density=3500, specific_heat=750, conductivity=100)  # Approximately IRR-1 (MAMAG)
     materials[~meat] = Solid(density=2700, specific_heat=900, conductivity=250)  # Approximately Aluminium
     material = Solid.from_array(materials)
-    power_shape = normalize(np.ones((z_N, fuel_N)))
+    if z_weight is None:
+        power_shape = normalize(np.ones((z_N, fuel_N)))
+    else:
+        power_shape = normalize(np.outer(z_weight, np.ones(fuel_N)))
 
     F = Fuel(
         z_boundaries=(zb := np.linspace(0, 1, z_N + 1)),

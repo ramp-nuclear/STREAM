@@ -22,8 +22,12 @@ StepStrategy = Callable[[Array1D], Array1D]
 T = TypeVar("T", bound=Value)
 
 
+# Absolute FD step floor: sqrt(eps) keeps F(y+h)-F(y) above rounding noise so near-zero columns aren't quantized to zero.
+_STEP_FLOOR = np.sqrt(np.finfo(float).eps)
+
+
 def _default_step_strategy(y: T, *_) -> T:
-    return 1e-12 + 1e-6 * np.abs(y)
+    return _STEP_FLOOR + 1e-6 * np.abs(y)
 
 
 def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:

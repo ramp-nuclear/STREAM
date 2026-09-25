@@ -194,8 +194,9 @@ class PointKinetics(Calculation):
 
     In this particular calculation, the reactivity may be influenced by a
     linear thermal feedback
-    :math:`\rho = \rho_0 + \alpha_c T_c + \alpha_f T_f` by
-    corresponding coolant and fuel elements.
+    :math:`\rho = \rho_0 - \sum_i \vec{w}_i \cdot (\vec{T}-\vec{T}_0)_i` by
+    corresponding coolant and fuel elements (note the sign: a positive worth
+    :math:`w` gives negative feedback for :math:`T > T_0`).
     """
 
     def __init__(
@@ -267,6 +268,7 @@ class PointKinetics(Calculation):
         T: dict[Calculation, Celsius] | None = None,
         source: Watt | None = None,
         t: Second,
+        rhoc: float | None = None,
         **kwargs,
     ) -> Array1D:
         r"""Calculate :math:`\frac{d}{dt}(P, \vec{C}_k)`
@@ -287,20 +289,22 @@ class PointKinetics(Calculation):
         dPdt: Array1D
             the change in power and the delayed power fractions
         """
-        rhoc = self.controls.worth(t)
+        rhoc = self.controls.worth(t) if rhoc is None else rhoc
         rho = self.reactivity(T if T is not None else {}, rhoc)
         self._s[0] = source / self.Lambda if source is not None else 0.0
         self._A[0, 0] = (rho - self.dollar) / self.Lambda
         return self._A @ variables + self._s
 
     # noinspection PyProtocol
+    @unpacked(exclude=("T",))
     def should_continue(self, variables: Sequence[float], *, t: Second, **kwargs) -> bool:
         return self.controls.should_continue(t)
 
     @unpacked(exclude=("T",))
     def change_state(self, variables: Sequence[float], *, t: Second, **kwargs):
         power = variables[self.indices("power")]
-        dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("power")]
+        # Row 0 is the pk-power rate; indices("power") is the total-power variable, whose residual row is ~0, not a derivative.
+        dPdt = self.calculate(variables, t=t, **kwargs)[0]
         self.controls.change_state(t, power, dPdt, **kwargs)
 
     @property
@@ -339,7 +343,7 @@ class PointKinetics(Calculation):
         rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T or {}, rhoc)
         state["reactivity"] = rho
-        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("power")]
+        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, rhoc=rhoc, **kwargs)[0]
         return state
 
 
@@ -365,7 +369,7 @@ def temperature_reactivity(
     rho: float
         Calculated reactivity
     """
-    return -sum(np.dot(w, T[k] - T0[k]).item() for k, w in weights.items())
+    return -sum(float(np.sum(np.asarray(w) * (T[k] - T0[k]))) for k, w in weights.items())
 
 
 @curry
@@ -394,10 +398,11 @@ class PointKineticsWInput(PointKinetics):
         source: Watt | None = None,
         t: Second,
         power_input: Watt | None = None,
+        rhoc: float | None = None,
         **kwargs,
     ) -> Array1D:
         vals = np.empty(len(self))
-        vals[:-1] = super().calculate(variables[:-1], source=source, T=T, t=t, **kwargs)
+        vals[:-1] = super().calculate(variables[:-1], source=source, T=T, t=t, rhoc=rhoc, **kwargs)
         vals[-1] = variables[0] + power_input - variables[-1]
         return vals
 

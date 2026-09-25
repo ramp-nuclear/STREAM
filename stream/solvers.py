@@ -168,8 +168,11 @@ def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array
             new_solution = solve(new_time, y[-1], ydot[-1])
         except TransientRuntimeError as e:
             logger.critical(e.message)
-            t = concat(t, e.t)
-            y = concat(y, e.y)
+            # e.t/e.y are None on IC failure (concat would mask the error); else
+            # the first row is the restart point already in t, so strip it.
+            if e.t is not None:
+                t = concat(t, e.t[1:])
+                y = concat(y, e.y[1:])
             break
         t = concat(t, new_solution.values.t[1:])
         y = concat(y, new_solution.values.y[1:])
@@ -187,7 +190,7 @@ def algebraic(
     time: Sequence[float] | None = None,
     R: Functional = None,
     **options,
-) -> Array:
+) -> Array | tuple[Array2D, Array1D]:
     r"""Solving an Algebraic Equation :math:`0=F(y, t)`
 
     Parameters
@@ -208,8 +211,12 @@ def algebraic(
 
     Returns
     -------
-    solution: Array
-        The solution matrix at requested times: [time, variable].
+    solution: Array or tuple[Array2D, Array1D]
+        When ``time is None`` (steady root find), the bare solution vector. In
+        quasi-static time mode, the solution matrix ([time, variable]) **and** the
+        vector of times it actually spans — these are shorter than the requested
+        ``time`` if a stop event ``R`` tripped, so callers must rebind their time
+        axis from the returned times rather than the requested grid.
     """
 
     def _solve(_vec, _t):
@@ -220,19 +227,21 @@ def algebraic(
         return _sol.x
 
     if time is not None:
+        time = np.asarray(time)
         y = np.zeros((len(time), len(y0)))
         y[0] = y0
         for i, t in enumerate(time[1:]):
             sol = _solve(y[i], t)
-            if R is not None and not np.all(R(sol, t)):
-                return y[: i + 1]
             y[i + 1] = sol
-        return y
+            # Stop after storing the solved row so the stop-triggering state is kept, not dropped.
+            if R is not None and not np.all(R(sol, t)):
+                return y[: i + 2], time[: i + 2]
+        return y, time
     else:
         return _solve(y0, 0)
 
 
-def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> Array2D:
+def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> tuple[Array2D, Array1D]:
     r"""Solving an Ordinary Differential Equation (ODE) :math:`\dot{y}=F(y, t)`
 
     Parameters
@@ -248,9 +257,16 @@ def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -
 
     Returns
     -------
-    solution: Array2D
-        The solution matrix at requested times: [time, variable].
+    solution: tuple[Array2D, Array1D]
+        The solution matrix at reached times ([time, variable]) and the vector of
+        those times. On a solver failure the reached times are shorter than the
+        requested ``time``; a :class:`TransientRuntimeError` is raised in that case
+        (mirroring the DAE path) rather than returning a truncated result.
     """
     time_limits = (time[0], time[-1])
     solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_eval=time, **options)
-    return np.transpose(solution.y)
+    data = np.transpose(solution.y)
+    if not solution.success:
+        reached = solution.t if solution.t is not None and len(solution.t) else None
+        raise TransientRuntimeError(reached, data, None, solution.message)
+    return data, solution.t

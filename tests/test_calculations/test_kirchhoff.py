@@ -64,6 +64,23 @@ def test_junction_mixing_a_given_set_of_currents():
     are_close(J.calculate([0], **kwargs), (10 * 1 + 4 * 17) / 7)
 
 
+def test_junction_mixing_with_only_incoming_edges():
+    """A dead-end junction fed only by incoming edges gets no Tin_minus edge; the
+    missing mapping must count as empty rather than crashing."""
+    J = Junction()
+    mdot = {1: 1.0, 2: 2.0}
+    Tin = {1: 10.0, 2: 0.0}
+    are_close(J.calculate([0], mdot=mdot, Tin=Tin), (10 * 1 + 0 * 2) / 3)
+
+
+def test_junction_mixing_with_only_outgoing_edges():
+    """The symmetric dead-end: only outgoing edges, so Tin is absent."""
+    J = Junction()
+    mdot = {3: -3.0, 4: -4.0}
+    Tin_minus = {3: 5.0, 4: 17.0}
+    are_close(J.calculate([0], mdot=mdot, Tin_minus=Tin_minus), (3 * 5 + 4 * 17) / 7)
+
+
 @pytest.fixture(scope="module")
 def mock_graph(J) -> MultiDiGraph:
     J0, J1 = J
@@ -208,3 +225,85 @@ def test_agr_of_kirchhoff_load_reverses_save_by_example(K, tpl):
     g.add_node(K)
     agr = Aggregator(g)
     assert np.allclose(agr.load(agr.save(tpl)), tpl)
+
+
+def _inertia_loop_kirchhoff(constructor):
+    from stream.calculations.ideal.inertia import Inertia
+
+    inertia = Inertia(inertia=100.0, name="Inertia")
+    J0, J1 = Junction(name="J0"), Junction(name="J1")
+    g = MultiDiGraph()
+    g.add_edge(J0, J1, comps=(inertia,))
+    g.add_edge(J1, J0, comps=("pump",))
+    return constructor(g), inertia
+
+
+def test_plain_kirchhoff_indices_rejects_unknown_variable_names():
+    """K7: indices() fell through to the mdot place for ANY name, so a misrouted
+    'mdot2' (or a typo) silently resolved to mdot — turning an inertia into an
+    Ohmic resistor. Unknown names must raise KeyError."""
+    k, inertia = _inertia_loop_kirchhoff(Kirchhoff)
+    assert isinstance(k.indices("mdot", asking=inertia), (int, np.integer))  # served name works
+    with pytest.raises(KeyError):
+        k.indices("mdot2", asking=inertia)
+    with pytest.raises(KeyError):
+        k.indices("typo", asking=inertia)
+
+
+def test_kirchhoff_w_derivatives_still_serves_mdot2():
+    """K7: the whitelist must leave KirchhoffWDerivatives, which does serve mdot2,
+    working — while still rejecting genuinely unknown names."""
+    k, inertia = _inertia_loop_kirchhoff(KirchhoffWDerivatives)
+    assert k.indices("mdot2", asking=inertia) != k.indices("mdot", asking=inertia)
+    with pytest.raises(KeyError):
+        k.indices("typo", asking=inertia)
+
+
+def test_kirchhoff_rejects_a_disconnected_flow_graph():
+    """Two hydraulically independent loops in one graph make the residual over-
+    determined; Kirchhoff must reject it clearly, not crash later in compute."""
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("P1",))
+    g.add_edge("B", "A", comps=("R1",))
+    g.add_edge("C", "D", comps=("P2",))
+    g.add_edge("D", "C", comps=("R2",))
+    with pytest.raises(ValueError, match="connect"):
+        Kirchhoff(g)
+
+
+def test_kirchhoff_rejects_a_self_loop_edge():
+    """A single edge closed on one junction generates no KVL row and a broken junction
+    mdot map; Kirchhoff must reject it with a clear message rather than crash later."""
+    g = MultiDiGraph()
+    g.add_edge("J", "J", comps=("pump", "res"))
+    with pytest.raises(ValueError, match="[Ss]elf-loop"):
+        Kirchhoff(g)
+
+
+def test_kirchhoff_rejects_a_reused_component():
+    """Reusing one component object on two edges collapses the component index map,
+    causing a bare IndexError or silent mdot aliasing; reject it clearly."""
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("X",))
+    g.add_edge("B", "A", comps=("X", "C2"))
+    with pytest.raises(ValueError, match="X"):
+        Kirchhoff(g)
+
+    # The same component twice on a single edge is likewise rejected.
+    g2 = MultiDiGraph()
+    g2.add_edge("A", "B", comps=("X", "X"))
+    g2.add_edge("B", "A", comps=("C2",))
+    with pytest.raises(ValueError, match="X"):
+        Kirchhoff(g2)
+
+
+def test_kirchhoff_reports_when_reference_cannot_reach_abs_pressure_target():
+    """Anchoring the reference at a dead-end pressurizer node leaves it unable to reach
+    abs-pressure targets along flow orientations; report it clearly rather than crashing
+    with a raw NetworkXNoPath."""
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("core",))
+    g.add_edge("B", "A", comps=("pump",))
+    g.add_edge("A", "P", comps=("surge_line",))  # dead-end pressurizer branch
+    with pytest.raises(ValueError, match="reach"):
+        Kirchhoff(g, "core", reference_node=("P", 1.55e7))

@@ -3,6 +3,7 @@ from functools import reduce
 from itertools import chain
 
 import hypothesis.strategies as st
+import numpy as np
 from cytoolz import unique
 from hypothesis import given
 
@@ -80,6 +81,27 @@ def test_merge_has_union_keys(a: dict, b: dict):
 def test_merge_values_appear_in_originals(a: dict, b: dict):
     for key, d in State.merge(a, b).items():
         assert set(d.values()) <= (set(a.get(key, {}).values()) | set(b.get(key, {}).values()))
+
+
+def test_merge_does_not_alias_input_array_values():
+    """K5: merged states shared numpy array VALUES with their inputs, so tweaking
+    a merged guess in place silently corrupted the saved steady state it was
+    built from."""
+    base = State({"A": {"T": np.array([300.0, 310.0])}, "C": {"x": 1.0}})
+    merged = State.merge(base, State({"B": {"q": 5.0}}))
+
+    merged["A"]["T"][0] = 999.0
+    assert base["A"]["T"][0] == 300.0
+
+
+def test_single_argument_merge_does_not_alias_input_inner_dicts():
+    """K5: State.merge(one_state) returned that state's inner dict objects, so a
+    plain key assignment on the result rewrote the source."""
+    base = State({"C": {"x": 1.0}})
+    single = State.merge(base)
+
+    single["C"]["x"] = 123.0
+    assert base["C"]["x"] == 1.0
 
 
 def test_filter_values_with_an_example():

@@ -79,6 +79,29 @@ class Kirchhoff(Calculation):
         self.name = name
         self.g = graph
 
+        if selfloops := list(nx.selfloop_edges(graph)):
+            raise ValueError(
+                f"Self-loop flow edges (an edge closed on one node) are not supported: {selfloops}. "
+                "Close a loop with at least two junctions (or a virtual node) instead."
+            )
+
+        if graph.number_of_nodes() and not nx.is_weakly_connected(graph):
+            parts = nx.number_weakly_connected_components(graph)
+            raise ValueError(
+                f"The flow graph must be weakly connected, but it has {parts} disconnected parts. "
+                "Model each hydraulically separate loop as its own Kirchhoff calculation."
+            )
+
+        flat = list(self._edge_components)
+        seen, dupes = set(), set()
+        for comp in flat:
+            (dupes if comp in seen else seen).add(comp)
+        if dupes:
+            raise ValueError(
+                f"Each component may appear on only one flow edge, but these are reused: {dupes}. "
+                "Put a separate instance (e.g. a deepcopy) on each edge."
+            )
+
         if reference_node and reference_node[0] not in graph:
             raise KeyError(f"The reference node {reference_node} wasn't in the graph")
         if difference := (set(abs_pressure_comps) - set(self._edge_components)):
@@ -177,6 +200,8 @@ class Kirchhoff(Calculation):
             return self._abs_pressure_book[("p_abs", asking)]
         if variable == "ref_mdot":
             return self.ref_mdots[asking]
+        if variable != "mdot":
+            raise KeyError(f"{type(self).__name__} does not serve {variable!r} (only 'mdot', 'p_abs', 'ref_mdot').")
         return self._var_book[asking]
 
     @property
@@ -382,15 +407,22 @@ def build_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets) 
     m = dok_matrix((len(targets), len(comps_order)))
 
     for i, target in enumerate(targets):
-        if target in g:
-            path = nx.dijkstra_path(g, source=source, target=target)
-            comps_in_edge = ()
-        else:
-            u, v, k = edge = component_edge(target)
-            # First, build the path to the u-node
-            path = nx.dijkstra_path(g, source=source, target=u)
-            # Then, from u along edge, add components until target is reached
-            comps_in_edge = takewhile(lambda c: c is not target, g.edges[edge][COMPS])
+        try:
+            if target in g:
+                path = nx.dijkstra_path(g, source=source, target=target)
+                comps_in_edge = ()
+            else:
+                u, v, k = edge = component_edge(target)
+                # First, build the path to the u-node
+                path = nx.dijkstra_path(g, source=source, target=u)
+                # Then, from u along edge, add components until target is reached
+                comps_in_edge = takewhile(lambda c: c is not target, g.edges[edge][COMPS])
+        except nx.NetworkXNoPath:
+            raise ValueError(
+                f"The reference node {source!r} cannot reach absolute-pressure component {target!r} "
+                "along flow orientations. Anchor the reference so it reaches every abs_pressure "
+                "component, or reorient the intervening edges."
+            ) from None
 
         comps_from_path = (comp for edge in pairwise(path) for comp in g.edges[(*edge, 0)][COMPS])
 
@@ -443,7 +475,7 @@ class Junction(Calculation):
         return dict(Tin=0)
 
     # noinspection PyMethodOverriding
-    def calculate(self, variables: Sequence[Celsius], *, Tin, Tin_minus=None, mdot) -> Array1D:
+    def calculate(self, variables: Sequence[Celsius], *, Tin=None, Tin_minus=None, mdot) -> Array1D:
         r"""Computes divergence from total mixing of temperatures in junction,
         defined as
 
@@ -466,6 +498,11 @@ class Junction(Calculation):
         out: Array1D
             Divergence of ``variables`` from the computed total mixing
         """
+
+        # A dead-end junction (all edges incoming or all outgoing) is wired only one
+        # side; the absent mapping contributes no streams, so treat it as empty.
+        Tin = Tin or {}
+        Tin_minus = Tin_minus or {}
 
         def _f(_g: Callable[[Calculation, float, float], float]) -> float:
             return sum(_g(k, v, T) for k, T in Tin.items() if (v := mdot[k]) >= 0) - sum(
