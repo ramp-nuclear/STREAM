@@ -14,6 +14,7 @@ Stages (see README.md for the expectation table):
   E  choreographed transient, tight atol  (smoothness/Jacobian)
   F  realistic power (83.6 kW) + scram    (steady + natural event)
   G  general multichannel LOFA (capstone) (0.70 + regime friction, ramp scram)
+  H  guess comparison on the general case (which solve_steady rung each guess needs)
 
 Usage:
   conda run -n stream-env python benchmarks/lofa/run.py --stage C
@@ -35,8 +36,8 @@ RESULTS_DIR = os.path.join(HERE, "results")
 sys.path.insert(0, REPO)
 sys.path.insert(0, HERE)
 
-TIMEOUTS = dict(A=600, B=600, C=1200, D=1800, E=1200, F=1800, G=1800)
-STAGES = "ABCDEFG"
+TIMEOUTS = dict(A=600, B=600, C=1200, D=1800, E=1200, F=1800, G=1800, H=1800)
+STAGES = "ABCDEFGH"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -335,13 +336,55 @@ def stage_G():
                        f"peak={peak:.2f}C margin={tsat - peak:+.2f}C (sat {tsat:.1f})")
 
 
+def _rung_reached(agr, guess):
+    from stream.solvers import AlgRuntimeError
+    y0 = agr.load(guess)
+    entry = float(np.linalg.norm(agr.compute(y0, 0.0)))
+    try:
+        agr.solve_steady(y0, globalize=False)
+        return dict(residual_at_entry=entry, rung="scipy hybr")
+    except AlgRuntimeError:
+        pass
+    try:
+        agr.solve_steady(y0, globalize=True, fallback_ptc=False)
+        return dict(residual_at_entry=entry, rung="scaled_newton")
+    except AlgRuntimeError:
+        pass
+    try:
+        agr.solve_steady(y0)
+        return dict(residual_at_entry=entry, rung="pseudo_transient")
+    except AlgRuntimeError:
+        return dict(residual_at_entry=entry, rung="none")
+
+
+def stage_H():
+    """Guess quality on the general multichannel case: which rung of solve_steady
+    each guess needs, and the residual norm at entry, for the hand-merged expert
+    guess, the ballpark guess, the closed-form seed and the refined guess. PASS
+    requires the refined guess to converge on the first rung."""
+    import case
+    from stream.composition import guess_steady_state, seed_steady_state
+
+    agr, K, refs = case.build_general()
+    guesses = dict(
+        expert=case.expert_guess_general(refs),
+        ballpark=case.ballpark_guess_general(agr, K),
+        seed=seed_steady_state(agr, K, flows={refs["pump"]: case.GEN_MDOT_TOTAL}),
+        refined=guess_steady_state(agr, K, flows={refs["pump"]: case.GEN_MDOT_TOTAL}),
+    )
+    sub = {name: _rung_reached(agr, guess) for name, guess in guesses.items()}
+    ok = sub["refined"]["rung"] == "scipy hybr"
+    return dict(status="PASS" if ok else "FAIL", metrics=sub,
+                detail="; ".join(f"{name}: {m['rung']} from ‖F‖={m['residual_at_entry']:.3g}" for name, m in sub.items()))
+
+
 # ── orchestration ─────────────────────────────────────────────────────────────
 
 def run_stage_inprocess(stage: str) -> dict:
     t0 = _time.time()
     try:
         rec = {"A": stage_A, "B": stage_B, "C": stage_C, "D": stage_D,
-               "E": stage_E, "F": stage_F, "G": stage_G}[stage]()
+               "E": stage_E, "F": stage_F, "G": stage_G, "H": stage_H}[stage]()
     except Exception:
         rec = dict(status="CRASH", metrics={},
                    detail=traceback.format_exc(limit=8).strip().splitlines()[-1],

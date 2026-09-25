@@ -169,10 +169,32 @@ def _float_values(d: dict[str, Value], keys: Iterable[str], inner_key: str = "pr
         yield y if isinstance(y, (float, int)) else y.item()
 
 
+def _temperatures(k: Kirchhoff, temperature: Celsius | Mapping[Calculation, Value]) -> dict[Calculation, Value]:
+    junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
+    calculations = list(k.components) + junctions
+    if not isinstance(temperature, Mapping):
+        return dict.fromkeys(calculations, temperature)
+    missing = [getattr(c, "name", str(c)) for c in calculations if c not in temperature]
+    if missing:
+        raise KeyError(
+            f"temperature mapping has no entry for {missing}; a mapping must cover every "
+            "component and junction of the flow graph."
+        )
+    return {c: temperature[c] for c in calculations}
+
+
+def _scalar(value: Value) -> float:
+    return float(np.mean(value))
+
+
+def _copied_value(v: Value) -> Value:
+    return v.copy() if isinstance(v, np.ndarray) else v
+
+
 def guess_hydraulic_steady_state(
     k: Kirchhoff,
     mdots: dict[Calculation, KgPerS],
-    temperature: Celsius,
+    temperature: Celsius | Mapping[Calculation, Value],
     strategy: HydraulicStrategyMap | None = None,
 ) -> State:
     r"""A guess for a :class:`.Kirchhoff` derived system, in which the flows are known
@@ -188,8 +210,11 @@ def guess_hydraulic_steady_state(
     mdots : dict[Calculation, KgPerS]
         Known mass flows :math:`\dot{m}` for components in the hydraulic system.
         Supported Calculations are :class:`.DPCalculation` and :class:`.Channel`.
-    temperature : Celsius
-        Assumed temperature for hydraulic calculations
+    temperature : Celsius or Mapping[Calculation, Value]
+        Assumed temperature for hydraulic calculations. A scalar is used everywhere. A mapping
+        gives each component and junction its own value: a scalar outlet temperature for a
+        lumped component or junction, and for a :class:`.Channel` either a scalar or a
+        per-cell profile of length ``n``. A mapping must cover every component and junction.
     strategy : dict[Calculation, Callable[[KgPerS, Celsius], Pascal]] | None
         For unknown calculations, pressure drop functions :math:`\Delta p(\dot{m}, T)`
         may be provided. These are used when the Calculation isn't identified as
@@ -212,45 +237,44 @@ def guess_hydraulic_steady_state(
             f"Missing flow data in edges {missing_edges} — provide mdot for their components {missing}."
         )
 
+    temps = _temperatures(k, temperature)
     strategy = strategy or {}
 
     def _get_dp(x: Calculation) -> Pascal:
         m = k_guess[k.component_edge(x)]
+        T_x = temps[x]
 
         match x:
             case Pump():
-                # Safe because Pump has x.p.
                 # noinspection PyUnresolvedReferences
                 return x.p or 0.0
             case Flapper():
                 # Closed flapper (t_open = inf): dp is undetermined, guess 0; open: its open-state resistance law.
                 if np.isposinf(x.t_open):
                     return 0.0
-                return -local_pressure_by_mdot(m, x.fluid.density(temperature), x.f, x._A)
+                return -local_pressure_by_mdot(m, x.fluid.density(_scalar(T_x)), x.f, x._A)
             case DPCalculation():
-                # Safe because LumpedComponent has dp_out in its protocol.
                 # noinspection PyUnresolvedReferences
-                return x.dp_out(Tin=np.array([temperature]), mdot=m, mdot2=0.0)
+                return x.dp_out(Tin=np.array([_scalar(T_x)]), mdot=m, mdot2=0.0)
             case Channel():
-                # Safe because Channel has pressure.
                 # noinspection PyUnresolvedReferences
-                return np.sum(x.pressure(mdot=m, mdot2=0.0, T=(T := np.full(x.n, temperature)), Tw=T))
+                T = np.full(x.n, T_x) if np.ndim(T_x) == 0 else np.asarray(T_x, dtype=float)
+                return np.sum(x.pressure(mdot=m, mdot2=0.0, T=T, Tw=T))
             case _:
-                return strategy.get(x, just(0.0))(m, temperature)
+                return strategy.get(x, just(0.0))(m, _scalar(T_x))
 
     pressures = {x.name: dict(pressure=_get_dp(x)) for x in k.components}
 
     def _htc_guess(c: ChannelAndContacts) -> dict[str, Value]:
         # h_left/h_right are algebraic (residual h_calc - h_var), so any finite guess is self-correcting; one is still needed so the State can be loaded.
-        T = np.full(c.n, temperature)
+        T = np.full(c.n, temps[c]) if np.ndim(temps[c]) == 0 else np.asarray(temps[c], dtype=float)
         h0 = c.h_wall(T_wall=T, T_cool=T, mdot=k_guess[k.component_edge(c)], pressure=k.ref_pressure or 1e5)
         return dict(h_left=h0, h_right=h0)
 
     htc = {c.name: _htc_guess(c) for c in k.components if isinstance(c, ChannelAndContacts)}
 
-    junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
-    T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
-    Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
+    T_vars = ("Tin", "T", "T_wall_left", "T_wall_right", "T_cool")
+    Ts = State({c.name: {var: _copied_value(temps[c]) for var in c.variables if var in T_vars} for c in temps})
     p = np.fromiter(
         _float_values(pressures, map(lambda x: x.name, k.components)),
         dtype=float,

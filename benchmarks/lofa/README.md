@@ -23,6 +23,7 @@ regressions; every other stage removes one workaround.
 | E | Loose tolerance → `atol=rtol=1e-6` | **TIMEOUT** — wedged for more than 20 minutes | **PASS** in about 2 minutes |
 | F | 1 kW → 83.6 kW with a ramped scram, `regime_dependent` friction and the natural event path | **CRASH** — the transient dies at t ≈ 15.9 s in the coastdown | **PASS** — flapper opens at 25.4 s, reversal at 34 s, peak coolant 112.8 °C (7.5 °C below saturation) |
 | G | One channel → the general multichannel LOFA below | **FAIL** — the coastdown dies at t ≈ 89.6 s, before the flapper opens | **PASS** — reaches 2500 s; reversals at 816 / 1176 / 1508 s (hot / warm / wide); peak 107.1 °C (13.2 °C margin) |
+| H | Hand-merged expert guess → `seed_steady_state` and `guess_steady_state` on the general multichannel case | — (the guess toolkit is new) | **PASS** — the refined guess starts at ‖F‖ = 10.8 (expert: 3.8e4, ballpark: 1.4e5) and converges on the first `solve_steady` rung |
 
 At 1 kW the loop is nearly isothermal (ΔT ≈ 0.5 °C), so any non-smoothness in the
 correlations is microscopic. Stages A, D, E and F discriminate only because they raise the
