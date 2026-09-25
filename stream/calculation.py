@@ -221,6 +221,30 @@ class Calculation(Protocol):
         """
         pass
 
+    def event_margin(self, variables: Sequence[float], **_) -> Array1D:
+        r"""Continuous, signed event margins for this calculation.
+
+        Each returned value is a smooth function of the inputs that is strictly
+        positive while no event is pending and crosses zero (positive ->
+        non-positive) exactly at the event. The transient drivers pass these to
+        the solver (IDA's rootfn / ``solve_ivp`` events) so the true event time is
+        localized by sign-change bisection; :meth:`change_state` /
+        :meth:`should_continue` are then consulted at that time to decide what the
+        event does.
+
+        Inputs match :meth:`calculate`/:meth:`should_continue`/:meth:`change_state`.
+        Return an empty array (the default) for calculations with no localizable
+        event; such calculations, if they still override
+        :meth:`change_state`/:meth:`should_continue`, are polled at output grid
+        points instead (coarser).
+
+        Returns
+        -------
+        margins: Array1D
+            Signed continuous margins (empty for no event).
+        """
+        return np.empty(0)
+
 
 def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
     """

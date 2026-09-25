@@ -5,7 +5,7 @@ from scikits.odes import dae
 from stream.aggregator import Aggregator
 from stream.composition import Calculation_factory
 from stream.jacobians import ALG_jacobian
-from stream.solvers import TransientRuntimeError, _continuous_mode_dae
+from stream.solvers import TransientRuntimeError, _event_loop_dae
 from stream.units import Array1D
 from stream.utilities import ignore_warnings
 
@@ -325,14 +325,21 @@ class _FakeVals:
         return iter((self.t, self.y, self.ydot))
 
 
-class _FakeSol:
+class _FakeRoots:
     def __init__(self, t, y, ydot):
+        self.t, self.y, self.ydot = t, y, ydot
+
+
+class _FakeSol:
+    def __init__(self, t, y, ydot, roots=None):
         self.values = _FakeVals(t, y, ydot)
+        self.roots = roots if roots is not None else _FakeRoots(None, None, None)
 
 
 def _first_segment_then(raiser):
-    """A fake `solve` for _continuous_mode_dae: the first call returns a segment
-    ending at t=0.5 (so the continuous loop restarts), the restart calls `raiser`."""
+    """A fake `solve` for _event_loop_dae: the first call returns a segment ending
+    at t=0.5 with a root there (so the loop restarts from the root), and the
+    restart call raises via `raiser`."""
     calls = {"n": 0}
 
     def solve(time_, y0_, yp0_):
@@ -340,7 +347,8 @@ def _first_segment_then(raiser):
         if calls["n"] == 1:
             t_ = np.array([0.0, 0.25, 0.5])
             y_ = np.tile(np.asarray(y0_, float), (3, 1))
-            return _FakeSol(t_, y_, np.zeros_like(y_))
+            root = _FakeRoots(np.array([0.5]), y_[-1:], np.zeros((1, y_.shape[1])))
+            return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
         return raiser()
 
     return solve
@@ -357,7 +365,7 @@ def test_continuous_mode_restart_ic_failure_does_not_mask_with_concat_none():
 
     solve = _first_segment_then(raise_ic_failure)
     with ignore_warnings(UserWarning):
-        y, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+        y, t = _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
     # the pre-failure segment is preserved, no exception leaks out
     assert np.array_equal(t, [0.0, 0.25, 0.5])
     assert y.shape[0] == 3
@@ -375,6 +383,52 @@ def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
 
     solve = _first_segment_then(raise_with_partial)
     with ignore_warnings(UserWarning):
-        _, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+        _, t = _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
     assert np.all(np.diff(t) > 0), f"duplicated/!monotone time: {t}"
     assert np.array_equal(t, [0.0, 0.25, 0.5, 0.55])
+
+
+def test_event_loop_raises_instead_of_hanging_on_nonadvancing_root():
+    """E3: a persistent condition that re-roots at the same time made the old
+    continuous loop spin forever (values.t[-1] never advanced past the prior grid
+    point). The driver must detect the non-advancing root and raise, not hang."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)
+        y_ = np.tile(np.asarray(y0_, float), (1, 1))
+        # Always report a root at the segment start -> t_root never advances.
+        root = _FakeRoots(np.array([t_[0]]), y_, np.zeros_like(y_))
+        return _FakeSol(t_[:1], y_, np.zeros_like(y_), roots=root)
+
+    with pytest.raises(TransientRuntimeError, match="did not advance"):
+        _event_loop_dae(
+            solve,
+            np.linspace(0, 1, 5),
+            np.array([1.0]),
+            np.zeros(1),
+            on_event=lambda t, y, yp: True,
+            continuous=False,
+        )
+
+
+def test_event_loop_no_duplicate_time_when_terminal_event_on_grid():
+    """A terminal event landing exactly on a requested grid time is already in
+    solution.values (IDA's t_out==t path); the terminal append must not add it
+    again and produce two equal final times."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)
+        y_ = np.tile(np.asarray(y0_, float), (len(t_), 1))
+        root = _FakeRoots(np.array([t_[-1]]), y_[-1:], np.zeros((1, y_.shape[1])))  # root == last grid time
+        return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
+
+    _, t = _event_loop_dae(
+        solve,
+        np.array([0.0, 0.5, 1.0]),
+        np.array([1.0]),
+        np.zeros(1),
+        on_event=lambda tr, yr, ypr: tr < 1.0,  # continue at start, terminal at the root t=1.0
+        continuous=False,
+    )
+    assert np.all(np.diff(t) > 0), f"duplicated final time: {t}"
+    assert np.array_equal(t, [0.0, 0.5, 1.0])

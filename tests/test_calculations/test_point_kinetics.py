@@ -9,6 +9,8 @@ from stream.calculations.point_kinetics import (
     OneWayToSCRAM,
     PointKineticsWInput,
     ReactivityController,
+    SCRAM_at_power,
+    scram_at_power_margin,
     temperature_reactivity,
 )
 from stream.composition import Calculation_factory
@@ -175,7 +177,12 @@ def _scram_pk(P0=1e6, limit_factor=1.2):
             return -0.05 * (t - t_state)
         return 20e-5 if t > 1.0 else 0.0
 
-    ctrl = ReactivityController(input_reactivity=rho_in, state_machine=machine, abort_states={OneWayToSCRAM.SCRAM})
+    ctrl = ReactivityController(
+        input_reactivity=rho_in,
+        state_machine=machine,
+        abort_states={OneWayToSCRAM.SCRAM},
+        trip_margin=lambda state, t, power, dPdt: 1.0 if state == OneWayToSCRAM.SCRAM else limit - power,
+    )
     pk = PointKinetics(
         generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
     )
@@ -261,3 +268,116 @@ def test_save_dpdt_uses_historical_reactivity_not_final_controller_state():
     # worth_history(2) = 0 (still NORMAL), so both entries must be consistent with rho = 0.
     assert saved["reactivity"] == pytest.approx(0.0)
     assert saved["dPdt"] == pytest.approx(0.0, abs=1e3)  # pre-fix: 7.5e9 from worth(2) = +0.15
+
+
+def test_scram_at_power_is_usable_as_a_state_machine():
+    """E9: SCRAM_at_power had the wrong arity for the StateMachine protocol
+    (TypeError when ReactivityController.change_state calls it with
+    (state, t, power, dPdt)) and returned a bool instead of a state. It must now
+    curry the limit and behave as a real state machine returning an Enum."""
+    machine = SCRAM_at_power(1.2e6)  # curried on power_limit
+    ctrl = ReactivityController(
+        state_machine=machine,
+        abort_states={OneWayToSCRAM.SCRAM},
+        trip_margin=scram_at_power_margin(1.2e6),
+    )
+
+    # Below the limit: stays NORMAL (and returns a state, not a bool).
+    returned = ctrl.change_state(t=1.0, power=1.0e6, dPdt=0.0)
+    assert returned == OneWayToSCRAM.NORMAL
+    assert not isinstance(returned, bool)
+    assert ctrl.should_continue(1.0)
+
+    # Above the limit: latches to SCRAM and aborts.
+    ctrl.change_state(t=2.0, power=1.5e6, dPdt=1e7)
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+    assert not ctrl.should_continue(2.0)
+    assert ctrl.t_state == 2.0
+
+    # Companion margin crosses zero from positive exactly at the limit.
+    margin = scram_at_power_margin(1.2e6)
+    assert margin(OneWayToSCRAM.NORMAL, 1.0, 1.0e6, 0.0) > 0
+    assert margin(OneWayToSCRAM.NORMAL, 2.0, 1.5e6, 1e7) < 0
+
+
+def _power_trip_pk():
+    """An all-differential PointKinetics with a +50 pcm ramp that drives power to a
+    SCRAM trip at 1.2 MW and a strong rod insertion afterwards (no abort, so the
+    run continues and the shutdown is observable)."""
+    limit = 1.2e6
+    ctrl = ReactivityController(
+        input_reactivity=lambda state, t_state, t, **_: (
+            -0.05 * (t - t_state) if state == OneWayToSCRAM.SCRAM else (50e-5 if t > 1.0 else 0.0)
+        ),
+        state_machine=SCRAM_at_power(limit),
+        trip_margin=scram_at_power_margin(limit),
+    )
+    pk = PointKinetics(
+        generation_time=_Lam,
+        delayed_neutron_fractions=_betak,
+        delayed_groups_decay_rates=_lambdak,
+        controls=ctrl,
+    )
+    y0 = np.concatenate([[1e6], _betak * 1e6 / (_lambdak * _Lam)])
+    return pk, ctrl, y0
+
+
+@pytest.mark.parametrize("mode", ["DAE", "ODE", None])
+def test_scram_fires_in_ode_dae_and_auto_selected_modes(mode):
+    """E4: the ODE branch wired no events to solve_ivp, so an all-differential PK
+    system (which auto-selects ODE) never invoked its SCRAM state machine and ran
+    to full power. The trip must now fire in DAE, explicit ODE, and the
+    auto-selected (None -> ODE) path, and its negative reactivity must enter F so
+    the power actually falls."""
+    pk, ctrl, y0 = _power_trip_pk()
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    sol = agr.solve(y0=y0, time=np.linspace(0, 40, 401), eq_type=mode)
+
+    assert ctrl.state == OneWayToSCRAM.SCRAM  # tripped (was NORMAL forever in broken ODE)
+    assert sol.data[:, 0].max() > 1.15e6  # climbed to near the 1.2 MW trip
+    assert sol.data[-1, 0] < 1e5  # SCRAM reactivity entered F: power fell far below the trip
+
+
+def test_marginless_controller_scram_reactivity_feeds_back_in_dae():
+    """A controller with a state machine but NO trip_margin (margin-less) must
+    still feed its SCRAM reactivity into F during a DAE solve. The old boolean
+    rootfn ran change_state every step; the poll fallback must restart on the
+    F-changing transition rather than returning the unprotected trajectory."""
+
+    def machine(state, t, power, dPdt, **k):
+        return OneWayToSCRAM.SCRAM if power >= 1.2e6 else state
+
+    def rho_in(state, t_state, t, **_):
+        return -0.05 * (t - t_state) if state == OneWayToSCRAM.SCRAM else (50e-5 if t > 1.0 else 0.0)
+
+    ctrl = ReactivityController(input_reactivity=rho_in, state_machine=machine)  # no margin, no abort
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    y0 = np.concatenate([[1e6], _betak * 1e6 / (_lambdak * _Lam)])
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    sol = agr.solve(y0=y0, time=np.linspace(0, 40, 401), eq_type="DAE")
+
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+    assert sol.data[:, 0].max() > 1.15e6  # climbed to the trip
+    assert sol.data[-1, 0] < 1e5  # rods inserted -> power fell: F-feedback preserved (was ~1.6 MW)
+
+
+def test_event_condition_already_satisfied_at_start_fires():
+    """An event whose margin is already <= 0 at t0 (power already over the limit)
+    must still fire; a direction/sign-change crossing alone would miss it."""
+    limit = 1.2e6
+    ctrl = ReactivityController(
+        state_machine=SCRAM_at_power(limit),
+        trip_margin=scram_at_power_margin(limit),
+        abort_states={OneWayToSCRAM.SCRAM},
+    )
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    y0 = np.concatenate([[2e6], _betak * 2e6 / (_lambdak * _Lam)])  # power 2e6 already over the limit
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    sol = agr.solve(y0=y0, time=np.linspace(0, 10, 101), eq_type="DAE")
+
+    assert ctrl.state == OneWayToSCRAM.SCRAM  # tripped at the very start
+    assert sol.time[-1] == pytest.approx(0.0)  # aborted immediately, not run to t_end

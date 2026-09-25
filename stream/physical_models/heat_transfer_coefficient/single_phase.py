@@ -16,6 +16,7 @@ from stream.physical_models.heat_transfer_coefficient.natural_convection import 
 from stream.physical_models.heat_transfer_coefficient.turbulent import (
     Dittus_Boelter_h_spl,
 )
+from stream.smoothing import smooth_step
 from stream.substances import Liquid, LiquidFuncs
 from stream.units import Celsius, KgPerS, Meter, Meter2, Pascal, Value, WPerM2K
 from stream.utilities import lin_interp
@@ -57,6 +58,7 @@ def regime_dependent_h_spl(
     T_wall: Celsius,
     re_bounds: tuple[Value, Value],
     coolant_funcs: LiquidFuncs,
+    nat_band: tuple[float, float] = (0.5, 2.0),
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
@@ -137,9 +139,16 @@ def regime_dependent_h_spl(
         Dh,
     )
     re_film = Re_mdot(mdot, A, Dh, mu)
-    nat = gr / (re_film**2) > 1
-    if np.any(nat):
-        h[nat] = natural(**(inp | dict(coolant=coolant_funcs.to_properties(T_cool))))[nat]
+    # C1 forced<->natural blend over a symmetric factor-2 band in log(|Gr|/Re^2):
+    # abs(gr) so cooled walls (gr<0) transition too; the re_film floor removes the
+    # 0/0 -> nan mis-selection at exact stagnation (gr=0 -> phi=0 -> forced;
+    # gr!=0, re=0 -> phi->inf -> natural). C1, DESIGN §6.1.
+    phi = np.abs(gr) / np.maximum(re_film, 1e-30) ** 2
+    with np.errstate(divide="ignore"):  # log10(0) -> -inf -> weight 0
+        w_nat = smooth_step(np.log10(phi), np.log10(nat_band[0]), np.log10(nat_band[1]))
+    if np.any(w_nat > 0.0):
+        h_nat = natural(**(inp | dict(coolant=coolant_funcs.to_properties(T_cool))))
+        h = (1.0 - w_nat) * h + w_nat * h_nat
 
     return h
 

@@ -17,6 +17,7 @@ from stream.physical_models.pressure_drop.local import (
     local_pressure_by_mdot,
     local_pressure_factor,
     mdot_by_local_pressure,
+    mdot_by_local_pressure_smooth,
 )
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
@@ -45,6 +46,7 @@ __all__ = [
     "local_pressure_by_mdot",
     "local_pressure_factor",
     "mdot_by_local_pressure",
+    "mdot_by_local_pressure_smooth",
     "pressure_diff",
     "rectangular_laminar_correction",
     "regime_dependent_friction",

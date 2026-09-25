@@ -65,7 +65,7 @@ class Pump(LumpedComponent):
         if pressure is mdot0 is self.p is self.mdot0 is None:
             raise ValueError("One has to impose either the pressure or the flow in a pump")
         out = np.empty(2)
-        out[0] = variables[0] - self.T_out(Tin=directed_Tin(Tin, Tin_minus, mdot), mdot=mdot)
+        out[0] = variables[0] - self.T_out(Tin=directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps), mdot=mdot)
         if pressure is not None or self.p is not None:
             out[1] = variables[1] - (self.p if pressure is None else pressure)
         else:

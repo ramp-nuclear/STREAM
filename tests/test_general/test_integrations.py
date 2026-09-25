@@ -606,6 +606,54 @@ def test_flapper_opens_with_ref_mdot():
     assert not np.allclose(mdot_F[~closed], 0)
 
 
+def _coastdown_flapper_system():
+    """A pump whose pressure decays as exp(-t) drives a resistor whose flow is the
+    flapper's ref_mdot; the flapper opens at ref_mdot = 0.1 -> analytic t_open =
+    log(10). No max_step_size crutch: the event is localized by its margin."""
+    mdot0 = 1.0
+    p = 1.0
+    F = Flapper(open_at_current=0.1 * mdot0, f=1.0, fluid=mock_liquid_funcs, area=1.0, open_rate=1e1)
+    R = Resistor(resistance=p / mdot0)
+    J0, J1 = Junction(name="J0"), Junction(name="J1")
+    fg = flow_graph(
+        flow_edge((J0, J1), P := Pump()),
+        flow_edge((J1, J0), R, ref_mdot_for=(F,)),
+        flow_edge((J1, J0), F),
+    )
+    AGR, K = agr_k(
+        fg,
+        funcs={P: dict(pressure=lambda t: p * np.exp(-t), Tin=0.0), R: dict(Tin=0.0), F: dict(Tin=0.0, t=identity)},
+        ref_mdots=(F,),
+    )
+    y0 = np.full(len(AGR), 0.0)
+    y0[AGR.var_index(K, K.component_edge(P))] = mdot0
+    y0[AGR.var_index(K, K.component_edge(R))] = mdot0
+    y0[AGR.var_index(R, "pressure")] = -p
+    y0[AGR.var_index(F, "pressure")] = -p
+    y0[AGR.var_index(P, "pressure")] = p
+    return AGR, F, K, AGR.solve_steady(y0)
+
+
+def test_flapper_opening_time_is_grid_and_tolerance_invariant():
+    """E1/E2/E3: a boolean rootfn cannot be bisected, so the flapper opening
+    latched at internal BDF step ends -> tolerance- and grid-dependent (benchmark
+    stage D spread ~0.08 s). With a continuous margin (ref_mdot - mdot0) IDA
+    localizes the true crossing: t_open must equal the analytic log(10) and be
+    invariant across output grids and tolerances -- with NO max_step_size."""
+    t_opens = []
+    for n, rtol in [(100, 1e-6), (250, 1e-8), (137, 1e-7)]:
+        AGR, F, K, steady = _coastdown_flapper_system()
+        sol = AGR.solve(y0=steady, time=np.linspace(0, 5, n), eq_type="DAE", rtol=rtol)
+        t_opens.append(F.t_open)
+        # E3: restart from the root leaves the grid intact (no re-integrated /
+        # duplicated points), and the requested grid alignment is preserved.
+        assert np.all(np.diff(sol.time) > 0)
+        assert len(sol.time) == n
+    assert max(t_opens) - min(t_opens) < 0.02  # benchmark stage-D bar (baseline ~0.082)
+    for t_open in t_opens:
+        assert np.isclose(t_open, np.log(10.0), atol=1e-3)
+
+
 def test_flapper_and_pump():
     mdot0 = 1.0
     p = 1.0
@@ -777,12 +825,18 @@ def test_inertia_with_flapper_in_PCS_coastdown():
     Eventually, flow between the open flapper and the resistor should be equal.
     """
     k = 1
+    # This synthetic loop settles at |dp| ~ 0.3 Pa across the flapper, far below the
+    # default dp_eps = 1.0 Pa band, where the regularized inverse law departs
+    # from the pure quadratic that the equal-split assertion assumes. Since dp_eps
+    # scales with the system's dp, tune it down: at 0.3 Pa the flow error is
+    # ~3e-6, restoring exact equality to the test's rtol.
     flapper = Flapper(
         open_at_current=0.0,
         f=2 * k,
         area=1.0,
         open_rate=1.0,
         relaxation=cdr,
+        dp_eps=1e-3,
         name="F",
         fluid=mock_liquid_funcs,
     )
@@ -861,8 +915,14 @@ def test_inertia_with_transistor_in_PCS_coastdown():
     flywheel = Inertia(inertia=1e3)
     pump = Pump(mdot0=(mdot0 := 1.0))
     R = VolumetricFlowResistor(k=k1, density_func=just(1.0), name="R")
-    A = Junction("A")
-    B = Junction("B")
+    # The k2/k1 = 1e7 branch carries a genuine steady flow of ~3.2e-4 kg/s, well
+    # below the default mdot_eps = 1e-3 direction-blending band. A junction with a
+    # real sub-band operating flow tunes mdot_eps down so
+    # the tiny stream stays outside the band. The converged state is identical
+    # either way (|F| ~ 1e-16); the tuned width keeps scipy hybr's progress flag
+    # clean on this borderline guess.
+    A = Junction("A", mdot_eps=1e-4)
+    B = Junction("B", mdot_eps=1e-4)
 
     fg = flow_graph(
         flow_edge((A, B), pump, flywheel),

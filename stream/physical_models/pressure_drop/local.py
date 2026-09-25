@@ -11,6 +11,7 @@ import numpy as np
 from numba import njit
 from scipy.interpolate import RegularGridInterpolator
 
+from stream.smoothing import smooth_signed_sqrt
 from stream.units import (
     Array1D,
     Array2D,
@@ -354,6 +355,50 @@ def mdot_by_local_pressure(dp: Pascal, rho: KgPerM3, f: Value, A: Meter2) -> KgP
     -1.0
     """
     return np.sign(dp) * np.sqrt(np.abs(dp) * (2 * rho * A**2) / f)
+
+
+@njit
+def mdot_by_local_pressure_smooth(dp: Pascal, rho: KgPerM3, f: Value, A: Meter2, dp_eps: Pascal) -> KgPerS:
+    r""":func:`mdot_by_local_pressure` with the ``sign(dp)*sqrt(|dp|)`` law
+    regularized to a linear-in-``dp`` law inside ``|dp| <~ dp_eps`` (the physical
+    laminar-orifice limit), via :func:`stream.smoothing.smooth_signed_sqrt`.
+
+    .. math:: \dot{m}
+        = \sqrt{\frac{2\rho A^2}{f}}\; \frac{\Delta p}{(\Delta p^2 + \varepsilon^2)^{1/4}}
+
+    The slope at ``dp = 0`` is finite (``~ 1/sqrt(dp_eps)``) instead of the
+    unbounded ``1/sqrt(|dp|)`` of the exact law; for ``|dp| >> dp_eps`` it matches
+    the exact law to relative error ``eps**2/(4 dp**2)`` (0.25 % at ``|dp|=10 eps``,
+    2.5e-5 at ``|dp|=100 eps``). Odd in ``dp`` (no NaN for ``dp < 0``).
+
+    Parameters
+    ----------
+    dp: Pascal
+        Pressure drop across the pipe.
+    rho: KgPerM3
+        Fluid density.
+    f: Value
+        The Darcy Friction Factor.
+    A: Meter2
+        Cross-sectional flow area.
+    dp_eps: Pascal
+        Half-width of the linear regularization band around ``dp = 0``.
+
+    Returns
+    -------
+    mdot: KgPerS
+        Mass current.
+
+    Examples
+    --------
+    >>> float(round(mdot_by_local_pressure_smooth(200., 1., 1., 1., 1e-6), 6))
+    20.0
+    >>> mdot_by_local_pressure_smooth(0., 1e3, 1., 1., 1.0)
+    0.0
+    >>> bool(mdot_by_local_pressure_smooth(-1., 1., 2., 1., 1e-6) < 0)
+    True
+    """
+    return np.sqrt(2.0 * rho * A * A / f) * smooth_signed_sqrt(dp, dp_eps)
 
 
 def bend_factor(angle: Radians, relative_curvature: float, re: float) -> float:

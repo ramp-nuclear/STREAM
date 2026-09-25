@@ -4,7 +4,7 @@ A calculation for the point kinetics neutronics model
 
 import logging
 from enum import Enum, StrEnum
-from typing import Protocol, Sequence, TypeVar
+from typing import Callable, Protocol, Sequence, TypeVar
 
 import numpy as np
 from cytoolz.functoolz import curry
@@ -104,6 +104,7 @@ class ReactivityController:
         initial_state: S = OneWayToSCRAM.NORMAL,
         initial_time: Second = 0.0,
         abort_states: set[S] | None = None,
+        trip_margin: Callable[[S, Second, Watt, WPerS], float] | None = None,
     ):
         r"""
         Parameters
@@ -122,6 +123,12 @@ class ReactivityController:
             Initial time
         abort_states: set[Enum] or None
             States for which the simulation should stop, through the `should_continue` function.
+        trip_margin: Callable or None
+            Optional continuous signed margin ``(state, t, power, dPdt) -> float``,
+            strictly positive before the trip and crossing zero (from +) at it. When
+            given, the trip is localized precisely by the solver (via
+            :meth:`PointKinetics.event_margin`); without it the state machine is only
+            polled at output grid points.
         """
         self.input_reactivity = input_reactivity or just(0.0)
         self.state = initial_state
@@ -129,6 +136,7 @@ class ReactivityController:
         self.log = [(initial_state, initial_time)]
         self.state_machine = state_machine
         self.abort_states = abort_states or set()
+        self.trip_margin = trip_margin
 
     def change_state(self, t: Second, power: Watt, dPdt: WPerS, **kwargs) -> S:
         s = self.state_machine(self.state, t, power, dPdt, **kwargs)
@@ -137,11 +145,17 @@ class ReactivityController:
             self.t_state = t
             self.log.append((s, t))
             logger.info(f"Control State set to {s} at {t = }")
-        return S
+        return s
 
-    def should_continue(self, t: Second) -> bool:
-        abort = self.state in self.abort_states and t == self.t_state
-        return not abort
+    def should_continue(self, t: Second = None) -> bool:
+        return self.state not in self.abort_states
+
+    def event_margin(self, t: Second, power: Watt, dPdt: WPerS) -> float:
+        """Continuous trip margin (positive until the trip). ``+1`` when no
+        ``trip_margin`` was provided, i.e. no localizable event."""
+        if self.trip_margin is None:
+            return 1.0
+        return float(self.trip_margin(self.state, t, power, dPdt))
 
     def worth(self, t: Second) -> float:
         """Reactivity worth inserted by the controller as function of time"""
@@ -307,6 +321,16 @@ class PointKinetics(Calculation):
         dPdt = self.calculate(variables, t=t, **kwargs)[0]
         self.controls.change_state(t, power, dPdt, **kwargs)
 
+    @unpacked(exclude=("T",))
+    def event_margin(self, variables: Sequence[float], *, t: Second, **kwargs) -> Array1D:
+        """Continuous trip margin for the controller (empty when it has no
+        ``trip_margin``, so the run falls back to output-grid polling)."""
+        if self.controls.trip_margin is None:
+            return np.empty(0)
+        power = variables[self.indices("power")]
+        dPdt = self.calculate(variables, t=t, **kwargs)[0]
+        return np.array([self.controls.event_margin(t, power, dPdt)])
+
     @property
     def mass_vector(self) -> Sequence[bool]:
         return np.ones(self.m + 1, dtype=bool)
@@ -373,8 +397,24 @@ def temperature_reactivity(
 
 
 @curry
-def SCRAM_at_power(power_limit: Watt, power: Watt, **kwargs):
-    return power > power_limit
+def SCRAM_at_power(power_limit: Watt, state: S, t: Second, power: Watt, dPdt: WPerS, **kwargs) -> S:
+    """State machine (a :class:`StateMachine`): latch to SCRAM once ``power`` reaches
+    ``power_limit``, and stay there. Pair with :func:`scram_at_power_margin` so the
+    trip is localized precisely rather than polled at the output grid. The ``>=``
+    matches the margin's zero crossing so the transition fires reliably at the
+    localized event (a strict ``>`` can miss it when the solver lands on ``power ==
+    power_limit``)."""
+    return OneWayToSCRAM.SCRAM if power >= power_limit else state
+
+
+def scram_at_power_margin(power_limit: Watt) -> Callable[[S, Second, Watt, WPerS], float]:
+    """Companion ``trip_margin`` for :func:`SCRAM_at_power`: ``power_limit - power``,
+    which crosses zero (from positive) exactly when power exceeds the limit. It is
+    **consumed** once SCRAM is reached (returns +1) so the one-way trip cannot
+    re-fire as power falls back through the limit after the rod insertion — the
+    controller analogue of the flapper's latch. A ``trip_margin`` that is not
+    consumed after its transition would chatter across zero and stall the run."""
+    return lambda state, t, power, dPdt: 1.0 if state == OneWayToSCRAM.SCRAM else power_limit - power
 
 
 class PointKineticsWInput(PointKinetics):

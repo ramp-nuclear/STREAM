@@ -541,12 +541,11 @@ class Screen(LumpedComponent):
         if re > 1000:
             return factor
         if re < 50:
-            # At exactly zero flow (re == 0) the 22/re term diverges, but dp then
-            # carries a factor of mdot*|mdot| = 0, so the loss coefficient value is
-            # immaterial there; returning the finite quadratic part keeps dp = 0.
+            # At re == 0 the 1/re term would diverge, but dp then carries mdot*|mdot| = 0, so the value is immaterial; return the finite part.
             if re == 0:
                 return factor
-            return factor + 22 / re
+            # C0-continuous with the tabulated branch at Re=50 (= 1.44*factor).
+            return 1.44 * factor + 22.0 * (1.0 / re - 1.0 / 50.0)
 
         re_list = np.array([50, 100, 150, 200, 300, 400, 500, 1000])
         k_tag = np.array([1.44, 1.24, 1.13, 1.08, 1.03, 1.01, 1.01, 1.00])

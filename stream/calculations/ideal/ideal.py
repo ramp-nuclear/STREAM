@@ -42,6 +42,11 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
 
     """
 
+    #: Advection direction-blending half-width fed to ``directed_Tin``; ``None``
+    #: uses ``stream.smoothing.DEFAULT_MDOT_EPS``. Override per instance
+    #: (``comp.mdot_eps = ...``).
+    mdot_eps: KgPerS | None = None
+
     # noinspection PyPep8Naming
     @unpacked
     def calculate(
@@ -75,7 +80,7 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
         errors: Array1D
             The error in ``variables``
         """
-        inputs = dict(dp=variables[1], Tin=directed_Tin(Tin, Tin_minus, mdot), mdot=mdot) | kwargs
+        inputs = dict(dp=variables[1], Tin=directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps), mdot=mdot) | kwargs
         out = np.empty(2)
         out[0] = variables[0] - self.T_out(**inputs)
         out[1] = variables[1] - self.dp_out(**inputs)

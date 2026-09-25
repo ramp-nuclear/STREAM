@@ -180,6 +180,11 @@ class Channel(Calculation):
     transverse flow.
     """
 
+    #: Advection direction-blending half-width fed to ``directed_Tin``; ``None``
+    #: uses ``stream.smoothing.DEFAULT_MDOT_EPS``. Override per instance
+    #: (``channel.mdot_eps = ...``).
+    mdot_eps: KgPerS | None = None
+
     def __init__(
         self,
         z_boundaries: Meter,
@@ -267,7 +272,7 @@ class Channel(Calculation):
         q_left, q_right = _heatflux(**T_vecs, h_left=h_left, h_right=h_right)
         d = dict(
             T_cool=self._dTdt(
-                Tin=directed_Tin(Tin, Tin_minus, mdot),
+                Tin=directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
@@ -346,7 +351,7 @@ class Channel(Calculation):
         T = np.asarray(vector[0 : self.n])
         state[ChannelVar.re] = Re_mdot(mdot, self.pipe.area, self.pipe.hydraulic_diameter, self.fluid.viscosity(T))
         state[ChannelVar.mass_flow] = float(mdot)
-        state[ChannelVar.tin] = float(directed_Tin(Tin, Tin_minus, mdot))
+        state[ChannelVar.tin] = float(directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps))
         state[ChannelVar.tout] = T[-1 if mdot >= 0 else 0]
         state[ChannelVar.velocity] = float(mdot) / self.fluid.density(T) / self.pipe.area
         if p_abs is not None:
@@ -430,7 +435,7 @@ class ChannelHeatFlux(Channel):
         T_vecs = self._T_vecs(variables, T_left, T_right)
         d = dict(
             T_cool=self._dTdt(
-                Tin=directed_Tin(Tin, Tin_minus, mdot),
+                Tin=directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
@@ -696,7 +701,7 @@ class ChannelAndContacts(Channel):
 
         d = dict(
             T_cool=self._dTdt(
-                Tin=directed_Tin(Tin, Tin_minus, mdot),
+                Tin=directed_Tin(Tin, Tin_minus, mdot, self.mdot_eps),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
