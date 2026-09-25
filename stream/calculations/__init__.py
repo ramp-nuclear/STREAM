@@ -12,8 +12,10 @@ from .channel import (
     ChannelAndContacts as ChannelAndContacts,
     SaturationReachedError as SaturationReachedError,
 )
+from .break_flow import Orifice as Orifice
 from .flapper import Flapper as Flapper
 from .heat_diffusion import Fuel as Fuel, Solid as Solid
 from .ideal import *
 from .kirchhoff import Junction as Junction, Kirchhoff as Kirchhoff, KirchhoffWDerivatives as KirchhoffWDerivatives
 from .point_kinetics import PointKinetics as PointKinetics, PointKineticsWInput as PointKineticsWInput
+from .tank import Environment as Environment, Tank as Tank

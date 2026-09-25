@@ -138,6 +138,14 @@ Flapper
    :undoc-members:
    :show-inheritance:
 
+Break Flow
+----------
+
+.. automodule:: stream.calculations.break_flow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Kirchhoff
 ---------
 
@@ -169,3 +177,11 @@ Eulogy for The Kirchhoff Calculation
     `and by thy works we shall prevail!`
 
 However, this was not the case, and Kirchhoff lives on.
+
+Tank
+----
+
+.. automodule:: stream.calculations.tank
+   :members:
+   :undoc-members:
+   :show-inheritance:

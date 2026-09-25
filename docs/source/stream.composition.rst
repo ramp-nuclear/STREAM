@@ -33,6 +33,14 @@ Subsystems
    :show-inheritance:
 
 
+Loss of Coolant
+---------------
+.. automodule:: stream.composition.loc
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Calculation Constructors
 ------------------------
 .. automodule:: stream.composition.constructors

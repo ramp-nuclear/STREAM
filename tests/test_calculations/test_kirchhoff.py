@@ -9,14 +9,23 @@ from hypothesis import given
 from networkx import MultiDiGraph
 
 from stream.aggregator import Aggregator
+from stream.calculations.ideal.ideal import LumpedComponent
+from stream.calculations.ideal.resistors import LevelHead, Resistor
 from stream.calculations.kirchhoff import (
     Junction,
     Kirchhoff,
     KirchhoffWDerivatives,
+    build_kcl_matrix,
     build_kvl_matrix,
+    build_signed_paths,
     to_graph_for_cycles,
     to_str,
 )
+from stream.calculations.tank import Environment, Tank
+from stream.composition.cycle import flow_edge, flow_graph
+from stream.errors import StreamConstructionError, StreamError
+from stream.substances import light_water
+from stream.units import g as gravity
 
 from .conftest import are_close, pos_medium_floats
 
@@ -307,3 +316,193 @@ def test_kirchhoff_reports_when_reference_cannot_reach_abs_pressure_target():
     g.add_edge("A", "P", comps=("surge_line",))  # dead-end pressurizer branch
     with pytest.raises(ValueError, match="reach"):
         Kirchhoff(g, "core", reference_node=("P", 1.55e7))
+
+
+def _line_graph():
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("c1",), signify=1.0)
+    g.add_edge("C", "B", comps=("c2",), signify=1.0)
+    return g
+
+
+def test_signed_paths_flip_sign_against_orientation():
+    g = _line_graph()
+    order = dict(c1=0, c2=1)
+    m = build_signed_paths(g, order, "A", lambda c: None, "C").toarray()
+    assert m.tolist() == [[1.0, -1.0]]
+
+
+def test_signed_paths_component_target_stops_mid_edge():
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("c1", "c2", "c3"), signify=1.0)
+    order = dict(c1=0, c2=1, c3=2)
+    edge_of = {"c1": ("A", "B", 0), "c2": ("A", "B", 0), "c3": ("A", "B", 0)}
+    m = build_signed_paths(g, order, "A", edge_of.__getitem__, "c2").toarray()
+    assert m.tolist() == [[1.0, 1.0, 0.0]]
+
+
+def test_signed_paths_pick_the_traversed_parallel_edge():
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("c1",), signify=1.0)
+    g.add_edge("A", "B", comps=("c2", "c3"), signify=1.0)
+    order = dict(c1=0, c2=1, c3=2)
+    edge_of = {"c1": ("A", "B", 0), "c2": ("A", "B", 1), "c3": ("A", "B", 1)}
+    m = build_signed_paths(g, order, "A", edge_of.__getitem__, "c3").toarray()
+    assert m[0, 0] == 0.0 and m[0, 1] == 1.0 and m[0, 2] == 1.0
+
+
+def test_closed_network_residual_layout_is_unchanged():
+    j1, j2 = Junction(name="a"), Junction(name="b")
+    r1, r2 = Resistor(1.0, name="r1"), Resistor(2.0, name="r2")
+    g = flow_graph(flow_edge((j1, j2), r1), flow_edge((j2, j1), r2))
+    k = Kirchhoff(g)
+    out = k.calculate(np.array([2.0, 3.0]), pressure={r1: 5.0, r2: 7.0})
+    kcl = (build_kcl_matrix(g) @ np.array([2.0, 3.0]))[:-1]
+    assert out.shape == (2,)
+    assert out[0] == pytest.approx(kcl[0])
+
+
+def test_signed_paths_stop_at_the_inlet_of_a_component_target():
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("c1", "c2"), signify=1.0)
+    g.add_edge("C", "B", comps=("c3",), signify=1.0)
+    order = dict(c1=0, c2=1, c3=2)
+    edge_of = {"c1": ("A", "B", 0), "c2": ("A", "B", 0), "c3": ("C", "B", 0)}
+    forward = build_signed_paths(g, order, "A", edge_of.__getitem__, "c2", to_inlet=True).toarray()
+    assert forward.tolist() == [[1.0, 0.0, 0.0]]
+
+    backward = build_signed_paths(g, order, "C", edge_of.__getitem__, "c2", to_inlet=True).toarray()
+    assert backward.tolist() == [[0.0, -1.0, 1.0]]
+
+
+class _Head(LumpedComponent):
+    """A hydrostatic head fed by the level of the surface it hangs from."""
+
+    def __init__(self, fluid, z_connection, level0, sign=1.0, name="head"):
+        self.name = name
+        self._rho = fluid.density
+        self.z = z_connection
+        self.level0 = level0
+        self.sign = sign
+
+    def dp_out(self, *, Tin, level=None, **_):
+        return self.sign * self._rho(Tin) * gravity * ((self.level0 if level is None else level) - self.z)
+
+
+def _open_line():
+    tank = Tank(light_water, 2.0, 4.0, z_uncovery=1.0, fixed_temperature=30.0)
+    env = Environment(name="env")
+    j = Junction(name="mid")
+    head = _Head(light_water, 0.0, 4.0, name="head")
+    hole = Resistor(1.0, name="hole")
+    g = flow_graph(flow_edge((tank, j), head), flow_edge((j, env), hole))
+    return tank, env, g, head, hole
+
+
+def test_surface_network_is_square_and_keeps_interior_conservation():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, surface_nodes={tank: None, env: None})
+    out = k.calculate(np.array([1.0, 3.0]), pressure={head: 10.0, hole: -10.0})
+    assert out.shape == (2,)
+    assert out[0] == pytest.approx(1.0 - 3.0)
+    assert out[1] == pytest.approx(0.0)
+
+
+def test_surface_pressure_difference_enters_the_path_row():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, surface_nodes={tank: 201325.0, env: 101325.0})
+    out = k.calculate(np.array([1.0, 1.0]), pressure={head: 0.0, hole: 0.0})
+    assert out[1] == pytest.approx(0.0 - (101325.0 - 201325.0))
+
+
+def test_surface_taps_carry_incidence_signs():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, surface_nodes={tank: None, env: None})
+    assert k.surface_taps(tank) == {head: -1.0}
+    assert k.surface_taps(env) == {hole: 1.0}
+
+
+def test_non_inventory_surface_node_is_rejected():
+    j1, j2 = Junction(name="a"), Junction(name="b")
+    g = flow_graph(flow_edge((j1, j2), Resistor(1.0, name="r")))
+    with pytest.raises(Exception, match="surface"):
+        Kirchhoff(g, surface_nodes={j1: 101325.0})
+
+
+def test_reference_defaults_to_first_surface_and_pabs_traverses_heads():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, hole, surface_nodes={tank: 101325.0, env: None})
+    p = {head: 100.0, hole: -40.0}
+    v = np.array([1.0, 1.0, 0.0])
+    out = k.calculate(v, pressure=p)
+    assert out[-1] == pytest.approx(101325.0 + 100.0 - 0.0)
+
+
+def test_derivative_kirchhoff_accepts_surfaces():
+    tank, env, g, head, hole = _open_line()
+    k = KirchhoffWDerivatives(g, surface_nodes={tank: None, env: None})
+    assert len(k) == 4
+    out = k.calculate(np.array([1.0, 3.0, 0.1, 0.2]), pressure={head: 10.0, hole: -10.0})
+    assert out[0] == pytest.approx(0.1) and out[1] == pytest.approx(0.2)
+
+
+def test_a_surface_pressure_schedule_is_read_at_the_given_time():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, surface_nodes={tank: lambda t: 101325.0 + 1000.0 * t, env: 101325.0})
+    out = k.calculate(np.array([1.0, 1.0]), pressure={head: 0.0, hole: 0.0}, t=2.0)
+    assert out[1] == pytest.approx(2000.0)
+
+
+def test_a_surface_pressure_schedule_without_a_time_is_reported():
+    tank, env, g, head, hole = _open_line()
+    k = Kirchhoff(g, surface_nodes={tank: lambda t: 101325.0, env: 101325.0})
+    with pytest.raises(StreamError, match="t="):
+        k.calculate(np.array([1.0, 1.0]), pressure={head: 0.0, hole: 0.0})
+
+
+def test_a_scheduled_first_surface_cannot_ground_absolute_pressure():
+    tank, env, g, head, hole = _open_line()
+    with pytest.raises(StreamConstructionError, match="reference_node"):
+        Kirchhoff(g, hole, surface_nodes={tank: lambda t: 101325.0, env: None})
+
+
+def test_a_surface_node_outside_the_graph_is_rejected():
+    tank, env, g, head, hole = _open_line()
+    stray = Environment(name="stray")
+    with pytest.raises(StreamConstructionError, match="surface"):
+        Kirchhoff(g, surface_nodes={tank: None, stray: None})
+
+
+def test_a_mis_signed_level_head_at_a_surface_is_rejected():
+    tank = Tank(light_water, 2.0, 4.0, z_uncovery=1.0, fixed_temperature=30.0)
+    env = Environment(name="env")
+    j = Junction(name="mid")
+    head = LevelHead(light_water, 0.0, 4.0, sign=-1.0, name="head")
+    hole = Resistor(1.0, name="hole")
+    g = flow_graph(flow_edge((tank, j), head), flow_edge((j, env), hole))
+    with pytest.raises(StreamConstructionError, match=r"sign -1\b.*sign \+1"):
+        Kirchhoff(g, surface_nodes={tank: None, env: None})
+
+
+def _marked_open_line():
+    tank = Tank(light_water, 2.0, 4.0, z_uncovery=1.0, fixed_temperature=30.0)
+    env = Environment(name="env")
+    j = Junction(name="mid")
+    head = _Head(light_water, 0.0, 4.0, name="head")
+    hole = Resistor(1.0, name="hole")
+    g = flow_graph(flow_edge((tank, j), head), flow_edge((j, env), hole, ref_mdot_for=(tank,)))
+    return tank, env, g, head, hole
+
+
+def test_a_surface_node_asking_for_a_reference_current_gets_the_marked_edge():
+    tank, env, g, head, hole = _marked_open_line()
+    k = Kirchhoff(g, surface_nodes={tank: None, env: None})
+    assert k.indices("ref_mdot", asking=tank) == k.variables[k.component_edge(hole)]
+    assert k.indices("mdot", asking=tank) == {head: k.variables[k.component_edge(head)]}
+
+
+def test_a_surface_node_asking_for_absolute_pressure_is_not_served_a_flow_map():
+    tank, env, g, head, hole = _marked_open_line()
+    k = Kirchhoff(g, hole, surface_nodes={tank: None, env: None})
+    with pytest.raises(KeyError):
+        k.indices("p_abs", asking=tank)

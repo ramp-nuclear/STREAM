@@ -69,3 +69,25 @@ table, keyed to `git describe`, to `RESULTS.md`. Both are local outputs and are 
 
 The ladder is not a pytest suite on purpose: its stages are expected to fail on the baseline.
 Each defect it exposes is pinned by a unit regression test under `tests/`.
+
+## LOC extension — the loop that loses its inventory
+
+`loc_extension.py` is a separate case, not a ladder stage. It takes the general multichannel
+system, replaces its fixed top boundary with a pool (a free-surface `Tank` wired in through
+`pool()`, with a friction-carrying return line), and puts a 5 cm² sharp-edged `Orifice` break
+on the lower plenum, the pump's suction. One continuous `agr.solve` run carries it from the
+sealed forced steady state through scram and pump trip, the flapper opening on its own margin,
+the staggered reversal into natural circulation, the break at 1500 s, the drain, and the
+terminal uncovery of the pool.
+
+It asserts the staging (flapper before break before uncovery), that natural circulation was
+established before the break took over, that the inventory the break carried equals the
+inventory the pool lost to within 1 %, that uncovery is the event that stops the run, that the
+hot channel stays below saturation throughout, and that every reversible leg has a
+`Tin_minus` supplier, so no leg silently mis-advects once it reverses. Measured: flapper opens
+at 58.4 s, uncovery at 2740.6 s after draining 5948 kg, mass closure 6e-7, peak coolant
+109.7 °C (10.6 °C margin).
+
+```bash
+conda run -n stream-env python benchmarks/lofa/loc_extension.py   # exits 0 iff every check holds
+```

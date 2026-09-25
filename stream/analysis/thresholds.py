@@ -26,7 +26,9 @@ from typing import Callable, Protocol
 import numpy as np
 
 from stream.aggregator import Aggregator, Solution
+from stream.calculations.break_flow import SATURATION_PRESSURE_FLOOR
 from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction, SaturationReachedError
+from stream.calculations.kirchhoff import to_str
 from stream.errors import StreamError
 from stream.physical_models.heat_transfer_coefficient.temperatures import (
     Bergles_Rohsenow_dT_ONB,
@@ -413,6 +415,96 @@ def raise_on_domain(result, agg: Aggregator, *, times=None, note: str = "") -> N
     worst = max(candidates, key=_domain_severity)
     message = _finalize_message(_domain_message(worst), note, _is_raw_iterate(result))
     raise DomainValidityError(message)
+
+
+@dataclass(frozen=True)
+class CavitationCrossing:
+    """One component whose liquid reached saturation at the absolute pressure routed to it.
+
+    Attributes
+    ----------
+    component: str
+        Name of the component whose ``p_abs`` reached saturation.
+    t: float or None
+        Time of the first crossing for a trajectory; ``None`` for a single State.
+    margin: Celsius
+        The smallest subcooling margin over the whole result, ``Tsat(p_abs) - Tin``.
+    """
+
+    component: str
+    t: float | None
+    margin: Celsius
+
+
+class CavitationError(StreamError, RuntimeError):
+    """A component's liquid reached saturation at the absolute pressure it carries.
+
+    Raised post-hoc by :func:`raise_on_cavitation`, never on a solve path.
+    ``StreamError``-family, so ``except StreamError`` catches it."""
+
+
+def _cavitation_margins(state, agg: Aggregator):
+    """``(name, margin)`` for every absolute-pressure component of every flow solver in
+    ``agg``: the saturation temperature at its routed ``p_abs``, less the temperature it
+    carries, at its worst point in ``state``."""
+    for node in agg.graph:
+        for comp in getattr(node, "abs_pressure_comps", ()):
+            fluid = getattr(comp, "fluid", None)
+            routed, carried = state.get(node.name), state.get(comp.name)
+            if fluid is None or routed is None or carried is None or "Tin" not in carried:
+                continue
+            p_abs = np.atleast_1d(np.asarray(routed[to_str(("p_abs", comp))], dtype=float))
+            Tin = np.atleast_1d(np.asarray(carried["Tin"], dtype=float))
+            yield comp.name, float(np.min(fluid.sat_temperature(np.maximum(p_abs, SATURATION_PRESSURE_FLOOR)) - Tin))
+
+
+def cavitation_crossings(result, agg: Aggregator, *, times=None) -> list[CavitationCrossing]:
+    """Components in ``agg`` whose absolute pressure fell to the saturation pressure of the
+    liquid they carry — where a single-phase leg starts to flash. Empty when every one of
+    them stays subcooled.
+
+    Only components handed to a flow solver's ``abs_pressure_comps`` have an absolute
+    pressure to judge, and of those only the ones exposing a ``fluid`` and a ``Tin`` of
+    their own are scanned; a heated channel's bulk saturation belongs to
+    :func:`channel_saturation_crossings` instead. The saturation temperature is read at
+    the pressure floor the break-flow sentinel uses, so a pressure driven to zero yields a
+    margin rather than an extrapolation.
+
+    ``result`` may be a single :class:`~stream.state.State`, a
+    :class:`~stream.state.StateTimeseries`, a raw solve vector/trajectory (with optional
+    ``times``), or a :class:`~stream.aggregator.Solution`. Each crossing reports the
+    earliest time it happened and the smallest margin reached over the whole result.
+    """
+    data = _as_states(result, agg, times)
+    if not _is_timeseries(data):
+        return [CavitationCrossing(name, None, m) for name, m in _cavitation_margins(data, agg) if m <= 0.0]
+    first: dict[str, float] = {}
+    worst: dict[str, float] = {}
+    for t in sorted(data):
+        for name, margin in _cavitation_margins(data[t], agg):
+            worst[name] = min(margin, worst.get(name, np.inf))
+            if margin <= 0.0 and name not in first:
+                first[name] = float(t)
+    return [CavitationCrossing(name, t, worst[name]) for name, t in first.items()]
+
+
+def raise_on_cavitation(result, agg: Aggregator, *, times=None, note: str = "") -> None:
+    """Raise :class:`CavitationError` if any component's absolute pressure reached the
+    saturation pressure of its liquid in ``result`` (the deepest excursion). No-op
+    otherwise. Mirrors :func:`raise_on_saturation`: use it after a steady solve or on a
+    caught failure's state to attribute it in domain terms; ``note`` is prepended, and a
+    raw-array input gains the non-converged-iterate caveat."""
+    crossings = cavitation_crossings(result, agg, times=times)
+    if not crossings:
+        return
+    worst = min(crossings, key=lambda c: c.margin)
+    when = "" if worst.t is None else f" from t = {worst.t:g} s"
+    message = (
+        f"the absolute pressure carried by {worst.component!r} reached the saturation pressure of "
+        f"its liquid{when} (subcooling margin {worst.margin:.4g} °C): the single-phase discharge and "
+        f"friction laws on that leg hold only while it stays liquid."
+    )
+    raise CavitationError(_finalize_message(message, note, _is_raw_iterate(result)))
 
 
 # Below any physical convective coefficient: only a numerically-zero wall coupling (a stagnant / natural-convection cell) trips the q/h blow-up guard.

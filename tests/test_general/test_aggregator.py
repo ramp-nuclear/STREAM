@@ -485,3 +485,60 @@ def test_polling_driver_attaches_pre_failure_trajectory():
     reached = np.atleast_1d(exc.value.t)
     assert len(reached) > 2  # the pre-failure horizon, not just the tiny failed restart segment
     assert np.all(np.diff(reached) > 0)  # strictly monotone
+
+
+def _open_line_aggregator():
+    from stream.calculations import Environment, Junction, LevelHead, Resistor, Tank
+    from stream.composition import FlowGraph, flow_edge
+    from stream.substances import light_water
+
+    tank = Tank(light_water, 2.0, 4.0, z_uncovery=1.0, fixed_temperature=30.0)
+    env = Environment(name="ambient")
+    j = Junction(name="mid")
+    fg = FlowGraph(
+        flow_edge((tank, j), LevelHead(light_water, 0.0, 4.0, name="head")),
+        flow_edge((j, env), Resistor(1.0, name="hole")),
+        surface_nodes={tank: None, env: None},
+    )
+    return tank, fg.aggregator
+
+
+def test_refresh_mass_tracks_pin_state():
+    """A pinned tank leaves every equation algebraic, which solve() reads as a steady
+    system; unpinning it and refreshing makes the system mixed, which it reads as a DAE."""
+    tank, agr = _open_line_aggregator()
+    pinned = agr.mass.sum()
+    assert not any(agr.mass)
+
+    tank.unpin()
+    agr.refresh_mass()
+    assert agr.mass.sum() == pinned + 1
+    assert any(agr.mass) and not all(agr.mass)
+
+    tank.pin()
+    agr.refresh_mass()
+    assert agr.mass.sum() == pinned
+
+
+def test_refresh_mass_rejects_a_changed_variable_count():
+    class Growing(Calculation):
+        def __init__(self, name):
+            self.name = name
+            self.n = 2
+
+        def calculate(self, variables, **_):
+            return np.zeros(self.n)
+
+        @property
+        def mass_vector(self):
+            return np.zeros(self.n, dtype=bool)
+
+        @property
+        def variables(self):
+            return {"x": slice(0, self.n)}
+
+    node = Growing("grower")
+    agr = Aggregator(DiGraph([(node, Growing("other"), vars_("x"))]))
+    node.n = 3
+    with pytest.raises(StreamConstructionError, match="length"):
+        agr.refresh_mass()

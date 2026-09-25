@@ -38,6 +38,12 @@ Local
 .. automodule:: stream.physical_models.pressure_drop.local
    :members:
 
+Discharge
+=========
+
+.. automodule:: stream.physical_models.pressure_drop.discharge
+   :members:
+
 
 Other Pressure Drop Components
 ==============================

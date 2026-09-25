@@ -1,5 +1,13 @@
 from numba import njit
 
+from stream.physical_models.pressure_drop.discharge import (
+    DISCHARGE_CD,
+    discharge_cd,
+    drain_level,
+    drain_time,
+    lichtarowicz_cd,
+    stub_discharge_mdot,
+)
 from stream.physical_models.pressure_drop.friction import (
     Darcy_Weisbach_pressure_by_mdot,
     GeneralDarcyFactor,
@@ -38,11 +46,16 @@ __all__ = [
     "Blasius_friction",
     "contraction_factor",
     "Darcy_Weisbach_pressure_by_mdot",
+    "DISCHARGE_CD",
+    "discharge_cd",
+    "drain_level",
+    "drain_time",
     "expansion_factor",
     "friction_factor",
     "gravity_pressure",
     "inertia_pressure",
     "laminar_friction",
+    "lichtarowicz_cd",
     "local_pressure_by_mdot",
     "local_pressure_factor",
     "mdot_by_local_pressure",
@@ -53,6 +66,7 @@ __all__ = [
     "turbulent_friction",
     "viscosity_correction",
     "static_pressure",
+    "stub_discharge_mdot",
 ]
 
 

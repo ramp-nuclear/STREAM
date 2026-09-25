@@ -9,6 +9,7 @@ from stream.calculations import (
     Bend,
     Gravity,
     HeatExchanger,
+    LevelHead,
     LocalPressureDrop,
     Pump,
     Resistor,
@@ -16,6 +17,7 @@ from stream.calculations import (
 )
 from stream.calculations.ideal.resistors import ResistorMul, Screen
 from stream.substances import light_water
+from stream.units import g
 from stream.utilities import just, summed
 
 from .conftest import medium_floats, normal_floats, pos_medium_floats
@@ -283,3 +285,15 @@ def test_zero_bend_angle_returns_zero_pressure_drop(mdot):
         friction_func=just(1.0),
     )
     assert np.equal(bend.dp_out(mdot=mdot, Tin=25.0), 0.0)
+
+
+def test_levelhead_defaults_to_initial_level_when_unrouted():
+    lh = LevelHead(light_water, 0.5, 4.0)
+    rho = float(light_water.density(np.array([30.0])))
+    assert lh.dp_out(Tin=np.array([30.0])) == pytest.approx(rho * g * 3.5)
+
+
+def test_levelhead_tracks_routed_level_and_sign():
+    lh = LevelHead(light_water, 0.0, 4.0, sign=-1.0)
+    rho = float(light_water.density(np.array([30.0])))
+    assert lh.dp_out(Tin=np.array([30.0]), level=2.0) == pytest.approx(-rho * g * 2.0)

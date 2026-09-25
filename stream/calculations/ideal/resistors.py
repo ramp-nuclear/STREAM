@@ -56,6 +56,7 @@ __all__ = [
     "Resistor",
     "Friction",
     "Gravity",
+    "LevelHead",
     "LocalPressureDrop",
     "Bend",
     "ResistorSum",
@@ -296,6 +297,70 @@ class Gravity(LumpedComponent):
         (negative ``disposition``) returns a negative one.
         """
         return gravity_pressure(rho=self._rho(Tin), dh=self.h, g=self.g)
+
+
+@sealed
+@_multiplies
+class LevelHead(LumpedComponent):
+    r"""The hydrostatic head a free liquid surface exerts on the leg it feeds,
+    :math:`\Delta p = \pm\rho(T_{in})g(L - z)`, where :math:`L` is the surface level
+    and :math:`z` the elevation at which the leg is connected.
+
+    Unlike :class:`Gravity`, whose height difference is fixed for the run, the head
+    here follows a level that moves: hand it a :class:`~stream.calculations.tank.Tank`'s
+    ``level`` and the leg's driving head falls as the tank drains, reaching zero when
+    the surface arrives at the connection and going negative once the connection is
+    above the surface.
+
+    Examples
+    --------
+    >>> from stream.substances import light_water
+    >>> head = LevelHead(light_water, z_connection=1.0, level0=5.0)
+    >>> float(round(head.dp_out(Tin=30.0), 3))
+    39026.987
+    >>> float(round(head.dp_out(Tin=30.0, level=3.0), 3))
+    19513.493
+
+    See Also
+    --------
+    Gravity, ~stream.calculations.tank.Tank
+    """
+
+    def __init__(
+        self,
+        fluid: LiquidFuncs,
+        z_connection: Meter,
+        level0: Meter,
+        sign: float = 1.0,
+        name: str = "LevelHead",
+    ):
+        r"""
+
+        Parameters
+        ----------
+        fluid: LiquidFuncs
+            Coolant properties
+        z_connection: Meter
+            Elevation of the connection to the leg, in the same datum as the level.
+        level0: Meter
+            Level used while none is routed in — the initial surface level.
+        sign: float
+            ``+1`` when the surface sits at the tail of the edge this component is on
+            (the leg descends from it), ``-1`` when it sits at the head.
+        name: str
+            Calculation's name
+        """
+        self.name = name
+        self.fluid = fluid
+        self._rho = fluid.density
+        self.z = z_connection
+        self.level0 = level0
+        self.sign = sign
+
+    def dp_out(self, *, Tin: Celsius, level: Meter = None, **_) -> Pascal:
+        r"""Returns :math:`\pm\rho(T_{in})g(L - z)`, using ``level0`` when no ``level``
+        is routed in."""
+        return self.sign * self._rho(Tin) * g * ((self.level0 if level is None else level) - self.z)
 
 
 @sealed

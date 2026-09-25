@@ -14,6 +14,7 @@ system objects as nodes, and connected by edges depicting the connected cycles.
 """
 
 import logging
+import numbers
 from itertools import chain, count, takewhile
 from typing import Any, Hashable, Iterable, Sequence
 
@@ -26,9 +27,9 @@ from scipy.sparse import csr_matrix, dok_matrix
 
 from stream import Calculation, smoothing
 from stream.calculation import sealed
-from stream.errors import StreamConstructionError
+from stream.errors import StreamConstructionError, StreamError
 from stream.smoothing import soft_pos
-from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
+from stream.units import Array1D, Celsius, FunctionOfTime, KgPerS, Name, Pascal, Place, Second
 from stream.utilities import STREAM_DEBUG, concat
 
 COMPS = "comps"
@@ -44,6 +45,7 @@ class Kirchhoff(Calculation):
         graph: MultiDiGraph,
         *abs_pressure_comps: Hashable,
         reference_node: tuple[Hashable, Pascal] = None,
+        surface_nodes: dict[Hashable, Pascal | FunctionOfTime | None] = None,
         name: str = "Kirchhoff",
     ):
         r"""
@@ -57,7 +59,16 @@ class Kirchhoff(Calculation):
             (abs. pressure at its set upwind end) by the Kirchhoff calculation. Such components must be given here.
         reference_node: tuple[Hashable, Pascal]
             For the absolute pressure to be computed, a reference pressure ("ground") must be provided.
-            This reference must be given at some node of the graph.
+            This reference must be given at some node of the graph. With free surfaces present it
+            defaults to the first of them, at its own surface pressure.
+        surface_nodes: dict[Hashable, Pascal | FunctionOfTime | None] or None
+            Nodes holding a free liquid surface, mapped to the pressure above it (``None`` reads the
+            node's own ``surface_pressure``). Mass may enter and leave the network through them, so
+            they are exempt from the current balance; the network closes instead on the pressure
+            difference between each surface and the first one. Only a
+            :class:`~stream.calculations.tank.Tank` or an
+            :class:`~stream.calculations.tank.Environment` may be a surface node, because
+            whatever crosses it has to be accounted for somewhere.
         name: str or None
             Calculation's name
 
@@ -133,6 +144,29 @@ class Kirchhoff(Calculation):
         self._edge_order = tuple(graph.edges)
         self._kcl = build_kcl_matrix(graph)
         self._kvl = build_kvl_matrix(graph, self.components)
+
+        self.surface_nodes = _validated_surfaces(graph, surface_nodes)
+        self._keep_rows = self._path_matrix = self._path_pressures = self._path_rhs = None
+        if self.surface_nodes:
+            first, *rest = self.surface_nodes
+            self._keep_rows = np.array(
+                [i for i, node in enumerate(graph.nodes) if node not in self.surface_nodes], dtype=int
+            )
+            self._path_matrix = build_signed_paths(graph, self.components, first, self._component_edge, *rest)
+            self._path_pressures = (self.surface_nodes[first], tuple(self.surface_nodes[node] for node in rest))
+            if not any(map(callable, self.surface_nodes.values())):
+                self._path_rhs = np.fromiter(
+                    (p - self._path_pressures[0] for p in self._path_pressures[1]), dtype=float, count=len(rest)
+                )
+            if reference_node is None and abs_pressure_comps:
+                if callable(self._path_pressures[0]):
+                    raise StreamConstructionError(
+                        f"The absolute pressure would be grounded at {first}, whose surface pressure is "
+                        f"scheduled in time, but a reference has to be a fixed number. Pass an explicit "
+                        f"reference_node=(node, pressure)."
+                    )
+                reference_node = (first, self._path_pressures[0])
+
         self.abs_pressure_comps = abs_pressure_comps or ()
         self.ref_node, self.ref_pressure = reference_node or (None, [])
         self._abs_pressure_book = {("p_abs", comp): i + self._n for i, comp in enumerate(self.abs_pressure_comps)}
@@ -143,13 +177,31 @@ class Kirchhoff(Calculation):
             for asks in asking
         }
 
-        self._abs_matrix = build_paths(
-            graph,
-            self.components,
-            self.ref_node,
-            self._component_edge,
-            *abs_pressure_comps,
-        )
+        if self.surface_nodes:
+            self._abs_matrix = build_signed_paths(
+                graph,
+                self.components,
+                self.ref_node,
+                self._component_edge,
+                *abs_pressure_comps,
+                to_inlet=True,
+            )
+            rows = len(self._keep_rows) + self._kvl.shape[0] + len(self.surface_nodes) - 1
+            if rows != self.edges_count:
+                raise StreamConstructionError(
+                    f"The flow system is not square: {self.nodes_count} nodes and {len(self.surface_nodes)} "
+                    f"free surfaces give {rows} equations for {self.edges_count} edge flows. A free-surface "
+                    f"network needs one balance per non-surface node, one loop equation per cycle, and one "
+                    f"path equation per surface beyond the first."
+                )
+        else:
+            self._abs_matrix = build_paths(
+                graph,
+                self.components,
+                self.ref_node,
+                self._component_edge,
+                *abs_pressure_comps,
+            )
 
         self._vars = keymap(to_str, self._edge_book | self._abs_pressure_book)
 
@@ -172,7 +224,7 @@ class Kirchhoff(Calculation):
                 yield i, comp
 
     # noinspection PyMethodOverriding
-    def calculate(self, variables: Sequence[KgPerS], *, pressure) -> Array1D:
+    def calculate(self, variables: Sequence[KgPerS], *, pressure, t: Second = None) -> Array1D:
         pressure = np.fromiter(
             (pressure[comp] for comp in self.components),
             dtype=float,
@@ -180,10 +232,59 @@ class Kirchhoff(Calculation):
         )
         abs_eqs = self.ref_pressure + self._abs_matrix @ pressure - np.asarray(variables[self._n :])
 
+        if self.surface_nodes:
+            return concat(
+                (self._kcl @ np.asarray(variables[: self._n]))[self._keep_rows],
+                self._kvl @ pressure,
+                self._path_matrix @ pressure - self._surface_differences(t),
+                abs_eqs,
+            )
+
         return concat(
             (self._kcl @ np.asarray(variables[: self._n]))[:-1],
             self._kvl @ pressure,
             abs_eqs,
+        )
+
+    def surface_taps(self, node: Hashable) -> dict[Calculation, float]:
+        r"""The components carrying mass to and from a free-surface ``node``.
+
+        Parameters
+        ----------
+        node: Hashable
+            A node of the flow graph.
+
+        Returns
+        -------
+        dict[Calculation, float]
+            The closest component on each adjacent edge, mapped to the sign (weighted by
+            the edge's ``signify``) with which its mass current enters the node: positive
+            for an edge ending at the node, negative for one leaving it.
+        """
+        taps = {}
+        for u, v, data in self.g.edges(data=True):
+            weight = data.get("signify", 1.0)
+            if u is node:
+                taps[data[COMPS][0]] = -weight
+            if v is node:
+                taps[data[COMPS][-1]] = weight
+        return taps
+
+    def _surface_differences(self, t: Second) -> Array1D:
+        if self._path_rhs is not None:
+            return self._path_rhs
+        if t is None:
+            raise StreamError(
+                f"{self} has a surface pressure scheduled in time but was not given the time, so the "
+                f"path equations cannot be closed. Wire it with funcs={{{self.name}: dict(t=identity)}} "
+                f"(stream.utilities.identity)."
+            )
+        base, rest = self._path_pressures
+        base = base(t) if callable(base) else base
+        return np.fromiter(
+            ((p(t) if callable(p) else p) - base for p in rest),
+            dtype=float,
+            count=len(rest),
         )
 
     def indices(self, variable: Name, asking=None) -> Place | dict[Calculation, Place]:
@@ -208,12 +309,12 @@ class Kirchhoff(Calculation):
             The place in which the calculation uses the variable, or a dictionary with variable names related to this
             name and their places.
         """
-        if isinstance(asking, Junction):
-            return _comps_closest(asking, self.g, self._var_book)
         if variable == "p_abs":
             return self._abs_pressure_book[("p_abs", asking)]
         if variable == "ref_mdot":
             return self.ref_mdots[asking]
+        if isinstance(asking, Junction):
+            return _comps_closest(asking, self.g, self._var_book)
         if variable != "mdot":
             raise KeyError(f"{type(self).__name__} does not serve {variable!r} (only 'mdot', 'p_abs', 'ref_mdot').")
         return self._var_book[asking]
@@ -445,6 +546,157 @@ def build_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets) 
     return m.tocsr()
 
 
+def build_signed_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets, to_inlet=False) -> csr_matrix:
+    r"""Building a matrix of signed component walks from a source node to targets.
+
+    Unlike :func:`build_paths`, the walk ignores edge orientation: it takes the shortest
+    undirected route and records each component with ``+1`` when its edge is traversed
+    along its orientation and ``-1`` when against it. The resulting row therefore sums
+    component pressure gains into the pressure difference between the source node and
+    the target, whichever way the edges happen to point.
+
+    Parameters
+    ----------
+    g: MultiDiGraph
+        Flow graph.
+    comps_order: dict
+        Component to column index.
+    source: Hashable
+        Node the walks start from.
+    component_edge: Callable
+        Maps a component to the ``(u, v, key)`` of the edge holding it.
+    targets: Hashable
+        One row per target. A target may be a node or a component; a component target
+        is reached through the nearer endpoint of its own edge and then along that
+        edge's components.
+    to_inlet: bool
+        End a component target's walk at that component's inlet (its upwind end in edge
+        orientation) rather than at its far end. This is the absolute-pressure
+        convention: the pressure the component sees on its inlet side. A walk arriving
+        from the edge's head crosses the component either way, since the inlet lies
+        beyond it.
+
+    Returns
+    -------
+    csr_matrix
+        Shape ``(len(targets), len(comps_order))``.
+
+    Examples
+    --------
+    >>> g = MultiDiGraph()
+    >>> g.add_edge('A', 'B', comps=('C1',))
+    0
+    >>> g.add_edge('C', 'B', comps=('C2',))
+    0
+    >>> build_signed_paths(g, dict(C1=0, C2=1), 'A', lambda c: None, 'C').toarray()
+    array([[ 1., -1.]])
+    """
+    h, edges_of = _undirected_expansion(g)
+    m = dok_matrix((len(targets), len(comps_order)))
+
+    for i, target in enumerate(targets):
+        try:
+            if target in g:
+                entries = _signed_walk(h, edges_of, g, source, target)
+            else:
+                u, v, k = edge = component_edge(target)
+                comps = g.edges[edge][COMPS]
+                if nx.shortest_path_length(h, source, u) <= nx.shortest_path_length(h, source, v):
+                    entries = _signed_walk(h, edges_of, g, source, u)
+                    entries += [(comp, 1.0) for comp in takewhile(lambda c: c is not target, comps)]
+                    if not to_inlet:
+                        entries.append((target, 1.0))
+                else:
+                    entries = _signed_walk(h, edges_of, g, source, v)
+                    entries += [(comp, -1.0) for comp in takewhile(lambda c: c is not target, reversed(comps))]
+                    entries.append((target, -1.0))
+        except nx.NetworkXNoPath:
+            raise ValueError(
+                f"The node {source!r} cannot reach {target!r} in the flow graph. Anchor the "
+                "source so that it reaches every target, or connect the intervening edges."
+            ) from None
+
+        for comp, sign in entries:
+            m[i, comps_order[comp]] = sign
+    return m.tocsr()
+
+
+def _validated_surfaces(g: MultiDiGraph, surface_nodes) -> dict:
+    """Check the free-surface declaration and fill in each node's own pressure for ``None``."""
+    if not surface_nodes:
+        return {}
+
+    # Lazy imports avoid the kirchhoff <- tank/resistors import cycle.
+    from stream.calculations.ideal import resistors
+    from stream.calculations.tank import Environment, Tank
+
+    resolved = {}
+    for node, pressure in surface_nodes.items():
+        if node not in g:
+            raise StreamConstructionError(
+                f"The surface node {node} is not in the flow graph, so nothing flows through it. "
+                f"Put it on a flow edge, or drop it from surface_nodes."
+            )
+        if not isinstance(node, (Tank, Environment)):
+            raise StreamConstructionError(
+                f"{node} ({type(node).__name__}) cannot be a free surface: mass crosses a surface into "
+                f"and out of the network, so the node has to own that inventory. Use a Tank for a pool "
+                f"and an Environment for the ambient."
+            )
+        if not g.degree(node):
+            raise StreamConstructionError(
+                f"The surface node {node} has no adjacent flow edge, so it can neither fill nor drain. "
+                f"Connect it, or drop it from surface_nodes."
+            )
+        if pressure is None:
+            pressure = getattr(node, "surface_pressure", None)
+            if pressure is None:
+                raise StreamConstructionError(
+                    f"The surface pressure of {node} was left to the node itself, but it carries no "
+                    f"surface_pressure. Give the pressure in surface_nodes."
+                )
+        if not (callable(pressure) or isinstance(pressure, numbers.Real)):
+            raise StreamConstructionError(
+                f"The surface pressure of {node} is {pressure!r}: it must be a number or a function of "
+                f"time. A pressure that follows the system state is not supported."
+            )
+        resolved[node] = pressure
+
+    level_head = getattr(resistors, "LevelHead", None)
+    if level_head is not None:
+        for u, v, data in g.edges(data=True):
+            for node, comp, expected in ((u, data[COMPS][0], 1.0), (v, data[COMPS][-1], -1.0)):
+                if isinstance(node, Tank) and node in resolved and isinstance(comp, level_head):
+                    if comp.sign != expected:
+                        raise StreamConstructionError(
+                            f"{comp} carries sign {comp.sign:+.0f} on the edge {u} -> {v}, but {node} is at "
+                            f"that edge's {'tail' if expected > 0 else 'head'}, where the hydrostatic head "
+                            f"has to have sign {expected:+.0f}. Flip the sign, or the edge."
+                        )
+    return resolved
+
+
+def _undirected_expansion(g: MultiDiGraph) -> tuple[Graph, dict]:
+    """The undirected split of ``g``, plus the edge each split node stands for."""
+    h = Graph()
+    h.add_nodes_from(g.nodes)
+    edges_of = {}
+    for u, v, k in g.edges(keys=True):
+        edges_of[vn := _VirtualNode()] = (u, v, k)
+        h.add_edge(u, vn)
+        h.add_edge(vn, v)
+    return h, edges_of
+
+
+def _signed_walk(h: Graph, edges_of: dict, g: MultiDiGraph, source, target) -> list[tuple[Any, float]]:
+    entries = []
+    for came_from, node in pairwise(nx.shortest_path(h, source=source, target=target)):
+        if (edge := edges_of.get(node)) is not None:
+            sign = 1.0 if came_from is edge[0] else -1.0
+            entries += [(comp, sign) for comp in g.edges[edge][COMPS]]
+    return entries
+
+
 @sealed
 class Junction(Calculation):
     """
@@ -615,9 +867,16 @@ class KirchhoffWDerivatives(Kirchhoff):
         graph: MultiDiGraph,
         *abs_pressure_comps: Hashable,
         reference_node: tuple[Hashable, Pascal] = None,
+        surface_nodes: dict[Hashable, Pascal | FunctionOfTime | None] = None,
         name: str = "Kirchhoff",
     ):
-        super().__init__(graph, *abs_pressure_comps, reference_node=reference_node, name=name)
+        super().__init__(
+            graph,
+            *abs_pressure_comps,
+            reference_node=reference_node,
+            surface_nodes=surface_nodes,
+            name=name,
+        )
         self._n_ = super().__len__()
 
     def indices(self, variable: Name, asking=None) -> Place:
@@ -640,10 +899,10 @@ class KirchhoffWDerivatives(Kirchhoff):
         mdots2 = {(*k, "mdot2"): v + self._n_ for k, v in mdots.items()}
         return super().variables | keymap(to_str, mdots2)
 
-    def calculate(self, variables: Sequence[float], *, pressure) -> Array1D:
+    def calculate(self, variables: Sequence[float], *, pressure, t: Second = None) -> Array1D:
         super_vars = variables[: self._n_]
         mdots2 = variables[-self._n :]
-        algebraic = super().calculate(super_vars, pressure=pressure)
+        algebraic = super().calculate(super_vars, pressure=pressure, t=t)
         return concat(mdots2, algebraic)
 
     @property

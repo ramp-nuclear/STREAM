@@ -268,6 +268,30 @@ class Aggregator:
         self._validate_construction()
         logger.log(STREAM_DEBUG, f"New Aggregator of length {len(self)}")
 
+    def refresh_mass(self) -> None:
+        """Re-read :attr:`mass` from the Calculations currently in the graph.
+
+        A Calculation may move an equation between the differential and the algebraic
+        side after the Aggregator was built — :meth:`Tank.pin <stream.calculations.tank.Tank.pin>`
+        and :meth:`Tank.unpin <stream.calculations.tank.Tank.unpin>` are the usual reason.
+        Call this before the next solve so the mass matrix follows.
+
+        Raises
+        ------
+        StreamConstructionError
+            If the total number of equations changed. Slices, routing and lengths are
+            fixed at construction, so a Calculation that grew or shrank needs a new
+            Aggregator, not a refresh.
+        """
+        mass = concat(*(node.mass_vector for node in self.graph))
+        if len(mass) != len(self.mass):
+            raise StreamConstructionError(
+                f"Refreshing the mass vector found {len(mass)} equations where the Aggregator was "
+                f"built with {len(self.mass)}: a Calculation changed its length, which also moves "
+                f"every later slice. Rebuild the Aggregator instead of refreshing it."
+            )
+        self.mass = mass
+
     def _validate_construction(self) -> None:
         """Run the construction-time wiring checks once, at the end of ``__init__``.
 

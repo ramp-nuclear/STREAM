@@ -19,9 +19,12 @@ from stream.calculations import (
     HeatExchanger,
     Junction,
     Kirchhoff,
+    LevelHead,
+    Orifice,
     PointKinetics,
     PointKineticsWInput,
     Pump,
+    Tank,
 )
 from stream.calculations.kirchhoff import COMPS
 from stream.composition.mtr_geometry import symmetric_plate
@@ -34,6 +37,7 @@ from stream.utilities import just
 __all__ = [
     "check_gravity_mismatch",
     "guess_hydraulic_steady_state",
+    "loc_steady_state",
     "point_kinetics_steady_state",
     "symmetric_plate_steady_state",
     "HydraulicStrategy",
@@ -263,6 +267,59 @@ def guess_hydraulic_steady_state(
     return State.merge(Ts, pressures, htc, {k.name: k.save(a) | k_guess})
 
 
+def loc_steady_state(
+    k: Kirchhoff,
+    mdots: dict[Calculation, KgPerS],
+    temperature: Celsius,
+    strategy: HydraulicStrategyMap | None = None,
+) -> State:
+    r"""A guess for a free-surface system held intact: every break still sealed and
+    every pool still full.
+
+    It is :func:`guess_hydraulic_steady_state` with the two things a draining system
+    adds. Legs carrying a sealed :class:`~.Orifice` need no flow of their own — a
+    sealed break carries none — so they are seeded at zero; and every free-surface
+    :class:`~.Tank` is seeded at the level it is pinned to, at its own temperature
+    when it fixes one.
+
+    Parameters
+    ----------
+    k: Kirchhoff
+        Flow solver of the system, with its free surfaces declared.
+    mdots: dict[Calculation, KgPerS]
+        Known mass currents, as in :func:`guess_hydraulic_steady_state`. Break legs
+        may be left out.
+    temperature: Celsius
+        Assumed temperature for the hydraulic calculations, and for any tank that does
+        not fix its own.
+    strategy: HydraulicStrategyMap or None
+        Per-component :math:`\Delta p(\dot{m}, T)` for components the guess cannot
+        identify.
+
+    Returns
+    -------
+    State
+        A guess to hand to ``solve_steady`` while the tanks are pinned.
+
+    See Also
+    --------
+    guess_hydraulic_steady_state, ~stream.composition.loc.pool,
+    ~stream.calculations.tank.Tank
+    """
+    known = {k.component_edge(c) for c in mdots}
+    sealed_legs = {c: 0.0 for c in k.components if isinstance(c, Orifice) and k.component_edge(c) not in known}
+    hydraulic = guess_hydraulic_steady_state(k, dict(mdots) | sealed_legs, temperature, strategy)
+    pools = {
+        node.name: dict(
+            level=node.level0,
+            T=temperature if node.fixed_temperature is None else node.fixed_temperature,
+        )
+        for node in getattr(k, "surface_nodes", None) or {}
+        if isinstance(node, Tank)
+    }
+    return State.merge(hydraulic, pools)
+
+
 class GravityMismatchError(StreamError, ValueError):
     pass
 
@@ -276,7 +333,8 @@ def _is_nc_intent(pump: Pump) -> bool:
 
 
 def _gravity_reverse_flow_sources(k: Kirchhoff) -> Iterable[tuple]:
-    """Yield ``(gravity, reversed_flow_source)`` for every Gravity on k's flow graph.
+    """Yield ``(component, reversed_flow_source)`` for every buoyancy-driven component on
+    k's flow graph.
 
     A component's inlet temperature under reversed flow (``Tin_minus``) is fed by its
     *downstream* neighbour in the series chain ``[tail_junction, *comps, head_junction]``
@@ -286,7 +344,7 @@ def _gravity_reverse_flow_sources(k: Kirchhoff) -> Iterable[tuple]:
     for u, v, comps in k.g.edges(data=COMPS):
         series = [u, *comps, v]
         for i, comp in enumerate(comps, start=1):
-            if isinstance(comp, Gravity):
+            if isinstance(comp, (Gravity, LevelHead)):
                 yield comp, series[i + 1]
 
 
@@ -309,7 +367,7 @@ def check_gravity_mismatch(
         The unclosed-loop test is a **static, zero-flow** check: it evaluates every :math:`\Delta p`
         at :math:`\dot m = 0`, so it is *direction-blind* and cannot see a Gravity that sources the
         wrong temperature under reversed flow. A second, topology-only pass (heuristic, ``warn``-only)
-        classifies each Gravity's reversed-flow temperature supplier when a natural-convection pump
+        classifies each Gravity's or LevelHead's reversed-flow temperature supplier when a natural-convection pump
         is present; see :data:`_gravity_reverse_flow_sources`.
 
     Parameters
@@ -355,7 +413,7 @@ def check_gravity_mismatch(
         for grav, reverse_src in _gravity_reverse_flow_sources(k):
             if not isinstance(reverse_src, HeatExchanger):
                 warnings.warn(
-                    f"Gravity {grav.name!r} sources its reversed-flow density temperature from "
+                    f"{type(grav).__name__} {grav.name!r} sources its reversed-flow density temperature from "
                     f"{str(reverse_src)!r} (state-dependent), not a fixed-temperature boundary; under "
                     f"reversed/natural-convection flow its buoyancy will use the hot outlet temperature. "
                     f"Sandwich it between two HeatExchangers, or reset the temperature on the reversed side."

@@ -59,6 +59,8 @@ fuels = st.builds(
 )
 frictions = st.builds(calcs.Friction, reg_floats, light_water, reg_floats, reg_floats, reg_floats, names)
 gravities = st.builds(calcs.Gravity, light_water, reg_floats, name=names)
+level_heads = st.builds(calcs.LevelHead, light_water, reg_floats, reg_floats, name=names)
+orifices = st.builds(calcs.Orifice, light_water, reg_floats, reg_floats, name=names)
 pdrops = st.builds(calcs.LocalPressureDrop, light_water, reg_floats, reg_floats, name=names)
 regfrics = st.builds(
     calcs.RegimeDependentFriction,
@@ -76,6 +78,8 @@ res_sums = st.lists(resistors, min_size=1, max_size=50).map(lambda x: calcs.Resi
 heat_exchangers = st.builds(calcs.HeatExchanger, reg_floats)
 inductors = st.builds(calcs.Inertia, reg_floats, name=names)
 junctions = st.builds(calcs.Junction, names)
+environments = st.builds(calcs.Environment, reg_floats, names)
+tanks = st.builds(calcs.Tank, light_water, reg_floats, reg_floats, z_uncovery=reg_floats, name=names)
 point_kinetics = st.builds(
     calcs.PointKinetics,
     reg_floats,
@@ -118,6 +122,8 @@ strats = {
     "Fuel": fuels,
     "Friction": frictions,
     "Gravity": gravities,
+    "LevelHead": level_heads,
+    "Orifice": orifices,
     "PressureDrop": pdrops,
     "RegularFriction": regfrics,
     "Resistor": resistors,
@@ -125,6 +131,8 @@ strats = {
     "HeatExchanger": heat_exchangers,
     "Inductor": inductors,
     "Junction": junctions,
+    "Environment": environments,
+    "Tank": tanks,
     "PointKinetics": point_kinetics,
     "Pump": pumps,
     "Kirchoff": kirchoffs,

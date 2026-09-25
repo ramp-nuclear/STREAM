@@ -22,7 +22,7 @@ from stream.aggregator import (
     vars_,
 )
 from stream.calculation import Calculation
-from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
+from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives, LevelHead, Tank
 from stream.calculations.kirchhoff import COMPS
 from stream.composition import guess_hydraulic_steady_state
 from stream.composition.subsystems import HydraulicStrategyMap, check_gravity_mismatch
@@ -203,6 +203,26 @@ def kirchhoffify(
     for component in filter(lambda _n: isinstance(_n, Junction), k.g.nodes):
         add(k, component, "mdot")
 
+    for node in getattr(k, "surface_nodes", None) or {}:
+        if not isinstance(node, Tank):
+            continue
+        for u, v, comps in k.g.edges(data=COMPS):
+            if u is not node and v is not node:
+                continue
+            for comp in filter(lambda c: isinstance(c, LevelHead), comps):
+                add(node, comp, "level")
+
+    for component in k.components:
+        if (closes_below := getattr(component, "closes_below", None)) is not None:
+            watched = closes_below[0]
+            if not isinstance(watched, Tank):
+                raise StreamConstructionError(
+                    f"{component} closes below a level on {watched} ({type(watched).__name__}), which "
+                    f"owns no level to watch, so the closure could never fire. The first element of "
+                    f"closes_below must be the Tank whose level arrests it."
+                )
+            add(watched, component, "level")
+
     if inertial_comps is not None:
         if not isinstance(k, KirchhoffWDerivatives):
             raise TypeError(f"{type(k)} does not handle inertial components, as it does not index mdot2")
@@ -327,6 +347,7 @@ def flow_graph_to_agr_and_k(
     abs_pressure_comps: Sequence[Hashable] = None,
     inertial_comps: Sequence[Calculation] = None,
     ref_mdots: Sequence[Calculation] = None,
+    surface_nodes: dict[Hashable, Pascal] = None,
     k_constructor: Type[Kirchhoff] = Kirchhoff,
 ) -> tuple[Aggregator, Kirchhoff]:
     r"""Create an Aggregator and Kirchhoff objects from a flow graph.
@@ -349,6 +370,9 @@ def flow_graph_to_agr_and_k(
     ref_mdots: Sequence[Calculation] or None
         Calculations for which a reference current is desired.
         This list must be a subset of a list already known to ``k`` from its flow-graph
+    surface_nodes: dict[Hashable, Pascal] or None
+        Nodes holding a free liquid surface, mapped to the pressure above it. See
+        :class:`~.Kirchhoff`.
     k_constructor: Type[Kirchhoff]
         A Kirchhoff constructor
 
@@ -357,7 +381,7 @@ def flow_graph_to_agr_and_k(
     agr, k: Aggregator, Kirchhoff
     """
     abs_comps = a if (a := abs_pressure_comps) is not None else ()
-    K = k_constructor(f_graph, *abs_comps, reference_node=reference_node)
+    K = k_constructor(f_graph, *abs_comps, reference_node=reference_node, surface_nodes=surface_nodes)
     agr = flow_graph_to_aggregator(f_graph, funcs=funcs)
     agr = kirchhoffify(
         agr,
@@ -380,6 +404,7 @@ class FlowGraph:
         abs_pressure_comps: Sequence[Hashable] = None,
         inertial_comps: Sequence[Calculation] = None,
         ref_mdots: Sequence[Calculation] = None,
+        surface_nodes: dict[Hashable, Pascal] = None,
         k_constructor: Type[Kirchhoff] = Kirchhoff,
     ):
         r"""
@@ -402,6 +427,9 @@ class FlowGraph:
         ref_mdots: Sequence[Calculation] or None
             Calculations for which a reference current is desired.
             This list must be a subset of a list already known to ``k`` from its flow-graph
+        surface_nodes: dict[Hashable, Pascal] or None
+            Nodes holding a free liquid surface, mapped to the pressure above it. See
+            :class:`~.Kirchhoff`.
         k_constructor: Type[Kirchhoff]
             A Kirchhoff constructor
         """
@@ -413,6 +441,7 @@ class FlowGraph:
             abs_pressure_comps,
             inertial_comps,
             ref_mdots,
+            surface_nodes,
             k_constructor,
         )
 

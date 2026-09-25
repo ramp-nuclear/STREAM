@@ -3,7 +3,12 @@
 import numpy as np
 import pytest
 
+from stream.analysis.thresholds import CavitationError, cavitation_crossings, raise_on_cavitation
+from stream.calculations import Environment, Gravity, Junction, Orifice, Resistor, Tank
 from stream.calculations.channel import ChannelAndContacts
+from stream.composition import FlowGraph, flow_edge, pool
+from stream.composition.subsystems import loc_steady_state
+from stream.physical_models.pressure_drop.discharge import discharge_cd
 from stream.physical_models.thresholds import (
     Fabrega_CHF,
     Mirshak_CHF,
@@ -14,6 +19,7 @@ from stream.physical_models.thresholds import (
 )
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
+from stream.utilities import identity
 
 from .conftest import mock_pipe
 
@@ -143,3 +149,88 @@ def test_SK_CHF_forward_flow_keeps_cell0_as_inlet():
     got = Sudo_Kaminaga_CHF(T_bulk=T_bulk, sat_coolant=sat, mdot=1.0, pipe=mock_pipe)
     expected = _sk_envelope(T_bulk, sat, 1.0, mock_pipe, inlet=0, outlet=-1)
     assert np.allclose(got, expected)
+
+
+A_TANK, L0, Z_UNCOVERY = 2.0, 4.0, 1.0
+A_HOLE, CD = 5e-4, discharge_cd("sharp")
+Z_CREST, Z_OUTLET = 6.0, -2.0
+
+
+def _lifted_drain(temperature):
+    """A pool discharging over a crest six metres up before falling to an outlet below it.
+
+    The pressure the crest sees is the pool's surface pressure less the height the liquid
+    is lifted, so it falls with the level and can reach saturation while the drain runs.
+    """
+    tank = Tank(light_water, A_TANK, L0, z_uncovery=Z_UNCOVERY, fixed_temperature=temperature, name="pool")
+    env = Environment(name="ambient")
+    j_intake, j_crest = Junction(name="intake"), Junction(name="crest")
+    hole = Orifice(light_water, A_HOLE, CD, dp_eps=1e-3, name="break")
+    fg = FlowGraph(
+        *pool(tank, outflows={j_intake: 0.0}),
+        flow_edge((j_intake, j_crest), riser := Gravity(light_water, -Z_CREST, name="riser")),
+        flow_edge(
+            (j_crest, env),
+            hole,
+            Gravity(light_water, Z_CREST - Z_OUTLET, name="downcomer"),
+            line := Resistor(1e3, name="line"),
+        ),
+        surface_nodes={tank: None, env: None},
+        abs_pressure_comps=[hole, line],
+        funcs={hole: dict(t=identity)},
+    )
+    agr, k = fg.aggregator, fg.kirchhoff
+    vec = agr.solve_steady(loc_steady_state(k, {agr["head_pool_intake"]: 0.0, riser: 0.0}, temperature))
+    hole.open(0.0)
+    tank.unpin()
+    agr.refresh_mass()
+    times = np.concatenate((np.linspace(0.0, 4.0, 21), np.linspace(4.0, 2500.0, 250)[1:]))
+    return agr, hole, agr.solve(vec, times)
+
+
+@pytest.fixture(scope="module")
+def hot_lifted_drain():
+    return _lifted_drain(90.0)
+
+
+def test_cavitation_names_the_component_whose_absolute_pressure_reaches_saturation(hot_lifted_drain):
+    agr, hole, sol = hot_lifted_drain
+    crossings = cavitation_crossings(sol, agr)
+
+    assert [c.component for c in crossings] == [hole.name]
+    assert 0.0 < crossings[0].t < sol.time[-1]
+    assert crossings[0].margin < 0.0
+
+
+def test_cavitation_skips_components_that_carry_no_fluid(hot_lifted_drain):
+    agr, _, sol = hot_lifted_drain
+    assert "line" not in {c.component for c in cavitation_crossings(sol, agr)}
+
+
+def test_raise_on_cavitation_reports_the_worst_component(hot_lifted_drain):
+    agr, hole, sol = hot_lifted_drain
+    with pytest.raises(CavitationError) as exc:
+        raise_on_cavitation(sol, agr)
+    assert hole.name in str(exc.value)
+
+
+def test_cavitation_dates_a_raw_trajectory_by_the_supplied_times(hot_lifted_drain):
+    agr, hole, sol = hot_lifted_drain
+    trajectory = np.vstack([sol.data[0], sol.data[-1]])
+    crossings = cavitation_crossings(trajectory, agr, times=[10.0, 20.0])
+
+    assert [(c.component, c.t) for c in crossings] == [(hole.name, 20.0)]
+
+
+def test_raise_on_cavitation_keeps_the_note_and_warns_on_a_raw_iterate(hot_lifted_drain):
+    agr, _, sol = hot_lifted_drain
+    with pytest.raises(CavitationError) as exc:
+        raise_on_cavitation(sol.data[-1], agr, note="no converged transient — ")
+    assert str(exc.value).startswith("no converged transient — ")
+    assert "non-converged iterate" in str(exc.value)
+
+
+def test_a_cold_pool_keeps_its_crest_subcooled():
+    agr, _, sol = _lifted_drain(20.0)
+    assert cavitation_crossings(sol, agr) == []
+    raise_on_cavitation(sol, agr)
