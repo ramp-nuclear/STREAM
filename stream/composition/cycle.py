@@ -26,6 +26,7 @@ from stream.calculations import Junction, Kirchhoff, KirchhoffWDerivatives
 from stream.calculations.kirchhoff import COMPS
 from stream.composition import guess_hydraulic_steady_state
 from stream.composition.subsystems import HydraulicStrategyMap, check_gravity_mismatch
+from stream.errors import StreamConstructionError
 from stream.units import Celsius, KgPerS, Pascal
 from stream.utilities import summed
 
@@ -172,8 +173,8 @@ def kirchhoffify(
     k: Kirchhoff
         Calculation which already contains:
     hydraulic_comps: Sequence[Calculation]
-        a subset of calculations in agr which interact with Kirchhoff. If it empty, the calculations contained in k's
-        flow graph are used.
+        a subset of calculations in agr which interact with Kirchhoff. ``None`` (the default) wires every
+        calculation contained in k's flow graph; an empty sequence wires none (the two are distinct).
     inertial_comps: Sequence[Calculation]
         a subset of calculations in agr which require :math:`\ddot{m}` from kirchhoff.
         This requires ``k`` to be KirchhoffWDerivatives.
@@ -191,7 +192,9 @@ def kirchhoffify(
     a = CalculationGraph(DiGraph(agr.graph), agr.funcs)
     add = partial(add_variables, a.graph)
 
-    for component in hydraulic_comps or k.components.keys():
+    # 'is None' (not 'or'): an explicit [] must wire nothing, not fall through to all components.
+    to_wire = k.components.keys() if hydraulic_comps is None else hydraulic_comps
+    for component in to_wire:
         add(k, component, "mdot")
         if _indices_missing(component, "pressure"):
             raise KeyError(f"{component} is missing 'pressure' in its 'indices' method and {MIS_MSG}")
@@ -291,19 +294,28 @@ def flow_graph_to_aggregator(f_graph: MultiDiGraph, funcs: ExternalFunctions | N
     """
     edges = f_graph.edges(data=COMPS, keys=True)
     agr = summed(in_series(u, *comps, v) for u, v, _, comps in edges)
-    g = DiGraph(agr.graph)
     # Non-Calculation Single Input Single Output (SISO) junctions are allowed,
     # Here we deal with them, since they can't go into the Aggregator as nodes.
-    siso = filter(lambda n: not isinstance(n, Calculation), f_graph.nodes)
+    siso = [n for n in f_graph.nodes if not isinstance(n, Calculation)]
     for junction in siso:
+        # Read live adjacency each iteration: dissolving one SISO junction can rewire a neighbouring junction a later iteration must see.
+        adj = dict(agr.graph.adj[junction])
         u, v = None, None
-        for node, data in (adj := g.adj[junction]).items():
+        for node, data in adj.items():
             u = node if "Tin_minus" in data[VARS] else u
             v = node if "Tin" in data[VARS] else v
         assert u and v
+        assert len(adj) == 2, "Virtual nodes cannot be connected by more than 2 edges"
         agr += in_series(u, v, cyclic=(u, v) in agr.graph.edges)
         agr.graph.remove_node(junction)
-        assert len(adj) == 2, "Virtual nodes cannot be connected by more than 2 edges"
+    survivors = [j for j in siso if j in agr.graph]
+    if survivors:
+        raise StreamConstructionError(
+            f"These virtual (SISO) junctions could not be dissolved and remain as phantom graph "
+            f"nodes with no mass_vector/variables: {survivors}. A comps-free edge between virtual "
+            f"junctions leaves such a node; put at least one component on the connecting edge, or "
+            f"merge the junctions."
+        )
     agr.funcs = funcs
     return agr
 

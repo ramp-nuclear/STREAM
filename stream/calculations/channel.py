@@ -11,7 +11,7 @@ from typing import Sequence, TypeVar
 
 import numpy as np
 
-from stream.calculation import CalcState, Calculation, unpacked
+from stream.calculation import CalcState, Calculation, sealed, unpacked
 from stream.errors import StreamError
 from stream.physical_models.dimensionless import Gr, Pe, Re_mdot
 from stream.physical_models.heat_transfer_coefficient import (
@@ -215,6 +215,7 @@ def _heatflux(
     return h_left * (T_left - T), h_right * (T_right - T)
 
 
+@sealed
 class Channel(Calculation):
     """
     A channel in a reactor core, this model utilizes the incompressible flow
@@ -428,6 +429,7 @@ class Channel(Calculation):
         return self._vars
 
 
+@sealed
 class ChannelHeatFlux(Channel):
     r"""A channel in a reactor core.
     This model utilizes the incompressible flow assumption.
@@ -488,7 +490,7 @@ class ChannelHeatFlux(Channel):
         return self.load(d)
 
     @unpacked
-    def save(self, vector: Sequence[float], q_left: WPerM2, q_right: WPerM2, **kwargs) -> CalcState:
+    def save(self, vector: Sequence[float], q_left: WPerM2 = 0.0, q_right: WPerM2 = 0.0, **kwargs) -> CalcState:
         s = super().save(vector, **kwargs)
         s[ChannelVar.get("heatflux", Direction.left)] = q_left
         s[ChannelVar.get("heatflux", Direction.right)] = q_right
@@ -496,6 +498,7 @@ class ChannelHeatFlux(Channel):
         return s
 
 
+@sealed
 class ChannelAndContacts(Channel):
     """
     This class assumes two walls encompass a channel. It calculates the heat

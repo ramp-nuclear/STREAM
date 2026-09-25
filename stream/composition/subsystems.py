@@ -1,6 +1,8 @@
 """Helper functions for creating steady state initial guesses for small and specific subsystems"""
 
 import logging
+import warnings
+from collections.abc import Mapping
 from typing import Callable, Iterable
 
 import numpy as np
@@ -13,12 +15,15 @@ from stream.calculations import (
     DPCalculation,
     Flapper,
     Fuel,
+    Gravity,
+    HeatExchanger,
     Junction,
     Kirchhoff,
     PointKinetics,
     PointKineticsWInput,
     Pump,
 )
+from stream.calculations.kirchhoff import COMPS
 from stream.composition.mtr_geometry import symmetric_plate
 from stream.errors import StreamError
 from stream.physical_models.pressure_drop import local_pressure_by_mdot
@@ -80,6 +85,11 @@ def symmetric_plate_steady_state(
     """
     if initial_guess_iterations < 1:
         raise ValueError(f"Must try at least once to obtain values. Was {initial_guess_iterations}")
+    if mdot == 0:
+        raise ValueError(
+            "mass flow must be nonzero to build a coolant-temperature guess; "
+            "for NC starts pass a small signed mdot (e.g. ±0.01)"
+        )
     plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin), f: dict(power=power)}).to_aggregator()
 
     power_mat = np.zeros(f.shape)
@@ -189,7 +199,13 @@ def guess_hydraulic_steady_state(
     k_guess = keymap(k.component_edge, mdots)
     s = set(map(k.component_edge, k.components))
     if s != set(k_guess):
-        raise MissingFlowError(f"Missing flow data in edges {s - set(k_guess)}")
+        missing_edges = s - set(k_guess)
+        missing = sorted(
+            getattr(c, "name", str(c)) for c in k.components if k.component_edge(c) in missing_edges
+        )
+        raise MissingFlowError(
+            f"Missing flow data in edges {missing_edges} — provide mdot for their components {missing}."
+        )
 
     strategy = strategy or {}
 
@@ -246,10 +262,33 @@ class GravityMismatchError(StreamError, ValueError):
     pass
 
 
+def _is_nc_intent(pump: Pump) -> bool:
+    """A pump that imposes neither a nonzero head nor a nonzero flow — the cheap proxy for a
+    buoyancy-driven (natural-convection) leg, where the flow may run in either direction."""
+    forced_head = pump.p is not None and pump.p != 0
+    forced_flow = pump.mdot0 is not None and pump.mdot0 != 0
+    return not (forced_head or forced_flow)
+
+
+def _gravity_reverse_flow_sources(k: Kirchhoff) -> Iterable[tuple]:
+    """Yield ``(gravity, reversed_flow_source)`` for every Gravity on k's flow graph.
+
+    A component's inlet temperature under reversed flow (``Tin_minus``) is fed by its
+    *downstream* neighbour in the series chain ``[tail_junction, *comps, head_junction]``
+    (this is exactly the ``Tin_minus`` supplier the Aggregator would route). That neighbour is
+    the density temperature buoyancy will use when the flow reverses.
+    """
+    for u, v, comps in k.g.edges(data=COMPS):
+        series = [u, *comps, v]
+        for i, comp in enumerate(comps, start=1):
+            if isinstance(comp, Gravity):
+                yield comp, series[i + 1]
+
+
 def check_gravity_mismatch(
     k: Kirchhoff,
     temperature: Celsius = 10.0,
-    strategy: HydraulicStrategy | None = None,
+    strategy: HydraulicStrategyMap | None = None,
     tol: float = 1e-5,
     head: Pascal = 1.0,
 ) -> None:
@@ -261,6 +300,13 @@ def check_gravity_mismatch(
     This is a tool to allow users to inspect their models for such glaring issues.
     It relies on :meth:`guess_steady_state`.
 
+    .. note::
+        The unclosed-loop test is a **static, zero-flow** check: it evaluates every :math:`\Delta p`
+        at :math:`\dot m = 0`, so it is *direction-blind* and cannot see a Gravity that sources the
+        wrong temperature under reversed flow. A second, topology-only pass (heuristic, ``warn``-only)
+        classifies each Gravity's reversed-flow temperature supplier when a natural-convection pump
+        is present; see :data:`_gravity_reverse_flow_sources`.
+
     Parameters
     ----------
     k : Kirchhoff
@@ -270,7 +316,7 @@ def check_gravity_mismatch(
     strategy : dict[Calculation, Callable[[KgPerS, Celsius], Pascal]] | None
         For unknown calculations, pressure drop functions :math:`\Delta p(\dot{m}, T)` may be provided.
         These are used when the Calculation isn't identified as known types or protocols, and failing that,
-        the guess is ``0.0``.
+        the guess is ``0.0``. Must be a mapping ``{Calculation: callable}`` or ``None``.
     tol: float
         Tolerance for deciding total pressure drops. Default is 1e-5.
     head: Pascal
@@ -280,7 +326,15 @@ def check_gravity_mismatch(
     Raises
     ------
     GravityMismatchError
+    TypeError
+        If ``strategy`` is neither ``None`` nor a mapping.
     """
+    if strategy is not None and not isinstance(strategy, Mapping):
+        raise TypeError(
+            f"strategy must be a HydraulicStrategyMap ({{Calculation: (mdot, T) -> dp}}) or None, "
+            f"not {type(strategy).__name__}; the per-component drop functions are looked up by "
+            f"strategy.get(component)."
+        )
     comps = k.components
     md = dict.fromkeys(comps, 0.0)
 
@@ -290,6 +344,18 @@ def check_gravity_mismatch(
     p = np.fromiter(_float_values(s, map(lambda x: x.name, comps)), dtype=float, count=len(comps))
     p_errors = k.kvl_errors(p) / head
     almost_zeros = np.isclose(0.0, p_errors, atol=tol)
+
+    # Warn-only heuristic: only a reversible leg is at risk, so run this only when a natural-convection pump is present.
+    if any(isinstance(c, Pump) and _is_nc_intent(c) for c in comps):
+        for grav, reverse_src in _gravity_reverse_flow_sources(k):
+            if not isinstance(reverse_src, HeatExchanger):
+                warnings.warn(
+                    f"Gravity {grav.name!r} sources its reversed-flow density temperature from "
+                    f"{str(reverse_src)!r} (state-dependent), not a fixed-temperature boundary; under "
+                    f"reversed/natural-convection flow its buoyancy will use the hot outlet temperature. "
+                    f"Sandwich it between two HeatExchangers, or reset the temperature on the reversed side."
+                )
+
     if np.any(~almost_zeros):
         bad_loops_components = [(k.loop_components(i), p_errors[i].item()) for i in np.flatnonzero(~almost_zeros)]
         raise GravityMismatchError(

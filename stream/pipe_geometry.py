@@ -83,9 +83,13 @@ class EffectivePipe:
             "heated_parts",
             (self.heated_parts if self.heated_parts else (self.heated_perimeter / 2, self.heated_perimeter / 2)),
         )
-        assert np.isclose(np.sum(self.heated_parts), self.heated_perimeter, rtol=1e-15), (
-            f"The partitions of P_heated: {self.heated_parts} do not sum up to the total within relative tolerance 1e-15"
-        )
+        total = np.sum(self.heated_parts)
+        if not np.isclose(total, self.heated_perimeter):
+            raise ValueError(
+                f"The partitions of P_heated {self.heated_parts} sum to {total}, which differs from "
+                f"heated_perimeter {self.heated_perimeter} by {abs(total - self.heated_perimeter):.2e} — "
+                f"outside np.isclose's default tolerance (rtol=1e-05, atol=1e-08)."
+            )
 
     @classmethod
     def rectangular(

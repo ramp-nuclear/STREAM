@@ -3,14 +3,15 @@ A calculation for the point kinetics neutronics model
 """
 
 import logging
+import warnings
 from enum import Enum, StrEnum
-from typing import Callable, Protocol, Sequence, TypeVar
+from typing import Any, Callable, Iterable, Protocol, Sequence, TypeVar
 
 import numpy as np
 from cytoolz.functoolz import curry
 
 from stream import Calculation
-from stream.calculation import CalcState, unpacked
+from stream.calculation import CalcState, sealed, unpacked
 from stream.units import (
     Array,
     Array1D,
@@ -80,6 +81,10 @@ class OneWayToSCRAM(StrEnum):
     SCRAM = "SCRAM"
 
 
+#: Sentinel compared by identity to detect whether the caller supplied a state machine.
+_DEFAULT_STATE_MACHINE = just(OneWayToSCRAM.NORMAL)
+
+
 class ReactivityController:
     r"""Input to :class:`PointKinetics` which depicts the reactivity worth inserted
     due to the reactor control system or postulated events. The control system is
@@ -100,7 +105,7 @@ class ReactivityController:
     def __init__(
         self,
         input_reactivity: InputReactivity | None = None,
-        state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),
+        state_machine: StateMachine = _DEFAULT_STATE_MACHINE,
         initial_state: S = OneWayToSCRAM.NORMAL,
         initial_time: Second = 0.0,
         abort_states: set[S] | None = None,
@@ -137,6 +142,11 @@ class ReactivityController:
         self.state_machine = state_machine
         self.abort_states = abort_states or set()
         self.trip_margin = trip_margin
+        self.time_dependent = (
+            input_reactivity is not None
+            or trip_margin is not None
+            or state_machine is not _DEFAULT_STATE_MACHINE
+        )
 
     def change_state(self, t: Second, power: Watt, dPdt: WPerS, **kwargs) -> S:
         s = self.state_machine(self.state, t, power, dPdt, **kwargs)
@@ -176,6 +186,7 @@ class ReactivityController:
         return self
 
 
+@sealed
 class PointKinetics(Calculation):
     r"""
     The Point Kinetics model is the simplest Neutronics dynamical model. It
@@ -370,6 +381,41 @@ class PointKinetics(Calculation):
         state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, rhoc=rhoc, **kwargs)[0]
         return state
 
+    def validate_wiring(
+        self,
+        external: dict[str, dict[Calculation, Place]],
+        funcs: dict[Name, Any],
+    ) -> Iterable[str]:
+        """Wiring problems for this node: temperature feedback with no ``T`` supplier,
+        and a scalar ``source`` fed by more than one supplier. Also warns in place when
+        a time-dependent controller is wired a constant ``t``."""
+        problems = []
+        if self.temp_worth and "T" not in external and "T" not in funcs:
+            elements = [str(c) for c in self.temp_worth]
+            problems.append(
+                f"PointKinetics {self.name!r} declares temperature feedback (temp_worth "
+                f"for {elements}) but no 'T' supplier is wired, so reactivity() will "
+                f"KeyError at first compute. Wire a 'T' edge from each feedback element "
+                f"to {self.name!r}."
+            )
+        suppliers = external.get("source", {})
+        if len(suppliers) > 1:
+            names = [str(c) for c in suppliers]
+            problems.append(
+                f"PointKinetics {self.name!r} has {len(suppliers)} suppliers for the scalar "
+                f"'source' ({names}); they concatenate into an array and 'source / Lambda' "
+                f"will fail at compute. Route 'source' from a single calculation."
+            )
+        # Warn rather than raise: a frozen constant t is a legitimate test idiom.
+        if self.controls.time_dependent and "t" in funcs and not callable(funcs["t"]):
+            warnings.warn(
+                f"PointKinetics {self.name!r} has a time-dependent controller but is wired "
+                f"a constant funcs t={funcs['t']!r}; its reactivity ramps will be frozen at "
+                f"t={funcs['t']}. Wire funcs t=identity (a callable) so the controller advances.",
+                stacklevel=2,
+            )
+        return problems
+
 
 def temperature_reactivity(
     T: dict[Calculation, Array],
@@ -417,6 +463,7 @@ def scram_at_power_margin(power_limit: Watt) -> Callable[[S, Second, Watt, WPerS
     return lambda state, t, power, dPdt: 1.0 if state == OneWayToSCRAM.SCRAM else power_limit - power
 
 
+@sealed
 class PointKineticsWInput(PointKinetics):
     r"""The same good-old PK, but with added power_input
 
@@ -456,3 +503,18 @@ class PointKineticsWInput(PointKinetics):
     @property
     def variables(self) -> dict[Name, Place]:
         return dict(pk_power=0, ck=slice(1, self.m + 1), power=self.m + 1)
+
+    def validate_wiring(
+        self,
+        external: dict[str, dict[Calculation, Place]],
+        funcs: dict[Name, Any],
+    ) -> Iterable[str]:
+        """The base PK checks plus a missing ``power_input`` supplier."""
+        problems = list(super().validate_wiring(external, funcs))
+        if "power_input" not in external and "power_input" not in funcs:
+            problems.append(
+                f"PointKineticsWInput {self.name!r} has no 'power_input' supplier, so its "
+                f"power balance adds None at compute. Wire a 'power_input' edge (e.g. from a "
+                f"decay-heat source) to {self.name!r}."
+            )
+        return problems

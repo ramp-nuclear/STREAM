@@ -126,6 +126,20 @@ class _UQModel:
         self._cache = {}
 
     @property
+    def nominal(self) -> DataFrame:
+        """The nominal model output -- the model evaluated at the default parameters.
+
+        Reassigning it invalidates the cached subjacobians, so a stale Jacobian is
+        never served after the reference solution changes.
+        """
+        return self._nominal
+
+    @nominal.setter
+    def nominal(self, value: DataFrame) -> None:
+        self._nominal = value
+        self._invalidate_cache()
+
+    @property
     def model(self) -> Model:
         """The Model of the problem, which takes parameter values and returns a
         DataFrame.

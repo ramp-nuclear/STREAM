@@ -4,6 +4,7 @@ differential and algebraic system of equation. A :class:`Calculation` is a subse
 such a system.
 """
 
+import difflib
 from abc import abstractmethod
 from functools import wraps
 from typing import Any, Iterable, Optional, Protocol, Sequence, runtime_checkable
@@ -14,7 +15,7 @@ from cytoolz.dicttoolz import valmap
 from stream.units import Array1D, Name, Place, Value
 from stream.utilities import flatten_values
 
-__all__ = ["Calculation", "unpacked", "CalcState"]
+__all__ = ["Calculation", "unpacked", "sealed", "CalcState"]
 CalcState = dict[Name, Value]
 
 
@@ -277,6 +278,37 @@ class Calculation(Protocol):
             or type(self).should_continue is not Calculation.should_continue
         )
 
+    def validate_wiring(
+        self,
+        external: dict[str, dict["Calculation", Place]],
+        funcs: dict[Name, Any],
+    ) -> Iterable[str]:
+        """Report construction-time wiring problems with this node, as human sentences.
+
+        Called once per node at the end of :meth:`Aggregator.__init__
+        <stream.aggregator.Aggregator.__init__>` with this node's own
+        external-variable map (``agr.external.get(self, {})``) and its funcs dict
+        (``agr.funcs.get(self, {})``). A non-empty return is collected across all
+        nodes into a single :class:`~stream.errors.StreamConstructionError` — so
+        return only problems that are *provably* broken. Heuristic concerns
+        (which may be legitimate) should be issued by the hook itself via
+        :func:`warnings.warn`, not returned here.
+
+        Parameters
+        ----------
+        external: dict[str, dict[Calculation, Place]]
+            Variable name -> {supplier Calculation -> place} routed into this node.
+        funcs: dict[Name, Any]
+            Input-function bindings for this node (name -> callable/constant).
+
+        Returns
+        -------
+        Iterable[str]
+            One sentence per provable problem (empty by default). Each names the
+            offending object(s) and states the fix.
+        """
+        return ()
+
 
 def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
     """
@@ -327,3 +359,47 @@ def _concat(v: Value | dict[Any, Value]) -> Array1D:
         return flatten_values(v)
     except AttributeError:
         return v
+
+
+def sealed(cls):
+    """Post-``__init__``, reject NEW attribute names on exact instances of ``cls``.
+
+    Once an exact ``cls`` instance finishes constructing, assigning a name it does
+    not already carry raises :class:`AttributeError` (with a ``difflib`` "did you
+    mean" suggestion) instead of silently creating a dead attribute, where a stale
+    private name (``_flag`` for a renamed ``_latched``) or a typo of a real knob
+    (``mdot_0`` for ``mdot0``) is accepted and quietly changes nothing. Assigning
+    an *existing* name keeps working, so every construction-time and event-time
+    mutation is untouched.
+
+    Subclasses are exempt: the seal arms only when ``type(self) is cls``. Arming in
+    a base ``__init__`` would fire mid-construction of a subclass that adds
+    attributes after ``super().__init__()``. A subclass opts in by decorating
+    itself, so each concrete type seals at its own ``__init__`` completion. User
+    subclasses that do not decorate stay fully unsealed.
+    """
+    original_init = cls.__init__
+
+    @wraps(original_init)
+    def _sealing_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        if type(self) is cls:
+            # object.__setattr__ bypasses the guard below to set the flag itself.
+            object.__setattr__(self, "_sealed_", True)
+
+    def _guarded_setattr(self, name, value):
+        if (
+            getattr(self, "_sealed_", False)
+            and name not in self.__dict__
+            and not hasattr(type(self), name)  # class attrs (e.g. mdot_eps default) stay settable
+        ):
+            msg = f"{type(self).__name__} has no attribute {name!r}."
+            if match := difflib.get_close_matches(name, dir(self), n=1, cutoff=0.45):
+                msg += f" Did you mean {match[0]!r}?"
+            msg += " (Calculations reject new attributes after construction; set them in __init__.)"
+            raise AttributeError(msg)
+        object.__setattr__(self, name, value)
+
+    cls.__init__ = _sealing_init
+    cls.__setattr__ = _guarded_setattr
+    return cls

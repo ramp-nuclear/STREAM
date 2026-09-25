@@ -23,6 +23,7 @@ References
 
 from typing import Callable
 
+from stream.calculation import sealed
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.units import KgPerS, KgPerS2, Pascal, PerM
 
@@ -32,6 +33,7 @@ __all__ = ["bilinear", "Inertia"]
 Inertia_Coefficient = PerM | Callable[[...], PerM]
 
 
+@sealed
 class Inertia(LumpedComponent):
     r"""Flow inertia. Mathematically speaking, it is equivalent to an electrical inductor.
 

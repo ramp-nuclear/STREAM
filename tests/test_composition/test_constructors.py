@@ -49,20 +49,21 @@ def test_constant_FlowResistor_errors_when_superimposed():
 
 
 def test_constant_FlowResistor_errors_when_under_imposed():
-    with pytest.raises(AssertionError):
+    # Preconditions are raised ValueErrors now (survive ``python -O``), not bare asserts.
+    with pytest.raises(ValueError):
         ResistorFromKnownPoint(behavior="constant")
 
 
 @given(sampled_from(["linear", "parabolic"]))
 def test_FlowResistor_errors_when_under_imposed(b):
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         ResistorFromKnownPoint(behavior=b)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         ResistorFromKnownPoint(mdot=1.0, behavior=b)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         ResistorFromKnownPoint(dp=1.0, behavior=b)
 
 

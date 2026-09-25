@@ -90,9 +90,12 @@ class State(dict):
         state: State
             A partially legal state
         """
+        # Copy per slot: one shared array object would let an in-place edit of one variable rewrite all the others.
         if variables:
-            return cls({c.name: {var: value for var in c.variables if var in variables} for c in calculations})
-        return cls({c.name: {var: value for var in c.variables} for c in calculations})
+            return cls(
+                {c.name: {var: _copied(value) for var in c.variables if var in variables} for c in calculations}
+            )
+        return cls({c.name: {var: _copied(value) for var in c.variables} for c in calculations})
 
     def filter_values(self, f: Callable[[Value], bool]) -> "State":
         """Filter out state variables predicated upon a function.

@@ -88,7 +88,7 @@ from cachetools import cached
 from more_itertools import chunked, interleave
 from numba import njit
 
-from stream.calculation import CalcState, Calculation, unpacked
+from stream.calculation import CalcState, Calculation, sealed, unpacked
 from stream.physical_models.heat_transfer_coefficient import wall_temperature
 from stream.units import (
     Array1D,
@@ -631,6 +631,7 @@ in_par_walls = dataclass_map(Walls, in_parallel)
 fill_solid = dataclass_map(Solid, _fill)
 
 
+@sealed
 class Fuel(Calculation):
     r"""Represents a solid component in which heat is generated and/or transferred.
     An internal volumetric heat source may be supplied and heat is conducted in up to

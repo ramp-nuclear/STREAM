@@ -268,12 +268,14 @@ justy = Calculation_factory(calculate=lambda y, *, x: y, mass_vector=[False], va
             nullcontext(),
         ),
         (
+            # The source-lacks-variable KeyError is wrapped into a
+            # StreamConstructionError that names the edge and the source's variables.
             DiGraph([(justx, justy, vars_("missing_variable")), (justy, justx, vars_("y"))]),
-            pytest.raises(KeyError, match="missing_variable"),
+            pytest.raises(StreamConstructionError, match="missing_variable"),
         ),
         (
             DiGraph([(justx, justy, vars_("x")), (justy, justx, vars_("missing_variable"))]),
-            pytest.raises(KeyError, match="missing_variable"),
+            pytest.raises(StreamConstructionError, match="missing_variable"),
         ),
     ],
 )

@@ -2,7 +2,7 @@ from typing import Sequence
 
 import numpy as np
 
-from stream.calculation import unpacked
+from stream.calculation import sealed, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.units import Array1D, Celsius, KgPerS, Pascal
 
@@ -11,6 +11,7 @@ __all__ = ["Pump"]
 from stream.utilities import directed_Tin
 
 
+@sealed
 class Pump(LumpedComponent):
     r"""Hydraulic component constraining :math:`\Delta p` or :math:`\dot{m}`.
     It does not affect temperature values, merely propagates it.

@@ -47,16 +47,19 @@ def ResistorFromKnownPoint(
     0.0
     """
 
-    assert dp is not None or mdot is not None, "At least one of (dp, mdot) must be specified"
+    if dp is None and mdot is None:
+        raise ValueError("At least one of (dp, mdot) must be specified")
 
     if behavior == "constant":
         return Pump(pressure=dp, mdot0=mdot, name=name)
 
-    assert dp is not None and mdot is not None, "For non-ideal current or head sources, dp must be specified"
+    if dp is None or mdot is None:
+        raise ValueError("For non-ideal current or head sources, both dp and mdot must be specified")
     if behavior == "linear":
         return Resistor(resistance=-dp / mdot, name=name)
     if behavior == "parabolic":
-        assert dp <= 0, "A resistor with a parabolic dp(mdot) dependence can not be positive"
+        if dp > 0:
+            raise ValueError("A resistor with a parabolic dp(mdot) dependence can not be positive")
         rho0 = kwargs["fluid"].density(kwargs.pop("Tin"))
         return Friction(
             f=2 * abs(dp) * rho0 / (mdot**2),

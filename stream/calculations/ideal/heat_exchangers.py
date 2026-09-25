@@ -1,9 +1,11 @@
+from stream.calculation import sealed
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.units import Celsius
 
 __all__ = ["HeatExchanger"]
 
 
+@sealed
 class HeatExchanger(LumpedComponent):
     """This heat exchanger doesn't care about input temperature, it always
     returns the same temperature. Additionally, it exerts no pressure

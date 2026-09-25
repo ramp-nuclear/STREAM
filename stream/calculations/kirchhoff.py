@@ -25,6 +25,8 @@ from networkx.utils import pairwise
 from scipy.sparse import csr_matrix, dok_matrix
 
 from stream import Calculation, smoothing
+from stream.calculation import sealed
+from stream.errors import StreamConstructionError
 from stream.smoothing import soft_pos
 from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
 from stream.utilities import STREAM_DEBUG, concat
@@ -33,6 +35,7 @@ COMPS = "comps"
 logger = logging.getLogger("stream.kirchhoff")
 
 
+@sealed
 class Kirchhoff(Calculation):
     """Dictates flow in a given circuit for an incompressible liquid"""
 
@@ -101,6 +104,16 @@ class Kirchhoff(Calculation):
             raise ValueError(
                 f"Each component may appear on only one flow edge, but these are reused: {dupes}. "
                 "Put a separate instance (e.g. a deepcopy) on each edge."
+            )
+
+        node_names = [str(node) for node in graph.nodes]
+        if len(set(node_names)) != len(node_names):
+            dupes = sorted({n for n in node_names if node_names.count(n) > 1})
+            raise StreamConstructionError(
+                f"Flow-graph nodes must stringify uniquely, but these names are shared by "
+                f"more than one node: {dupes}. Two nodes with the same str collapse their "
+                f"Kirchhoff edge variables into one key (a 4-edge system silently becomes 2, "
+                f"leaving the flow system under-determined). Give each junction a unique name."
             )
 
         if reference_node and reference_node[0] not in graph:
@@ -432,6 +445,7 @@ def build_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets) 
     return m.tocsr()
 
 
+@sealed
 class Junction(Calculation):
     """
     A junction calculation should be used anywhere several hydraulic inputs and outputs meet.
@@ -579,6 +593,7 @@ def _comps_closest(j: Junction, g: MultiDiGraph, var_book) -> dict:
     return {(comp := comps[0 if u is j else -1]): var_book[comp] for u, v, comps in sub.edges(data=COMPS)}
 
 
+@sealed
 class KirchhoffWDerivatives(Kirchhoff):
     r"""A Kirchhoff Calculation containing :math:`\ddot{m}`
 

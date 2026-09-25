@@ -14,7 +14,7 @@ from typing import Callable, Protocol, Sequence
 import numpy as np
 from numba import njit
 
-from stream.calculation import CalcState, Calculation, unpacked
+from stream.calculation import CalcState, Calculation, sealed, unpacked
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.dimensionless import Re_mdot
 from stream.physical_models.pressure_drop import (
@@ -150,6 +150,7 @@ def _multiplies(cls):
     return cls
 
 
+@sealed
 @_multiplies
 class ResistorSum(LumpedComponent):
     """Adding several LumpedComponent in series, into a single calculation.
@@ -194,6 +195,7 @@ class ResistorSum(LumpedComponent):
         return ResistorSum(*chain(self.resistors, other.resistors), name=self.name)
 
 
+@sealed
 @_multiplies
 class Resistor(LumpedComponent):
     r"""A simple linear resistor to flow. It ensures
@@ -208,6 +210,7 @@ class Resistor(LumpedComponent):
         return -self.r * mdot
 
 
+@sealed
 @_multiplies
 class Friction(LumpedComponent):
     """Resistor quadratic in flow using a given friction coefficient"""
@@ -246,6 +249,7 @@ class Friction(LumpedComponent):
         return -self._dp(mdot=mdot, rho=self._rho(Tin), f=self.f)
 
 
+@sealed
 @_multiplies
 class Gravity(LumpedComponent):
     r"""A Calculation describing in a 0D manner the pressure difference
@@ -285,6 +289,7 @@ class Gravity(LumpedComponent):
         return gravity_pressure(rho=self._rho(Tin), dh=self.h, g=self.g)
 
 
+@sealed
 @_multiplies
 class LocalPressureDrop(LumpedComponent):
     """Local pressure drop due to expansion or contraction according to Idelchik chapter 4.
@@ -338,6 +343,7 @@ class LocalPressureDrop(LumpedComponent):
         return state
 
 
+@sealed
 @_multiplies
 class Bend(LumpedComponent):
     """Pressure drop due to a low relative curvature bend in a smooth circular/square pipe
@@ -397,6 +403,7 @@ class Bend(LumpedComponent):
         return -local_pressure_by_mdot(mdot, self._rho(Tin), k, self.area)
 
 
+@sealed
 @_multiplies
 class RegimeDependentFriction(LumpedComponent):
     r"""Friction resistor which depends on the Reynolds number,
@@ -439,6 +446,7 @@ class RegimeDependentFriction(LumpedComponent):
         return -self._dp(mdot=mdot, rho=self._rho(Tin), f=self._f(T_cool=Tin, mdot=mdot, T_wall=Tin))
 
 
+@sealed
 @_multiplies
 class VolumetricFlowResistor(LumpedComponent):
     r"""An object that resists flow as:
@@ -479,6 +487,7 @@ class VolumetricFlowResistor(LumpedComponent):
         return -self.k * q * np.abs(q) - self.klow * q
 
 
+@sealed
 @_multiplies
 class Screen(LumpedComponent):
     """A resistor to flow due to a circular metal wire mesh"""

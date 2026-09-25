@@ -228,3 +228,28 @@ def test_uq_improves_with_mdot_for_simple_channel():
     ]
     res = np.array([np.min(nom.value.values - u) for nom, u in zip(nominals, uqv)])
     assert np.all(np.diff(res) >= 0), res
+
+
+def test_nominal_is_a_property_with_an_invalidating_setter():
+    """Reassigning ``nominal`` clears the subjacobian cache, so a stale Jacobian is
+    never served after the reference solution moves. ``model``/``parameters``/
+    ``step_strategy`` already invalidated; ``nominal`` was the last uncached mutation
+    path (a bare public attribute)."""
+
+    def _model(a=3.0):
+        # Nonlinear so the derivative genuinely depends on the operating point.
+        return DataFrame({"value": [a * a]})
+
+    uq = UQModel({"a": 3.0}, _model)
+    assert isinstance(type(uq).nominal, property)
+
+    j_at_3 = float(uq.subjacobian("a")[0, 0])
+    assert j_at_3 == pytest.approx(6.0, rel=1e-3)  # d(a^2)/da at a=3
+
+    # Move to a new operating point and reassign nominal directly; the cached
+    # a=3 Jacobian must NOT be reused.
+    uq._parameters["a"] = 100.0
+    uq._cache["a"] = np.array([[999.0]])  # poison: proves a stale hit would be visible
+    uq.nominal = _model(a=100.0)
+    assert uq._cache == {}  # the setter cleared it
+    assert float(uq.subjacobian("a")[0, 0]) == pytest.approx(200.0, rel=1e-3)

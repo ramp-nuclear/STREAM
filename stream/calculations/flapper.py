@@ -9,6 +9,7 @@ from typing import Callable, Sequence
 import numpy as np
 
 from stream import Calculation, unpacked
+from stream.calculation import sealed
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.pressure_drop import mdot_by_local_pressure_smooth
 from stream.substances import LiquidFuncs
@@ -43,6 +44,7 @@ def legacy_relaxation(x):
     return x / np.sqrt(4 ** (10 * (1 - x)))
 
 
+@sealed
 class Flapper(Calculation):
     r"""A Flapper has 2 states, open or close. When closed, there is no flow.
     When open, it is a regular frictional resistor. The condition to change

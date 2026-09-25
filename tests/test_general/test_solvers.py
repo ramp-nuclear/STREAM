@@ -115,7 +115,9 @@ def _gravity_resistor_loop(resistance):
     P = Pump(pressure=1.0e4)
     R = ResistorSum(Gravity(light_water, disposition=1.0), Resistor(resistance=resistance), name="R")
     fg = flow_graph(flow_edge(("A", "B"), P), flow_edge(("B", "A"), R))
-    agr, K = agr_k(fg, {P.name: dict(Tin=T), R.name: dict(Tin=T)})
+    # Tin comes from the loop edges; name-keyed funcs are dead (funcs key
+    # by Calculation, not name), so they are dropped here (identical result).
+    agr, K = agr_k(fg)
 
     rho = light_water.density(T)
     head = rho * 9.80665 * 1.0

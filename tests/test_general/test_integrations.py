@@ -67,7 +67,10 @@ def test_pump_resistor_in_series_follows_analytic_solution(T, dp, r):
         flow_edge(("A", "B"), P),
         flow_edge(("B", "A"), R),
     )
-    agr, K = agr_k(fg, {P.name: dict(Tin=T), R.name: dict(Tin=T)})
+    # Tin is supplied by the loop edges (in_series wires both directions); name-keyed
+    # funcs are dead (funcs are keyed by Calculation, not name), so they are dropped
+    # here (numerically identical).
+    agr, K = agr_k(fg)
 
     calculation = agr.solve_steady(
         State.merge(

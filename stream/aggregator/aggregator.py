@@ -1,3 +1,4 @@
+import inspect
 import logging
 import numbers
 import warnings
@@ -166,10 +167,46 @@ def _cascade_error(rungs: list[tuple], last_err: BaseException, agr: "Aggregator
     )
     err.rungs = tuple(rungs)
     err.y = getattr(last_err, "y", None)
-    # Enrich exactly once, here, so all three solve_steady raise sites are covered
-    # (§3.2). Best-effort (P8) and notes-only (P4): never touches the message above.
     agr._enrich_failure(err)
     return err
+
+
+_CALCULATION_ATTRS = ("mass_vector", "variables", "calculate")
+
+
+def _require_calculations(nodes: Iterable[Calculation]) -> None:
+    """Reject a graph node that is not a Calculation before any code assumes it is
+    one (``concat(node.mass_vector ...)``, ``node.name``). A stray string junction
+    name or a mistyped edge endpoint becomes a phantom node in networkx; name it
+    here instead of letting it detonate on ``.mass_vector``."""
+    for node in nodes:
+        missing = [a for a in _CALCULATION_ATTRS if not hasattr(node, a)]
+        if missing:
+            raise StreamConstructionError(
+                f"Graph node {node!r} ({type(node).__name__}) is not a Calculation: it "
+                f"is missing {missing}. Every Aggregator node must be a Calculation; a "
+                f"bare junction-name string belongs only inside a flow graph, not a "
+                f"finished Aggregator."
+            )
+
+
+def _keyword_params(func) -> tuple[set[str], bool]:
+    """``(keyword-acceptable parameter names, has **kwargs)`` for ``func``.
+
+    Follows ``functools.wraps`` (so an ``@unpacked`` method reports its underlying
+    signature) and strips ``self`` for bound methods. On an un-introspectable
+    callable, reports ``**kwargs`` present so nothing is falsely rejected."""
+    try:
+        params = inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return set(), True
+    has_var_kw = any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
+    named = {
+        n
+        for n, p in params.items()
+        if p.kind in (inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.KEYWORD_ONLY)
+    }
+    return named, has_var_kw
 
 
 class Aggregator:
@@ -213,15 +250,108 @@ class Aggregator:
             time-only-dependent functions, which are user controlled.
 
         """
-        if non_unique := non_unique_calculations(graph):
-            raise NonUniqueCalculationNameError(f"Calculations were not uniquely named: {non_unique}")
         self.graph = graph
         self.funcs = funcs or {}
+        nodes = list(graph.nodes)
+        if not nodes:
+            raise StreamConstructionError(
+                "Aggregator built with no Calculations — the graph is empty. Add at "
+                "least one Calculation (e.g. via Aggregator.from_decoupled(...))."
+            )
+        _require_calculations(nodes)
+        if non_unique := non_unique_calculations(graph):
+            raise NonUniqueCalculationNameError(f"Calculations were not uniquely named: {non_unique}")
         self.sections, self.vector_length = partition(graph.nodes)
         self.mass = concat(*(node.mass_vector for node in graph))
         self.external = map_externals(graph.edges(data=VARS), self.sections)
         self._nodes_num = len(self.graph)
+        self._validate_construction()
         logger.log(STREAM_DEBUG, f"New Aggregator of length {len(self)}")
+
+    def _validate_construction(self) -> None:
+        """Run the construction-time wiring checks once, at the end of ``__init__``.
+
+        Errors name the offending object(s) and state the fix; heuristic concerns
+        warn instead of raising. The ``validate_wiring`` hook is collected across
+        every node into a single error, and runs last."""
+        nodes = list(self.graph.nodes)
+        node_set = set(nodes)
+
+        for key in self.funcs:
+            if key not in node_set:
+                raise StreamConstructionError(
+                    f"funcs is keyed by {key!r} ({type(key).__name__}), which is not a "
+                    f"Calculation in this Aggregator's graph, so its input function(s) "
+                    f"{sorted(self.funcs[key])} are never applied. Key funcs by a graph "
+                    f"node, or add that Calculation to the graph."
+                )
+
+        self_edges = [u for u, v in self.graph.edges() if u is v]
+        if self_edges:
+            raise StreamConstructionError(
+                f"Self-edge(s) on {[str(u) for u in self_edges]}: a Calculation is wired "
+                f"to itself and would receive its own state slice as an external input. "
+                f"Route variables between two distinct Calculations, not a node to itself."
+            )
+
+        for node in nodes:
+            routed = set(self.external.get(node, {})) | set(self.funcs.get(node, {}))
+            if not routed:
+                continue
+            acceptable, has_var_kw = _keyword_params(node.calculate)
+            if has_var_kw:
+                continue
+            rejected = sorted(routed - acceptable)
+            if rejected:
+                raise StreamConstructionError(
+                    f"{node}'s calculate cannot accept wired variable(s) {rejected}: it "
+                    f"has no such parameter and no **kwargs, so the routed value(s) would "
+                    f"be a TypeError at compute. {node}'s calculate accepts "
+                    f"{sorted(acceptable)}. Fix the edge/funcs variable name, or give "
+                    f"calculate a matching parameter."
+                )
+
+        for node in nodes:
+            shadowed = sorted(set(self.funcs.get(node, {})) & set(self.external.get(node, {})))
+            if shadowed:
+                warnings.warn(
+                    f"funcs for {node} shadow edge-routed variable(s) {shadowed}: the "
+                    f"funcs value replaces the routed source entirely for that name. If "
+                    f"the override is intended this is fine; otherwise drop the funcs entry.",
+                    stacklevel=3,
+                )
+
+        # Lazy import avoids the aggregator <- kirchhoff import cycle.
+        from stream.calculations.kirchhoff import Junction
+
+        for node in nodes:
+            if isinstance(node, Junction):
+                continue
+            acceptable, _ = _keyword_params(node.calculate)
+            if "Tin_minus" not in acceptable:
+                continue
+            ext, fns = self.external.get(node, {}), self.funcs.get(node, {})
+            has_tin = "Tin" in ext or "Tin" in fns
+            has_tin_minus = "Tin_minus" in ext or "Tin_minus" in fns
+            if has_tin and not has_tin_minus:
+                warnings.warn(
+                    f"{node} has a 'Tin' supplier but no 'Tin_minus' supplier; under "
+                    f"reversed/natural-convection flow its advection falls back to the "
+                    f"upstream temperature (Tin) instead of the downstream one, silently "
+                    f"mis-advecting. Wire a 'Tin_minus' edge (in_series/flow_edge do this "
+                    f"automatically) for any bidirectional leg.",
+                    stacklevel=3,
+                )
+
+        problems = []
+        for node in nodes:
+            hook = getattr(node, "validate_wiring", None)
+            if hook is not None:
+                problems.extend(hook(self.external.get(node, {}), self.funcs.get(node, {})))
+        if problems:
+            raise StreamConstructionError(
+                "Wiring problems found at construction:\n" + "\n".join(f"  - {p}" for p in problems)
+            )
 
     def __len__(self):
         return self.vector_length

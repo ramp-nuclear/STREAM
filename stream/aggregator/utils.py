@@ -5,6 +5,7 @@ from more_itertools import unique_everseen
 from networkx import DiGraph
 
 from stream.calculation import Calculation
+from stream.errors import StreamConstructionError
 from stream.units import FunctionOfTime, Name, Place
 from stream.utilities import offset, uppercase_numeric_only
 
@@ -141,7 +142,15 @@ def map_externals(
     for u, v, var_names in edges:
         position = sections[u].start
         for name in var_names:
-            places = offset(u.indices(name, asking=v), position)
+            try:
+                places = offset(u.indices(name, asking=v), position)
+            except KeyError as e:
+                available = sorted(str(k) for k in getattr(u, "variables", {}))
+                raise StreamConstructionError(
+                    f"Edge {u} -> {v} routes variable {name!r}, but {u} does not supply "
+                    f"it. {u}'s available variables are {available}. Fix the edge's "
+                    f"variable name, or route it from a Calculation that owns it."
+                ) from e
             external.setdefault(v, {}).setdefault(name, {})
             if isinstance(places, dict):
                 external[v][name].update(places)
