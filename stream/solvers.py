@@ -23,6 +23,11 @@ to achieve a higher level of proficiency.
    |**ALG**  |Scipy.optimize.root       |:func:`algebraic`              |
    +---------+--------------------------+-------------------------------+
 
+Beyond the ``eq_type`` backends above, :func:`scaled_newton` and
+:func:`pseudo_transient` provide globalized steady-solve machinery — an
+equilibrated, Armijo-damped Newton and an implicit-Euler pseudo-transient
+continuation fallback — for stubborn root finds from far guesses where
+:func:`algebraic`'s ``hybr`` stalls.
 """
 
 import logging
@@ -163,6 +168,14 @@ def _dae_setup(
     return solve, time, y0, yp0
 
 
+def _attach_trajectory(err: BaseException, t: Array1D, y: Array2D) -> None:
+    """Attach a ``(t, y)`` trajectory to an exception for post-mortem, the way a
+    solver failure carries its own last state. This lets an event handler raise a
+    domain error while the solver — which knows nothing of that domain — preserves
+    the state reached up to the failure on ``err.t`` / ``err.y``."""
+    err.t, err.y = t, y
+
+
 def _advance_eps(time: Array1D) -> float:
     """A tiny floor the next event time must exceed the previous restart time by,
     so a root that fails to advance raises instead of looping forever."""
@@ -190,10 +203,15 @@ def _event_loop_dae(
     t_acc: list[Array1D] = []
     y_acc: list[Array2D] = []
     t0, y_cur, yp_cur = float(time[0]), y0, yp0
-    # Apply any event condition already satisfied at the start so F reflects it from
-    # t0 (a rootfn/direction-based crossing cannot detect a margin already <= 0).
-    if on_event is not None and not on_event(t0, y0, yp0) and not continuous:
-        return y0[None, :], np.array([t0])
+    # A rootfn/direction crossing cannot detect a margin already <= 0 at t0; apply it explicitly.
+    if on_event is not None:
+        try:
+            keep0 = on_event(t0, y0, yp0)
+        except Exception as e:
+            _attach_trajectory(e, np.array([t0]), y0[None, :])  # already past the limit at t0
+            raise
+        if not keep0 and not continuous:
+            return y0[None, :], np.array([t0])
     last_t = t0
     remaining = time
     first = True
@@ -210,7 +228,13 @@ def _event_loop_dae(
                 if e.t is not None:
                     t_acc.append(e.t[1:])
                     y_acc.append(e.y[1:])
-                break
+                # Surface the failure rather than silently returning a truncated
+                # result: attach the full accumulated trajectory (pre-failure
+                # segments + this segment's partial) for post-mortem and re-raise,
+                # consistent with the first-segment path, which already propagates.
+                if t_acc:
+                    e.t, e.y = concat(*t_acc), concat(*y_acc)
+                raise
         vt, vy, _ = solution.values
         keep_head = 0 if first else 1  # drop the duplicated restart row on restarts
         seg_t = vt[keep_head:]
@@ -235,10 +259,16 @@ def _event_loop_dae(
                 "aborting to avoid an infinite restart loop.",
             )
 
-        keep_going = on_event(t_root, y_root, yp_root) if on_event is not None else True
+        try:
+            keep_going = on_event(t_root, y_root, yp_root) if on_event is not None else True
+        except Exception as e:
+            if t_root > last_t:
+                t_acc.append(np.array([t_root]))
+                y_acc.append(y_root[None, :])
+            if t_acc:
+                _attach_trajectory(e, concat(*t_acc), concat(*y_acc))
+            raise
         if (not keep_going) and (not continuous):
-            # Terminal stop: end the solution exactly at the event time, unless the
-            # root already coincides with the last emitted grid point.
             if t_root > last_t:
                 t_acc.append(np.array([t_root]))
                 y_acc.append(y_root[None, :])
@@ -295,7 +325,12 @@ def algebraic(
         _sol = opt.root(F, _vec, (_t,), **options)
         if not _sol["success"]:
             timestr = f"At t={_t:.3f}, " if _t is not None else ""
-            raise AlgRuntimeError(f"{timestr}Root Finding failed with the following message:\n" + _sol["message"])
+            err = AlgRuntimeError(f"{timestr}Root Finding failed with the following message:\n" + _sol["message"])
+            # Keep the last iterate for post-mortem, like scaled_newton/pseudo_transient,
+            # so a caller can attribute the failure (e.g. a state past saturation).
+            err.y = _sol.x
+            err.status = _sol.get("status")
+            raise err
         return _sol.x
 
     if time is not None:
@@ -311,6 +346,268 @@ def algebraic(
         return y, time
     else:
         return _solve(y0, 0)
+
+
+def _equilibrate(J: Array2D) -> tuple[Array2D, Array1D, Array1D]:
+    r"""Row-then-column infinity-norm equilibration of a matrix (single pass).
+
+    Scales ``J`` by dividing each row by its infinity norm and then each of the
+    row-scaled columns by its infinity norm, so the returned ``J_eq`` has unit
+    largest row and column magnitudes. Both scale vectors are floored at
+    ``1e-30`` so a vanishing row/column is never divided by zero (and never
+    amplified).
+
+    Parameters
+    ----------
+    J : Array2D
+        The matrix to equilibrate (typically a Jacobian).
+
+    Returns
+    -------
+    J_eq : Array2D
+        The equilibrated matrix, ``J / (rs[:, None] * cs[None, :])``.
+    rs : Array1D
+        Row scales (row infinity norms of ``J``, floored).
+    cs : Array1D
+        Column scales (column infinity norms of the row-scaled ``J``, floored).
+
+    Notes
+    -----
+    Single-pass (not Ruiz-iterated). Row scaling scales the residual and column
+    scaling scales the variables, so a linear solve on ``J_eq`` recovers the
+    original solution as ``dy = dy_eq / cs`` from a right-hand side ``-(F / rs)``.
+    """
+    rs = np.maximum(np.max(np.abs(J), axis=1), 1e-30)
+    Jr = J / rs[:, None]
+    cs = np.maximum(np.max(np.abs(Jr), axis=0), 1e-30)
+    return Jr / cs[None, :], rs, cs
+
+
+def _scaled_newton_core(
+    F: Functional,
+    y0: Array1D,
+    jac: Callable[[Array1D, float], Array2D],
+    *,
+    t: float,
+    tol: float,
+    maxit: int,
+    tikhonov: float,
+) -> tuple[Array1D, bool, bool, float, int]:
+    """Shared inner loop of :func:`scaled_newton` and :func:`pseudo_transient`.
+
+    Runs equilibrated, Tikhonov-regularized, Armijo-damped Newton iterations and
+    reports status flags instead of raising, so the public solver (which raises)
+    and the pseudo-transient inner solve (which tolerates a stalled step) share
+    the exact same numerics.
+
+    Returns
+    -------
+    y : Array1D
+        The last iterate reached.
+    converged : bool
+        ``True`` if ``||F(y, t)|| < tol`` was reached.
+    exhausted : bool
+        ``True`` if an Armijo search found no descent (``a`` fell to ``2**-30``
+        with no merit decrease).
+    nF : float
+        ``||F(y, t)||`` at the returned iterate.
+    it : int
+        Number of completed iterations.
+    """
+    y = np.array(y0, float)
+    for it in range(maxit):
+        Fy = F(y, t)
+        nF = float(np.linalg.norm(Fy))
+        if nF < tol:
+            return y, True, False, nF, it
+        J = np.array(jac(y, t))  # copy: ALG_jacobian returns a shared closure buffer
+        Jeq, rs, cs = _equilibrate(J)
+        dy = np.linalg.solve(Jeq + tikhonov * np.eye(len(Jeq)), -(Fy / rs)) / cs
+        a = 1.0
+        merit = float(np.linalg.norm(F(y + a * dy, t)))
+        while merit >= nF and a > 2**-30:
+            a *= 0.5
+            merit = float(np.linalg.norm(F(y + a * dy, t)))
+        if merit >= nF:
+            return y, False, True, nF, it
+        y = y + a * dy
+    nF = float(np.linalg.norm(F(y, t)))
+    return y, nF < tol, False, nF, maxit
+
+
+def scaled_newton(
+    F: Functional,
+    y0: Array1D,
+    jac: Callable[[Array1D, float], Array2D],
+    *,
+    t: float = 0.0,
+    tol: float = 1e-6,
+    maxit: int = 100,
+    tikhonov: float = 1e-10,
+) -> Array1D:
+    r"""Globalized damped Newton steady solve with equilibrated linear solves.
+
+    Each iteration equilibrates the Jacobian (row-then-column infinity norm),
+    solves the Tikhonov-regularized, equilibrated linear system for a Newton
+    step, and backtracks the step with an Armijo merit line search on
+    ``||F(y + a*dy, t)||``. It is the load-bearing cure for steady solves from far
+    or ballpark guesses where the globalization in :func:`scipy.optimize.root`
+    (``hybr``) stalls — the damping keeps taking full Newton steps after one
+    damped step from a far basin.
+
+    Parameters
+    ----------
+    F : Functional
+        Residual ``F(y, t) -> Array1D`` (the aggregator ``compute`` signature).
+        The root ``F = 0`` is sought.
+    y0 : Array1D
+        Initial guess.
+    jac : Callable
+        Analytic/approximate Jacobian ``jac(y, t) -> Array2D`` of ``F``.
+    t : float, optional
+        Time argument threaded into ``F`` and ``jac`` (default ``0.0``).
+    tol : float, optional
+        Convergence tolerance on ``||F||`` (default ``1e-6``).
+    maxit : int, optional
+        Maximum Newton iterations (default ``100``).
+    tikhonov : float, optional
+        Regularization added on the diagonal of the *equilibrated* (``O(1)``)
+        matrix (default ``1e-10``).
+
+    Returns
+    -------
+    Array1D
+        The converged state ``y`` with ``||F(y, t)|| < tol``.
+
+    Raises
+    ------
+    AlgRuntimeError
+        If the Armijo line search finds no descent (raised immediately, not
+        spun out to ``maxit``) or ``maxit`` is exhausted. The best iterate
+        reached is attached as the ``y`` attribute for diagnosis, and callers
+        may fall back to :func:`pseudo_transient`.
+
+    Notes
+    -----
+    The equilibration serves conditioning diagnostics and insurance for
+    badly-scaled systems (making ``cond``/rank meaningful and giving Tikhonov a
+    sane ``O(1)`` metric); the *damping* provides the convergence. The Tikhonov
+    term is a defensive default — provably inactive on well-grounded systems.
+    """
+    y, converged, exhausted, nF, it = _scaled_newton_core(
+        F, y0, jac, t=t, tol=tol, maxit=maxit, tikhonov=tikhonov
+    )
+    if converged:
+        return y
+    reason = "Armijo line search found no descent direction" if exhausted else f"exceeded maxit={maxit}"
+    err = AlgRuntimeError(f"scaled_newton failed at iteration {it} ({reason}); ||F||={nF:.3e}. Fall back to pseudo_transient.")
+    err.y = y
+    raise err
+
+
+def pseudo_transient(
+    F: Functional,
+    mass: Array1D,
+    y0: Array1D,
+    jac: Callable[[Array1D, float], Array2D],
+    *,
+    t: float = 0.0,
+    tol: float = 1e-2,
+    dtau0: float = 1e-2,
+    maxsteps: int = 200,
+    inner_tol_floor: float = 1e-9,
+    **newton_kw,
+) -> Array1D:
+    r"""Implicit-Euler pseudo-transient continuation to reach a steady basin.
+
+    A last-resort fallback when :func:`scaled_newton` cannot reach the basin
+    from a truly bad guess. Each pseudo-step solves the backward-Euler stage
+    equation ``G(y) = F(y, t) - mass*(y - y_prev)/dtau = 0`` with an inner
+    equilibrated damped Newton (the same machinery as :func:`scaled_newton`; the
+    inner Jacobian is ``jac(y, t) - diag(mass)/dtau``). The result is handed back
+    once ``||F|| < tol`` so the caller can polish it with :func:`scaled_newton`.
+
+    The **real boolean** ``mass`` vector is essential: on algebraic rows
+    (``mass = 0``) the ``mass*(y - y_prev)/dtau`` term vanishes, so those rows
+    stay *exact constraints* ``F_a = 0`` at every accepted step. A naive recipe —
+    integrate ``dy/dtau = F`` with an all-differential identity mass — is wrong
+    because it gives the algebraic rows a spurious self-growth mode and diverges.
+
+    Parameters
+    ----------
+    F : Functional
+        Residual ``F(y, t) -> Array1D`` (the ``M dy/dt = F`` right-hand side).
+    mass : Array1D
+        The boolean mass vector: ``1`` on differential rows, ``0`` on algebraic
+        (constraint) rows.
+    y0 : Array1D
+        Initial guess.
+    jac : Callable
+        Jacobian ``jac(y, t) -> Array2D`` of ``F``.
+    t : float, optional
+        Time argument threaded into ``F`` and ``jac`` (default ``0.0``).
+    tol : float, optional
+        Basin tolerance on ``||F||`` for termination (default ``1e-2``).
+    dtau0 : float, optional
+        Initial pseudo-time step (default ``1e-2``).
+    maxsteps : int, optional
+        Maximum pseudo-transient steps (default ``200``).
+    inner_tol_floor : float, optional
+        Floor for the inner Newton tolerance ``max(inner_tol_floor, 1e-10*||F||)``
+        (default ``1e-9``).
+    **newton_kw
+        Forwarded to the inner Newton (currently ``tikhonov``).
+
+    Returns
+    -------
+    Array1D
+        A state ``y`` inside the basin (``||F(y, t)|| < tol``).
+
+    Raises
+    ------
+    AlgRuntimeError
+        On divergence (``||F||`` non-finite or ``> 1e3*||F_prev||``) or if
+        ``maxsteps`` is exhausted without reaching the basin. The last accepted
+        iterate is attached as the ``y`` attribute.
+
+    Notes
+    -----
+    A Switched-Evolution-Relaxation (SER) controller grows the step:
+    ``dtau *= clip(||F_prev||/||F_new||, 0.1, 10)``; ``dtau -> inf`` recovers Newton.
+    Pseudo-time is **not** physical — events have no meaning here.
+    """
+    y_prev = np.array(y0, float)
+    mass = np.asarray(mass, float)
+    tikhonov = newton_kw.get("tikhonov", 1e-10)
+    nF = float(np.linalg.norm(F(y_prev, t)))
+    dtau = dtau0
+    for step in range(maxsteps):
+        if nF < tol:
+            return y_prev
+
+        def G(yy, tt, yp=y_prev, dt=dtau):
+            return F(yy, tt) - mass * (yy - yp) / dt
+
+        def G_jac(yy, tt, dt=dtau):
+            return np.array(jac(yy, tt)) - np.diag(mass) / dt
+
+        inner_tol = max(inner_tol_floor, 1e-10 * nF)
+        y, *_ = _scaled_newton_core(G, y_prev, G_jac, t=t, tol=inner_tol, maxit=25, tikhonov=tikhonov)
+
+        nF_new = float(np.linalg.norm(F(y, t)))
+        if not np.isfinite(nF_new) or nF_new > 1e3 * nF:
+            err = AlgRuntimeError(f"pseudo_transient diverged at step {step}: ||F||={nF_new:.3e}")
+            err.y = y_prev
+            raise err
+        # SER growth, clipped; an exact-zero residual takes the max growth factor.
+        dtau *= min(max(nF / nF_new, 0.1), 10.0) if nF_new > 0.0 else 10.0
+        y_prev, nF = y, nF_new
+
+    if nF < tol:
+        return y_prev
+    err = AlgRuntimeError(f"pseudo_transient did not reach the basin in {maxsteps} steps; ||F||={nF:.3e}")
+    err.y = y_prev
+    raise err
 
 
 def differential(
@@ -383,10 +680,15 @@ def _event_loop_ode(
     t_acc: list[Array1D] = []
     y_acc: list[Array2D] = []
     t0, y_cur = float(time[0]), y0
-    # Apply any event condition already satisfied at the start (solve_ivp's
-    # direction=-1 cannot detect a margin that is already non-positive at t0).
-    if on_event is not None and not on_event(t0, y0) and not continuous:
-        return y0[None, :], np.array([t0])
+    # solve_ivp's direction=-1 cannot detect a margin already non-positive at t0; apply it explicitly.
+    if on_event is not None:
+        try:
+            keep0 = on_event(t0, y0)
+        except Exception as e:
+            _attach_trajectory(e, np.array([t0]), y0[None, :])
+            raise
+        if not keep0 and not continuous:
+            return y0[None, :], np.array([t0])
     last_t = t0
     remaining = time
     first = True
@@ -422,7 +724,15 @@ def _event_loop_ode(
                 "aborting to avoid an infinite restart loop.",
             )
 
-        keep_going = on_event(t_root, y_root) if on_event is not None else True
+        try:
+            keep_going = on_event(t_root, y_root) if on_event is not None else True
+        except Exception as e:
+            if t_root > last_t:
+                t_acc.append(np.array([t_root]))
+                y_acc.append(y_root[None, :])
+            if t_acc:
+                _attach_trajectory(e, concat(*t_acc), concat(*y_acc))
+            raise
         if (not keep_going) and (not continuous):
             if t_root > last_t:
                 t_acc.append(np.array([t_root]))

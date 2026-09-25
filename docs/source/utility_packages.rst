@@ -62,3 +62,9 @@ Smoothing
 
 .. automodule:: stream.smoothing
    :members:
+
+Scales
+------
+
+.. automodule:: stream.scales
+   :members:

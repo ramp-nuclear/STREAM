@@ -18,13 +18,14 @@ ONB_left=onb_left, ONB_right=onb_right)
 """
 
 from copy import deepcopy
+from dataclasses import dataclass
 from inspect import signature
 from typing import Callable, Protocol
 
 import numpy as np
 
 from stream.aggregator import Aggregator
-from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction
+from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction, SaturationReachedError
 from stream.physical_models.heat_transfer_coefficient.temperatures import (
     Bergles_Rohsenow_dT_ONB,
 )
@@ -45,6 +46,9 @@ from stream.physical_models.thresholds import (
 )
 from stream.physical_models.thresholds import (
     boiling_power as _boiling_power,
+)
+from stream.physical_models.thresholds import (
+    saturation_margin,
 )
 from stream.pipe_geometry import EffectivePipe
 from stream.state import CalcState, State, StateTimeseries
@@ -141,6 +145,93 @@ def transient_threshold_analysis(
         return {k: ta(v, agg, calc) for k, v in state_time_series.items()}
 
     return _analyzer
+
+
+@dataclass(frozen=True)
+class SaturationCrossing:
+    """Cells of one channel whose bulk coolant is at or past saturation."""
+
+    channel: str
+    cells: list[int]
+    T_bulk: list[float]
+    Tsat: list[float]
+
+
+def channel_saturation_crossings(state: State, agg: Aggregator) -> list[SaturationCrossing]:
+    """Cells in each :class:`ChannelAndContacts` whose bulk coolant is at or above
+    saturation in ``state`` — the validity boundary of the single-phase (with
+    subcooled boiling) channel model. Empty when every channel is subcooled.
+
+    Tsat is evaluated per cell at the channel's static pressure, using the exact
+    :func:`~stream.physical_models.thresholds.saturation_margin` criterion the
+    transient stop guard uses, so the two agree on where validity ends.
+    """
+    crossings: list[SaturationCrossing] = []
+    for node in agg.graph:
+        if not isinstance(node, ChannelAndContacts):
+            continue
+        cs = state[node.name]
+        T_bulk = np.atleast_1d(np.asarray(cs[ChannelVar.tbulk], dtype=float))
+        Tsat = np.atleast_1d(np.asarray(node.fluid.sat_temperature(cs[ChannelVar.static_pressure]), dtype=float))
+        crossed = np.flatnonzero(saturation_margin(T_bulk, Tsat) <= 0.0)
+        if crossed.size:
+            crossings.append(
+                SaturationCrossing(node.name, crossed.tolist(), T_bulk[crossed].tolist(), Tsat[crossed].tolist())
+            )
+    return crossings
+
+
+def _as_states(result, agg: Aggregator, times):
+    """Normalize a State / StateTimeseries / raw solve vector / raw trajectory to a
+    State or StateTimeseries the checker can scan (raw arrays are saved via ``agg``)."""
+    if isinstance(result, np.ndarray):
+        if result.ndim == 1:
+            return agg.save(result)
+        ts = times if times is not None else range(len(result))
+        return {float(t): agg.save(row) for t, row in zip(ts, result)}
+    return result
+
+
+def _is_timeseries(data) -> bool:
+    # A State is keyed by calculation name (str); a StateTimeseries by time (number).
+    return bool(data) and all(isinstance(k, (int, float, np.number)) for k in data)
+
+
+def first_saturation_crossing(result, agg: Aggregator, *, times=None):
+    """The earliest saturated state and its crossings, or ``None`` if nothing crosses.
+
+    ``result`` may be a single :class:`~stream.state.State` (a steady solution or a
+    failed solve's last iterate), a :class:`~stream.state.StateTimeseries`, or a raw
+    solve vector / trajectory (e.g. a caught error's ``e.y``, with optional ``times``).
+    Returns ``(time_or_None, crossings)``.
+    """
+    data = _as_states(result, agg, times)
+    if _is_timeseries(data):
+        for t in sorted(data):
+            crossings = channel_saturation_crossings(data[t], agg)
+            if crossings:
+                return t, crossings
+        return None
+    crossings = channel_saturation_crossings(data, agg)
+    return (None, crossings) if crossings else None
+
+
+def raise_on_saturation(result, agg: Aggregator, *, times=None, note: str = "") -> None:
+    """Raise :class:`SaturationReachedError` if any channel's bulk coolant is at or
+    past saturation in ``result`` (the worst-offending channel, earliest time for a
+    trajectory). No-op otherwise. Use after a steady solve, or on a caught
+    transient/steady failure's state, to attribute it in domain terms; ``note`` is
+    prepended to the message (e.g. ``"no converged steady solution — "``)."""
+    found = first_saturation_crossing(result, agg, times=times)
+    if found is None:
+        return
+    _t, crossings = found
+    worst = max(crossings, key=lambda c: max(np.subtract(c.T_bulk, c.Tsat)))
+    err = SaturationReachedError(worst.channel, worst.cells, worst.T_bulk, worst.Tsat)
+    if note:
+        err.message = note + err.message
+        err.args = (err.message, *err.args[1:])
+    raise err
 
 
 def _tw(state: CalcState, direction: Direction, tbulk: Celsius, inhomogeneity_factor) -> Celsius:

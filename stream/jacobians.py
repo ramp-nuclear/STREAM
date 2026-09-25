@@ -15,7 +15,7 @@ import numpy as np
 from stream import Aggregator, Calculation
 from stream.units import Array1D, Array2D, Value
 
-__all__ = ["DAE_jacobian", "ALG_jacobian"]
+__all__ = ["DAE_jacobian", "ALG_jacobian", "scaled_step"]
 
 StepStrategyWithydot = Callable[[Array1D, Array1D], Array1D]
 StepStrategy = Callable[[Array1D], Array1D]
@@ -28,6 +28,29 @@ _STEP_FLOOR = np.sqrt(np.finfo(float).eps)
 
 def _default_step_strategy(y: T, *_) -> T:
     return _STEP_FLOOR + 1e-6 * np.abs(y)
+
+
+def scaled_step(typ: Array1D) -> StepStrategyWithydot:
+    r"""Scale-aware finite-difference step strategy.
+
+    Builds the per-variable FD step :math:`h_j = \sqrt{\epsilon}\,
+    \max(|y_j|, \text{typ}_j)`, which keeps steps above the rounding noise of
+    high-scale variables that pass near zero (e.g. a reversing ``mdot`` column)
+    instead of quantizing their column to zero.
+
+    Parameters
+    ----------
+    typ : Array1D
+        Per-variable nominal magnitudes, typically :func:`~stream.scales.scale_vector`.
+
+    Returns
+    -------
+    StepStrategyWithydot
+        A ``step(y, *_) -> h`` closure. The trailing ``*_`` absorbs the ``ydot``
+        argument, so the same closure serves both the ALG (``y``-only) and DAE
+        (``y, ydot``) step-strategy signatures.
+    """
+    return lambda y, *_: np.sqrt(np.finfo(float).eps) * np.maximum(np.abs(y), typ)
 
 
 def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:

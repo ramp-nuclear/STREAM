@@ -12,6 +12,8 @@ heated channel then reverses the flow UPWARD into natural circulation.
 
 This file only *builds* systems and guesses. Stage logic lives in run.py.
 """
+from functools import partial
+
 import numpy as np
 
 from stream.calculations import (
@@ -24,6 +26,10 @@ from stream.composition import (
     uniform_x_power_shape,
 )
 from stream.composition.subsystems import symmetric_plate_steady_state
+from stream.physical_models.pressure_drop import pressure_diff
+from stream.physical_models.pressure_drop.friction import (
+    friction_factor, rectangular_laminar_correction,
+)
 from stream.pipe_geometry import EffectivePipe
 from stream.state import State
 from stream.substances import light_water
@@ -82,11 +88,28 @@ def _fuel(z_n: int, name: str = "Fuel") -> Fuel:
     )
 
 
-def build(power: float = POWER_DEMO, stop_on_open: bool = False):
+def _apply_regime_friction(channel, gap: float) -> None:
+    """Swap ``channel``'s pressure-drop closure for the non-optimistic
+    ``regime_dependent`` friction law (laminar / transition / turbulent) with
+    the rectangular-duct laminar correction ``k_R`` for this gap. This is the
+    physically-correct law (Blasius alone is optimistic in the laminar regime a
+    coasting-down channel enters)."""
+    k_R = float(rectangular_laminar_correction(gap / CHANNEL_WIDTH))
+    f = friction_factor("regime_dependent", re_bounds=(2000., 5000.), k_R=k_R)
+    channel.pressure = partial(pressure_diff, fluid=channel.fluid,
+                               pipe=channel.pipe, dz=channel.dz, f=f)
+
+
+def build(power: float = POWER_DEMO, stop_on_open: bool = False,
+          regime_friction: bool = False):
     """Build the LOFA system.
 
     stop_on_open=False matches the legacy choreographed run (manual pre-open);
     stop_on_open=True is the natural event path (solver detects the opening).
+
+    regime_friction=False keeps the channel's default Blasius law so the
+    bit-stability guard stages (B/C/E) are untouched; True applies the
+    non-optimistic ``regime_dependent`` law (used by stage F).
 
     Returns (agr, K, refs) where refs holds the component handles.
     """
@@ -105,6 +128,8 @@ def build(power: float = POWER_DEMO, stop_on_open: bool = False):
         z_boundaries=np.linspace(0.0, CHANNEL_LENGTH, CHANNEL_Z_N + 1),
         fluid=light_water, pipe=_pipe(), name="Channel",
     )
+    if regime_friction:
+        _apply_regime_friction(channel, CHANNEL_GAP)
     fuel = _fuel(CHANNEL_Z_N)
 
     fg = FlowGraph(
@@ -195,7 +220,11 @@ def ballpark_guess(agr, K, refs) -> State:
 # ══════════════════════════════════════════════════════════════════════════════
 
 GEN_GAPS = dict(hot=0.002, warm=0.002, wide=0.003, bypass=0.004)
-GEN_POWERS = dict(hot=84.0e3, warm=33.6e3, wide=50.0e3)   # W at full power
+GEN_POWERS_FULL = dict(hot=84.0e3, warm=33.6e3, wide=50.0e3)   # W at full power
+# De-rate: at full power the hot channel crosses saturation on
+# the reversal spike; 0.70 keeps the trajectory peak sub-saturation with margin.
+GEN_POWER_SCALE = 0.70
+GEN_POWERS = {k: GEN_POWER_SCALE * v for k, v in GEN_POWERS_FULL.items()}
 GEN_INERTIA_L = 3e5          # Pa·s²/kg — recalibrated for the lower parallel resistance
 
 
@@ -228,8 +257,41 @@ def decay_power(p0: float):
     return lambda t: p0 * 0.066 * (t + 0.1) ** -0.2
 
 
-def build_general(stop_on_open: bool = False):
-    """Build the general multichannel LOFA system at full power.
+def smooth_down(t: float, t0: float, w: float) -> float:
+    """Cosine half-ramp: 1 for ``t <= t0``, 0 for ``t >= t0 + w``, a C1 cosine
+    descent between. Ramps the pump head to zero and blends reactor power to
+    decay heat at scram so the trip's IC stays consistent (‖F(0)‖ ≈ 0)."""
+    return 1.0 if t <= t0 else (0.0 if t >= t0 + w else 0.5 * (1 + np.cos(np.pi * (t - t0) / w)))
+
+
+def wire_ramp_scram(agr, pump, fuels_and_powers, t_scram: float = 3.0, width: float = 0.5):
+    """Wire the ramp-scram boundary conditions used by stages F and G.
+
+    Over ``[t_scram, t_scram + width]`` the pump head coasts from ``DP0_CHANNEL``
+    to zero and each fuel's power blends from its pre-scram value ``p0`` to its
+    decay-heat curve. ``fuels_and_powers`` maps each Fuel to its ``p0`` (one
+    entry for the single-channel case, one per plate for the general case).
+
+    The double-lambda binds
+    ``p0``/``dpf`` per fuel — without it every closure would capture the last."""
+    agr.funcs.setdefault(pump, {})["pressure"] = \
+        lambda t: DP0_CHANNEL * smooth_down(t, t_scram, width)
+    for fuel, p0 in dict(fuels_and_powers).items():
+        dpf = decay_power(p0)
+        agr.funcs[fuel]["power"] = (
+            lambda p0, dpf: (lambda t: p0 if t <= t_scram
+                             else smooth_down(t, t_scram, width) * p0
+                             + (1 - smooth_down(t, t_scram, width)) * dpf(t - t_scram))
+        )(p0, dpf)
+
+
+def build_general(stop_on_open: bool = False, regime_friction: bool = True):
+    """Build the general multichannel LOFA system at the de-rated stage-G power.
+
+    regime_friction=True (the default) applies the physically-correct
+    ``regime_dependent`` friction law per channel — this stage carries no
+    bit-stability guard, so it uses the non-optimistic law. Each channel's
+    ``k_R`` comes from its own gap: ``rectangular_laminar_correction(gap/width)``.
 
     Returns (agr, K, refs); refs["channels"]/["fuels"] are dicts keyed
     hot/warm/wide (+ bypass in channels)."""
@@ -257,6 +319,9 @@ def build_general(stop_on_open: bool = False):
     }
     channels["bypass"] = Channel(z_boundaries=z, fluid=light_water,
                                  pipe=_gap_pipe(GEN_GAPS["bypass"]), name="Bypass")
+    if regime_friction:
+        for k, ch in channels.items():
+            _apply_regime_friction(ch, GEN_GAPS[k])
     fuels = {k: _fuel(CHANNEL_Z_N, name=f"{k.capitalize()}Fuel") for k in ("hot", "warm", "wide")}
 
     fg = FlowGraph(
@@ -283,13 +348,6 @@ def build_general(stop_on_open: bool = False):
     return agr, fg.kirchhoff, refs
 
 
-def scram(agr, refs):
-    """Pump trip + reactor scram: kill pump head, switch power to decay heat."""
-    refs["pump"].p = 0.0
-    for k, fuel in refs["fuels"].items():
-        agr.funcs[fuel]["power"] = decay_power(GEN_POWERS[k])
-
-
 def expert_guess_general(refs) -> State:
     """Per-channel expert guesses: hydraulic split + one thermal pre-solve per plate."""
     fg, channels, fuels = refs["fg"], refs["channels"], refs["fuels"]
@@ -306,8 +364,17 @@ def expert_guess_general(refs) -> State:
     return State.merge(hydraulic, *thermals)
 
 
-def gen_t_open_from(m0: float) -> float:
-    """Flapper-opening estimate from the ACTUAL steady total flow (the static
-    GEN_T_OPEN_ESTIMATE uses the pre-solve split guess and lands ~35% early)."""
-    k = DP0_CHANNEL / m0**2
-    return (GEN_INERTIA_L / (k * m0)) * (m0 / GEN_FLAPPER_THRESHOLD - 1)
+def ballpark_guess_general(agr, K) -> State:
+    """A sane, no-expert-knowledge guess for the general multichannel system:
+    uniform temperatures, nominal flows, zero pressure drops, order-of-magnitude
+    HTC. Stage G's steady solve starts from it."""
+    non_k = [n for n in agr.graph if not hasattr(n, "variables_by_type")]
+    vec = np.zeros(len(K))
+    vec[K.variables_by_type["mdot"]] = MDOT0             # nominal flow on every edge
+    vec[K.variables_by_type["abs_pressure"]] = P_REF
+    return State.merge(
+        State.uniform(non_k, TIN, "T_cool", "T", "T_wall_left", "T_wall_right", "Tin"),
+        State.uniform(non_k, 1e3, "h_left", "h_right"),  # crude HTC (only channels have these)
+        State.uniform(non_k, 0.0, "pressure"),           # component dp -> 0
+        {K.name: K.save(vec)},                           # dict keyed by the opaque edge names
+    )

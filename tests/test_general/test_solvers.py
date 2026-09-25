@@ -354,27 +354,31 @@ def _first_segment_then(raiser):
     return solve
 
 
-def test_continuous_mode_restart_ic_failure_does_not_mask_with_concat_none():
-    """E8: when a restarted DAE solve fails during IC computation, IDA returns
-    t=y=None, so the except branch's concat(t, None) raised a bare ValueError
-    that masked the TransientRuntimeError and lost the accumulated trajectory.
-    The partial first segment must survive and be returned."""
+def test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory():
+    """When a restarted DAE solve fails during IC computation, IDA returns t=y=None;
+    concat(t, None) must not raise a bare ValueError that masks the failure. The
+    TransientRuntimeError must be surfaced (not silently swallowed), carrying the
+    pre-failure segment on e.t/e.y for post-mortem."""
 
     def raise_ic_failure():
         raise TransientRuntimeError(None, None, None, "IC computation failed")
 
     solve = _first_segment_then(raise_ic_failure)
     with ignore_warnings(UserWarning):
-        y, t = _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
-    # the pre-failure segment is preserved, no exception leaks out
-    assert np.array_equal(t, [0.0, 0.25, 0.5])
-    assert y.shape[0] == 3
+        with pytest.raises(TransientRuntimeError, match="IC computation failed") as exc:
+            _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    e = exc.value
+    # the pre-failure segment survives on the exception; no bare ValueError masks it
+    assert np.array_equal(e.t, [0.0, 0.25, 0.5])
+    assert e.y.shape[0] == 3
 
 
-def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
-    """E8: on a mid-integration restart failure the except branch concatenated
-    e.t without stripping its first entry (the restart time, == t[-1]), unlike
-    the success path's [1:], leaving a duplicated time row."""
+def test_continuous_mode_restart_failure_surfaces_full_trajectory_no_duplicated_point():
+    """On a mid-integration restart failure the accumulated trajectory (pre-failure
+    segments + the failed segment's partial output) is attached to the raised
+    TransientRuntimeError. Row-stripping still applies — the failed segment's first
+    row is the restart time (== prior t[-1]) and must not be duplicated — so e.t
+    stays strictly monotone, and the failure is raised, not silently truncated."""
 
     def raise_with_partial():
         raise TransientRuntimeError(
@@ -383,7 +387,9 @@ def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
 
     solve = _first_segment_then(raise_with_partial)
     with ignore_warnings(UserWarning):
-        _, t = _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+        with pytest.raises(TransientRuntimeError, match="failed mid-restart") as exc:
+            _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    t = exc.value.t
     assert np.all(np.diff(t) > 0), f"duplicated/!monotone time: {t}"
     assert np.array_equal(t, [0.0, 0.25, 0.5, 0.55])
 
@@ -432,3 +438,60 @@ def test_event_loop_no_duplicate_time_when_terminal_event_on_grid():
     )
     assert np.all(np.diff(t) > 0), f"duplicated final time: {t}"
     assert np.array_equal(t, [0.0, 0.5, 1.0])
+
+
+def test_algebraic_attaches_last_iterate_on_failure():
+    """A failed steady root-find keeps its last iterate on the error (err.y),
+    like scaled_newton/pseudo_transient — so callers can inspect where it stalled
+    (e.g. to attribute a saturation-driven steady failure to the offending state)."""
+    from stream.solvers import AlgRuntimeError, algebraic
+
+    with pytest.raises(AlgRuntimeError) as exc:
+        algebraic(F=lambda y, t: y**2 + 1.0, y0=np.array([3.0]))  # no real root -> hybr stalls
+    e = exc.value
+    assert getattr(e, "y", None) is not None
+    assert len(np.atleast_1d(e.y)) == 1
+
+
+class _Boom(RuntimeError):
+    pass
+
+
+def test_event_loop_dae_on_event_raise_carries_pre_event_trajectory():
+    """T2: when an event handler raises (e.g. a domain guard stopping the run at a
+    physical limit), the valid trajectory up to and including the crossing is
+    attached to the exception for post-mortem — the solver never learns what the
+    guard is, it just preserves the state."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)
+        y_ = np.tile(np.asarray(y0_, float), (len(t_), 1))
+        root = _FakeRoots(np.array([t_[-1]]), y_[-1:], np.zeros((1, y_.shape[1])))
+        return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
+
+    def on_event(t, y, yp):
+        if t > 0.0:
+            raise _Boom("guard tripped at the crossing")
+        return True
+
+    with pytest.raises(_Boom) as exc:
+        _event_loop_dae(solve, np.array([0.0, 0.5, 1.0]), np.array([2.0]), np.zeros(1), on_event=on_event)
+    e = exc.value
+    assert np.array_equal(e.t, [0.0, 0.5, 1.0])  # crossing point included
+    assert e.y.shape[0] == len(e.t)
+
+
+def test_event_loop_dae_on_event_raise_at_t0_carries_initial_state():
+    """T2: a handler that raises already at t0 (an initial condition past the limit)
+    fails loud with the initial state attached, not a bare error."""
+
+    def solve(*_a):
+        raise AssertionError("should not integrate past an already-tripped t0")
+
+    def on_event(t, y, yp):
+        raise _Boom("already past the limit at t0")
+
+    with pytest.raises(_Boom) as exc:
+        _event_loop_dae(solve, np.array([0.0, 1.0]), np.array([9.0]), np.zeros(1), on_event=on_event)
+    e = exc.value
+    assert np.array_equal(e.t, [0.0]) and e.y.shape[0] == 1
