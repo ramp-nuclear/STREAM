@@ -20,6 +20,7 @@ from stream.calculations import (
     Pump,
 )
 from stream.composition.mtr_geometry import symmetric_plate
+from stream.errors import StreamError
 from stream.physical_models.pressure_drop import local_pressure_by_mdot
 from stream.state import State
 from stream.units import Celsius, KgPerS, Pascal, Value, Watt
@@ -137,7 +138,7 @@ def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Wat
     return State({pk.name: d})
 
 
-class MissingFlowError(Exception):
+class MissingFlowError(StreamError):
     """Error to signify missing :class:`.Kirchhoff` flow data."""
 
     pass
@@ -241,7 +242,7 @@ def guess_hydraulic_steady_state(
     return State.merge(Ts, pressures, htc, {k.name: k.save(a) | k_guess})
 
 
-class GravityMismatchError(ValueError):
+class GravityMismatchError(StreamError, ValueError):
     pass
 
 

@@ -18,8 +18,13 @@ The main scheme is neatly presented in :ref:`Documentation`.
 """
 
 from .aggregator import *
+from .aggregator import Location as Location
 from .constraints import *
-from .solution import Solution as Solution
+from .solution import (
+    Event as Event,
+    SolveStatus as SolveStatus,
+    Solution as Solution,
+)
 from .utils import (
     VARS as VARS,
     BaseAgr as BaseAgr,

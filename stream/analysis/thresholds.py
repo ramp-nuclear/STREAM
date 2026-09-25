@@ -24,7 +24,7 @@ from typing import Callable, Protocol
 
 import numpy as np
 
-from stream.aggregator import Aggregator
+from stream.aggregator import Aggregator, Solution
 from stream.calculations.channel import ChannelAndContacts, ChannelVar, Direction, SaturationReachedError
 from stream.physical_models.heat_transfer_coefficient.temperatures import (
     Bergles_Rohsenow_dT_ONB,
@@ -182,8 +182,14 @@ def channel_saturation_crossings(state: State, agg: Aggregator) -> list[Saturati
 
 
 def _as_states(result, agg: Aggregator, times):
-    """Normalize a State / StateTimeseries / raw solve vector / raw trajectory to a
-    State or StateTimeseries the checker can scan (raw arrays are saved via ``agg``)."""
+    """Normalize a Solution / State / StateTimeseries / raw solve vector / raw trajectory
+    to a State or StateTimeseries the checker can scan.
+
+    A :class:`~stream.aggregator.Solution` is saved via ``agg`` so the checker gets its
+    TRUE absolute times, not the ``range(len(result))`` axis a raw 2-D trajectory falls
+    back to when no ``times`` are supplied. Raw arrays keep that fallback behavior."""
+    if isinstance(result, Solution):
+        return agg.save(result)
     if isinstance(result, np.ndarray):
         if result.ndim == 1:
             return agg.save(result)

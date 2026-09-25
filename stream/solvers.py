@@ -38,13 +38,59 @@ from scikits.odes import dae
 from scipy import optimize as opt
 from scipy.integrate import solve_ivp
 
+from stream.errors import StreamError, hint_block
 from stream.units import Array, Array1D, Array2D, Functional
-from stream.utilities import concat, ignore_warnings
+from stream.utilities import STREAM_DEBUG, concat, ignore_warnings
 
 logger = logging.getLogger("stream.aggregator")
 
 
-class TransientRuntimeError(RuntimeError):
+# IDA status code -> (IDA_* symbol, plain-language meaning); undescribed flags carry an empty meaning.
+_IDA_STATUS: dict[int, tuple[str, str]] = {
+    -1: ("IDA_TOO_MUCH_WORK", "mxsteps internal steps taken before an output time — the step collapsed as the system stiffened (e.g. approaching bulk Tsat / an SCB switch)"),
+    -2: ("IDA_TOO_MUCH_ACC", "the requested tolerance is unreachable at the system scale (atol/rtol too tight)"),
+    -3: ("IDA_ERR_FAIL", "repeated local error-test failures drove the step down to hmin (a stiff transient)"),
+    -4: ("IDA_CONV_FAIL", "the modified-Newton corrector could not converge and the step fell to hmin — the canonical LOFA death past ONB"),
+    -5: ("IDA_LINIT_FAIL", ""),
+    -6: ("IDA_LSETUP_FAIL", "the linear solver's setup (Jacobian factorization) failed unrecoverably (a near-singular reversal Jacobian)"),
+    -7: ("IDA_LSOLVE_FAIL", "the linear solver's solve stage failed unrecoverably"),
+    -8: ("IDA_RES_FAIL", "the residual function (compute) raised or returned NaN inside IDA (a property-domain excursion)"),
+    -9: ("IDA_REP_RES_ERR", "the residual was repeatedly non-finite near a domain edge"),
+    -10: ("IDA_RTFUNC_FAIL", "a user event_margin/rootfn failed (but this usually surfaces as SystemError, not this flag)"),
+    -11: ("IDA_CONSTR_FAIL", "the inequality constraints option could not be met"),
+    -12: ("IDA_FIRST_RES_FAIL", "compute(y0, t0) was non-finite — a bad guess that is already unphysical"),
+    -13: ("IDA_LINESEARCH_FAIL", ""),
+    -14: ("IDA_NO_RECOVERY", "the consistent-IC solve (IDACalcIC) could not recover — an IC-stage failure"),
+    -15: ("IDA_NLS_INIT_FAIL", ""),
+    -16: ("IDA_NLS_SETUP_FAIL", ""),
+    -17: ("IDA_NLS_FAIL", ""),
+    -20: ("IDA_MEM_NULL", ""),
+    -21: ("IDA_MEM_FAIL", ""),
+    -22: ("IDA_ILL_INPUT", "malformed options / mass / algebraic_vars_idx mismatch"),
+    -23: ("IDA_NO_MALLOC", ""),
+    -24: ("IDA_BAD_EWT", "a zero in the error-weight vector (a scale or atol of 0)"),
+    -25: ("IDA_BAD_K", ""),
+    -26: ("IDA_BAD_T", ""),
+    -27: ("IDA_BAD_DKY", ""),
+    -28: ("IDA_VECTOROP_ERR", ""),
+    -99: ("IDA_UNRECOGNIZED_ERROR", ""),
+}
+
+# scipy.optimize.root (hybr/lm) status -> STREAM-terms meaning (status 1 = success).
+_HYBR_STATUS: dict[int, str] = {
+    2: "often a false negative at an already-converged root with a flat/near-null Jacobian (reversing mdot, closed flapper)",
+    3: "the step fell below xtol; usually genuinely stuck or already at the root",
+    4: "an ill-conditioned/near-singular Jacobian (no improvement over the last five Jacobian evaluations)",
+    5: "no descent from the current basin — a far/ballpark guess (the case solve_steady's globalize cascade rescues)",
+}
+
+# scipy.integrate.solve_ivp status -> STREAM-terms meaning (0 = reached end, 1 = event).
+_IVP_STATUS: dict[int, str] = {
+    -1: "step size underflow — the explicit integrator's step fell below floating-point spacing (stiff system: consider eq_type='DAE' or looser tolerances)",
+}
+
+
+class TransientRuntimeError(StreamError, RuntimeError):
     """RuntimeError which occurred during a transient simulation,
     mostly because of solver convergence problems.
 
@@ -56,9 +102,14 @@ class TransientRuntimeError(RuntimeError):
             t, y, ydot = e.t, e.y, e.ydot
             results = Solution(t, y)
             raise e
+
+    When the failure comes from the IDA (DAE) backend, ``flag`` holds the numeric
+    SUNDIALS status (e.g. ``-4``) and ``symbol`` the ``IDA_*`` name (e.g.
+    ``IDA_CONV_FAIL``) — both are how the SUNDIALS troubleshooting docs are
+    indexed. They are ``None`` for failures from other backends.
     """
 
-    def __init__(self, t, y, ydot, message: str, *args):
+    def __init__(self, t, y, ydot, message: str, *args, flag: int | None = None, symbol: str | None = None):
         if t is not None:
             message = f"At t = {t[-1]:.5f}: " + message
         super().__init__(message, *args)
@@ -66,6 +117,8 @@ class TransientRuntimeError(RuntimeError):
         self.t = t
         self.y = y
         self.ydot = ydot
+        self.flag = flag
+        self.symbol = symbol
 
 
 def differential_algebraic(
@@ -127,8 +180,22 @@ def differential_algebraic(
 
 
 def _ida_post_solution(solution):
-    if solution.flag < 0:
-        raise TransientRuntimeError(*solution.values, solution.message)
+    flag = solution.flag
+    if flag >= 0:
+        return
+    symbol, meaning = _IDA_STATUS.get(flag, (f"flag {flag}", ""))
+    message = f"IDA {symbol}({flag}): {solution.message}"
+    if meaning:
+        message += f" — {meaning}"
+    if solution.values.t is None and solution.errors.t is not None:
+        # IC-stage failure: the failing state is in solution.errors, whose scalar t must be lifted to 1-D.
+        errors = solution.errors
+        err = TransientRuntimeError(
+            np.atleast_1d(errors.t), errors.y, errors.ydot, message, flag=flag, symbol=symbol
+        )
+        err.add_note("state at failure recovered from IDA's error record (IC-stage failure)")
+        raise err
+    raise TransientRuntimeError(*solution.values, message, flag=flag, symbol=symbol)
 
 
 def _dae_setup(
@@ -140,11 +207,25 @@ def _dae_setup(
     R: Functional | None = None,
     **options,
 ) -> tuple[Callable, Array1D, Array1D, Array1D]:
+    # A callback exception would cross the scikits.odes Cython boundary as an opaque SystemError; each closure parks it in `pending` and aborts the solve so solve() can re-raise the original.
+    pending: list[BaseException] = []
+
     def residues(t, y, ydot, result):
-        result[:] = F(y, t) - mass * ydot
+        try:
+            result[:] = F(y, t) - mass * ydot
+        except BaseException as e:
+            e.add_note(f"raised inside the residual function at t={t}")
+            pending.append(e)
+            result[:] = 1.0
+            return -1  # IDA convention: negative residual return = unrecoverable failure
 
     def root(t, y, _, g, __):
-        g[:] = R(y, t)
+        try:
+            g[:] = R(y, t)
+        except BaseException as e:
+            e.add_note(f"raised inside the event/root function at t={t}")
+            pending.append(e)
+            g[:] = 1.0  # +1.0 exactly, NO sign change: a 0/negative fill would fire a spurious root
 
     time = np.asarray(time)
     yp0 = yp0 if yp0 is not None else np.zeros(len(y0))
@@ -160,8 +241,19 @@ def _dae_setup(
     solver = dae("ida", residues, **options)
 
     def solve(time, y0, yp0):
-        with ignore_warnings(DeprecationWarning):
-            sol_ = solver.solve(time, y0, yp0)
+        try:
+            with ignore_warnings(DeprecationWarning):
+                sol_ = solver.solve(time, y0, yp0)
+        except BaseException as cython_err:
+            if pending:
+                err = pending[0]
+                pending.clear()
+                raise err from cython_err
+            raise
+        if pending:
+            err = pending[0]
+            pending.clear()  # clear before raise: _event_loop_dae reuses solve() across restart segments
+            raise err
         _ida_post_solution(sol_)
         return sol_
 
@@ -174,6 +266,21 @@ def _attach_trajectory(err: BaseException, t: Array1D, y: Array2D) -> None:
     domain error while the solver — which knows nothing of that domain — preserves
     the state reached up to the failure on ``err.t`` / ``err.y``."""
     err.t, err.y = t, y
+
+
+def _merge_failure_trajectory(e, t_acc, y_acc):
+    """Attach the accumulated pre-failure segments plus this failure's partial
+    trajectory to ``e.t``/``e.y``, shared by the DAE/ODE/polling drivers."""
+    has_segment = e.t is not None and getattr(e, "y", None) is not None and np.ndim(e.y) == 2
+    if has_segment and t_acc:
+        t_acc.append(e.t[1:])   # row 0 is the restart point already held upstream
+        y_acc.append(e.y[1:])
+    elif has_segment:
+        return                   # first segment: e already carries exactly its partial
+    if t_acc:
+        if e.t is not None and np.ndim(getattr(e, "y", None)) == 1:
+            e.add_note(f"accumulated pre-failure trajectory attached to e.t/e.y; the IC-stage failure point (t={np.atleast_1d(e.t)[-1]}) it displaced remains described by the earlier note")
+        e.t, e.y = concat(*t_acc), concat(*y_acc)
 
 
 def _advance_eps(time: Array1D) -> float:
@@ -217,23 +324,13 @@ def _event_loop_dae(
     first = True
     while True:
         if first:
-            solution = solve(remaining, y_cur, yp_cur)  # a first-solve failure propagates
+            solution = solve(remaining, y_cur, yp_cur)
         else:
             try:
                 solution = solve(remaining, y_cur, yp_cur)
             except TransientRuntimeError as e:
-                logger.critical(e.message)
-                # e.t/e.y are None on IC failure (concat would mask the error);
-                # otherwise the first row is the restart point already held, so strip it.
-                if e.t is not None:
-                    t_acc.append(e.t[1:])
-                    y_acc.append(e.y[1:])
-                # Surface the failure rather than silently returning a truncated
-                # result: attach the full accumulated trajectory (pre-failure
-                # segments + this segment's partial) for post-mortem and re-raise,
-                # consistent with the first-segment path, which already propagates.
-                if t_acc:
-                    e.t, e.y = concat(*t_acc), concat(*y_acc)
+                logger.log(STREAM_DEBUG, e.message)
+                _merge_failure_trajectory(e, t_acc, y_acc)
                 raise
         vt, vy, _ = solution.values
         keep_head = 0 if first else 1  # drop the duplicated restart row on restarts
@@ -282,7 +379,7 @@ def _event_loop_dae(
     return concat(*y_acc), concat(*t_acc)
 
 
-class AlgRuntimeError(RuntimeError):
+class AlgRuntimeError(StreamError, RuntimeError):
     pass
 
 
@@ -325,11 +422,22 @@ def algebraic(
         _sol = opt.root(F, _vec, (_t,), **options)
         if not _sol["success"]:
             timestr = f"At t={_t:.3f}, " if _t is not None else ""
-            err = AlgRuntimeError(f"{timestr}Root Finding failed with the following message:\n" + _sol["message"])
-            # Keep the last iterate for post-mortem, like scaled_newton/pseudo_transient,
-            # so a caller can attribute the failure (e.g. a state past saturation).
+            message = f"{timestr}Root Finding failed with the following message:\n" + _sol["message"]
+            status = _sol.get("status")
+            meaning = _HYBR_STATUS.get(status)
+            if meaning:
+                message += f"\n[hybr status {status}] {meaning}"
+            # hybr can flag failure at an already-converged root (flat/near-null Jacobian); check ‖F‖ to detect it.
+            nF = float(np.linalg.norm(np.atleast_1d(F(_sol.x, _t if _t is not None else 0))))
+            if nF < 1e-6:
+                message += (
+                    f"\nthe returned iterate has ‖F‖={nF:.1e} — likely a MINPACK false negative "
+                    "at an already-converged root (flat/near-null Jacobian); err.y holds the iterate"
+                )
+            err = AlgRuntimeError(message)
             err.y = _sol.x
-            err.status = _sol.get("status")
+            err.status = status
+            err.backend_message = _sol["message"]  # the raw scipy text, un-wrapped
             raise err
         return _sol.x
 
@@ -338,7 +446,12 @@ def algebraic(
         y = np.zeros((len(time), len(y0)))
         y[0] = y0
         for i, t in enumerate(time[1:]):
-            sol = _solve(y[i], t)
+            try:
+                sol = _solve(y[i], t)
+            except AlgRuntimeError as err:
+                err.t = time[: i + 1]
+                err.data = y[: i + 1]
+                raise
             y[i + 1] = sol
             # Stop after storing the solved row so the stop-triggering state is kept, not dropped.
             if R is not None and not np.all(R(sol, t)):
@@ -392,6 +505,7 @@ def _scaled_newton_core(
     tol: float,
     maxit: int,
     tikhonov: float,
+    name: str = "scaled_newton",
 ) -> tuple[Array1D, bool, bool, float, int]:
     """Shared inner loop of :func:`scaled_newton` and :func:`pseudo_transient`.
 
@@ -422,7 +536,19 @@ def _scaled_newton_core(
             return y, True, False, nF, it
         J = np.array(jac(y, t))  # copy: ALG_jacobian returns a shared closure buffer
         Jeq, rs, cs = _equilibrate(J)
-        dy = np.linalg.solve(Jeq + tikhonov * np.eye(len(Jeq)), -(Fy / rs)) / cs
+        try:
+            dy = np.linalg.solve(Jeq + tikhonov * np.eye(len(Jeq)), -(Fy / rs)) / cs
+        except np.linalg.LinAlgError as e:
+            err = AlgRuntimeError(
+                f"{name}: linear solve failed — the (equilibrated, Tikhonov-regularized) "
+                "Jacobian is numerically singular; the system may be structurally "
+                "under-determined (e.g. point kinetics at exactly rho=0, a floating "
+                "pressure datum)"
+                + hint_block("check for a rank-deficient/undetermined system",
+                             "inspect agr.worst_residuals(err.y)")
+            )
+            err.y = y
+            raise err from e
         a = 1.0
         merit = float(np.linalg.norm(F(y + a * dy, t)))
         while merit >= nF and a > 2**-30:
@@ -592,7 +718,10 @@ def pseudo_transient(
             return np.array(jac(yy, tt)) - np.diag(mass) / dt
 
         inner_tol = max(inner_tol_floor, 1e-10 * nF)
-        y, *_ = _scaled_newton_core(G, y_prev, G_jac, t=t, tol=inner_tol, maxit=25, tikhonov=tikhonov)
+        y, *_ = _scaled_newton_core(
+            G, y_prev, G_jac, t=t, tol=inner_tol, maxit=25, tikhonov=tikhonov,
+            name="pseudo_transient (inner Newton)",
+        )
 
         nF_new = float(np.linalg.norm(F(y, t)))
         if not np.isfinite(nF_new) or nF_new > 1e3 * nF:
@@ -608,6 +737,30 @@ def pseudo_transient(
     err = AlgRuntimeError(f"pseudo_transient did not reach the basin in {maxsteps} steps; ||F||={nF:.3e}")
     err.y = y_prev
     raise err
+
+
+def _ivp_failure_message(solution) -> str:
+    """Translate a failed ``solve_ivp`` result into a STREAM-terms message that
+    carries the numeric status (so it can be looked up) and its meaning clause."""
+    message = f"solve_ivp({solution.status}): {solution.message}"
+    meaning = _IVP_STATUS.get(solution.status)
+    return f"{message} — {meaning}" if meaning else message
+
+
+def _annotate_rhs(F: Functional) -> Callable:
+    """Wrap the ODE right-hand side so a raise inside it carries the evaluation
+    time as a note. ``scipy.solve_ivp`` propagates exceptions from the rhs cleanly
+    (no Cython mangling, unlike the DAE path), so annotate-and-reraise is the right
+    tool — there is no way to abort ``solve_ivp`` from a poisoned rhs."""
+
+    def rhs(t, y):
+        try:
+            return F(y, t)
+        except BaseException as e:
+            e.add_note(f"raised inside the rhs function at t={t}")
+            raise
+
+    return rhs
 
 
 def differential(
@@ -653,13 +806,11 @@ def differential(
     if events and (on_event is not None or continuous):
         return _event_loop_ode(F, y0, time, events, on_event, continuous, **options)
     time_limits = (time[0], time[-1])
-    # No events, or events with no handler: a single solve_ivp that halts at the
-    # first terminal event (mirrors differential_algebraic's raw stop-at-root path).
-    solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_eval=time, events=events, **options)
+    solution = solve_ivp(_annotate_rhs(F), time_limits, y0, t_eval=time, events=events, **options)
     data = np.transpose(solution.y)
     if not solution.success:
         reached = solution.t if solution.t is not None and len(solution.t) else None
-        raise TransientRuntimeError(reached, data, None, solution.message)
+        raise TransientRuntimeError(reached, data, None, _ivp_failure_message(solution))
     return data, solution.t
 
 
@@ -694,12 +845,14 @@ def _event_loop_ode(
     first = True
     while True:
         solution = solve_ivp(
-            lambda t, y: F(y, t), (remaining[0], remaining[-1]), y_cur, t_eval=remaining, events=events, **options
+            _annotate_rhs(F), (remaining[0], remaining[-1]), y_cur, t_eval=remaining, events=events, **options
         )
         data = np.transpose(solution.y)
         if not solution.success:
             reached = solution.t if solution.t is not None and len(solution.t) else None
-            raise TransientRuntimeError(reached, data, None, solution.message)
+            err = TransientRuntimeError(reached, data, None, _ivp_failure_message(solution))
+            _merge_failure_trajectory(err, t_acc, y_acc)
+            raise err
         keep_head = 0 if first else 1
         seg_t = solution.t[keep_head:]
         t_acc.append(seg_t)

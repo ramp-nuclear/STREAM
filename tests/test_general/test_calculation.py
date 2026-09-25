@@ -169,3 +169,119 @@ def test_default_load_for_one_structure(val):
 @given(calcs, valarrs)
 def test_default_load_is_inverse_of_default_save(calc: Calculation, arr: np.ndarray):
     assert np.allclose(calc.load(calc.save(arr)), arr)
+
+
+# --- attribution: @unpacked, compute context, load ---
+
+from stream import Aggregator
+from stream.state import State
+
+
+def _err_notes(err):
+    return "\n".join(getattr(err, "__notes__", []))
+
+
+class _Bomb(Calculation):
+    """A Calculation whose class-level @unpacked calculate raises a chosen exception,
+    so args[0] is the instance (a bound method)."""
+
+    def __init__(self, name, exc):
+        self.name = name
+        self._exc = exc
+
+    @unpacked
+    def calculate(self, variables, **_):
+        raise self._exc
+
+    @property
+    def mass_vector(self):
+        return np.array([False])
+
+    @property
+    def variables(self):
+        return {"x": 0}
+
+
+def test_unpacked_note_names_instance_with_args():
+    """An exception WITH args is attributed to the instance name via a note
+    (not the unbound function + address); message/args stay intact."""
+    b = _Bomb("primary_pump", ValueError("boom"))
+    with pytest.raises(ValueError) as exc:
+        b.calculate({0: 0.0})
+    assert "primary_pump" in _err_notes(exc.value)
+    assert str(exc.value) == "boom"  # message untouched
+
+
+def test_unpacked_zero_args_exception_still_attributed():
+    """A zero-args exception keeps its type AND gains an attribution note."""
+    b = _Bomb("primary_pump", RuntimeError())
+    with pytest.raises(RuntimeError) as exc:
+        b.calculate({0: 0.0})
+    assert exc.value.args == ()  # args untouched
+    assert "primary_pump" in _err_notes(exc.value)
+
+
+def test_unpacked_non_calculation_first_arg_falls_back_to_qualname():
+    """A wrapped function whose first arg is not a Calculation (no `name`) is
+    attributed to the qualname and never crashes the decorator."""
+
+    @unpacked
+    def calc(self=None, **kw):
+        raise ValueError("inner")
+
+    with pytest.raises(ValueError) as exc:
+        calc(np.array([1.0]), x={0: 1.0})  # first arg has no .name
+    assert "calc" in _err_notes(exc.value)  # qualname fallback
+    assert str(exc.value) == "inner"  # message untouched
+
+
+def test_compute_context_note_names_calculation_and_op():
+    """A raising calculate gains a compute-level note naming the Calculation, the op,
+    and the time — via the _op chokepoint."""
+
+    def kaboom(y):
+        raise ValueError("kaboom")
+
+    A = Calculation_factory(kaboom, [False], {"x": 0})("reactor_core")
+    agr = Aggregator.from_decoupled(A)
+    with pytest.raises(ValueError) as exc:
+        agr.compute(np.array([0.0]), 1.5)
+    notes = _err_notes(exc.value)
+    assert "while evaluating Calculation 'reactor_core'" in notes
+    assert ".calculate" in notes
+    assert "t=1.5" in notes
+
+
+def _core_agr():
+    A = Calculation_factory(lambda y: -np.asarray(y, dtype=float), [True] * 3, {"T": slice(0, 3)})("core")
+    return Aggregator.from_decoupled(A)
+
+
+def test_load_attribution_wrong_calc_name_lists_state_keys():
+    """A wrong State key stays a KeyError; the note names the missing Calculation
+    and lists the State's actual keys."""
+    agr = _core_agr()
+    with pytest.raises(KeyError) as exc:
+        agr.load(State({"kore": {"T": np.zeros(3)}}))
+    notes = _err_notes(exc.value)
+    assert "core" in notes and "kore" in notes
+
+
+def test_load_attribution_wrong_variable_names_calc_and_var():
+    """A wrong variable name stays a KeyError; the notes name the calculation, the
+    expected variable, and the provided keys."""
+    agr = _core_agr()
+    with pytest.raises(KeyError) as exc:
+        agr.load(State({"core": {"temp": np.zeros(3)}}))
+    notes = _err_notes(exc.value)
+    assert "core" in notes and "T" in notes and "temp" in notes
+
+
+def test_load_attribution_shape_mismatch_names_var_and_length():
+    """A shape mismatch stays a ValueError; the notes name the calculation, the
+    variable, and its expected length."""
+    agr = _core_agr()
+    with pytest.raises(ValueError) as exc:
+        agr.load(State({"core": {"T": np.zeros(2)}}))
+    notes = _err_notes(exc.value)
+    assert "core" in notes and "T" in notes and "3" in notes

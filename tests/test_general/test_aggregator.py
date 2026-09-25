@@ -22,9 +22,10 @@ from stream.aggregator import (
 from stream.calculation import Calculation, unpacked
 from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
-from stream.solvers import differential_algebraic
+from stream.solvers import TransientRuntimeError, differential_algebraic
+from stream.errors import StreamConstructionError
 from stream.units import Place
-from stream.utilities import mutually_exclusive
+from stream.utilities import ignore_warnings, mutually_exclusive
 
 from .conftest import are_close, medium_floats
 from .test_calculation import Addition, add, divide, multiply
@@ -351,3 +352,134 @@ def test_create_constraints_with_bad_name_errors_well():
     agr = Aggregator.from_decoupled(calc)
     with pytest.raises(KeyError, match="moo. Must be one of"):
         create_constraints(agr, moo=["v_neg"], positive=["v_pos"])
+
+
+# --- reserved solver options on the event-DAE path ---
+
+
+class _EventNode:
+    """A minimal DAE node with a localizable event margin, so solve() takes the
+    rootfn path that manages nr_rootfns/rootfn itself."""
+
+    name = "trip"
+    variables = {"x": 0}
+    mass_vector = np.array([True])
+
+    def __len__(self):
+        return 1
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def calculate(self, y, **_):
+        return np.array([-y[0]])
+
+    def indices(self, v, asking=None):
+        return self.variables[v]
+
+    def load(self, s):
+        return np.array([s["x"]])
+
+    def save(self, y, t=0):
+        return {"x": y[0]}
+
+    strict_save = save
+
+    def event_margin(self, y, **_):
+        return np.array([y[0] - 0.5])
+
+    def has_event(self):
+        return True
+
+    def should_continue(self, y, **_):
+        return True
+
+    def change_state(self, y, **_):
+        pass
+
+
+@pytest.mark.parametrize("key", ["nr_rootfns", "rootfn"])
+def test_event_dae_rejects_reserved_solver_option(key):
+    """A user-supplied nr_rootfns/rootfn on the event-DAE path is managed by the
+    Aggregator; it must raise a named StreamConstructionError, not a duplicate-keyword
+    TypeError (nor a silent rootfn override)."""
+    g = DiGraph()
+    g.add_node(_EventNode())
+    agr = Aggregator(g)
+    with ignore_warnings(UserWarning):
+        with pytest.raises(StreamConstructionError) as exc:
+            agr.solve(np.array([1.0]), np.linspace(0.0, 1.0, 11), eq_type="DAE", **{key: 1})
+    assert key in str(exc.value)
+    assert not isinstance(exc.value, TypeError)  # the collision no longer surfaces raw
+
+
+def test_marginless_dae_solve_does_not_trip_reserved_guard():
+    """The reserved-option guard is event-path-only; a system with no event margins
+    passes the same option straight through to IDA and solves normally."""
+    Decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables=dict(y=0))
+    agr = Aggregator.from_decoupled(Decay())
+    with ignore_warnings(UserWarning):
+        sol = agr.solve(np.array([1.0]), np.linspace(0.0, 1.0, 5), eq_type="DAE", nr_rootfns=1)
+    assert sol.data.shape[0] == len(sol.time)
+
+
+def test_polling_driver_attaches_pre_failure_trajectory():
+    """A later-segment failure in _integrate_with_polling must carry the accumulated
+    pre-failure trajectory, not just the tiny failed segment: the pre-failure horizon
+    is attached on e.t/e.y via the shared _merge_failure_trajectory."""
+
+    class Decay:
+        """A marginless event node (overrides change_state, exposes no event_margin) that
+        latches a blow-up once it decays below 0.4 — routing through the polling driver."""
+
+        name = "decay"
+        variables = {"y": 0}
+        mass_vector = np.array([True])
+
+        def __init__(self):
+            self._blown = False
+
+        def __len__(self):
+            return 1
+
+        def __hash__(self):
+            return hash(self.name)
+
+        def calculate(self, y, **_):
+            return np.array([1e8 * y[0] ** 2]) if self._blown else np.array([-y[0]])
+
+        def indices(self, v, asking=None):
+            return self.variables[v]
+
+        def load(self, s):
+            return np.array([s["y"]])
+
+        def save(self, y, t=0):
+            return {"y": y[0]}
+
+        strict_save = save
+
+        def change_state(self, y, **_):
+            if y[0] < 0.4:
+                self._blown = True
+
+        def should_continue(self, y, **_):
+            return True
+
+        def event_margin(self, y, **_):
+            return np.empty(0)  # no localizable margin -> forces the polling driver
+
+        def has_event(self):
+            return True
+
+    g = DiGraph()
+    g.add_node(Decay())
+    agr = Aggregator(g)
+    time = np.linspace(0.0, 5.0, 26)  # decays through 0.4 around t~0.9, then the restart blows up
+    with ignore_warnings(RuntimeWarning):
+        with ignore_warnings(UserWarning):
+            with pytest.raises(TransientRuntimeError) as exc:
+                agr.solve(np.array([1.0]), time, eq_type="ODE")
+    reached = np.atleast_1d(exc.value.t)
+    assert len(reached) > 2  # the pre-failure horizon, not just the tiny failed restart segment
+    assert np.all(np.diff(reached) > 0)  # strictly monotone

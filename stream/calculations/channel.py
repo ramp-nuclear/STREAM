@@ -12,6 +12,7 @@ from typing import Sequence, TypeVar
 import numpy as np
 
 from stream.calculation import CalcState, Calculation, unpacked
+from stream.errors import StreamError
 from stream.physical_models.dimensionless import Gr, Pe, Re_mdot
 from stream.physical_models.heat_transfer_coefficient import (
     SinglePhaseLiquidHTCExArgs,
@@ -46,7 +47,7 @@ __all__ = [
 ]
 
 
-class SaturationReachedError(RuntimeError):
+class SaturationReachedError(StreamError, RuntimeError):
     """A solve was stopped because a channel's bulk coolant reached saturation.
 
     STREAM's channel model — single-phase forced convection plus subcooled boiling

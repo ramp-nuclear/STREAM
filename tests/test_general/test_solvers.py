@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pytest
 from scikits.odes import dae
@@ -5,7 +7,19 @@ from scikits.odes import dae
 from stream.aggregator import Aggregator
 from stream.composition import Calculation_factory
 from stream.jacobians import ALG_jacobian
-from stream.solvers import TransientRuntimeError, _event_loop_dae
+from stream.solvers import (
+    _HYBR_STATUS,
+    _IDA_STATUS,
+    _IVP_STATUS,
+    AlgRuntimeError,
+    TransientRuntimeError,
+    _dae_setup,
+    _event_loop_dae,
+    _event_loop_ode,
+    algebraic,
+    differential,
+    differential_algebraic,
+)
 from stream.units import Array1D
 from stream.utilities import ignore_warnings
 
@@ -495,3 +509,318 @@ def test_event_loop_dae_on_event_raise_at_t0_carries_initial_state():
         _event_loop_dae(solve, np.array([0.0, 1.0]), np.array([9.0]), np.zeros(1), on_event=on_event)
     e = exc.value
     assert np.array_equal(e.t, [0.0]) and e.y.shape[0] == 1
+
+
+# --- backend-code translation ---
+
+
+def test_ida_status_table_shape_and_known_rows():
+    """Every negative IDA flag maps to a (symbol, meaning) pair; the IDA_CONV_FAIL(-4)
+    and IC-stage IDA_NO_RECOVERY(-14) rows are present. Symbols come from the installed
+    StatusEnumIDA, not guesses."""
+    assert _IDA_STATUS[-4][0] == "IDA_CONV_FAIL"
+    assert -14 in _IDA_STATUS
+    assert all(flag < 0 for flag in _IDA_STATUS)
+    for flag, entry in _IDA_STATUS.items():
+        symbol, meaning = entry
+        assert isinstance(symbol, str) and symbol.startswith("IDA_")
+        assert isinstance(meaning, str)
+    # these flags carry a non-empty meaning
+    assert _IDA_STATUS[-4][1] and _IDA_STATUS[-14][1]
+
+
+def test_hybr_status_table_covers_documented_statuses():
+    """scipy root/hybr statuses 2-5 each carry a STREAM-terms meaning."""
+    for status in (2, 3, 4, 5):
+        assert status in _HYBR_STATUS
+        assert isinstance(_HYBR_STATUS[status], str) and _HYBR_STATUS[status]
+
+
+def test_ivp_status_table_has_step_underflow():
+    """solve_ivp status -1 (step underflow) carries a STREAM-terms meaning."""
+    assert -1 in _IVP_STATUS and _IVP_STATUS[-1]
+
+
+def _stiff_blowup_aggregator():
+    """A finite-time blow-up IDA cannot advance past the first step."""
+    Stiff = Calculation_factory(
+        calculate=lambda y: np.array([1e8 * y[0] ** 2]), mass_vector=[True], variables=dict(y=0)
+    )
+    return Aggregator.from_decoupled(Stiff())
+
+
+def test_ida_failure_message_carries_symbol_and_flag():
+    """An IDA failure surfaces the IDA_* symbol and numeric flag (so the user can
+    index the SUNDIALS troubleshooting docs) and sets e.flag / e.symbol."""
+    agr = _stiff_blowup_aggregator()
+    with ignore_warnings(UserWarning):
+        with pytest.raises(TransientRuntimeError) as exc:
+            agr.solve(np.array([1.0]), np.linspace(0.0, 1.0, 21), eq_type="DAE")
+    e = exc.value
+    assert e.flag is not None and e.flag < 0
+    assert e.symbol is not None and e.symbol.startswith("IDA_")
+    assert e.symbol in e.message
+    assert f"({e.flag})" in e.message
+
+
+def test_ic_failure_recovers_payload_from_error_record():
+    """On an IC-stage failure (IDA_NO_RECOVERY) the payload is recovered from IDA's
+    error record (t/y/ydot are not None) and a note explains it."""
+    Bad = Calculation_factory(
+        calculate=lambda y: np.array([-y[0], 0.0]), mass_vector=[True, False], variables=dict(x=0, free=1)
+    )
+    agr = Aggregator.from_decoupled(Bad())
+    with ignore_warnings(UserWarning):
+        with pytest.raises(TransientRuntimeError) as exc:
+            agr.solve(np.array([100.0, 5.0]), time=[0.0, 10.0], yp0=np.array([-100.0, 0.0]))
+    e = exc.value
+    assert e.t is not None and e.y is not None and e.ydot is not None
+    assert e.flag == -14 and e.symbol == "IDA_NO_RECOVERY"
+    assert any("recovered from IDA's error record" in note for note in getattr(e, "__notes__", []))
+
+
+def test_hybr_false_negative_message_explains_and_keeps_iterate():
+    """hybr reports failure at a machine-zero root; the message flags the MINPACK
+    false negative while the raise/status/iterate are unchanged."""
+
+    def F(y, t=0):
+        return np.array([y[0] ** 3])  # root at 0, flat Jacobian there
+
+    with pytest.raises(AlgRuntimeError) as exc:
+        algebraic(F=F, y0=np.array([1e-8]))
+    e = exc.value
+    assert "false negative" in str(e)
+    assert "the returned iterate has" in str(e)  # the nF-gated sentence specifically
+    assert e.status == 2  # raise/status behavior unchanged
+    assert getattr(e, "y", None) is not None
+    assert np.linalg.norm(F(np.atleast_1d(e.y))) < 1e-12  # err.y still the machine-exact root
+
+
+def test_ode_failure_message_surfaces_solve_ivp_status():
+    """An ODE solver failure names solve_ivp and its status."""
+    agr = _blowup_aggregator()
+    time = np.linspace(0.0, 2.0, 101)
+    with ignore_warnings(RuntimeWarning):  # overflow in y**2
+        with pytest.raises(TransientRuntimeError) as exc:
+            agr.solve(np.array([1.0]), time)
+    assert "solve_ivp(" in exc.value.message
+
+
+# --- callback-exception smuggling ---
+
+_DAE_DECAY_TIME = np.linspace(0.0, 5.0, 51)  # y' = -y decays from 1 through 0.4 at t~0.92
+
+
+def test_dae_rootfn_raise_surfaces_original_not_cython_systemerror():
+    """A user exception raised inside the event/root function during integration
+    must re-raise the user's own exception (type, message, traceback) with a
+    time-context note — not the opaque SystemError the scikits.odes Cython boundary
+    would otherwise produce, and not a TransientRuntimeError translation."""
+
+    def F(y, t):
+        return np.array([-y[0]])
+
+    def R(y, t):
+        if y[0] < 0.4:
+            raise RuntimeError("boom inside user event_margin during integration")
+        return np.array([y[0] - 0.001])  # a real margin so the rootfn path is exercised
+
+    with ignore_warnings(UserWarning):
+        with pytest.raises(RuntimeError, match="boom inside user event_margin") as exc:
+            differential_algebraic(
+                F, np.array([1.0]), np.array([1.0]), _DAE_DECAY_TIME, yp0=np.array([-1.0]), R=R, nr_rootfns=1
+            )
+    e = exc.value
+    assert type(e) is RuntimeError  # the original, not a SystemError or TransientRuntimeError
+    assert not isinstance(e, SystemError)
+    assert any("raised inside the event/root function at t=" in n for n in getattr(e, "__notes__", []))
+
+
+def test_dae_residual_raise_surfaces_original_with_note_outranking_backend_error():
+    """A raise inside the residual function aborts the solve via the negative-return
+    convention; the smuggled user exception outranks the translated IDA_RES_FAIL that
+    abort produces (pending is checked before _ida_post_solution), so the user sees
+    their own RuntimeError with the residual-function note."""
+
+    def F(y, t):
+        if y[0] < 0.4:
+            raise RuntimeError("boom inside residual during integration")
+        return np.array([-y[0]])
+
+    with ignore_warnings(UserWarning):
+        with pytest.raises(RuntimeError, match="boom inside residual") as exc:
+            differential_algebraic(F, np.array([1.0]), np.array([1.0]), _DAE_DECAY_TIME, yp0=np.array([-1.0]))
+    e = exc.value
+    assert type(e) is RuntimeError  # not the TransientRuntimeError for IDA_RES_FAIL(-8)
+    assert not isinstance(e, TransientRuntimeError)
+    assert any("raised inside the residual function at t=" in n for n in getattr(e, "__notes__", []))
+
+
+def test_dae_setup_pending_cleared_between_reused_solve_calls():
+    """_event_loop_dae reuses one solve() across restart segments, so a smuggled
+    exception must be cleared before it is raised — a stale entry would resurrect a
+    dead exception on a later healthy segment. The SAME solve() closure (one pending
+    cell) is called twice, first raising, then healthy, and the second call must
+    complete cleanly."""
+    boom = {"on": True}
+
+    def F(y, t):
+        if boom["on"] and y[0] < 0.4:
+            raise RuntimeError("boom once")
+        return np.array([-y[0]])
+
+    solve, time, y0, yp0 = _dae_setup(F, np.array([1.0]), np.array([1.0]), _DAE_DECAY_TIME, yp0=np.array([-1.0]))
+    with ignore_warnings(UserWarning):
+        with pytest.raises(RuntimeError, match="boom once"):
+            solve(time, y0, yp0)
+    # reuse the same solve()/pending cell on a now-healthy problem — no stale exception
+    boom["on"] = False
+    with ignore_warnings(UserWarning):
+        sol = solve(np.linspace(0.0, 1.0, 11), np.array([1.0]), np.array([-1.0]))
+    assert sol.values.y[-1, 0] == pytest.approx(np.exp(-1.0), abs=1e-2)
+
+
+def test_dae_fresh_solve_after_callback_raise_still_works():
+    """Each differential_algebraic call builds a fresh pending cell, so a healthy
+    solve through a NEW call after a failed one is unaffected (no cross-call
+    contamination)."""
+
+    def F_bad(y, t):
+        if y[0] < 0.4:
+            raise RuntimeError("boom")
+        return np.array([-y[0]])
+
+    with ignore_warnings(UserWarning):
+        with pytest.raises(RuntimeError, match="boom"):
+            differential_algebraic(
+                F_bad, np.array([1.0]), np.array([1.0]), _DAE_DECAY_TIME, yp0=np.array([-1.0])
+            )
+        y, t = differential_algebraic(
+            lambda y, t: np.array([-y[0]]),
+            np.array([1.0]),
+            np.array([1.0]),
+            np.linspace(0.0, 1.0, 11),
+            yp0=np.array([-1.0]),
+        )
+    assert y[-1, 0] == pytest.approx(np.exp(-1.0), abs=1e-2)
+
+
+def test_ode_rhs_raise_surfaces_original_with_note():
+    """scipy propagates rhs exceptions cleanly, so the ODE path annotates-and-reraises
+    instead of smuggling. A raise inside the rhs surfaces the user's own exception
+    with the rhs-function time note, unchanged type/traceback."""
+
+    def F(y, t):
+        if y[0] < 0.4:
+            raise RuntimeError("boom inside rhs during integration")
+        return -y
+
+    with pytest.raises(RuntimeError, match="boom inside rhs") as exc:
+        differential(F, np.array([1.0]), _DAE_DECAY_TIME)
+    e = exc.value
+    assert type(e) is RuntimeError
+    assert any("raised inside the rhs function at t=" in n for n in getattr(e, "__notes__", []))
+
+
+def test_restart_segment_dae_failure_emits_no_critical_log(caplog):
+    """The restart-segment `except TransientRuntimeError` block must not
+    logger.critical() and then re-raise (a double report): logging is at STREAM_DEBUG,
+    the exception is the single reporting channel, so no CRITICAL record is emitted
+    while the message still rides the exception."""
+
+    def raise_with_partial():
+        raise TransientRuntimeError(
+            np.array([0.5, 0.55]), np.tile([0.0, 1.0], (2, 1)), np.zeros((2, 2)), "failed mid-restart"
+        )
+
+    solve = _first_segment_then(raise_with_partial)
+    with caplog.at_level(logging.CRITICAL, logger="stream.aggregator"):
+        with ignore_warnings(UserWarning):
+            with pytest.raises(TransientRuntimeError, match="failed mid-restart") as exc:
+                _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    assert not [r for r in caplog.records if r.levelno >= logging.CRITICAL]
+    assert "failed mid-restart" in exc.value.message
+
+
+def test_quasistatic_alg_failure_attaches_solved_history():
+    """A quasi-static ALG scan that fails at step k must attach the already-solved
+    history (initial row + k solved rows) to err.t / err.data (2-D), while err.y
+    stays the failing step's 1-D iterate."""
+
+    def F(y, t):
+        # root y = sqrt(t) for t <= 2.5; no real root beyond the wall.
+        return np.array([y[0] ** 2 - t]) if t <= 2.5 else np.array([y[0] ** 2 + (t - 2.5)])
+
+    time = np.linspace(0.0, 5.0, 11)  # 0, 0.5, ... 5.0; the solve fails at the first t > 2.5 (t=3.0)
+    k = int(np.sum(time <= 2.5)) - 1  # last solvable index == 5 (time[5] == 2.5)
+    with pytest.raises(AlgRuntimeError) as exc:
+        algebraic(F=F, y0=np.array([0.1]), time=time)
+    e = exc.value
+    assert np.array_equal(e.t, time[: k + 1])
+    assert e.data.shape == (k + 1, 1)  # 2-D solved history: initial row + k solved rows
+    assert np.ndim(e.y) == 1 and len(e.y) == 1  # failing iterate stays the 1-D vector
+
+
+class _FakeIVPSol:
+    """A minimal ``solve_ivp``-like result for driving :func:`_event_loop_ode`."""
+
+    def __init__(self, t, y, success, status=0, message="fake failure", t_events=None, y_events=None):
+        self.t, self.y, self.success, self.status, self.message = t, y, success, status, message
+        self.t_events = t_events if t_events is not None else []
+        self.y_events = y_events if y_events is not None else []
+
+
+def test_event_loop_ode_restart_failure_attaches_full_trajectory(monkeypatch):
+    """On a restart-segment solve_ivp failure, _event_loop_ode must attach the
+    accumulated pre-failure segments + the failed partial (row 0, the restart point,
+    stripped) to err.t/err.y — strictly monotone — rather than discarding every
+    earlier segment."""
+    import stream.solvers as sv
+
+    calls = {"n": 0}
+
+    def fake_solve_ivp(rhs, tspan, y0_, t_eval=None, events=None, **kw):
+        calls["n"] += 1
+        y0a = np.asarray(y0_, float)
+        if calls["n"] == 1:  # first segment: a terminal event at t=0.5 -> restart
+            return _FakeIVPSol(
+                np.array([0.0, 0.25, 0.5]), np.tile(y0a, (3, 1)).T, True, status=1,
+                t_events=[np.array([0.5])], y_events=[y0a[None, :]],
+            )
+        return _FakeIVPSol(np.array([0.5, 0.55]), np.tile(y0a, (2, 1)).T, False, status=-1)
+
+    monkeypatch.setattr(sv, "solve_ivp", fake_solve_ivp)
+    with pytest.raises(TransientRuntimeError) as exc:
+        _event_loop_ode(
+            lambda y, t: -y,
+            np.array([0.0, 1.0]),
+            np.linspace(0, 1, 5),
+            events=[lambda t, y: 1.0],
+            on_event=lambda t, y: True,  # non-terminal transition -> restart from the event
+            continuous=False,
+        )
+    t = exc.value.t
+    assert np.all(np.diff(t) > 0), f"duplicated/!monotone time: {t}"
+    assert np.array_equal(t, [0.0, 0.25, 0.5, 0.55])
+
+
+def test_event_loop_dae_restart_ic_1d_payload_propagates_not_valueerror():
+    """IC recovery puts a len-1 e.t and a 1-D e.y on IC failures. The restart branch
+    must not append that 1-D e.y[1:] fragment into the 2-D accumulator (a shape
+    ValueError there would mask the real TransientRuntimeError): the ndim guard lets
+    the real error propagate, attaches the accumulated history, and adds a
+    displacement note about the IC-stage failure point it displaced."""
+
+    def raise_ic_1d():
+        raise TransientRuntimeError(
+            np.array([0.5]), np.array([0.0, 1.0]), np.array([0.0, 0.0]), "IC failed on restart"
+        )
+
+    solve = _first_segment_then(raise_ic_1d)
+    with ignore_warnings(UserWarning):
+        with pytest.raises(TransientRuntimeError, match="IC failed on restart") as exc:
+            _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    e = exc.value
+    assert np.array_equal(e.t, [0.0, 0.25, 0.5])  # accumulated first segment survives
+    assert e.y.shape[0] == 3
+    assert any("IC-stage failure point" in n for n in getattr(e, "__notes__", []))

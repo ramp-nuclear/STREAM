@@ -152,7 +152,23 @@ class Calculation(Protocol):
         """
         y = np.empty(len(self))
         for var, place in self.variables.items():
-            y[place] = state[var]
+            try:
+                y[place] = state[var]
+            except KeyError as e:
+                e.add_note(
+                    f"Calculation expected variable {var!r} in its state; "
+                    f"the state provides {sorted(state)}"
+                )
+                raise
+            except Exception as e:
+                if isinstance(place, slice):
+                    expected = f"a length-{place.stop - place.start} value"
+                elif isinstance(place, np.ndarray):
+                    expected = f"a length-{place.size} value"
+                else:
+                    expected = "a scalar value"
+                e.add_note(f"variable {var!r} of this Calculation expects {expected}")
+                raise
         return y
 
     def save(self, vector: Sequence[float], **_) -> CalcState:
@@ -288,8 +304,12 @@ def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
                 excluded_kwargs = {k: kwargs.pop(k) for k in exclude if k in kwargs}
                 return _calculate(*args, **valmap(_concat, kwargs) | excluded_kwargs)
             except BaseException as e:
-                if e.args:
-                    e.args = (f"Error found at {_calculate}: {e.args[0]}", *e.args[1:])
+                # args[0] is self for a bound calculate; catch BaseException (only annotate + re-raise) so any failure is attributed.
+                name = getattr(args[0], "name", None) if args else None
+                if name is not None:
+                    e.add_note(f"raised by Calculation '{name}' ({_calculate.__qualname__})")
+                else:
+                    e.add_note(f"raised inside {_calculate.__qualname__}")
                 raise
 
         return _unpack

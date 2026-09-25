@@ -212,3 +212,36 @@ def test_ptc_survives_exact_zero_residual():
     jac = lambda y, t: np.array([[1.0]])
     y = pseudo_transient(F, np.array([0.0]), np.array([1.0]), jac)
     assert np.linalg.norm(F(y, 0.0)) < 1e-2
+
+
+# --- A structurally singular (rank-deficient) system: a line of roots ---
+# F(y) = [y0 - y1, y0 - y1] has jac [[1, -1], [1, -1]]; the equilibrated,
+# Tikhonov-regularized 2x2 has det ~ 1e-20 -> np.linalg.solve raises LinAlgError.
+def _singular_F(y, t=0.0):
+    return np.array([y[0] - y[1], y[0] - y[1]])
+
+
+def _singular_jac(y, t=0.0):
+    return np.array([[1.0, -1.0], [1.0, -1.0]])
+
+
+def test_scaled_newton_converts_singular_linalgerror_to_algruntimeerror():
+    """A structurally singular equilibrated+regularized Jacobian makes
+    np.linalg.solve raise a bare LinAlgError. scaled_newton must convert it to the
+    documented AlgRuntimeError (message names it 'singular'), keep the current iterate
+    on err.y, and chain the LinAlgError as __cause__ — no bare numpy error escapes."""
+    with pytest.raises(AlgRuntimeError, match="singular") as excinfo:
+        scaled_newton(_singular_F, np.array([3.0, 0.0]), _singular_jac)
+    e = excinfo.value
+    assert getattr(e, "y", None) is not None
+    assert isinstance(e.__cause__, np.linalg.LinAlgError)
+
+
+def test_pseudo_transient_converts_singular_linalgerror_to_algruntimeerror():
+    """The same conversion covers pseudo_transient, whose only linear
+    solves live in the shared Newton core (name 'pseudo_transient (inner Newton)')."""
+    with pytest.raises(AlgRuntimeError, match="singular") as excinfo:
+        pseudo_transient(_singular_F, np.array([0.0, 0.0]), np.array([3.0, 0.0]), _singular_jac)
+    e = excinfo.value
+    assert getattr(e, "y", None) is not None
+    assert isinstance(e.__cause__, np.linalg.LinAlgError)

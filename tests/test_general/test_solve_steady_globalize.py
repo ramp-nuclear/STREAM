@@ -201,3 +201,118 @@ def test_new_keywords_never_reach_scipy(system):
     # Would raise TypeError from scipy if these leaked into **options.
     root = system.solve_steady(guess, globalize=False, scales=None, fallback_ptc=True)
     assert _residual(system, root) < 1e-6
+
+
+# --- cascade aggregation and widening ---
+from stream.aggregator import Aggregator
+from stream.composition import Calculation_factory
+
+
+def _no_root_agr(const):
+    """A steady system with no real root: F(y) = y^2 + const."""
+    Calc = Calculation_factory(
+        calculate=lambda y, c=const: np.array([y[0] ** 2 + c]),
+        mass_vector=[False],
+        variables=dict(y=0),
+    )
+    return Aggregator.from_decoupled(Calc())
+
+
+def _singular_agr():
+    """A structurally singular (rank-deficient) steady system: F = [a-b, a-b]."""
+    Calc = Calculation_factory(
+        calculate=lambda y: np.array([y[0] - y[1], y[0] - y[1]]),
+        mass_vector=[False, False],
+        variables=dict(a=0, b=1),
+    )
+    return Aggregator.from_decoupled(Calc())
+
+
+def test_cascade_aggregates_all_rungs_in_one_error():
+    """On a no-root system all rungs of the globalize cascade fail; the user must get
+    ONE aggregate AlgRuntimeError naming every rung that ran (not just the last), with
+    a structured .rungs record, __cause__ chained to the last failure, and the
+    guess-vs-physics hint. F=y^2+1 exhausts scipy -> scaled_newton -> PTC (PTC cannot
+    reach the basin, so no polish runs): three rungs."""
+    agr = _no_root_agr(1.0)
+    guess = np.array([3.0])
+    with pytest.raises(AlgRuntimeError) as exc:
+        agr.solve_steady(guess)  # globalize='auto'
+    e = exc.value
+    msg = str(e)
+    assert "globalize cascade failed" in msg
+    for name in ("scipy hybr", "scaled_newton", "pseudo_transient"):
+        assert name in msg
+    assert hasattr(e, "rungs")
+    names = [r[0] for r in e.rungs]
+    assert names == ["scipy hybr", "scaled_newton", "pseudo_transient"]
+    assert all(np.array_equal(r[1], guess) for r in e.rungs)  # all three start from the guess
+    assert getattr(e, "y", None) is not None  # last rung's iterate
+    assert e.__cause__ is not None
+    assert "try:" in msg  # hint_block text present
+    # the hybr record's outcome carries scipy's actual reason, not just the
+    # "...failed with the following message:" preamble line
+    assert not e.rungs[0][2].endswith(":")
+
+
+def test_cascade_records_four_rungs_including_polish():
+    """When PTC reaches the (loose) basin but the tight polish then fails, all four
+    rungs are recorded in order — the PTC record reads 'reached the basin' and the
+    polish starts from PTC's iterate (not the guess). F=y^2+1e-4 exercises this."""
+    agr = _no_root_agr(1e-4)
+    guess = np.array([3.0])
+    with pytest.raises(AlgRuntimeError) as exc:
+        agr.solve_steady(guess)
+    e = exc.value
+    names = [r[0] for r in e.rungs]
+    assert names == ["scipy hybr", "scaled_newton", "pseudo_transient", "scaled_newton polish"]
+    for name in names:
+        assert name in str(e)
+    ptc = e.rungs[2]
+    assert ptc[2] == "reached the basin"
+    assert np.array_equal(ptc[1], guess)  # PTC still starts from the guess
+    polish = e.rungs[3]
+    assert not np.array_equal(polish[1], guess)  # polish starts from PTC's iterate
+    assert all(np.isfinite(r[3]) for r in e.rungs)  # every recorded ||F|| is finite
+
+
+def test_cascade_fallback_ptc_false_two_rungs():
+    """fallback_ptc=False cuts the cascade at two rungs (scipy -> scaled_newton);
+    the aggregate must record exactly those two and never invoke PTC."""
+    agr = _no_root_agr(1.0)
+    with pytest.raises(AlgRuntimeError) as exc:
+        agr.solve_steady(np.array([3.0]), fallback_ptc=False)
+    e = exc.value
+    assert [r[0] for r in e.rungs] == ["scipy hybr", "scaled_newton"]
+    assert "all 2 rungs" in str(e)
+
+
+def test_globalize_false_single_rung_stays_raw():
+    """globalize=False keeps the un-globalized behavior: the single scipy rung's
+    AlgRuntimeError propagates raw, with no aggregation and no .rungs."""
+    agr = _no_root_agr(1.0)
+    with pytest.raises(AlgRuntimeError) as exc:
+        agr.solve_steady(np.array([3.0]), globalize=False)
+    e = exc.value
+    assert not hasattr(e, "rungs")
+    assert "globalize cascade failed" not in str(e)
+
+
+def test_singular_cascade_reaches_pseudo_transient_rung(monkeypatch):
+    """A singular scaled_newton rung converts its bare numpy LinAlgError to an
+    AlgRuntimeError, so the cascade proceeds to the PTC rung — proven by
+    'pseudo_transient' appearing in the aggregate .rungs. scipy is forced to fail (it
+    otherwise reports false success on a singular system), so 'auto' drops into the
+    globalized backend."""
+    agr = _singular_agr()
+
+    def raising_algebraic(*args, **kwargs):
+        raise AlgRuntimeError("forced scipy failure")
+
+    monkeypatch.setattr(aggmod, "algebraic", raising_algebraic)
+    with pytest.raises(AlgRuntimeError) as exc:
+        agr.solve_steady(np.array([3.0, 0.0]))  # globalize='auto'
+    e = exc.value
+    names = [r[0] for r in e.rungs]
+    assert "pseudo_transient" in names  # the cascade reached the PTC rung
+    assert "scaled_newton" in names

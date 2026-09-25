@@ -68,3 +68,10 @@ Scales
 
 .. automodule:: stream.scales
    :members:
+
+Errors
+------
+
+.. automodule:: stream.errors
+   :members:
+   :show-inheritance:
