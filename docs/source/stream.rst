@@ -19,4 +19,5 @@ As the in-depth documentation is read, one should imagine the following scheme:
    stream.composition
    stream.physical_models
    analysis
+   viz
    utility_packages
