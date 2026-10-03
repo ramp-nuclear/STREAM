@@ -301,7 +301,7 @@ class PointKinetics(Calculation):
     @unpacked(exclude=("T",))
     def change_state(self, variables: Sequence[float], *, t: Second, **kwargs):
         power = variables[self.indices("power")]
-        dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("power")]
+        dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("pk_power")]
         self.controls.change_state(t, power, dPdt, **kwargs)
 
     @property
@@ -314,6 +314,12 @@ class PointKinetics(Calculation):
     @property
     def variables(self) -> dict[Name, Place]:
         return dict(power=0, ck=slice(1, self.m + 1))
+
+    def indices(self, variable: Name, asking: Calculation | None = None) -> Place | dict[Name, Place]:
+        """`pk_power` is the kinetics power row: the `power` row unless a subtype separates the two."""
+        if variable == "pk_power" and "pk_power" not in self.variables:
+            variable = "power"
+        return super().indices(variable, asking=asking)
 
     # noinspection PyMethodOverriding
     @unpacked(exclude=("T",))
@@ -340,7 +346,7 @@ class PointKinetics(Calculation):
         rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T or {}, rhoc)
         state["reactivity"] = rho
-        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("power")]
+        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("pk_power")]
         return state
 
 
