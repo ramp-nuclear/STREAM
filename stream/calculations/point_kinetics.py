@@ -198,6 +198,8 @@ class PointKinetics(Calculation):
     corresponding coolant and fuel elements.
     """
 
+    _dPdt_row = 0
+
     def __init__(
         self,
         generation_time: Second,
@@ -301,7 +303,7 @@ class PointKinetics(Calculation):
     @unpacked(exclude=("T",))
     def change_state(self, variables: Sequence[float], *, t: Second, **kwargs):
         power = variables[self.indices("power")]
-        dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("power")]
+        dPdt = self.calculate(variables, t=t, **kwargs)[self._dPdt_row]
         self.controls.change_state(t, power, dPdt, **kwargs)
 
     @property
@@ -340,7 +342,7 @@ class PointKinetics(Calculation):
         rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T or {}, rhoc)
         state["reactivity"] = rho
-        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("power")]
+        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[0]
         return state
 
 

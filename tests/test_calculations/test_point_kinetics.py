@@ -202,3 +202,36 @@ def test_scram_abort_stops_dae_solve_at_trip_time():
     assert sol.time[-1] == pytest.approx(ctrl.t_state)
 
 
+def test_winput_feeds_true_power_derivative_to_state_machine_and_save():
+    """In PointKineticsWInput the row at indices('power') is the algebraic total-power
+    residual; change_state and save must use the true power derivative, row 0."""
+    seen = {}
+
+    def spy(state, t, power, dPdt, **kw):
+        seen.update(power=power, dPdt=dPdt)
+        return state
+
+    ctrl = ReactivityController(state_machine=spy, input_reactivity=just(100e-5))
+    pk = PointKineticsWInput(
+        generation_time=_Lam,
+        delayed_neutron_fractions=_betak,
+        delayed_groups_decay_rates=_lambdak,
+        temp_worth={},
+        ref_temp={},
+        controls=ctrl,
+    )
+    P0 = 1e6
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    y = np.concatenate([[P0], ck0, [P0 + 5e4]])  # [pk_power, ck..., total_power]
+
+    true_dpdt = pk.calculate(y, T={}, t=1.0, power_input=5e4)[0]
+    assert abs(true_dpdt) > 1e6
+
+    pk.change_state(y, T={}, t=1.0, power_input=5e4)
+    assert seen["power"] == pytest.approx(P0 + 5e4)
+    assert seen["dPdt"] == pytest.approx(true_dpdt)
+
+    saved = pk.save(y, T={}, t=1.0, power_input=5e4)
+    assert saved["dPdt"] == pytest.approx(true_dpdt)
+
+
