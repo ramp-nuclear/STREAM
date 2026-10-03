@@ -8,6 +8,7 @@ from stream.calculations import PointKinetics
 from stream.calculations.point_kinetics import (
     OneWayToSCRAM,
     PointKineticsWInput,
+    ReactivityController,
     temperature_reactivity,
 )
 from stream.composition import Calculation_factory
@@ -159,3 +160,45 @@ def test_pk_should_continue_stops_at_SCRAM_time(t):
     mock_pk.controls.t_state = t
     mock_pk.controls.abort_states = {OneWayToSCRAM.SCRAM}
     assert not mock_pk.should_continue([0, 0], T=mock_pk.T0, t=t)
+
+
+# Keepin six-group U-235 thermal data as tabulated in Lamarsh, Introduction to Nuclear Reactor Theory, Table 7-1.
+_lambdak = np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01])
+_betak = np.array([0.00021, 0.00142, 0.00127, 0.00257, 0.00075, 0.00027])
+_Lam = 2e-5
+
+
+def _scram_pk(P0=1e6, limit_factor=1.2):
+    """A PointKinetics with a +20 pcm ramp that drives power up to a SCRAM trip
+    and a strong rod-insertion ramp afterwards. Abort on SCRAM."""
+    limit = limit_factor * P0
+
+    def machine(state, t, power, dPdt, **kw):
+        return OneWayToSCRAM.SCRAM if state == OneWayToSCRAM.NORMAL and power > limit else state
+
+    def rho_in(state, t_state, t, **_):
+        if state == OneWayToSCRAM.SCRAM:
+            return -0.05 * (t - t_state)
+        return 20e-5 if t > 1.0 else 0.0
+
+    ctrl = ReactivityController(input_reactivity=rho_in, state_machine=machine, abort_states={OneWayToSCRAM.SCRAM})
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    return pk, ctrl, np.concatenate([[P0], ck0])
+
+
+def test_scram_abort_stops_dae_solve_at_trip_time():
+    """The abort predicate in should_continue must see the plain time, so a SCRAM
+    transition stops the DAE solve at the trip time instead of running to t_end."""
+    pk, ctrl, y0 = _scram_pk()
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    time = np.linspace(0, 60, 601)
+    sol = agr.solve(y0=y0.copy(), time=time, eq_type="DAE")
+
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+    assert sol.time[-1] < time[-1]
+    assert sol.time[-1] == pytest.approx(ctrl.t_state)
+
+

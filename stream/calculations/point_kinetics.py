@@ -294,6 +294,7 @@ class PointKinetics(Calculation):
         return self._A @ variables + self._s
 
     # noinspection PyProtocol
+    @unpacked(exclude=("T",))
     def should_continue(self, variables: Sequence[float], *, t: Second, **kwargs) -> bool:
         return self.controls.should_continue(t)
 
