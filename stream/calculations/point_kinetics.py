@@ -143,10 +143,6 @@ class ReactivityController:
         abort = self.state in self.abort_states and t == self.t_state
         return not abort
 
-    def worth(self, t: Second) -> float:
-        """Reactivity worth inserted by the controller as function of time"""
-        return self.input_reactivity(self.state, self.t_state, t)
-
     def worth_history(self, t: Second) -> float:
         sn, tn = self.log[0]
         for i in range(1, len(self.log)):
@@ -287,7 +283,7 @@ class PointKinetics(Calculation):
         dPdt: Array1D
             the change in power and the delayed power fractions
         """
-        rhoc = self.controls.worth(t)
+        rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T if T is not None else {}, rhoc)
         self._s[0] = source / self.Lambda if source is not None else 0.0
         self._A[0, 0] = (rho - self.dollar) / self.Lambda
