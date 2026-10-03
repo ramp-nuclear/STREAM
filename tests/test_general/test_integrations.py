@@ -229,8 +229,8 @@ def test_channel_point_kinetics():
     channels = [ChannelAndContacts(**channel_input, name=f"CC{i}") for i in range(channels_num)]
     fuels = [Fuel(**fuel_input, name=f"F{i}") for i in range(channels_num)]
 
-    alpha_Tc = {ch: np.random.rand() * np.ones(cells) for ch in channels}
-    alpha_Tf = {f: np.random.rand() * np.ones(cells) for f in fuels}
+    alpha_Tc = {ch: -np.random.rand() * np.ones(cells) for ch in channels}
+    alpha_Tf = {f: -np.random.rand() * np.ones(cells) for f in fuels}
     temp_worth = alpha_Tf | alpha_Tc
     lambdak = np.array([55.72, 22.72, 6.22, 2.3, 0.618, 0.23])
     betak = 700e-5 * np.ones_like(lambdak) / len(lambdak)
@@ -367,7 +367,7 @@ def test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundar
         generation_time=1e-2,
         delayed_neutron_fractions=np.array([0.007]),
         delayed_groups_decay_rates=np.array([1.0]),
-        temp_worth={F: np.full(z_N * fuel_N, 1e-1)},
+        temp_worth={F: np.full(z_N * fuel_N, -1e-1)},
         ref_temp={F: T0},
     )
 
@@ -402,7 +402,7 @@ def test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet()
         generation_time=1e-2,
         delayed_neutron_fractions=np.array([0.007]),
         delayed_groups_decay_rates=np.array([1.0]),
-        temp_worth={C: np.full(z_N, 1e-1)},
+        temp_worth={C: np.full(z_N, -1e-1)},
         ref_temp={C: T0},
     )
 
