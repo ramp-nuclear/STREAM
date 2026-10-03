@@ -3,7 +3,7 @@ import pytest
 from networkx import DiGraph
 from scikits.odes import dae
 
-from stream.aggregator import Aggregator
+from stream.aggregator import Aggregator, vars_
 from stream.calculations import Gravity, Pump, Resistor
 from stream.calculations.ideal.resistors import ResistorSum
 from stream.composition import Calculation_factory
@@ -260,5 +260,24 @@ def test_compute_accepts_correct_length_result():
     agr = Aggregator(_single_node_graph(_EchoInput(np.array([1.0, 2.0, 3.0]))))
     out = agr.compute(np.array([4.0, 5.0, 6.0]), 0.0)
     assert np.array_equal(out, [1.0, 2.0, 3.0])
+
+
+def _coupled_algebraic_aggregator():
+    """A tiny coupled 2-variable algebraic system with a unique root (y=2, x=1)."""
+    Addition = Calculation_factory(lambda y, *, x: y - x - 1.0, [False], dict(y=0))
+    Multiplication = Calculation_factory(lambda x, *, y: x - 0.5 * y, [False], dict(x=0))
+    add = Addition(name="Add")
+    multiply = Multiplication(name="Multiply")
+    graph = DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))])
+    return Aggregator(graph)
+
+
+@pytest.mark.parametrize("eq_type", [None, "ODE", "DAE", "ALG"])
+def test_solve_with_time_none_points_at_solve_steady(eq_type):
+    """solve() integrates or steps through time points; without them it raises and
+    names solve_steady, the steady root find."""
+    agr = _coupled_algebraic_aggregator()
+    with pytest.raises(ValueError, match="solve_steady"):
+        agr.solve(np.array([0.0, 0.0]), None, eq_type=eq_type)
 
 

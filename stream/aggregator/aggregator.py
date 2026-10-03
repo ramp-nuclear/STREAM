@@ -501,7 +501,7 @@ class Aggregator:
     def solve(
         self,
         y0: Array1D | DictState,
-        time: Sequence[float] | None,
+        time: Sequence[float],
         yp0: Array1D = None,
         eq_type: Literal["ODE", "DAE", "ALG"] | None = None,
         *,
@@ -522,14 +522,16 @@ class Aggregator:
             Initial values or guess. Can either be an array or a State, in the
             latter case :meth:`load` will be used to obtain the desired array.
         time: Sequence[float]
-            Return results at these time points.
+            Return results at these time points. For a steady root find use
+            :meth:`solve_steady` instead.
         yp0: Array1D or None
             Initial derivatives. It helps if they're known (in the DAE case),
             but by default the consistent yp0 is found from y0.
         eq_type: 'ODE', 'DAE', 'ALG' or None
             A solver may be chosen deliberately from [ODE, DAE, ALG].
-            If None, the method is set by looking at the mass matrix and
-            whether time is none.
+            If None, the method is set by looking at the mass matrix: ODE if
+            every variable is differential, DAE if some are, and a quasi-static
+            ALG solve if none are.
         progressbar: ProgressBarLike or bool
             Whether to use a progressbar, and if so, which one. If ``True``, use ``use progressbar.ProgressBar``
         options:
@@ -540,20 +542,26 @@ class Aggregator:
         solution: Solution
             Calculated vector at requested times: [time, variable].
 
+        Raises
+        ------
+        ValueError : If ``time`` is None.
+
         References
         ----------
         Scikits.Odes documentation
         """
+        if time is None:
+            raise ValueError("solve() needs time points; use solve_steady(guess) for a steady root find.")
         if eq_type is None:
-            if all(self.mass) and time is not None:
+            if all(self.mass):
                 eq_type = "ODE"
                 logger.log(STREAM_DEBUG, "Solving TRANSIENT (ODE)")
-            elif any(self.mass) and time is not None:
+            elif any(self.mass):
                 eq_type = "DAE"
                 logger.log(STREAM_DEBUG, "Solving TRANSIENT")
             else:
                 eq_type = "ALG"
-                logger.log(STREAM_DEBUG, "Solving STEADY STATE")
+                logger.log(STREAM_DEBUG, "Solving QUASI-STATIC")
 
         if not isinstance(y0, np.ndarray):
             y0 = self.load(y0)
