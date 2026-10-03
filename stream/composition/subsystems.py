@@ -11,6 +11,7 @@ from stream.calculations import (
     Channel,
     ChannelAndContacts,
     DPCalculation,
+    Flapper,
     Fuel,
     Junction,
     Kirchhoff,
@@ -19,6 +20,7 @@ from stream.calculations import (
     Pump,
 )
 from stream.composition.mtr_geometry import symmetric_plate
+from stream.physical_models.pressure_drop import local_pressure_by_mdot
 from stream.state import State
 from stream.units import Celsius, KgPerS, Pascal, Value, Watt
 from stream.utilities import just
@@ -197,6 +199,10 @@ def guess_hydraulic_steady_state(
                 # Safe because Pump has x.p.
                 # noinspection PyUnresolvedReferences
                 return x.p or 0.0
+            case Flapper():
+                if np.isposinf(x.t_open):
+                    return 0.0
+                return -local_pressure_by_mdot(m, x.fluid.density(temperature), x.f, x._A)
             case DPCalculation():
                 # Safe because LumpedComponent has dp_out in its protocol.
                 # noinspection PyUnresolvedReferences
