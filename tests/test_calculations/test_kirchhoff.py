@@ -240,3 +240,35 @@ def test_kirchhoff_w_derivatives_serves_mdot2_and_rejects_unknown_names():
         k.indices("typo", asking=inertia)
 
 
+def test_kirchhoff_rejects_a_flow_graph_that_is_not_strongly_connected():
+    """A flow graph must be a closed loop network: a node that cannot be reached from
+    every other node along the edge orientations is rejected at construction."""
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("P1",))
+    with pytest.raises(ValueError, match="strongly connected"):
+        Kirchhoff(g)
+
+
+def test_kirchhoff_rejects_a_self_loop_edge():
+    """A single edge closed on one junction generates no KVL row and a broken junction
+    mdot map; Kirchhoff must reject it with a clear message rather than crash later."""
+    g = MultiDiGraph()
+    g.add_edge("J", "J", comps=("pump", "res"))
+    with pytest.raises(ValueError, match="[Ss]elf-loop"):
+        Kirchhoff(g)
+
+
+def test_kirchhoff_rejects_a_reused_component():
+    """Reusing one component object on two edges collapses the component index map,
+    causing a bare IndexError or silent mdot aliasing; reject it clearly."""
+    g = MultiDiGraph()
+    g.add_edge("A", "B", comps=("XYZW",))
+    g.add_edge("B", "A", comps=("XYZW", "C2"))
+    with pytest.raises(ValueError, match="XYZW"):
+        Kirchhoff(g)
+
+    g2 = MultiDiGraph()
+    g2.add_edge("A", "B", comps=("XYZW", "XYZW"))
+    g2.add_edge("B", "A", comps=("C2",))
+    with pytest.raises(ValueError, match="XYZW"):
+        Kirchhoff(g2)
