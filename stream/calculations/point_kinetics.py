@@ -190,8 +190,9 @@ class PointKinetics(Calculation):
 
     In this particular calculation, the reactivity may be influenced by a
     linear thermal feedback
-    :math:`\rho = \rho_0 + \alpha_c T_c + \alpha_f T_f` by
-    corresponding coolant and fuel elements.
+    :math:`\rho = \rho_0 + \sum_i \vec{\alpha}_i \cdot (\vec{T}-\vec{T}_0)_i` by
+    corresponding coolant and fuel elements, where the temperature coefficients
+    :math:`\alpha_i` are negative by convention.
     """
 
     _dPdt_row = 0
@@ -216,7 +217,8 @@ class PointKinetics(Calculation):
         delayed_groups_decay_rates: PerS
             each group's decay rate.
         temp_worth: dict[Calculation, PerC] or None
-            a dictionary whose keys are fuel or channel elements, and values are their temperature worth.
+            a dictionary whose keys are fuel or channel elements, and values are their temperature
+            coefficients of reactivity (scalar or per cell), negative for negative feedback.
         ref_temp: dict[Calculation, Celsius] or None
             At such temperature/s, temperature feedback is 0.
         controls: ReactivityController
@@ -349,7 +351,10 @@ def temperature_reactivity(
 ) -> float:
     r"""Calculate the reactivity, given temperature feedback
 
-    .. math:: \rho = - \sum_i \vec{w}_i \cdot (\vec{T}-\vec{T}_0)_i
+    .. math:: \rho = \sum_i \vec{\alpha}_i \cdot (\vec{T}-\vec{T}_0)_i
+
+    where the temperature coefficients :math:`\alpha_i` are negative by convention, so
+    heating above the reference gives negative feedback.
 
     Parameters
     ----------
@@ -358,13 +363,14 @@ def temperature_reactivity(
     T0: dict[Calculation, Array]
         Reference Temperatures
     weights: dict[Calculation, Array]
+        Temperature coefficients of reactivity, scalar or per cell
 
     Returns
     -------
     rho: float
         Calculated reactivity
     """
-    return -sum(np.dot(w, T[k] - T0[k]).item() for k, w in weights.items())
+    return sum(float(np.sum(np.asarray(w) * (T[k] - T0[k]))) for k, w in weights.items())
 
 
 @curry

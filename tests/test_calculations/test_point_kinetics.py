@@ -25,7 +25,7 @@ def mock_point_kinetics():
         generation_time=1,
         delayed_neutron_fractions=np.array([0.25]),
         delayed_groups_decay_rates=np.array([2]),
-        temp_worth={mock_calc: np.array([10])},
+        temp_worth={mock_calc: np.array([-10])},
         ref_temp={mock_calc: 0},
     )
 
@@ -72,7 +72,7 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     mock_pk = mock_point_kinetics()
     mock_pk.controls.input_reactivity = just(inp)
     save = mock_pk.save([p, ck], T={mock_calc: T}, t=0)
-    r = inp - mock_pk.temp_worth[mock_calc] * T
+    r = inp + mock_pk.temp_worth[mock_calc] * T
     known = dict(
         power=p,
         ck=[ck],
@@ -105,13 +105,20 @@ def test_pk_load(p, ck):
 
 @pytest.mark.parametrize(
     ("w", "result"),
-    [({1: np.ones(5), 2: np.ones(5)}, 0), ({1: np.ones(5), 2: np.zeros(5)}, -5)],
+    [({1: -np.ones(5), 2: -np.ones(5)}, 0), ({1: -np.ones(5), 2: np.zeros(5)}, -5)],
 )
 def test_reactivity_for_linear_temperature_in_relation_to_reference(w, result):
     T = {1: np.arange(5), 2: np.ones(5)}
     T0 = {1: np.ones(5), 2: np.arange(5)}
     # noinspection PyTypeChecker
     assert np.isclose(temperature_reactivity(T, T0, w), result)
+
+
+def test_temperature_reactivity_accepts_scalar_weight_with_multicell_temperature():
+    """A scalar temp_worth (as the PerC type hint invites) combined with a multi-cell
+    temperature array must act per cell, summed over the cells."""
+    rho = temperature_reactivity({"ch": np.array([300.0, 310.0, 320.0])}, {"ch": 290.0}, {"ch": -2e-5})
+    assert rho == pytest.approx(-2e-5 * (10 + 20 + 30))
 
 
 def test_pk_with_decay():
