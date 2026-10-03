@@ -9,7 +9,7 @@ from cytoolz import valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
-from stream.solvers import algebraic, differential, differential_algebraic
+from stream.solvers import algebraic, differential, differential_algebraic, quasi_static
 from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
 from stream.utilities import STREAM_DEBUG, concat, offset
@@ -573,7 +573,7 @@ class Aggregator:
             if progressbar is not None:
                 progressbar.finish()
         elif eq_type == "ALG":
-            data = algebraic(F=self.compute, y0=y0, time=time, R=self._root, **options)
+            data, time = quasi_static(F=self.compute, y0=y0, time=time, R=self._root, **options)
         else:
             raise ValueError(f"Unknown method {eq_type}, choose from [ODE, DAE, ALG]")
         return Solution(np.asarray(time), data)
@@ -597,7 +597,7 @@ class Aggregator:
         """
         if not isinstance(guess, np.ndarray):
             guess = self.load(guess)
-        return algebraic(F=self.compute, y0=guess, R=self._root, **options)
+        return algebraic(F=self.compute, y0=guess, **options)
 
 
 @dataclass

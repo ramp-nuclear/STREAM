@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from networkx import DiGraph
 from scikits.odes import dae
 
 from stream.aggregator import Aggregator
@@ -137,5 +138,67 @@ def test_alg_jacobian_does_not_zero_out_subquantum_slopes():
     derivative = _gravity_resistor_loop(resistance=0.05)
     value = derivative(0.0)
     assert value == pytest.approx(0.05, abs=1e-3), value
+
+
+class _StopAfter:
+    """Minimal algebraic calculation with root x = 0 whose should_continue turns
+    False after ``n`` solved time points, driving the ALG quasi-static stop path."""
+
+    def __init__(self, n):
+        self.name = "stopper"
+        self.mass_vector = np.array([False])
+        self.variables = {"x": 0}
+        self._n = n
+        self._calls = 0
+
+    def __len__(self):
+        return 1
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def calculate(self, variables, **_):
+        return np.array([-variables[0]])
+
+    def indices(self, variable, asking=None):
+        return self.variables[variable]
+
+    def load(self, state):
+        return np.array([state["x"]])
+
+    def save(self, vector, t=0):
+        return {"x": vector[0]}
+
+    strict_save = save
+
+    def change_state(self, variables, **_):
+        pass
+
+    def should_continue(self, variables, **_):
+        self._calls += 1
+        return self._calls <= self._n
+
+
+def test_alg_quasi_static_early_stop_keeps_time_and_data_aligned():
+    """On an early stop the output must stay aligned (time length == data rows) and
+    include the stop-triggering solved row, so save() round-trips without an
+    IndexError."""
+    stopper = _StopAfter(n=40)
+    agr = Aggregator(_single_node_graph(stopper))
+    time = np.linspace(0, 100, 101)
+    with ignore_warnings(UserWarning):
+        sol = agr.solve(np.array([1.0]), time=time, eq_type="ALG")
+    assert len(sol.time) == sol.data.shape[0]
+    # rows: the initial guess at t=0, 40 continuing points, and the stop-triggering point at t=41
+    assert sol.time[-1] == pytest.approx(41.0)
+    assert sol.data.shape[0] == 42
+    saved = agr.save(sol)
+    assert len(saved) == len(sol.time)
+
+
+def _single_node_graph(node):
+    g = DiGraph()
+    g.add_node(node)
+    return g
 
 
