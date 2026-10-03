@@ -5,6 +5,7 @@ from hypothesis import given, settings
 from hypothesis.extra.numpy import arrays
 
 from stream.calculations import (
+    ChannelAndContacts,
     Inertia,
     Junction,
     KirchhoffWDerivatives,
@@ -19,8 +20,9 @@ from stream.composition.subsystems import (
     point_kinetics_steady_state,
     symmetric_plate_steady_state,
 )
+from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
-from stream.units import pcm
+from stream.units import mm, pcm
 from stream.utilities import just
 
 from .conftest import MTR_fuel_and_channel
@@ -180,3 +182,24 @@ def test_hydraulic_steady_state_uses_strategy_when_provided():
     )
     s = fg.guess_steady_state({r: 1.0, p: 1.0}, 10, {fake: lambda mdot, T: mdot + T})
     assert s["fake"]["pressure"] == 11.0
+
+
+def test_hydraulic_guess_includes_channel_htc_so_it_loads():
+    """A ChannelAndContacts owns algebraic h_left/h_right variables; the hydraulic
+    guess must supply them so the returned State loads instead of a bare KeyError."""
+    zb = np.linspace(0, 1, 6)
+    pipe = EffectivePipe.rectangular(length=1, edge1=2 * mm, edge2=70 * mm, heated_edge=70 * mm)
+    c = ChannelAndContacts(z_boundaries=zb, fluid=light_water, pipe=pipe)
+    a, b = Junction("A"), Junction("B")
+    fg = FlowGraph(
+        flow_edge((a, b), c, r := Resistor(1.0)),
+        flow_edge((b, a), p := Pump(pressure=1.0)),
+        reference_node=(a, 1e5),
+        abs_pressure_comps=[c],
+    )
+    s = fg.guess_steady_state({c: 1.0, r: 1.0, p: 1.0}, 40.0)
+    assert {"h_left", "h_right"} <= set(s[c.name].keys())
+    y = fg.aggregator.load(s)
+    assert len(y) == len(fg.aggregator)
+
+
