@@ -169,8 +169,9 @@ def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array
             new_solution = solve(new_time, y[-1], ydot[-1])
         except TransientRuntimeError as e:
             logger.critical(e.message)
-            t = concat(t, e.t)
-            y = concat(y, e.y)
+            if e.t is not None:
+                t = concat(t, e.t[1:])
+                y = concat(y, e.y[1:])
             break
         t = concat(t, new_solution.values.t[1:])
         y = concat(y, new_solution.values.y[1:])

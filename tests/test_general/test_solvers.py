@@ -10,7 +10,7 @@ from stream.composition import Calculation_factory
 from stream.composition.cycle import flow_edge, flow_graph
 from stream.composition.cycle import flow_graph_to_agr_and_k as agr_k
 from stream.jacobians import ALG_jacobian
-from stream.solvers import TransientRuntimeError
+from stream.solvers import TransientRuntimeError, _continuous_mode_dae
 from stream.state import State
 from stream.substances import light_water
 from stream.units import Array1D
@@ -311,3 +311,63 @@ def test_ode_backend_solution_time_and_data_stay_aligned():
     assert len(saved) == len(sol.time)
 
 
+class _FakeVals:
+    """A scikits.odes-like `.values`: attribute access AND (t, y, ydot) unpacking."""
+
+    def __init__(self, t, y, ydot):
+        self.t, self.y, self.ydot = t, y, ydot
+
+    def __iter__(self):
+        return iter((self.t, self.y, self.ydot))
+
+
+class _FakeSol:
+    def __init__(self, t, y, ydot):
+        self.values = _FakeVals(t, y, ydot)
+
+
+def _first_segment_then(raiser):
+    """A fake `solve` for _continuous_mode_dae: the first call returns a segment
+    ending at t=0.5 (so the continuous loop restarts), the restart calls `raiser`."""
+    calls = {"n": 0}
+
+    def solve(time_, y0_, yp0_):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            t_ = np.array([0.0, 0.25, 0.5])
+            y_ = np.tile(np.asarray(y0_, float), (3, 1))
+            return _FakeSol(t_, y_, np.zeros_like(y_))
+        return raiser()
+
+    return solve
+
+
+def test_continuous_mode_restart_ic_failure_keeps_the_partial_trajectory():
+    """When a restarted DAE solve fails in its consistent-initialization step the
+    error carries no trajectory; the segments integrated before it must still be
+    returned."""
+
+    def raise_ic_failure():
+        raise TransientRuntimeError(None, None, None, "IC computation failed")
+
+    solve = _first_segment_then(raise_ic_failure)
+    with ignore_warnings(UserWarning):
+        y, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    assert np.array_equal(t, [0.0, 0.25, 0.5])
+    assert y.shape[0] == 3
+
+
+def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
+    """A restart that fails mid-integration contributes its partial segment without
+    repeating the restart time."""
+
+    def raise_with_partial():
+        raise TransientRuntimeError(
+            np.array([0.5, 0.55]), np.tile([0.0, 1.0], (2, 1)), np.zeros((2, 2)), "failed mid-restart"
+        )
+
+    solve = _first_segment_then(raise_with_partial)
+    with ignore_warnings(UserWarning):
+        _, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    assert np.all(np.diff(t) > 0), f"duplicated/!monotone time: {t}"
+    assert np.array_equal(t, [0.0, 0.25, 0.5, 0.55])
