@@ -56,6 +56,31 @@ def test_unpack_exclusion_errors_on_missing_variable_name():
     missing = "missing_variable_name"
     with pytest.raises(KeyError, match=missing):
         unpacked(_give_me_values, exclude=[missing])(**kwargs)
+def test_unpack_does_not_mislabel_a_user_keyerror():
+    """A KeyError raised inside the wrapped body (e.g. a correlation dict miss)
+    must propagate as itself, not be rewritten as a decorator misconfiguration."""
+
+    @unpacked
+    def calc(self=None, **kw):
+        return {"nucleate": 1}["subcooled"]
+
+    with pytest.raises(KeyError) as excinfo:
+        calc(x={0: 1.0})
+    assert excinfo.value.args == ("subcooled",)
+    assert any("Error found at" in note for note in excinfo.value.__notes__)
+
+
+def test_unpack_preserves_exception_type_when_args_are_empty():
+    """An exception constructed with no args (e.g. raise RuntimeError()) must
+    surface as its own type, with its args untouched."""
+
+    @unpacked
+    def calc(self=None, **kw):
+        raise RuntimeError()
+
+    with pytest.raises(RuntimeError) as excinfo:
+        calc(x={0: 1.0})
+    assert excinfo.value.args == ()
 
 
 dictvals = st.dictionaries(

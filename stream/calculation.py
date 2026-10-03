@@ -247,12 +247,8 @@ def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
             try:
                 excluded_kwargs = {k: kwargs.pop(k) for k in exclude}
                 return _calculate(*args, **valmap(_concat, kwargs) | excluded_kwargs)
-            except KeyError as e:
-                raise KeyError(
-                    f"While unpacking in {_calculate}, 'exclude' got a variable name which was not recieved by {_calculate}. Variable name: {e}"
-                )
             except BaseException as e:
-                e.args = (f"Error found at {_calculate}: {e.args[0]}", *e.args[1:])
+                e.add_note(f"Error found at {_calculate}")
                 raise
 
         return _unpack
