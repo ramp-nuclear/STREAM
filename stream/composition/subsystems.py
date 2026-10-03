@@ -210,6 +210,13 @@ def guess_hydraulic_steady_state(
 
     pressures = {x.name: dict(pressure=_get_dp(x)) for x in k.components}
 
+    def _htc_guess(c: ChannelAndContacts) -> dict[str, Value]:
+        T = np.full(c.n, temperature)
+        h0 = c.h_wall(T_wall=T, T_cool=T, mdot=k_guess[k.component_edge(c)], pressure=k.ref_pressure or 1e5)
+        return dict(h_left=h0, h_right=h0)
+
+    htc = {c.name: _htc_guess(c) for c in k.components if isinstance(c, ChannelAndContacts)}
+
     junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
     T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
     Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
@@ -222,7 +229,7 @@ def guess_hydraulic_steady_state(
     a = np.zeros(len(k))
     a[k.variables_by_type["abs_pressure"]] = k.ref_pressure + k._abs_matrix @ p
 
-    return State.merge(Ts, pressures, {k.name: k.save(a) | k_guess})
+    return State.merge(Ts, pressures, htc, {k.name: k.save(a) | k_guess})
 
 
 class GravityMismatchError(ValueError):
