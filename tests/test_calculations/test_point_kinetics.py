@@ -235,3 +235,27 @@ def test_winput_feeds_true_power_derivative_to_state_machine_and_save():
     assert saved["dPdt"] == pytest.approx(true_dpdt)
 
 
+def test_post_processing_an_output_time_uses_the_control_reactivity_active_then():
+    """Saving the state at an output time reports the reactivity and dP/dt with the
+    control reactivity that was active at that time, not the controller's final state."""
+
+    def ramp(state, t_state, t, **_):
+        return -0.05 * (t - t_state) if state == OneWayToSCRAM.SCRAM else 0.0
+
+    ctrl = ReactivityController(
+        input_reactivity=ramp,
+        state_machine=lambda s, t, p, d, **k: OneWayToSCRAM.SCRAM if t >= 5.0 else s,
+    )
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    P0 = 1e6
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    y = np.concatenate([[P0], ck0])
+
+    ctrl.change_state(5.0, P0, 0.0)
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+
+    saved = pk.save(y, T={}, t=2.0)
+    assert saved["reactivity"] == pytest.approx(0.0)
+    assert saved["dPdt"] == pytest.approx(0.0, abs=1e3)
