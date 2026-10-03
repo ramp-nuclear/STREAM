@@ -25,6 +25,7 @@ from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
 from stream.state import to_dataframe
 from stream.units import Place
+from stream.utilities import mutually_exclusive
 
 from .conftest import are_close, medium_floats
 from .test_calculation import Addition, add, divide, multiply
@@ -316,6 +317,28 @@ def test_create_constraints_for_a_known_example():
     assert np.all(
         create_constraints(agr, negative=["v_neg"], positive=["v_pos"])
         == np.array([c.value for c in [CONSTRAINT.negative, CONSTRAINT.none, CONSTRAINT.positive]])
+    )
+
+
+def test_mutually_exclusive_handles_unequal_length_categories():
+    """mutually_exclusive must accept differently-sized categories, not only the
+    accidental equal-length case that flattens into a 2-D array."""
+    assert mutually_exclusive(["mdot_a", "mdot_b"], ["h"])
+    assert not mutually_exclusive(["mdot_a", "mdot_b"], ["mdot_b"])
+
+
+def test_create_constraints_with_unequal_category_sizes():
+    """Categories of different sizes must not crash the mutual-exclusivity assertion."""
+    calc = Calculation_factory(
+        lambda v, **_: v - np.zeros(3),
+        [False] * 3,
+        dict(mdot_a=0, mdot_b=1, h=2),
+    )()
+    agr = Aggregator.from_decoupled(calc)
+    result = create_constraints(agr, non_negative=["mdot_a", "mdot_b"], positive=["h"])
+    assert np.all(
+        result
+        == np.array([c.value for c in [CONSTRAINT.non_negative, CONSTRAINT.non_negative, CONSTRAINT.positive]])
     )
 
 
