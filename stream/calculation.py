@@ -245,7 +245,7 @@ def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
         @wraps(_calculate)
         def _unpack(*args, **kwargs):
             try:
-                excluded_kwargs = {k: kwargs.pop(k) for k in exclude}
+                excluded_kwargs = {k: kwargs.pop(k) for k in exclude if k in kwargs}
                 return _calculate(*args, **valmap(_concat, kwargs) | excluded_kwargs)
             except BaseException as e:
                 e.add_note(f"Error found at {_calculate}")

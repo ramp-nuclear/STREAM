@@ -82,6 +82,19 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
         are_close(save[key], value, rtol=1e-5, atol=1e-8)
 
 
+def test_feedbackless_point_kinetics_calculate_without_T():
+    """Without temperature feedback (default temp_worth and ref_temp) no temperatures
+    are routed to PointKinetics, and calculate() works without T."""
+    pk = PointKinetics(
+        generation_time=1e-4,
+        delayed_neutron_fractions=np.array([0.0065]),
+        delayed_groups_decay_rates=np.array([0.08]),
+    )
+    out = pk.calculate(np.array([1.0, 1.0]), t=0.0)
+    assert out.shape == (2,)
+    assert np.all(np.isfinite(out))
+
+
 @given(floats(allow_nan=False), floats(allow_nan=False))
 def test_pk_load(p, ck):
     mock_pk = mock_point_kinetics()
