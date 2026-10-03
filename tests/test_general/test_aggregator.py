@@ -23,6 +23,7 @@ from stream.calculation import Calculation, unpacked
 from stream.composition import Calculation_factory
 from stream.jacobians import _associated_calculations
 from stream.solvers import differential_algebraic
+from stream.state import to_dataframe
 from stream.units import Place
 
 from .conftest import are_close, medium_floats
@@ -150,6 +151,35 @@ def test_agr_input_connect():
     d = CalculationGraph.connect(a, b, (1, 2, ("welcome",)))
     assert list(d.graph.edges(data=True)) == [(1, 2, vars_("hi", "hello", "welcome"))]
     assert d.funcs == {1: {"a": 3}, 2: {"a": 3}}
+
+
+def _decay_aggregator():
+    decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables={"v": 0})("A")
+    g = DiGraph()
+    g.add_node(decay)
+    return Aggregator(g)
+
+
+def test_load_reconstructs_a_timeseries_saved_from_integer_times():
+    """Saving a solve over integer times keys the timeseries by plain floats, and
+    load() recognises the result as a timeseries."""
+    agr = _decay_aggregator()
+    ts = agr.save(agr.solve(np.array([1.0]), time=[0, 1, 2], eq_type="ODE"))
+    assert all(type(k) is float for k in ts)
+
+    sol = agr.load(ts)
+    assert np.array_equal(sol.time, [0, 1, 2])
+    assert sol.data.shape[0] == 3
+
+    int_keyed = agr.load({int(k): v for k, v in ts.items()})
+    assert np.array_equal(int_keyed.time, [0, 1, 2])
+
+
+def test_to_dataframe_detects_integer_keyed_timeseries():
+    """to_dataframe must recognise an integer-keyed timeseries and emit a time column."""
+    agr = _decay_aggregator()
+    ts = agr.save(agr.solve(np.array([1.0]), time=[0, 1, 2], eq_type="ODE"))
+    assert "time" in to_dataframe({int(k): v for k, v in ts.items()}).columns
 
 
 def test_connect_deep_merges_funcs_for_a_shared_calculation():

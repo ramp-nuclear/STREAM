@@ -5,6 +5,7 @@ objects. We provide additional useful methods in the same namespace.
 
 """
 
+import numbers
 from functools import reduce
 from itertools import chain
 from operator import or_
@@ -257,8 +258,8 @@ def to_dataframe(s: DictState | StateTimeseries) -> DataFrame:
         A Pandas DataFrame.
 
     """
-    has_float_keys = any(isinstance(key, float) for key in s)
-    return _state_timeseries_to_dataframe(s) if has_float_keys else State(s).to_dataframe()
+    has_time_keys = any(isinstance(key, numbers.Number) for key in s)
+    return _state_timeseries_to_dataframe(s) if has_time_keys else State(s).to_dataframe()
 
 
 def _state_timeseries_to_dataframe(s: StateTimeseries) -> DataFrame:

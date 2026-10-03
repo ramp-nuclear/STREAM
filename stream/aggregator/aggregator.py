@@ -1,4 +1,5 @@
 import logging
+import numbers
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
@@ -329,7 +330,7 @@ class Aggregator:
             The system description to parse.
 
         """
-        has_time = any(isinstance(key, float) for key in s)
+        has_time = any(isinstance(key, numbers.Number) for key in s)
         return self._solution_from_states(s) if has_time else self._vector_from_state(s)
 
     def _vector_from_state(self, s: DictState) -> Array1D:
@@ -454,7 +455,7 @@ class Aggregator:
             The solution from this Aggregator's solve method.
 
         """
-        return {t: self.save(solution.data[i, :], t) for i, t in enumerate(solution.time)}
+        return {float(t): self.save(solution.data[i, :], t) for i, t in enumerate(solution.time)}
 
     def _op(self, op: str, y: Sequence[float], t: Second, node: Calculation):
         input_ = y[self.sections[node]]
