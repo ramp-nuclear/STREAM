@@ -202,3 +202,63 @@ def _single_node_graph(node):
     return g
 
 
+class _EchoInput:
+    """A 3-variable calculation whose calculate() returns the result it was built with,
+    whatever its length."""
+
+    variables = {"a": 0, "b": 1, "c": 2}
+    mass_vector = np.array([False, False, False])
+
+    def __init__(self, result, name="wrong"):
+        self._result = result
+        self.name = name
+
+    def __len__(self):
+        return 3
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def calculate(self, y, **_):
+        return self._result
+
+    def indices(self, var, asking=None):
+        return self.variables[var]
+
+    def load(self, state):
+        return np.zeros(3)
+
+    def save(self, y, t=0):
+        return {"a": y[0], "b": y[1], "c": y[2]}
+
+
+@pytest.mark.parametrize("result", [np.array([7.0]), 5.0, np.array([1.0, 2.0])])
+def test_compute_rejects_wrong_length_calculate_result(result):
+    """compute() must reject any size mismatch and name the offending calculation.
+    A scalar or length-1 return would silently broadcast across the section, and a
+    length-2 return would raise a bare numpy ValueError naming no calculation."""
+    agr = Aggregator(_single_node_graph(_EchoInput(result)))
+    with pytest.raises(ValueError, match="would silently broadcast") as excinfo:
+        agr.compute(np.array([1.0, 2.0, 3.0]), 0.0)
+    assert "'wrong': (3, " in str(excinfo.value)
+
+
+def test_compute_reports_every_wrong_length_result_at_once():
+    """All calculations whose result length differs from their section are named in
+    one error, each with its expected and returned lengths."""
+    graph = DiGraph()
+    graph.add_nodes_from([_EchoInput(5.0, name="first"), _EchoInput(np.ones(2), name="second")])
+    agr = Aggregator(graph)
+    with pytest.raises(ValueError, match="would silently broadcast") as excinfo:
+        agr.compute(np.zeros(6), 0.0)
+    assert "'first': (3, 1)" in str(excinfo.value)
+    assert "'second': (3, 2)" in str(excinfo.value)
+
+
+def test_compute_accepts_correct_length_result():
+    """The guard must not reject a correctly-shaped result."""
+    agr = Aggregator(_single_node_graph(_EchoInput(np.array([1.0, 2.0, 3.0]))))
+    out = agr.compute(np.array([4.0, 5.0, 6.0]), 0.0)
+    assert np.array_equal(out, [1.0, 2.0, 3.0])
+
+

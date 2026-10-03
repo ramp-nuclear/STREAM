@@ -149,7 +149,7 @@ def test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case():
     assert np.allclose(fg.aggregator.compute(y), 0.0)
 
 
-_FakeC = Calculation_factory(just(0.0), [False, False], dict(Tin=0, pressure=1))
+_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], dict(Tin=0, pressure=1))
 _FakeC.indices = LumpedComponent.indices
 fake = _FakeC("fake")
 

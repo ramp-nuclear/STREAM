@@ -204,8 +204,20 @@ class Aggregator:
             which is provided in parts from the different calculations.
         """
         out = np.empty(self.vector_length)
+        mismatched = {}
         for node, section in self.sections.items():
-            out[section] = self._op("calculate", y, t, node)
+            result = np.asarray(self._op("calculate", y, t, node))
+            expected = section.stop - section.start
+            if result.size != expected:
+                mismatched[node.name] = (expected, result.size)
+            else:
+                out[section] = result
+        if mismatched:
+            raise ValueError(
+                f"These calculations returned a result whose length differs from their section, "
+                f"as {{name: (expected, returned)}}: {mismatched}. A scalar or length-1 result would "
+                f"silently broadcast across the section and solve a different system."
+            )
         return out
 
     def _node_external(self, node: Calculation, y: Sequence[float], t: Second) -> dict[str, dict[Calculation, Any]]:
