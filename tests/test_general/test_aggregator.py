@@ -11,6 +11,7 @@ from networkx.utils import graphs_equal
 
 from stream.aggregator import (
     CONSTRAINT,
+    VARS,
     Aggregator,
     CalculationGraph,
     NonUniqueCalculationNameError,
@@ -139,18 +140,48 @@ def test_ida_root_functions():
 def test_agr_input_connect():
     g_a = DiGraph([(1, 2, vars_("hi"))])
     g_b = DiGraph([(1, 2, vars_("hello"))])
-    # noinspection PyTypeChecker
-    a = CalculationGraph(g_a, {1: 2, 2: 3})
-    # noinspection PyTypeChecker
-    b = CalculationGraph(g_b, {1: 3})
+    a = CalculationGraph(g_a, {1: {"a": 2}, 2: {"a": 3}})
+    b = CalculationGraph(g_b, {1: {"a": 3}})
 
     c = a + b
-    assert list(c.graph.edges(data=True)) == list(b.graph.edges(data=True))
-    assert c.funcs == {1: 3, 2: 3}
+    assert list(c.graph.edges(data=True)) == [(1, 2, vars_("hi", "hello"))]
+    assert c.funcs == {1: {"a": 3}, 2: {"a": 3}}
     # noinspection PyTypeChecker
     d = CalculationGraph.connect(a, b, (1, 2, ("welcome",)))
-    assert list(d.graph.edges(data=True)) == [(1, 2, vars_("hello", "welcome"))]
-    assert d.funcs == {1: 3, 2: 3}
+    assert list(d.graph.edges(data=True)) == [(1, 2, vars_("hi", "hello", "welcome"))]
+    assert d.funcs == {1: {"a": 3}, 2: {"a": 3}}
+
+
+def test_connect_deep_merges_funcs_for_a_shared_calculation():
+    """Connecting two graphs that both carry funcs for the same calculation must
+    union the inner name bindings rather than keep only the second dict."""
+    a = CalculationGraph(DiGraph([(1, 2, vars_("x"))]), {1: {"pressure": lambda t: t, "Tin": 300.0}})
+    b = CalculationGraph(DiGraph([(1, 2, vars_("y"))]), {1: {"Tin": 300.0, "mdot": 1.0}})
+
+    c = a + b
+    assert set(c.funcs[1]) == {"pressure", "Tin", "mdot"}
+
+
+def test_connect_unions_shared_edge_variables_in_either_order():
+    """An edge present in both graphs carries the union of their variables whichever
+    graph comes first. Only the set matters, not the order, because the variables
+    reach calculate() as keyword arguments."""
+    g1 = CalculationGraph(DiGraph([(1, 2, vars_("T_left", "h_left", "T_right", "h_right"))]))
+    g2 = CalculationGraph(DiGraph([(1, 2, vars_("T_left"))]))
+    expected = {"T_left", "h_left", "T_right", "h_right"}
+    assert set((g1 + g2).graph.edges[1, 2][VARS]) == expected
+    assert set((g2 + g1).graph.edges[1, 2][VARS]) == expected
+
+
+def test_connect_routes_a_repeated_explicit_edge_variable_once():
+    """An explicit edge naming a variable the edge already routes adds no duplicate.
+    Only the set of names is checked, not their order, because the variables reach
+    calculate() as keyword arguments."""
+    g1 = CalculationGraph(DiGraph([(1, 2, vars_("T_left", "h_left"))]))
+    empty = CalculationGraph(DiGraph())
+    routed = CalculationGraph.connect(g1, empty, (1, 2, ("T_left",))).graph.edges[1, 2][VARS]
+    assert len(routed) == 2
+    assert set(routed) == {"T_left", "h_left"}
 
 
 def test_ida_continuous_mode():

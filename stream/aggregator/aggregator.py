@@ -5,7 +5,7 @@ from itertools import chain
 from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
-from cytoolz import valmap
+from cytoolz import unique, valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
@@ -141,9 +141,12 @@ class Aggregator:
         *edges: tuple[Calculation, Calculation, Iterable[Name]],
     ) -> "Aggregator":
         """
-        Connect two Aggregator objects. In case of a clash, the second object
-        prevails. If ``edges`` contains an edge already in either ``a.graph``
-        or ``b.graph``, it is updated, not overridden.
+        Connect two Aggregator objects. An edge present in both graphs carries
+        the union of the variables routed on it in ``a`` and in ``b``. A
+        calculation present in both has its functions dictionaries merged key
+        by key, with ``b``'s entry winning when both define the same key. If
+        ``edges`` contains an edge already in either ``a.graph`` or
+        ``b.graph``, its variables are added to that edge's, not overridden.
 
         .. tip::
             The two inputs may share nodes. This is very useful!
@@ -648,9 +651,12 @@ class CalculationGraph:
         *edges: tuple[Calculation, Calculation, Iterable[Name]],
     ) -> "CalculationGraph":
         """
-        Connect two CalculationGraph objects. In case of a clash, the second object
-        prevails. If ``edges`` contains an edge already in either ``a.graph``
-        or ``b.graph``, it is updated, not overridden.
+        Connect two CalculationGraph objects. An edge present in both graphs carries
+        the union of the variables routed on it in ``a`` and in ``b``. A
+        calculation present in both has its functions dictionaries merged key
+        by key, with ``b``'s entry winning when both define the same key. If
+        ``edges`` contains an edge already in either ``a.graph`` or
+        ``b.graph``, its variables are added to that edge's, not overridden.
 
         .. tip::
             The two inputs may share nodes. This is very useful!
@@ -670,15 +676,20 @@ class CalculationGraph:
             A new CalculationGraph whose graph and functions are composed out of a,b.
         """
         g = compose(a.graph, b.graph)
+        for e, a_data in a.graph.edges.items():
+            if e in b.graph.edges:
+                merged_vars = chain(a_data.get(VARS, ()), b.graph.edges[e].get(VARS, ()))
+                g.edges[e][VARS] = tuple(unique(merged_vars))
         for edge in edges:
             u, v, d = edge
             if (e := (u, v)) in g.edges:
-                g.edges[e][VARS] = tuple(chain(g.edges[e][VARS], d))
+                g.edges[e][VARS] = tuple(unique(chain(g.edges[e][VARS], d)))
             else:
                 g.add_edge(u, v, variables=d)
 
         af, bf = a.funcs or {}, b.funcs or {}
-        return CalculationGraph(graph=g, funcs=af | bf or None)
+        merged = {c: {**af.get(c, {}), **bf.get(c, {})} for c in af.keys() | bf.keys()}
+        return CalculationGraph(graph=g, funcs=merged or None)
 
     def __add__(self, other) -> "CalculationGraph":
         return self.connect(self, other)
