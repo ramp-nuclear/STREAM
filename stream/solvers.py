@@ -253,7 +253,7 @@ def quasi_static(
     return y, time
 
 
-def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> Array2D:
+def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> tuple[Array2D, Array1D]:
     r"""Solving an Ordinary Differential Equation (ODE) :math:`\dot{y}=F(y, t)`
 
     Parameters
@@ -269,9 +269,16 @@ def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -
 
     Returns
     -------
-    solution: Array2D
-        The solution matrix at requested times: [time, variable].
+    solution: tuple[Array2D, Array1D]
+        The solution matrix ([time, variable]) and the times it spans. A solver
+        failure raises :class:`TransientRuntimeError` carrying the reached times and
+        the partial data, as the DAE path does, instead of returning a truncated
+        result.
     """
     time_limits = (time[0], time[-1])
     solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_eval=time, **options)
-    return np.transpose(solution.y)
+    data = np.transpose(solution.y)
+    if not solution.success:
+        reached = solution.t if solution.t is not None and len(solution.t) else None
+        raise TransientRuntimeError(reached, data, None, solution.message)
+    return data, solution.t

@@ -281,3 +281,33 @@ def test_solve_with_time_none_points_at_solve_steady(eq_type):
         agr.solve(np.array([0.0, 0.0]), None, eq_type=eq_type)
 
 
+def _blowup_aggregator():
+    """y' = y^2 with y0 = 1: a finite-time blowup at t = 1 that makes RK45 fail
+    (step size underflow / overflow) before reaching the requested horizon."""
+    Blowup = Calculation_factory(calculate=lambda y: y**2, mass_vector=[True], variables=dict(y=0))
+    return Aggregator.from_decoupled(Blowup())
+
+
+def test_ode_backend_raises_on_solver_failure_instead_of_truncating():
+    """An ODE solver failure must surface as TransientRuntimeError rather than
+    returning only the reached t_eval points (a truncated data array misaligned
+    against the requested time vector, which crashes save())."""
+    agr = _blowup_aggregator()
+    time = np.linspace(0.0, 2.0, 101)
+    with ignore_warnings(RuntimeWarning):  # overflow in y**2
+        with pytest.raises(TransientRuntimeError):
+            agr.solve(np.array([1.0]), time)
+
+
+def test_ode_backend_solution_time_and_data_stay_aligned():
+    """On a well-posed ODE the ODE branch must rebind time from the solver so
+    len(time) == data rows and save() round-trips without an IndexError."""
+    Decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables=dict(y=0))
+    agr = Aggregator.from_decoupled(Decay())
+    time = np.linspace(0.0, 1.0, 11)
+    sol = agr.solve(np.array([1.0]), time)
+    assert len(sol.time) == sol.data.shape[0]
+    saved = agr.save(sol)
+    assert len(saved) == len(sol.time)
+
+

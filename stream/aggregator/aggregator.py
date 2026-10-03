@@ -567,7 +567,7 @@ class Aggregator:
             y0 = self.load(y0)
 
         if eq_type == "ODE":
-            data = differential(F=self.compute, y0=y0, time=time, **options)
+            data, time = differential(F=self.compute, y0=y0, time=time, **options)
         elif eq_type == "DAE":
             if progressbar and isinstance(progressbar, bool):
                 try:
