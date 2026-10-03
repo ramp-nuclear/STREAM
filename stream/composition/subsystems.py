@@ -84,8 +84,8 @@ def symmetric_plate_steady_state(
     cp = c.fluid.specific_heat(Tin)
     p_z = np.sum(power_mat, 1)
     q2t_z = p_z / (c.pipe.heated_perimeter * c.dz)
-    _tc0 = Tin + np.cumsum(p_z / (np.abs(mdot) * cp))
-    tc0 = _tc0 if mdot >= 0 else _tc0[::-1]
+    dT = p_z / (np.abs(mdot) * cp)
+    tc0 = Tin + (np.cumsum(dT) if mdot >= 0 else np.cumsum(dT[::-1])[::-1])
     tw0 = tc0
     for _ in range(initial_guess_iterations):
         dp0 = c.pressure(T=tc0, Tw=tw0, mdot=mdot)
