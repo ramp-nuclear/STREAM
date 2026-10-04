@@ -102,6 +102,10 @@ class ResistorMul:
     def dp_out(self, **kwargs) -> Pascal:
         return self.factor * self.resistor.dp_out(**kwargs)
 
+    def calculate(self, variables, **kwargs):
+        # Run the wrapped class's residual with self as receiver so it sees the factored dp_out.
+        return type(self.resistor).calculate(self, variables, **kwargs)
+
     def __deepcopy__(self, memo):
         return type(self)(self.factor, self.resistor)
 

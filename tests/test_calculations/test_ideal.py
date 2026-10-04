@@ -72,6 +72,20 @@ def test_resistor_factor_just_multiplies(r, factor, mdot):
     assert np.allclose(p0, p1)
 
 
+@settings(deadline=None)
+@given(pos_medium_floats, pos_medium_floats, medium_floats)
+def test_resistor_mul_factor_enters_residual(r, factor, mdot):
+    """The multiplication factor must scale the residual the solver sees, not just the
+    standalone dp_out."""
+    base = Resistor(r)
+    scaled = factor * base
+    T = 25.0
+    base_res = np.array(base.calculate([T, 0.0], mdot=mdot, Tin=T))
+    scaled_res = np.array(scaled.calculate([T, 0.0], mdot=mdot, Tin=T))
+    # out[1] = variables[1] - dp_out, so the factored residual is factor * base's.
+    assert np.allclose(scaled_res, factor * base_res)
+
+
 @given(pos_medium_floats, pos_medium_floats)
 def test_resistor_multiplication_is_symmetric(f, r):
     res = Resistor(r)
