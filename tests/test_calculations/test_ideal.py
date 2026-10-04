@@ -15,7 +15,7 @@ from stream.calculations import (
     Resistor,
     ResistorSum,
 )
-from stream.calculations.ideal.resistors import ResistorMul
+from stream.calculations.ideal.resistors import ResistorMul, Screen
 from stream.substances import light_water
 from stream.utilities import just, summed
 
@@ -203,6 +203,15 @@ def test_local_pressure_drop_is_always_non_positive(A1, A2, mdot):
     calc = LocalPressureDrop(light_water, A1, A2)
     dp = calc.dp_out(Tin=25.0, mdot=mdot)
     assert dp <= 0.0
+
+
+def test_screen_is_finite_at_zero_flow():
+    """A Screen must not raise ZeroDivisionError at mdot = 0 (the zero-flow steady
+    guess, and the reversal crossing); its dp vanishes there."""
+    screen = Screen(clear_area=0.5, total_area=1.0, wire_diameter=0.001, fluid=light_water)
+    assert screen.dp_out(mdot=0.0, Tin=50.0) == 0.0
+    assert np.allclose(screen.calculate([50.0, 0.0], mdot=0.0, Tin=50.0), [0.0, 0.0])
+    assert np.isclose(screen.dp_out(mdot=1e-6, Tin=50.0), 0.0, atol=1e-6)
 
 
 @settings(deadline=None)

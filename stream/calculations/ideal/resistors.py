@@ -541,6 +541,9 @@ class Screen(LumpedComponent):
         if re > 1000:
             return factor
         if re < 50:
+            # dp carries a factor mdot*|mdot|, so at zero flow any finite coefficient gives dp = 0.
+            if re == 0:
+                return factor
             return factor + 22 / re
 
         re_list = np.array([50, 100, 150, 200, 300, 400, 500, 1000])
