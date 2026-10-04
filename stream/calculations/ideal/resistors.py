@@ -6,6 +6,7 @@ of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 """
 
 import numbers
+from copy import deepcopy
 from functools import partial
 from itertools import chain
 from typing import Callable, Protocol, Sequence
@@ -108,7 +109,8 @@ class ResistorMul:
         return type(self.resistor).calculate(self, variables, **kwargs)
 
     def __deepcopy__(self, memo):
-        return type(self)(self.factor, self.resistor)
+        # A shared inner resistor makes the copy compare equal to the original, collapsing both into one graph node.
+        return type(self)(self.factor, deepcopy(self.resistor, memo))
 
     def __getattr__(self, item):
         return self.resistor.__getattribute__(item)

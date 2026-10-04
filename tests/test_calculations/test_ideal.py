@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import hypothesis.strategies as st
+import networkx as nx
 import numpy as np
 import pytest
 from hypothesis import given, settings
@@ -119,6 +120,18 @@ def test_resistor_multiplication_is_symmetric(f, r):
 )
 def test_resistor_mul_can_be_deepcopied(r, f):
     assert deepcopy(f * r)
+
+
+def test_resistor_mul_deepcopy_is_a_distinct_graph_node():
+    """Deep-copying a scaled resistor must produce a distinct graph node rather than
+    one that collapses onto the original."""
+    rm = 2.0 * Resistor(100)
+    rm_copy = deepcopy(rm)
+    assert rm_copy.resistor is not rm.resistor
+    g = nx.DiGraph()
+    g.add_node(rm)
+    g.add_node(rm_copy)
+    assert g.number_of_nodes() == 2
 
 
 @given(*(5 * [normal_floats]))
