@@ -233,3 +233,16 @@ def test_no_exceptions_raised_through_external_flow_inversion_on_Channel():
 
     initial = {C.name: dict(T_cool=80, h_left=5e3, h_right=5e3, pressure=-3e5)}
     agr.solve(initial, time=np.linspace(0, 6))
+
+
+def test_dist_from_edge_is_nonnegative_for_descending_boundaries():
+    """Descending z_boundaries must give the same non-negative developing lengths as
+    the ascending channel, since the distance depends only on cell widths and flow
+    direction."""
+    kw = dict(fluid=mock_liquid_funcs, pipe=mock_eff_pipe)
+    asc = ChannelAndContacts(z_boundaries=np.linspace(0.0, 0.6, 11), **kw)
+    desc = ChannelAndContacts(z_boundaries=np.linspace(0.6, 0.0, 11), **kw)
+    for mdot in (1.0, -1.0):
+        d = desc.dist_from_edge(mdot)
+        assert np.all(d >= 0)
+        assert np.allclose(d, asc.dist_from_edge(mdot))
