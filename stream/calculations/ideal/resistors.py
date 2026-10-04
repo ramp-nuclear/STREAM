@@ -308,7 +308,7 @@ class LocalPressureDrop(LumpedComponent):
         rho = self._rho(Tin)
         A = min(self.A1, self.A2)
         aratio = min(self.A1 / self.A2, self.A2 / self.A1)
-        Dh = np.sqrt(A / np.pi)
+        Dh = 2 * np.sqrt(A / np.pi)
         re = Re_mdot(mdot, A, Dh, self._visc(Tin))
         f = self.f_calc(mdot=mdot, aratio=aratio, re=re)
         return -local_pressure_by_mdot(mdot, rho, f, A)

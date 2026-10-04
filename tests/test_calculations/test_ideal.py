@@ -214,6 +214,19 @@ def test_screen_is_finite_at_zero_flow():
     assert np.isclose(screen.dp_out(mdot=1e-6, Tin=50.0), 0.0, atol=1e-6)
 
 
+def test_local_pressure_drop_reynolds_uses_hydraulic_diameter():
+    """Re must be built from the equivalent-circle diameter D = 2*sqrt(A/pi), not the
+    radius sqrt(A/pi); at low flow the wrong Dh mis-reads the Idelchik table."""
+    A1, A2, Tin, mdot = 0.02, 0.008, 25.0, 0.05
+    calc = LocalPressureDrop(light_water, A1, A2)
+    seen = {}
+    calc.f_calc = lambda **kw: seen.update(kw) or 1.0
+    calc.dp_out(Tin=Tin, mdot=mdot)
+
+    D = 2 * np.sqrt(A2 / np.pi)
+    assert seen["re"] == pytest.approx(mdot * D / (A2 * light_water.viscosity(Tin)))
+
+
 @settings(deadline=None)
 @given(pos_medium_floats)
 def test_local_pressure_drop_for_expansion_to_infinity(mdot):
