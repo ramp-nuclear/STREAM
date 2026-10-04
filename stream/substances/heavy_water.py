@@ -126,6 +126,11 @@ def _viscosity(T: Celsius) -> PaS:
     mu: PaS
         Dynamic viscosity of saturated H2O
 
+    Notes
+    -----
+    The fit has a pole at 0 °F, so temperatures below the 3.8 °C melting point
+    are evaluated at 3.8 °C.
+
     Examples
     --------
     >>> _viscosity(50.)
@@ -133,7 +138,7 @@ def _viscosity(T: Celsius) -> PaS:
     >>> _viscosity(100.)
     0.0003301433604774831
     """
-    TF = to_Fahrenheit(T)
+    TF = to_Fahrenheit(np.maximum(T, 3.8))
     A = -1.111606e-4
     B = 9.46e-8
     C = 0.0873655375
