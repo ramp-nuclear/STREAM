@@ -22,6 +22,7 @@ from stream.physical_models.heat_transfer_coefficient import (
     wall_heat_transfer_coeff,
     wall_temperature,
 )
+from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
 from stream.physical_models.heat_transfer_coefficient.single_phase import maximal_h_spl
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import heavy_water, light_water
@@ -180,3 +181,27 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         assert np.allclose(h, turb)
     else:
         assert np.allclose(h, lin_interp(*re_bounds, lam, turb, md))
+
+
+def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
+    """The Elenbaas natural-convection HTC must stay finite when the wall is at or
+    below the coolant temperature (negative/zero Rayleigh), not return NaN."""
+    cool = light_water.to_properties(np.array([50.0, 50.0]))
+    kw = dict(coolant=cool, depth=0.003, T_cool=np.array([50.0, 50.0]), Lh=0.6)
+
+    cooled = Elenbaas_h_spl(T_wall=np.array([60.0, 40.0]), **kw)  # +10 K and -10 K
+    assert np.all(np.isfinite(cooled)) and np.all(cooled >= 0)
+    # Buoyancy magnitude is symmetric, so the -10 K cell matches the +10 K one.
+    hot = Elenbaas_h_spl(T_wall=np.array([60.0, 60.0]), **kw)
+    assert np.allclose(cooled, hot)
+    # Isothermal wall: the conduction limit.
+    assert np.all(np.isfinite(Elenbaas_h_spl(T_wall=np.array([50.0, 50.0]), **kw)))
+
+
+def test_elenbaas_h_is_finite_and_positive_for_a_wall_colder_than_coolant():
+    coolant = light_water.to_properties(np.array([50.0]))
+    h = Elenbaas_h_spl(coolant=coolant, depth=0.003, T_cool=np.array([50.0]), T_wall=np.array([40.0]), Lh=0.6)
+    assert np.all(h > 0)
+    assert np.all(np.isfinite(h))
+
+
