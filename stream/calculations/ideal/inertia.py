@@ -72,12 +72,18 @@ class Inertia(LumpedComponent):
 def bilinear(L0: PerM, mdot0: KgPerS):
     r"""Creates a bi-linear inertia function, to be used in :class:`Inertia`.
 
+    The inertance is a positive geometric quantity :math:`(l/A)_T`, so it depends on
+    the flow *magnitude* and stays positive for either flow direction:
+
     .. math::
         L=
         \begin{cases}
-            L_0 (\dot{m}/\dot{m}_0) & \text{if $\dot{m} < \dot{m}_0$} \\
+            L_0 (|\dot{m}|/\dot{m}_0) & \text{if $|\dot{m}| < \dot{m}_0$} \\
             L_0 & \text{otherwise}
         \end{cases}
+
+    A small positive floor keeps :math:`L>0` through :math:`\dot{m}=0`, avoiding the
+    singular :math:`\ddot{m}=\Delta p/L` at the flow-reversal instant.
 
     Parameters
     ----------
@@ -91,8 +97,10 @@ def bilinear(L0: PerM, mdot0: KgPerS):
     bi : Callable[[KgPerS, ...], PerM]
         The inertia function :math:`L(\dot{m})`
     """
+    knee = abs(mdot0)
+    floor = knee * 1e-3
 
     def bi_(mdot, **kwargs):
-        return (mdot / mdot0) * L0 if mdot < mdot0 else L0
+        return L0 * min(max(abs(mdot), floor), knee) / knee
 
     return bi_

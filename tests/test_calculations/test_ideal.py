@@ -15,6 +15,7 @@ from stream.calculations import (
     Resistor,
     ResistorSum,
 )
+from stream.calculations.ideal.inertia import Inertia, bilinear
 from stream.calculations.ideal.resistors import ResistorMul, Screen
 from stream.substances import light_water
 from stream.utilities import just, summed
@@ -212,6 +213,27 @@ def test_screen_is_finite_at_zero_flow():
     assert screen.dp_out(mdot=0.0, Tin=50.0) == 0.0
     assert np.allclose(screen.calculate([50.0, 0.0], mdot=0.0, Tin=50.0), [0.0, 0.0])
     assert np.isclose(screen.dp_out(mdot=1e-6, Tin=50.0), 0.0, atol=1e-6)
+
+
+def test_bilinear_inertia_stays_positive_for_reversed_flow():
+    """Inertance is a positive geometric quantity for either flow direction. Reversed
+    flow must not make L negative (anti-dissipative) or unbounded, and L must stay
+    strictly positive through mdot = 0."""
+    L0 = 100.0
+    L = bilinear(L0, 1.0)
+    for mdot in (-2.0, -1.0, -0.5, 0.0):
+        assert 0.0 < L(mdot=mdot) <= L0
+        assert L(mdot=mdot) == L(mdot=-mdot)
+    assert Inertia(L).dp_out(mdot=-1.0, mdot2=-0.1) > 0.0, "dp must oppose the acceleration"
+
+
+def test_bilinear_inertia_is_linear_in_mdot_below_the_knee_and_constant_above_it():
+    L0, mdot0 = 100.0, 1.0
+    L = bilinear(L0, mdot0)
+    assert L(mdot=0.5) == pytest.approx(L0 * 0.5)
+    assert L(mdot=-0.5) == pytest.approx(L0 * 0.5)
+    assert L(mdot=1.0) == pytest.approx(L0)
+    assert L(mdot=-2.0) == pytest.approx(L0)
 
 
 def test_local_pressure_drop_reynolds_uses_hydraulic_diameter():
