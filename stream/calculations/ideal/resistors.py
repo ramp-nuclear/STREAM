@@ -5,6 +5,7 @@ of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 
 """
 
+import numbers
 from functools import partial
 from itertools import chain
 from typing import Callable, Protocol, Sequence
@@ -94,9 +95,9 @@ class ResistorMul:
     """
 
     def __init__(self, factor: float, resistor: DPCalculation):
-        if not isinstance(factor, float):
-            raise TypeError(f"Cannot multiply object of type {type(resistor)} by non-float type {factor}")
-        self.factor = factor
+        if not isinstance(factor, numbers.Real):
+            raise TypeError(f"Cannot multiply object of type {type(resistor)} by non-numeric type {type(factor)}")
+        self.factor = float(factor)
         self.resistor = resistor
 
     def dp_out(self, **kwargs) -> Pascal:

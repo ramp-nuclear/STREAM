@@ -14,6 +14,7 @@ from stream.calculations import (
     Resistor,
     ResistorSum,
 )
+from stream.calculations.ideal.resistors import ResistorMul
 from stream.substances import light_water
 from stream.utilities import just, summed
 
@@ -84,6 +85,20 @@ def test_resistor_mul_factor_enters_residual(r, factor, mdot):
     scaled_res = np.array(scaled.calculate([T, 0.0], mdot=mdot, Tin=T))
     # out[1] = variables[1] - dp_out, so the factored residual is factor * base's.
     assert np.allclose(scaled_res, factor * base_res)
+
+
+@given(st.integers(min_value=-1000, max_value=1000).filter(bool), pos_medium_floats)
+def test_resistor_mul_accepts_int_factor(n, r):
+    """The docstring advertises `2 * resistor`; an int factor must be accepted and
+    stored as a float."""
+    scaled = n * Resistor(r)
+    assert isinstance(scaled.factor, float)
+    assert scaled.factor == float(n)
+
+
+def test_resistor_mul_rejects_non_numeric_factor():
+    with pytest.raises(TypeError):
+        ResistorMul("x", Resistor(10.0))
 
 
 @given(pos_medium_floats, pos_medium_floats)
