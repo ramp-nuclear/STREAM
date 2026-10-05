@@ -50,7 +50,7 @@ _IDA_STATUS: dict[int, tuple[str, str]] = {
     -1: ("IDA_TOO_MUCH_WORK", "mxsteps internal steps taken before an output time — the step collapsed as the system stiffened (e.g. approaching bulk Tsat / an SCB switch)"),
     -2: ("IDA_TOO_MUCH_ACC", "the requested tolerance is unreachable at the system scale (atol/rtol too tight)"),
     -3: ("IDA_ERR_FAIL", "repeated local error-test failures drove the step down to hmin (a stiff transient)"),
-    -4: ("IDA_CONV_FAIL", "the modified-Newton corrector could not converge and the step fell to hmin (a stiff transient; typical when a channel approaches bulk saturation)"),
+    -4: ("IDA_CONV_FAIL", "the modified-Newton corrector could not converge and the step fell to hmin (a stiff transient, or a tolerance the integrator cannot hold)"),
     -5: ("IDA_LINIT_FAIL", ""),
     -6: ("IDA_LSETUP_FAIL", "the linear solver's setup (Jacobian factorization) failed unrecoverably (a near-singular reversal Jacobian)"),
     -7: ("IDA_LSOLVE_FAIL", "the linear solver's solve stage failed unrecoverably"),
