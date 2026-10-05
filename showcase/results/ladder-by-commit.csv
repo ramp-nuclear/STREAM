@@ -1,0 +1,87 @@
+index,sha,subject,stage,status,wall_s,detail
+1,b923864,Fix silent failure modes in the solvers and aggregator core,A,CRASH,4.6,improvement from the last ten iterations.
+1,b923864,Fix silent failure modes in the solvers and aggregator core,B,PASS,3.7,"T_out ok=True, wall>cool=True"
+1,b923864,Fix silent failure modes in the solvers and aggregator core,C,PASS,8.1,opened + reversed
+1,b923864,Fix silent failure modes in the solvers and aggregator core,D,FAIL,13.0,"complete=True; t_open latched at 23.812/23.836/23.754s across grids (spread 0.082s, must be <=0.02)"
+1,b923864,Fix silent failure modes in the solvers and aggregator core,E,TIMEOUT,1200,killed after 1200s
+1,b923864,Fix silent failure modes in the solvers and aggregator core,F,CRASH,5.7,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+1,b923864,Fix silent failure modes in the solvers and aggregator core,G,FAIL,5.6,steady ok=True; phase-1 coastdown (flapper closed) died at t=89.59s: At t = 89.58716: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",A,CRASH,4.6,improvement from the last ten iterations.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",B,PASS,3.6,"T_out ok=True, wall>cool=True"
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",C,PASS,8.4,opened + reversed
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",D,FAIL,13.1,"complete=True; t_open latched at 23.812/23.836/23.754s across grids (spread 0.082s, must be <=0.02)"
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",E,TIMEOUT,1200,killed after 1200s
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",F,CRASH,5.7,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",G,FAIL,5.6,steady ok=True; phase-1 coastdown (flapper closed) died at t=89.59s: At t = 89.58716: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+3,de6a2ff,Smooth residual discontinuities and rework event handling,A,CRASH,5.1,improvement from the last ten iterations.
+3,de6a2ff,Smooth residual discontinuities and rework event handling,B,PASS,4.2,"T_out ok=True, wall>cool=True"
+3,de6a2ff,Smooth residual discontinuities and rework event handling,C,PASS,8.4,opened + reversed
+3,de6a2ff,Smooth residual discontinuities and rework event handling,D,FAIL,13.3,"complete=True; t_open latched at 23.693/23.676/23.704s across grids (spread 0.028s, must be <=0.02)"
+3,de6a2ff,Smooth residual discontinuities and rework event handling,E,PASS,154.0,opened + reversed at tight tolerance
+3,de6a2ff,Smooth residual discontinuities and rework event handling,F,CRASH,8.4,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+3,de6a2ff,Smooth residual discontinuities and rework event handling,G,FAIL,13.8,"steady ok=True; transient died (no partial): The linesearch failed (on steptol test); t_rev={'hot': None, 'warm': None, 'wide': None, 'bypass': None}; hot<warm=False"
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,A,PASS,5.7,"T_out ok=True, wall>cool=True"
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,C,PASS,8.3,opened + reversed
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,D,PASS,422.5,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,E,PASS,141.4,opened + reversed at tight tolerance
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,F,PASS,10.3,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,G,PASS,28.4,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+5,8ce7266,Make solver failures speak domain terms,A,PASS,5.7,"T_out ok=True, wall>cool=True"
+5,8ce7266,Make solver failures speak domain terms,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+5,8ce7266,Make solver failures speak domain terms,C,PASS,8.2,opened + reversed
+5,8ce7266,Make solver failures speak domain terms,D,PASS,427.0,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+5,8ce7266,Make solver failures speak domain terms,E,PASS,144.1,opened + reversed at tight tolerance
+5,8ce7266,Make solver failures speak domain terms,F,PASS,10.2,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+5,8ce7266,Make solver failures speak domain terms,G,PASS,28.1,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+6,0273f48,Validate systems at construction time,A,PASS,5.9,"T_out ok=True, wall>cool=True"
+6,0273f48,Validate systems at construction time,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+6,0273f48,Validate systems at construction time,C,PASS,8.5,opened + reversed
+6,0273f48,Validate systems at construction time,D,PASS,432.1,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+6,0273f48,Validate systems at construction time,E,PASS,143.6,opened + reversed at tight tolerance
+6,0273f48,Validate systems at construction time,F,PASS,10.6,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+6,0273f48,Validate systems at construction time,G,PASS,26.8,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",A,PASS,5.7,"T_out ok=True, wall>cool=True"
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",B,PASS,3.9,"T_out ok=True, wall>cool=True"
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",C,PASS,8.4,opened + reversed
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",D,PASS,425.7,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",E,PASS,144.8,opened + reversed at tight tolerance
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",F,PASS,10.4,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+7,007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide",G,PASS,28.4,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,A,PASS,5.8,"T_out ok=True, wall>cool=True"
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,C,PASS,8.4,opened + reversed
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,D,PASS,430.5,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,E,PASS,145.2,opened + reversed at tight tolerance
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,F,PASS,10.5,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+8,978e7c8,Correct CHF orientation under reversed flow; adiabatic wall-less channels,G,PASS,27.4,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,A,PASS,5.8,"T_out ok=True, wall>cool=True"
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,B,PASS,4.1,"T_out ok=True, wall>cool=True"
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,C,PASS,8.5,opened + reversed
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,D,PASS,429.2,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,E,PASS,143.7,opened + reversed at tight tolerance
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,F,PASS,10.5,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+9,a07ccb1,Compose forced and natural convection monotonically in the HTC,G,PASS,28.2,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",A,PASS,5.7,"T_out ok=True, wall>cool=True"
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",B,PASS,4.2,"T_out ok=True, wall>cool=True"
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",C,PASS,8.5,opened + reversed
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",D,PASS,436.6,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",E,PASS,143.9,opened + reversed at tight tolerance
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",F,PASS,10.3,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",G,PASS,26.3,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+11,66926e7,Add a steady-state guess toolkit,A,PASS,5.8,"T_out ok=True, wall>cool=True"
+11,66926e7,Add a steady-state guess toolkit,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+11,66926e7,Add a steady-state guess toolkit,C,PASS,8.4,opened + reversed
+11,66926e7,Add a steady-state guess toolkit,D,PASS,423.9,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+11,66926e7,Add a steady-state guess toolkit,E,PASS,141.1,opened + reversed at tight tolerance
+11,66926e7,Add a steady-state guess toolkit,F,PASS,10.5,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+11,66926e7,Add a steady-state guess toolkit,G,PASS,28.7,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+11,66926e7,Add a steady-state guess toolkit,H,PASS,11.4,expert: scipy hybr from ‖F‖=3.76e+04; ballpark: scipy hybr from ‖F‖=1.38e+05; seed: scipy hybr from ‖F‖=7.42e+04; refined: scipy hybr from ‖F‖=10.8
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,A,PASS,5.8,"T_out ok=True, wall>cool=True"
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,C,PASS,8.2,opened + reversed
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,D,PASS,423.3,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,E,PASS,142.3,opened + reversed at tight tolerance
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,F,PASS,10.7,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,G,PASS,28.7,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,H,PASS,11.2,expert: scipy hybr from ‖F‖=3.76e+04; ballpark: scipy hybr from ‖F‖=1.38e+05; seed: scipy hybr from ‖F‖=7.42e+04; refined: scipy hybr from ‖F‖=10.8

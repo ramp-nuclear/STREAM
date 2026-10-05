@@ -1,0 +1,23 @@
+reverted,subject,stage,status,detail
+8ce7266,"Make solver failures speak domain terms
+",F,entangled,revert conflicts with later commits
+8ce7266,"Make solver failures speak domain terms
+",G,entangled,revert conflicts with later commits
+0273f48,"Validate systems at construction time
+",F,entangled,revert applies textually but removes an import a later commit uses (NameError: Mapping)
+0273f48,"Validate systems at construction time
+",G,entangled,revert applies textually but removes an import a later commit uses (NameError: Mapping)
+007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide
+",F,entangled,revert conflicts with later commits
+007f947,"Guard the physics wrappers, quiet healthy runs, add a failure-modes guide
+",G,entangled,revert conflicts with later commits
+978e7c8,"Correct CHF orientation under reversed flow; adiabatic wall-less channels
+",F,PASS,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+978e7c8,"Correct CHF orientation under reversed flow; adiabatic wall-less channels
+",G,PASS,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+a07ccb1,"Compose forced and natural convection monotonically in the HTC
+",F,PASS,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+a07ccb1,"Compose forced and natural convection monotonically in the HTC
+",G,PASS,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+15e15ec,Add a steady-state guess toolkit,F,PASS,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+15e15ec,Add a steady-state guess toolkit,G,PASS,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)

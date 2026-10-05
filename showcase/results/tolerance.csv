@@ -1,0 +1,37 @@
+p_power_scale,p_power_full_hot,p_power_full_warm,p_power_full_wide,p_gap_hot,p_gap_warm,p_gap_wide,p_gap_bypass,p_pump_head,p_inertia,p_hx_outlet,p_p_ref,p_flapper_fraction,p_flapper_area,p_friction,p_htc,p_t_scram,p_ramp_width,p_z_n,p_stop_at_saturation,status,error,n_warnings,warnings,residual_entry,residual_steady,mdot_hot,mdot_warm,mdot_wide,mdot_bypass,mdot_pump,T_out_hot,t_open,t_rev_hot,t_rev_warm,t_rev_wide,peak_hot,peak_warm,peak_wide,margin,final_hot,final_warm,final_wide,final_bypass,t_last,wall_s,steady_dist,traceback,axis,label,guess_kind,seed,band,atol_rel,rtol,t_end,n
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,failed,TransientRuntimeError: At t = 286.00000: IDA IDA_CONV_FAIL(-4): Convergence test failures occurred too many times during one internal time step or minimum step size was reached. — the modified-Newton corrector could not converge and the step fell to hmin — the canonical LOFA death past ONB,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,92.97529852894759,,,,66.0720106058091,50.6062378102078,47.98794005072559,54.22200892284209,0.05006647580524691,0.050104562270855996,0.09177192887677577,0.1499946331500376,286.0,12.466721865999716,,"Traceback (most recent call last):
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/showcase/lofa_case.py"", line 397, in run
+    sol = transient(agr, refs, y, t_end=t_end, n=n, atol_rel=atol_rel, rtol=rtol)
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/showcase/lofa_case.py"", line 277, in transient
+    return agr.solve(y_steady, time=np.linspace(0.0, t_end, n), jacfn=DAE_jacobian(agr),
+           ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                     atol=agr.scaled_atol(atol_rel), rtol=rtol, max_steps=1_000_000)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/aggregator/aggregator.py"", line 1288, in solve
+    data, time = differential_algebraic(
+                 ~~~~~~~~~~~~~~~~~~~~~~^
+        F=self.compute,
+        ^^^^^^^^^^^^^^^
+    ...<7 lines>...
+        **options,
+        ^^^^^^^^^^
+    )
+    ^
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 189, in differential_algebraic
+    return _event_loop_dae(solve, time, y0, yp0, on_event, continuous)
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 340, in _event_loop_dae
+    solution = solve(remaining, y_cur, yp_cur)
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 267, in solve
+    _ida_post_solution(sol_)
+    ~~~~~~~~~~~~~~~~~~^^^^^^
+  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 208, in _ida_post_solution
+    raise TransientRuntimeError(*solution.values, message, flag=flag, symbol=symbol)
+stream.solvers.TransientRuntimeError: At t = 286.00000: IDA IDA_CONV_FAIL(-4): Convergence test failures occurred too many times during one internal time step or minimum step size was reached. — the modified-Newton corrector could not converge and the step fell to hmin — the canonical LOFA death past ONB
+worst scaled residuals: Tin of 'GravityFlapper': 1.774e-01, Tin of 'ResistFlap': 1.502e-01, Tin of 'Flapper': -1.265e-01
+domain violations: Tin=-5.77426 of 'Flapper' outside validity [0.1, 350] °C
+",tolerance,"atol=0.1,rtol=0.001",toolkit,0,0.3,0.1,0.001,2500.0,1251
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,completed,,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,76.56033875660027,1094.0,1186.0,1512.0,97.55589427448406,82.43551614239797,72.99131637846949,22.73812525416713,-0.006620063402424304,-0.0037929111139977365,-0.007722911242735297,0.007990886441882733,2500.0,18.680163813000036,,,tolerance,"atol=0.01,rtol=0.001",toolkit,0,0.3,0.01,0.001,2500.0,1251
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,completed,,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,77.84012310229245,822.0,1184.0,1524.0,107.40368212549987,87.74701423943091,76.92458267203314,12.890337403151321,-0.0067048857979087745,-0.003833639626083698,-0.0078577992008732,0.007421016724480171,2500.0,22.912353708999945,,,tolerance,"atol=0.001,rtol=0.0001",toolkit,0,0.3,0.001,0.0001,2500.0,1251
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,completed,,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,77.93543650441696,814.0,1170.0,1500.0,107.903047079686,87.13527695189197,77.9695689386973,12.390972448965186,-0.006746422004951708,-0.003858770957260201,-0.007932672636522085,0.007193369240072227,2500.0,32.555485193000095,,,tolerance,"atol=0.0001,rtol=0.0001",toolkit,0,0.3,0.0001,0.0001,2500.0,1251
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,completed,,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,78.02906154304647,814.0,1172.0,1500.0,107.91273132954426,87.17773256598058,78.0309394293899,12.381288199106933,-0.0067422928071282345,-0.003855981472477934,-0.007925111073595555,0.007246289796466034,2500.0,99.77518657699966,,,tolerance,"atol=1e-05,rtol=1e-05",toolkit,0,0.3,1e-05,1e-05,2500.0,1251
+0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,completed,,0,,10.778855707125311,3.201491276777791e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,78.03303439980053,816.0,1172.0,1500.0,107.84719187399082,86.99179486803182,78.17078289473949,12.446827654660368,-0.006739676575181186,-0.0038541289065678504,-0.007920124176470771,0.007258940492580469,2500.0,401.52732730499974,,,tolerance,"atol=1e-06,rtol=1e-06",toolkit,0,0.3,1e-06,1e-06,2500.0,1251
