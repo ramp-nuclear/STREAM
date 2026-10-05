@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="530" viewBox="0 0 900 530" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+  </defs>
+  <rect width="900" height="530" fill="#fff"/>
+  <g stroke="#bbb" stroke-width="1"><line x1="20" y1="270" x2="880" y2="270"/><line x1="20" y1="390" x2="880" y2="390"/></g>
+  <rect x="40" y="90" width="110" height="60" fill="#9a9a9a" fill-opacity="0.15" stroke="#000" stroke-width="1.5"/>
+  <text x="95" y="107" text-anchor="middle" font-weight="bold">J_a</text>
+  <text x="95" y="124" text-anchor="middle">Tin</text>
+  <rect x="220" y="90" width="110" height="60" fill="#eb6834" fill-opacity="0.15" stroke="#000" stroke-width="1.5"/>
+  <text x="275" y="107" text-anchor="middle" font-weight="bold">Pump</text>
+  <text x="275" y="124" text-anchor="middle">Tin</text>
+  <text x="275" y="139" text-anchor="middle">pressure</text>
+  <rect x="400" y="90" width="110" height="60" fill="#9a9a9a" fill-opacity="0.15" stroke="#000" stroke-width="1.5"/>
+  <text x="455" y="107" text-anchor="middle" font-weight="bold">J_b</text>
+  <text x="455" y="124" text-anchor="middle">Tin</text>
+  <rect x="580" y="90" width="110" height="60" fill="#1baf7a" fill-opacity="0.15" stroke="#000" stroke-width="1.5"/>
+  <text x="635" y="107" text-anchor="middle" font-weight="bold">Resistor</text>
+  <text x="635" y="124" text-anchor="middle">Tin</text>
+  <text x="635" y="139" text-anchor="middle">pressure</text>
+  <rect x="760" y="90" width="110" height="60" fill="#2a78d6" fill-opacity="0.15" stroke="#000" stroke-width="1.5"/>
+  <text x="815" y="107" text-anchor="middle" font-weight="bold">Kirchhoff</text>
+  <text x="815" y="124" text-anchor="middle">mdot J_a→J_b</text>
+  <text x="815" y="139" text-anchor="middle">mdot J_b→J_a</text>
+  <g fill="none" stroke="#000" stroke-width="1.5">
+    <path d="M150,115 H220" marker-end="url(#arr)"/>
+    <path d="M330,115 H400" marker-end="url(#arr)"/>
+    <path d="M400,142 H330" marker-end="url(#arr)"/>
+    <path d="M510,115 H580" marker-end="url(#arr)"/>
+    <path d="M75,90 V48 H655 V90" marker-end="url(#arr)"/>
+    <path d="M625,90 V70 H105 V90" marker-end="url(#arr)"/>
+    <path d="M665,150 V172 H785 V150" marker-end="url(#arr)"/>
+    <path d="M805,150 V192 H625 V150" marker-end="url(#arr)"/>
+    <path d="M300,150 V214 H825 V150" marker-end="url(#arr)"/>
+    <path d="M845,150 V236 H260 V150" marker-end="url(#arr)"/>
+  </g>
+  <g font-size="11" text-anchor="middle">
+    <text x="185" y="110">Tin</text>
+    <text x="365" y="110">Tin</text>
+    <text x="365" y="133">Tin_minus</text>
+    <text x="545" y="110">Tin</text>
+    <text x="365" y="44">Tin_minus</text>
+    <text x="365" y="66">Tin</text>
+    <rect x="697" y="165" width="56" height="14" fill="#fff"/>
+    <text x="725" y="176">pressure</text>
+    <rect x="700" y="185" width="31" height="14" fill="#fff"/>
+    <text x="715" y="196">mdot</text>
+    <rect x="422" y="207" width="56" height="14" fill="#fff"/>
+    <text x="450" y="218">pressure</text>
+    <rect x="435" y="229" width="31" height="14" fill="#fff"/>
+    <text x="450" y="240">mdot</text>
+  </g>
+  <text x="20" y="24" font-weight="bold" font-size="14">Calculations</text>
+  <text x="118" y="24" fill="#555">Aggregator = this graph; each arrow carries the named variable</text>
+  <text x="40" y="260" font-size="11" fill="#666">Also in the graph, not drawn: Pump → J_a and Resistor → J_b (Tin_minus), Kirchhoff → J_a and J_b (mdot).</text>
+  <text x="20" y="294" font-weight="bold" font-size="14">State vector y (len 8)</text>
+  <text x="40" y="313" fill="#555">each Calculation owns a contiguous slice; State = the same numbers by name</text>
+  <rect x="40" y="320" width="60" height="30" fill="#9a9a9a" fill-opacity="0.18"/>
+  <rect x="100" y="320" width="120" height="30" fill="#eb6834" fill-opacity="0.18"/>
+  <rect x="220" y="320" width="60" height="30" fill="#9a9a9a" fill-opacity="0.18"/>
+  <rect x="280" y="320" width="120" height="30" fill="#1baf7a" fill-opacity="0.18"/>
+  <rect x="400" y="320" width="120" height="30" fill="#2a78d6" fill-opacity="0.18"/>
+  <g fill="none" stroke="#000" stroke-width="1.5"><rect x="40" y="320" width="480" height="30"/>
+    <line x1="100" y1="320" x2="100" y2="350"/>
+    <line x1="160" y1="320" x2="160" y2="350"/>
+    <line x1="220" y1="320" x2="220" y2="350"/>
+    <line x1="280" y1="320" x2="280" y2="350"/>
+    <line x1="340" y1="320" x2="340" y2="350"/>
+    <line x1="400" y1="320" x2="400" y2="350"/>
+    <line x1="460" y1="320" x2="460" y2="350"/>
+  </g>
+  <text x="70" y="339" text-anchor="middle">0</text>
+  <text x="130" y="339" text-anchor="middle">1</text>
+  <text x="190" y="339" text-anchor="middle">2</text>
+  <text x="250" y="339" text-anchor="middle">3</text>
+  <text x="310" y="339" text-anchor="middle">4</text>
+  <text x="370" y="339" text-anchor="middle">5</text>
+  <text x="430" y="339" text-anchor="middle">6</text>
+  <text x="490" y="339" text-anchor="middle">7</text>
+  <path d="M44,356 V362 H96 V356" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="70" y="377" text-anchor="middle">J_a</text>
+  <path d="M104,356 V362 H216 V356" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="160" y="377" text-anchor="middle">Pump</text>
+  <path d="M224,356 V362 H276 V356" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="250" y="377" text-anchor="middle">J_b</text>
+  <path d="M284,356 V362 H396 V356" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="340" y="377" text-anchor="middle">Resistor</text>
+  <path d="M404,356 V362 H516 V356" fill="none" stroke="#000" stroke-width="1"/>
+  <text x="460" y="377" text-anchor="middle">Kirchhoff</text>
+  <text x="20" y="414" font-weight="bold" font-size="14">F(y, t)</text>
+  <text x="40" y="436" fill="#555">each Calculation fills its own rows of the residual</text>
+  <rect x="40" y="446" width="60" height="30" fill="#9a9a9a" fill-opacity="0.18"/>
+  <rect x="100" y="446" width="120" height="30" fill="#eb6834" fill-opacity="0.18"/>
+  <rect x="220" y="446" width="60" height="30" fill="#9a9a9a" fill-opacity="0.18"/>
+  <rect x="280" y="446" width="120" height="30" fill="#1baf7a" fill-opacity="0.18"/>
+  <rect x="400" y="446" width="120" height="30" fill="#2a78d6" fill-opacity="0.18"/>
+  <g fill="none" stroke="#000" stroke-width="1.5"><rect x="40" y="446" width="480" height="30"/>
+    <line x1="100" y1="446" x2="100" y2="476"/>
+    <line x1="160" y1="446" x2="160" y2="476"/>
+    <line x1="220" y1="446" x2="220" y2="476"/>
+    <line x1="280" y1="446" x2="280" y2="476"/>
+    <line x1="340" y1="446" x2="340" y2="476"/>
+    <line x1="400" y1="446" x2="400" y2="476"/>
+    <line x1="460" y1="446" x2="460" y2="476"/>
+  </g>
+  <text x="70" y="465" text-anchor="middle">0</text>
+  <text x="130" y="465" text-anchor="middle">1</text>
+  <text x="190" y="465" text-anchor="middle">2</text>
+  <text x="250" y="465" text-anchor="middle">3</text>
+  <text x="310" y="465" text-anchor="middle">4</text>
+  <text x="370" y="465" text-anchor="middle">5</text>
+  <text x="430" y="465" text-anchor="middle">6</text>
+  <text x="490" y="465" text-anchor="middle">7</text>
+  <text x="610" y="406" font-weight="bold">M dy/dt = F(y, t) solved by</text>
+  <g fill="#fff" stroke="#000" stroke-width="1.5">
+    <rect x="610" y="414" width="270" height="24"/><rect x="610" y="444" width="270" height="24"/><rect x="610" y="474" width="270" height="40"/>
+  </g>
+  <text x="620" y="430">ODE: scipy solve_ivp</text>
+  <text x="620" y="460">DAE: SUNDIALS IDA</text>
+  <text x="620" y="490">steady: scipy root</text>
+  <text x="620" y="506" font-size="11">(+ damped Newton, pseudo-transient fallback)</text>
+  <path d="M602,414 Q594,414 594,424 V454 Q594,464 586,464 Q594,464 594,474 V504 Q594,514 602,514" fill="none" stroke="#000" stroke-width="1.5"/>
+  <line x1="524" y1="461" x2="582" y2="461" stroke="#000" stroke-width="1" stroke-dasharray="4 3"/>
+</svg>
