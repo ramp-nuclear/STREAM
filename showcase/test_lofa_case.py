@@ -47,6 +47,7 @@ def test_run_records_failure(monkeypatch):
     rec = lc.run(lc.Params(), t_end=10.0, n=6)
     assert rec.status == "failed"
     assert "ValueError" in rec.error and "synthetic" in rec.error
+    assert "synthetic" in rec.traceback
 
 
 def test_guess_kinds_all_converge():

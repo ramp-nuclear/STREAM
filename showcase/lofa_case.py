@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
+import traceback
 import warnings
 from dataclasses import asdict, dataclass, fields
 from functools import partial
@@ -309,11 +310,12 @@ class Record:
     t_last: float
     wall_s: float
     steady_dist: float
+    traceback: str = ""
 
     @classmethod
     def empty(cls, status: str, error: str = "") -> Record:
         values = {f.name: None if f.name.startswith(("t_open", "t_rev")) else np.nan for f in fields(cls)}
-        return cls(**values | {"status": status, "error": error, "n_warnings": 0, "warnings": ""})
+        return cls(**values | {"status": status, "error": error, "n_warnings": 0, "warnings": "", "traceback": ""})
 
 
 def flows(agr: Aggregator, K: Kirchhoff, refs: dict, sol: Solution) -> pd.DataFrame:
@@ -402,6 +404,8 @@ def run(p: Params, *, guess_kind: str = "toolkit", seed: int = 0, band: float = 
         except Exception as e:
             rec.status = "saturation" if isinstance(e, SaturationReachedError) else "failed"
             rec.error = f"{type(e).__name__}: {e}"
+            if rec.status == "failed":
+                rec.traceback = traceback.format_exc()
             partial_sol = _partial_solution(e)
             if partial_sol is not None:
                 try:
