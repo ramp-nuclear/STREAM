@@ -1,3 +1,5 @@
+import warnings
+
 import hypothesis.strategies as st
 import numpy as np
 import pytest
@@ -6,6 +8,7 @@ from hypothesis.extra.numpy import arrays
 
 from stream.calculations import (
     ChannelAndContacts,
+    Gravity,
     Inertia,
     Junction,
     KirchhoffWDerivatives,
@@ -16,7 +19,7 @@ from stream.calculations import (
 )
 from stream.aggregator import Aggregator
 from stream.calculations.ideal.ideal import LumpedComponent
-from stream.composition import Calculation_factory, FlowGraph, flow_edge
+from stream.composition import Calculation_factory, FlowGraph, flow_edge, seed_steady_state
 from stream.composition.subsystems import (
     guess_hydraulic_steady_state,
     point_kinetics_steady_state,
@@ -28,6 +31,7 @@ from stream.units import mm, pcm
 from stream.utilities import just
 
 from .conftest import MTR_fuel_and_channel
+from .test_natural_convection import NC_MDOT, _build
 
 
 @pytest.mark.slow
@@ -348,3 +352,16 @@ def test_hydraulic_guess_mapping_missing_a_calculation_names_it():
     mdots = {c: 0.5 for c in k.components}
     with pytest.raises(KeyError, match="ColdLeg"):
         guess_hydraulic_steady_state(k, mdots, {c: 40.0 for c in k.components if c is not r["cold"]})
+
+
+def test_hydraulic_seed_stores_scalar_pressures_for_gravity():
+    agr, fg, _, _, pump = _build(0.0, "constant")
+    k = fg.kirchhoff
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        state = seed_steady_state(agr, k, flows={pump: NC_MDOT})
+        agr.load(state)
+    gravities = [c for c in k.components if isinstance(c, Gravity)]
+    assert gravities
+    for g in gravities:
+        assert np.ndim(state[g.name]["pressure"]) == 0

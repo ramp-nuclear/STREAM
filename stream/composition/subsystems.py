@@ -255,7 +255,7 @@ def guess_hydraulic_steady_state(
                 return -local_pressure_by_mdot(m, x.fluid.density(_scalar(T_x)), x.f, x._A)
             case DPCalculation():
                 # noinspection PyUnresolvedReferences
-                return x.dp_out(Tin=np.array([_scalar(T_x)]), mdot=m, mdot2=0.0)
+                return _scalar(x.dp_out(Tin=np.array([_scalar(T_x)]), mdot=m, mdot2=0.0))
             case Channel():
                 # noinspection PyUnresolvedReferences
                 T = np.full(x.n, T_x) if np.ndim(T_x) == 0 else np.asarray(T_x, dtype=float)
