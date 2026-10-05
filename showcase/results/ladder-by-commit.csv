@@ -1,25 +1,25 @@
 index,sha,subject,stage,status,wall_s,detail
-1,b923864,Fix silent failure modes in the solvers and aggregator core,A,CRASH,4.6,improvement from the last ten iterations.
-1,b923864,Fix silent failure modes in the solvers and aggregator core,B,PASS,3.7,"T_out ok=True, wall>cool=True"
-1,b923864,Fix silent failure modes in the solvers and aggregator core,C,PASS,8.1,opened + reversed
-1,b923864,Fix silent failure modes in the solvers and aggregator core,D,FAIL,13.0,"complete=True; t_open latched at 23.812/23.836/23.754s across grids (spread 0.082s, must be <=0.02)"
+1,b923864,Fix silent failure modes in the solvers and aggregator core,A,CRASH,4.0,improvement from the last ten iterations.
+1,b923864,Fix silent failure modes in the solvers and aggregator core,B,PASS,4.5,"T_out ok=True, wall>cool=True"
+1,b923864,Fix silent failure modes in the solvers and aggregator core,C,PASS,9.1,opened + reversed
+1,b923864,Fix silent failure modes in the solvers and aggregator core,D,TIMEOUT,1800,killed after 1800s
 1,b923864,Fix silent failure modes in the solvers and aggregator core,E,TIMEOUT,1200,killed after 1200s
-1,b923864,Fix silent failure modes in the solvers and aggregator core,F,CRASH,5.7,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
-1,b923864,Fix silent failure modes in the solvers and aggregator core,G,FAIL,5.6,steady ok=True; phase-1 coastdown (flapper closed) died at t=89.59s: At t = 89.58716: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",A,CRASH,4.6,improvement from the last ten iterations.
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",B,PASS,3.6,"T_out ok=True, wall>cool=True"
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",C,PASS,8.4,opened + reversed
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",D,FAIL,13.1,"complete=True; t_open latched at 23.812/23.836/23.754s across grids (spread 0.082s, must be <=0.02)"
+1,b923864,Fix silent failure modes in the solvers and aggregator core,F,CRASH,6.1,stream.solvers.TransientRuntimeError: At t = 28.00000: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+1,b923864,Fix silent failure modes in the solvers and aggregator core,G,CRASH,4.2,improvement from the last ten iterations.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",A,CRASH,4.0,improvement from the last ten iterations.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",B,PASS,4.5,"T_out ok=True, wall>cool=True"
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",C,PASS,9.1,opened + reversed
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",D,TIMEOUT,1800,killed after 1800s
 2,6443b32,"Fix correctness bugs in components, correlations and property fits",E,TIMEOUT,1200,killed after 1200s
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",F,CRASH,5.7,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
-2,6443b32,"Fix correctness bugs in components, correlations and property fits",G,FAIL,5.6,steady ok=True; phase-1 coastdown (flapper closed) died at t=89.59s: At t = 89.58716: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
-3,de6a2ff,Smooth residual discontinuities and rework event handling,A,CRASH,5.1,improvement from the last ten iterations.
-3,de6a2ff,Smooth residual discontinuities and rework event handling,B,PASS,4.2,"T_out ok=True, wall>cool=True"
-3,de6a2ff,Smooth residual discontinuities and rework event handling,C,PASS,8.4,opened + reversed
-3,de6a2ff,Smooth residual discontinuities and rework event handling,D,FAIL,13.3,"complete=True; t_open latched at 23.693/23.676/23.704s across grids (spread 0.028s, must be <=0.02)"
-3,de6a2ff,Smooth residual discontinuities and rework event handling,E,PASS,154.0,opened + reversed at tight tolerance
-3,de6a2ff,Smooth residual discontinuities and rework event handling,F,CRASH,8.4,stream.solvers.TransientRuntimeError: At t = 15.90381: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
-3,de6a2ff,Smooth residual discontinuities and rework event handling,G,FAIL,13.8,"steady ok=True; transient died (no partial): The linesearch failed (on steptol test); t_rev={'hot': None, 'warm': None, 'wide': None, 'bypass': None}; hot<warm=False"
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",F,CRASH,6.4,stream.solvers.TransientRuntimeError: At t = 28.00000: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+2,6443b32,"Fix correctness bugs in components, correlations and property fits",G,CRASH,12.6,stream.solvers.TransientRuntimeError: At t = 82.00000: Convergence test failures occurred too many times during one internal time step or minimum step size was reached.
+3,de6a2ff,Smooth residual discontinuities and rework event handling,A,CRASH,4.5,improvement from the last ten iterations.
+3,de6a2ff,Smooth residual discontinuities and rework event handling,B,PASS,4.8,"T_out ok=True, wall>cool=True"
+3,de6a2ff,Smooth residual discontinuities and rework event handling,C,PASS,9.4,opened + reversed
+3,de6a2ff,Smooth residual discontinuities and rework event handling,D,PASS,439.8,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+3,de6a2ff,Smooth residual discontinuities and rework event handling,E,PASS,146.3,opened + reversed at tight tolerance
+3,de6a2ff,Smooth residual discontinuities and rework event handling,F,PASS,10.6,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+3,de6a2ff,Smooth residual discontinuities and rework event handling,G,PASS,27.7,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
 4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,A,PASS,5.7,"T_out ok=True, wall>cool=True"
 4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,B,PASS,4.0,"T_out ok=True, wall>cool=True"
 4,e14e18f,Globalize the steady-state solve and stop saturated runs loudly,C,PASS,8.3,opened + reversed
