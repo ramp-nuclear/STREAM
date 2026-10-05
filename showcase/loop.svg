@@ -30,8 +30,8 @@
     <line x1="650" y1="95" x2="650" y2="78" marker-end="url(#arr)"/>
     <line x1="590" y1="345" x2="620" y2="345" marker-end="url(#arr)"/>
     <line x1="620" y1="65" x2="590" y2="65" marker-end="url(#arr)"/>
-    <line x1="510" y1="230" x2="510" y2="290" marker-end="url(#arr)"/>
-    <line x1="690" y1="295" x2="690" y2="235" marker-end="url(#arr)"/>
+    <line x1="20" y1="180" x2="20" y2="240" marker-end="url(#arr)"/>
+    <line x1="692" y1="340" x2="692" y2="70" stroke-width="1" marker-start="url(#arr)" marker-end="url(#arr)"/>
   </g>
   <rect x="630" y="110" width="40" height="40" fill="#fff" stroke="#000" stroke-width="1.5"/>
   <circle cx="650" cy="200" r="16" fill="#fff" stroke="#000" stroke-width="1.5"/>
@@ -50,11 +50,11 @@
     <text x="400" y="250">Bypass</text>
     <text x="484" y="126">Flapper</text>
     <text x="482" y="226">Resistor</text>
-    <text x="516" y="265">Gravity</text>
+    <text x="27" y="214">g</text>
     <text x="650" y="135" text-anchor="middle">HX</text>
     <text x="612" y="204" text-anchor="end">Flywheel</text>
     <text x="612" y="269" text-anchor="end">Pump</text>
-    <text x="690" y="316" text-anchor="middle">Gravity</text>
+    <text x="707" y="205" text-anchor="middle" transform="rotate(-90 707 205)">0.7 m climb</text>
     <text x="40" y="405">Arrows on the legs show forced-flow direction: down the channels, up the pump leg.</text>
   </g>
 </svg>
