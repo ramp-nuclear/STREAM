@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#000"/>
+    </marker>
+    <g id="flame">
+      <path d="M0,0 C-7,-6 -3,-12 0,-20 C2,-14 9,-9 5,-2 C4,0 2,1 0,0 z" fill="#eb6834" stroke="#000" stroke-width="1"/>
+    </g>
+  </defs>
+  <rect width="720" height="420" fill="#fff"/>
+  <g fill="none" stroke="#000" stroke-width="1.5">
+    <rect x="40" y="50" width="520" height="30" rx="15"/>
+    <rect x="40" y="330" width="520" height="30" rx="15"/>
+    <rect x="88" y="80" width="24" height="250"/>
+    <rect x="178" y="80" width="24" height="250"/>
+    <rect x="268" y="80" width="30" height="250"/>
+    <rect x="358" y="80" width="36" height="250"/>
+    <line x1="100" y1="110" x2="100" y2="160" marker-end="url(#arr)"/>
+    <line x1="190" y1="110" x2="190" y2="160" marker-end="url(#arr)"/>
+    <line x1="283" y1="110" x2="283" y2="160" marker-end="url(#arr)"/>
+    <line x1="376" y1="110" x2="376" y2="160" marker-end="url(#arr)"/>
+    <line x1="470" y1="80" x2="470" y2="130"/>
+    <circle cx="470" cy="133" r="3" fill="#000"/>
+    <line x1="470" y1="133" x2="490" y2="160"/>
+    <line x1="470" y1="175" x2="470" y2="230"/>
+    <polyline points="470,230 478,236 462,244 478,252 462,260 478,268 470,274"/>
+    <line x1="470" y1="274" x2="470" y2="330"/>
+    <path d="M560,345 H650 V65 H560"/>
+    <line x1="650" y1="320" x2="650" y2="300" marker-end="url(#arr)"/>
+    <line x1="650" y1="95" x2="650" y2="78" marker-end="url(#arr)"/>
+    <line x1="590" y1="345" x2="620" y2="345" marker-end="url(#arr)"/>
+    <line x1="620" y1="65" x2="590" y2="65" marker-end="url(#arr)"/>
+    <line x1="510" y1="230" x2="510" y2="290" marker-end="url(#arr)"/>
+    <line x1="690" y1="295" x2="690" y2="235" marker-end="url(#arr)"/>
+  </g>
+  <rect x="630" y="110" width="40" height="40" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <circle cx="650" cy="200" r="16" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <circle cx="650" cy="200" r="7" fill="#000"/>
+  <circle cx="650" cy="265" r="16" fill="#fff" stroke="#000" stroke-width="1.5"/>
+  <path d="M641,273 L650,255 L659,273 z" fill="none" stroke="#000" stroke-width="1.5"/>
+  <use href="#flame" x="125" y="215"/>
+  <use href="#flame" x="215" y="215"/>
+  <use href="#flame" x="311" y="215"/>
+  <g fill="#000">
+    <text x="300" y="40" text-anchor="middle">Upper plenum</text>
+    <text x="300" y="380" text-anchor="middle">Lower plenum</text>
+    <text x="118" y="250">Hot</text>
+    <text x="208" y="250">Warm</text>
+    <text x="304" y="250">Wide</text>
+    <text x="400" y="250">Bypass</text>
+    <text x="484" y="126">Flapper</text>
+    <text x="482" y="226">Resistor</text>
+    <text x="516" y="265">Gravity</text>
+    <text x="650" y="135" text-anchor="middle">HX</text>
+    <text x="612" y="204" text-anchor="end">Flywheel</text>
+    <text x="612" y="269" text-anchor="end">Pump</text>
+    <text x="690" y="316" text-anchor="middle">Gravity</text>
+    <text x="40" y="405">Arrows on the legs show forced-flow direction: down the channels, up the pump leg.</text>
+  </g>
+</svg>
