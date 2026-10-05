@@ -7796,7 +7796,7 @@ a.anchor-link {
 <!-- End of mermaid configuration --></head>
 <body class="jp-Notebook" data-jp-theme-light="true" data-jp-theme-name="JupyterLab Light">
 <main>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=aeead292">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=758b2f65">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7810,7 +7810,7 @@ reverted alone on the branch tip and the two hardest stages were run again.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=84080278">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ab6754e8">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -7818,11 +7818,14 @@ reverted alone on the branch tip and the two hardest stages were run again.</p>
 <div class="jp-InputPrompt jp-InputArea-prompt">In [1]:</div>
 <div class="jp-CodeMirrorEditor jp-Editor jp-InputArea-editor" data-type="inline">
 <div class="cm-editor cm-s-jupyter">
-<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<div class="highlight hl-ipython3"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
+<span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">cwd</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="p">))</span>
 <span class="n">ladder</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">"results/ladder-by-commit.csv"</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s2">"sha"</span><span class="p">:</span> <span class="nb">str</span><span class="p">})</span>
 <span class="n">ladder</span> <span class="o">=</span> <span class="n">ladder</span><span class="p">[</span><span class="o">~</span><span class="n">ladder</span><span class="p">[</span><span class="s2">"index"</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">])]</span>
 <span class="n">ladder</span><span class="p">[</span><span class="s2">"commit"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ladder</span><span class="p">[</span><span class="s2">"index"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"  "</span> <span class="o">+</span> <span class="n">ladder</span><span class="p">[</span><span class="s2">"sha"</span><span class="p">]</span> <span class="o">+</span> <span class="s2">"  "</span> <span class="o">+</span> <span class="n">ladder</span><span class="p">[</span><span class="s2">"subject"</span><span class="p">]</span>
@@ -7852,141 +7855,141 @@ reverted alone on the branch tip and the two hardest stages were run again.</p>
 <div class="jp-OutputPrompt jp-OutputArea-prompt">Out[1]:</div>
 <div class="jp-RenderedHTMLCommon jp-RenderedHTML jp-OutputArea-output jp-OutputArea-executeResult" data-mime-type="text/html" tabindex="0">
 <style type="text/css">
-#T_96e4f_row0_col0, #T_96e4f_row0_col3, #T_96e4f_row0_col4, #T_96e4f_row0_col5, #T_96e4f_row0_col6, #T_96e4f_row0_col7, #T_96e4f_row1_col0, #T_96e4f_row1_col3, #T_96e4f_row1_col4, #T_96e4f_row1_col5, #T_96e4f_row1_col6, #T_96e4f_row1_col7, #T_96e4f_row2_col0, #T_96e4f_row2_col7, #T_96e4f_row3_col7, #T_96e4f_row4_col7, #T_96e4f_row5_col7, #T_96e4f_row6_col7, #T_96e4f_row7_col7, #T_96e4f_row8_col7 {
+#T_b384a_row0_col0, #T_b384a_row0_col3, #T_b384a_row0_col4, #T_b384a_row0_col5, #T_b384a_row0_col6, #T_b384a_row0_col7, #T_b384a_row1_col0, #T_b384a_row1_col3, #T_b384a_row1_col4, #T_b384a_row1_col5, #T_b384a_row1_col6, #T_b384a_row1_col7, #T_b384a_row2_col0, #T_b384a_row2_col7, #T_b384a_row3_col7, #T_b384a_row4_col7, #T_b384a_row5_col7, #T_b384a_row6_col7, #T_b384a_row7_col7, #T_b384a_row8_col7 {
   background-color: #ececec;
   color: #666666;
   text-align: center;
 }
-#T_96e4f_row0_col1, #T_96e4f_row0_col2, #T_96e4f_row1_col1, #T_96e4f_row1_col2, #T_96e4f_row2_col1, #T_96e4f_row2_col2, #T_96e4f_row2_col3, #T_96e4f_row2_col4, #T_96e4f_row2_col5, #T_96e4f_row2_col6, #T_96e4f_row3_col0, #T_96e4f_row3_col1, #T_96e4f_row3_col2, #T_96e4f_row3_col3, #T_96e4f_row3_col4, #T_96e4f_row3_col5, #T_96e4f_row3_col6, #T_96e4f_row4_col0, #T_96e4f_row4_col1, #T_96e4f_row4_col2, #T_96e4f_row4_col3, #T_96e4f_row4_col4, #T_96e4f_row4_col5, #T_96e4f_row4_col6, #T_96e4f_row5_col0, #T_96e4f_row5_col1, #T_96e4f_row5_col2, #T_96e4f_row5_col3, #T_96e4f_row5_col4, #T_96e4f_row5_col5, #T_96e4f_row5_col6, #T_96e4f_row6_col0, #T_96e4f_row6_col1, #T_96e4f_row6_col2, #T_96e4f_row6_col3, #T_96e4f_row6_col4, #T_96e4f_row6_col5, #T_96e4f_row6_col6, #T_96e4f_row7_col0, #T_96e4f_row7_col1, #T_96e4f_row7_col2, #T_96e4f_row7_col3, #T_96e4f_row7_col4, #T_96e4f_row7_col5, #T_96e4f_row7_col6, #T_96e4f_row8_col0, #T_96e4f_row8_col1, #T_96e4f_row8_col2, #T_96e4f_row8_col3, #T_96e4f_row8_col4, #T_96e4f_row8_col5, #T_96e4f_row8_col6, #T_96e4f_row9_col0, #T_96e4f_row9_col1, #T_96e4f_row9_col2, #T_96e4f_row9_col3, #T_96e4f_row9_col4, #T_96e4f_row9_col5, #T_96e4f_row9_col6, #T_96e4f_row9_col7 {
+#T_b384a_row0_col1, #T_b384a_row0_col2, #T_b384a_row1_col1, #T_b384a_row1_col2, #T_b384a_row2_col1, #T_b384a_row2_col2, #T_b384a_row2_col3, #T_b384a_row2_col4, #T_b384a_row2_col5, #T_b384a_row2_col6, #T_b384a_row3_col0, #T_b384a_row3_col1, #T_b384a_row3_col2, #T_b384a_row3_col3, #T_b384a_row3_col4, #T_b384a_row3_col5, #T_b384a_row3_col6, #T_b384a_row4_col0, #T_b384a_row4_col1, #T_b384a_row4_col2, #T_b384a_row4_col3, #T_b384a_row4_col4, #T_b384a_row4_col5, #T_b384a_row4_col6, #T_b384a_row5_col0, #T_b384a_row5_col1, #T_b384a_row5_col2, #T_b384a_row5_col3, #T_b384a_row5_col4, #T_b384a_row5_col5, #T_b384a_row5_col6, #T_b384a_row6_col0, #T_b384a_row6_col1, #T_b384a_row6_col2, #T_b384a_row6_col3, #T_b384a_row6_col4, #T_b384a_row6_col5, #T_b384a_row6_col6, #T_b384a_row7_col0, #T_b384a_row7_col1, #T_b384a_row7_col2, #T_b384a_row7_col3, #T_b384a_row7_col4, #T_b384a_row7_col5, #T_b384a_row7_col6, #T_b384a_row8_col0, #T_b384a_row8_col1, #T_b384a_row8_col2, #T_b384a_row8_col3, #T_b384a_row8_col4, #T_b384a_row8_col5, #T_b384a_row8_col6, #T_b384a_row9_col0, #T_b384a_row9_col1, #T_b384a_row9_col2, #T_b384a_row9_col3, #T_b384a_row9_col4, #T_b384a_row9_col5, #T_b384a_row9_col6, #T_b384a_row9_col7 {
   background-color: #d9f2d9;
   color: #1e5c1e;
   text-align: center;
 }
 </style>
-<table id="T_96e4f">
+<table id="T_b384a">
 <thead>
 <tr>
 <th class="blank level0"> </th>
-<th class="col_heading level0 col0" id="T_96e4f_level0_col0">A</th>
-<th class="col_heading level0 col1" id="T_96e4f_level0_col1">B</th>
-<th class="col_heading level0 col2" id="T_96e4f_level0_col2">C</th>
-<th class="col_heading level0 col3" id="T_96e4f_level0_col3">D</th>
-<th class="col_heading level0 col4" id="T_96e4f_level0_col4">E</th>
-<th class="col_heading level0 col5" id="T_96e4f_level0_col5">F</th>
-<th class="col_heading level0 col6" id="T_96e4f_level0_col6">G</th>
-<th class="col_heading level0 col7" id="T_96e4f_level0_col7">H</th>
+<th class="col_heading level0 col0" id="T_b384a_level0_col0">A</th>
+<th class="col_heading level0 col1" id="T_b384a_level0_col1">B</th>
+<th class="col_heading level0 col2" id="T_b384a_level0_col2">C</th>
+<th class="col_heading level0 col3" id="T_b384a_level0_col3">D</th>
+<th class="col_heading level0 col4" id="T_b384a_level0_col4">E</th>
+<th class="col_heading level0 col5" id="T_b384a_level0_col5">F</th>
+<th class="col_heading level0 col6" id="T_b384a_level0_col6">G</th>
+<th class="col_heading level0 col7" id="T_b384a_level0_col7">H</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<th class="row_heading level0 row0" id="T_96e4f_level0_row0">1  b923864  Fix silent failure modes in the solvers and aggregator core</th>
-<td class="data row0 col0" id="T_96e4f_row0_col0">CRASH</td>
-<td class="data row0 col1" id="T_96e4f_row0_col1">PASS</td>
-<td class="data row0 col2" id="T_96e4f_row0_col2">PASS</td>
-<td class="data row0 col3" id="T_96e4f_row0_col3">TIMEOUT</td>
-<td class="data row0 col4" id="T_96e4f_row0_col4">TIMEOUT</td>
-<td class="data row0 col5" id="T_96e4f_row0_col5">CRASH</td>
-<td class="data row0 col6" id="T_96e4f_row0_col6">CRASH</td>
-<td class="data row0 col7" id="T_96e4f_row0_col7"></td>
+<th class="row_heading level0 row0" id="T_b384a_level0_row0">1  b923864  Fix silent failure modes in the solvers and aggregator core</th>
+<td class="data row0 col0" id="T_b384a_row0_col0">CRASH</td>
+<td class="data row0 col1" id="T_b384a_row0_col1">PASS</td>
+<td class="data row0 col2" id="T_b384a_row0_col2">PASS</td>
+<td class="data row0 col3" id="T_b384a_row0_col3">TIMEOUT</td>
+<td class="data row0 col4" id="T_b384a_row0_col4">TIMEOUT</td>
+<td class="data row0 col5" id="T_b384a_row0_col5">CRASH</td>
+<td class="data row0 col6" id="T_b384a_row0_col6">CRASH</td>
+<td class="data row0 col7" id="T_b384a_row0_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row1" id="T_96e4f_level0_row1">2  6443b32  Fix correctness bugs in components, correlations and property fits</th>
-<td class="data row1 col0" id="T_96e4f_row1_col0">CRASH</td>
-<td class="data row1 col1" id="T_96e4f_row1_col1">PASS</td>
-<td class="data row1 col2" id="T_96e4f_row1_col2">PASS</td>
-<td class="data row1 col3" id="T_96e4f_row1_col3">TIMEOUT</td>
-<td class="data row1 col4" id="T_96e4f_row1_col4">TIMEOUT</td>
-<td class="data row1 col5" id="T_96e4f_row1_col5">CRASH</td>
-<td class="data row1 col6" id="T_96e4f_row1_col6">CRASH</td>
-<td class="data row1 col7" id="T_96e4f_row1_col7"></td>
+<th class="row_heading level0 row1" id="T_b384a_level0_row1">2  6443b32  Fix correctness bugs in components, correlations and property fits</th>
+<td class="data row1 col0" id="T_b384a_row1_col0">CRASH</td>
+<td class="data row1 col1" id="T_b384a_row1_col1">PASS</td>
+<td class="data row1 col2" id="T_b384a_row1_col2">PASS</td>
+<td class="data row1 col3" id="T_b384a_row1_col3">TIMEOUT</td>
+<td class="data row1 col4" id="T_b384a_row1_col4">TIMEOUT</td>
+<td class="data row1 col5" id="T_b384a_row1_col5">CRASH</td>
+<td class="data row1 col6" id="T_b384a_row1_col6">CRASH</td>
+<td class="data row1 col7" id="T_b384a_row1_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row2" id="T_96e4f_level0_row2">3  de6a2ff  Smooth residual discontinuities and rework event handling</th>
-<td class="data row2 col0" id="T_96e4f_row2_col0">CRASH</td>
-<td class="data row2 col1" id="T_96e4f_row2_col1">PASS</td>
-<td class="data row2 col2" id="T_96e4f_row2_col2">PASS</td>
-<td class="data row2 col3" id="T_96e4f_row2_col3">PASS</td>
-<td class="data row2 col4" id="T_96e4f_row2_col4">PASS</td>
-<td class="data row2 col5" id="T_96e4f_row2_col5">PASS</td>
-<td class="data row2 col6" id="T_96e4f_row2_col6">PASS</td>
-<td class="data row2 col7" id="T_96e4f_row2_col7"></td>
+<th class="row_heading level0 row2" id="T_b384a_level0_row2">3  de6a2ff  Smooth residual discontinuities and rework event handling</th>
+<td class="data row2 col0" id="T_b384a_row2_col0">CRASH</td>
+<td class="data row2 col1" id="T_b384a_row2_col1">PASS</td>
+<td class="data row2 col2" id="T_b384a_row2_col2">PASS</td>
+<td class="data row2 col3" id="T_b384a_row2_col3">PASS</td>
+<td class="data row2 col4" id="T_b384a_row2_col4">PASS</td>
+<td class="data row2 col5" id="T_b384a_row2_col5">PASS</td>
+<td class="data row2 col6" id="T_b384a_row2_col6">PASS</td>
+<td class="data row2 col7" id="T_b384a_row2_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row3" id="T_96e4f_level0_row3">4  e14e18f  Globalize the steady-state solve and stop saturated runs loudly</th>
-<td class="data row3 col0" id="T_96e4f_row3_col0">PASS</td>
-<td class="data row3 col1" id="T_96e4f_row3_col1">PASS</td>
-<td class="data row3 col2" id="T_96e4f_row3_col2">PASS</td>
-<td class="data row3 col3" id="T_96e4f_row3_col3">PASS</td>
-<td class="data row3 col4" id="T_96e4f_row3_col4">PASS</td>
-<td class="data row3 col5" id="T_96e4f_row3_col5">PASS</td>
-<td class="data row3 col6" id="T_96e4f_row3_col6">PASS</td>
-<td class="data row3 col7" id="T_96e4f_row3_col7"></td>
+<th class="row_heading level0 row3" id="T_b384a_level0_row3">4  e14e18f  Globalize the steady-state solve and stop saturated runs loudly</th>
+<td class="data row3 col0" id="T_b384a_row3_col0">PASS</td>
+<td class="data row3 col1" id="T_b384a_row3_col1">PASS</td>
+<td class="data row3 col2" id="T_b384a_row3_col2">PASS</td>
+<td class="data row3 col3" id="T_b384a_row3_col3">PASS</td>
+<td class="data row3 col4" id="T_b384a_row3_col4">PASS</td>
+<td class="data row3 col5" id="T_b384a_row3_col5">PASS</td>
+<td class="data row3 col6" id="T_b384a_row3_col6">PASS</td>
+<td class="data row3 col7" id="T_b384a_row3_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row4" id="T_96e4f_level0_row4">5  8ce7266  Make solver failures speak domain terms</th>
-<td class="data row4 col0" id="T_96e4f_row4_col0">PASS</td>
-<td class="data row4 col1" id="T_96e4f_row4_col1">PASS</td>
-<td class="data row4 col2" id="T_96e4f_row4_col2">PASS</td>
-<td class="data row4 col3" id="T_96e4f_row4_col3">PASS</td>
-<td class="data row4 col4" id="T_96e4f_row4_col4">PASS</td>
-<td class="data row4 col5" id="T_96e4f_row4_col5">PASS</td>
-<td class="data row4 col6" id="T_96e4f_row4_col6">PASS</td>
-<td class="data row4 col7" id="T_96e4f_row4_col7"></td>
+<th class="row_heading level0 row4" id="T_b384a_level0_row4">5  8ce7266  Make solver failures speak domain terms</th>
+<td class="data row4 col0" id="T_b384a_row4_col0">PASS</td>
+<td class="data row4 col1" id="T_b384a_row4_col1">PASS</td>
+<td class="data row4 col2" id="T_b384a_row4_col2">PASS</td>
+<td class="data row4 col3" id="T_b384a_row4_col3">PASS</td>
+<td class="data row4 col4" id="T_b384a_row4_col4">PASS</td>
+<td class="data row4 col5" id="T_b384a_row4_col5">PASS</td>
+<td class="data row4 col6" id="T_b384a_row4_col6">PASS</td>
+<td class="data row4 col7" id="T_b384a_row4_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row5" id="T_96e4f_level0_row5">6  0273f48  Validate systems at construction time</th>
-<td class="data row5 col0" id="T_96e4f_row5_col0">PASS</td>
-<td class="data row5 col1" id="T_96e4f_row5_col1">PASS</td>
-<td class="data row5 col2" id="T_96e4f_row5_col2">PASS</td>
-<td class="data row5 col3" id="T_96e4f_row5_col3">PASS</td>
-<td class="data row5 col4" id="T_96e4f_row5_col4">PASS</td>
-<td class="data row5 col5" id="T_96e4f_row5_col5">PASS</td>
-<td class="data row5 col6" id="T_96e4f_row5_col6">PASS</td>
-<td class="data row5 col7" id="T_96e4f_row5_col7"></td>
+<th class="row_heading level0 row5" id="T_b384a_level0_row5">6  0273f48  Validate systems at construction time</th>
+<td class="data row5 col0" id="T_b384a_row5_col0">PASS</td>
+<td class="data row5 col1" id="T_b384a_row5_col1">PASS</td>
+<td class="data row5 col2" id="T_b384a_row5_col2">PASS</td>
+<td class="data row5 col3" id="T_b384a_row5_col3">PASS</td>
+<td class="data row5 col4" id="T_b384a_row5_col4">PASS</td>
+<td class="data row5 col5" id="T_b384a_row5_col5">PASS</td>
+<td class="data row5 col6" id="T_b384a_row5_col6">PASS</td>
+<td class="data row5 col7" id="T_b384a_row5_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row6" id="T_96e4f_level0_row6">7  007f947  Guard the physics wrappers, quiet healthy runs, add a failure-modes guide</th>
-<td class="data row6 col0" id="T_96e4f_row6_col0">PASS</td>
-<td class="data row6 col1" id="T_96e4f_row6_col1">PASS</td>
-<td class="data row6 col2" id="T_96e4f_row6_col2">PASS</td>
-<td class="data row6 col3" id="T_96e4f_row6_col3">PASS</td>
-<td class="data row6 col4" id="T_96e4f_row6_col4">PASS</td>
-<td class="data row6 col5" id="T_96e4f_row6_col5">PASS</td>
-<td class="data row6 col6" id="T_96e4f_row6_col6">PASS</td>
-<td class="data row6 col7" id="T_96e4f_row6_col7"></td>
+<th class="row_heading level0 row6" id="T_b384a_level0_row6">7  007f947  Guard the physics wrappers, quiet healthy runs, add a failure-modes guide</th>
+<td class="data row6 col0" id="T_b384a_row6_col0">PASS</td>
+<td class="data row6 col1" id="T_b384a_row6_col1">PASS</td>
+<td class="data row6 col2" id="T_b384a_row6_col2">PASS</td>
+<td class="data row6 col3" id="T_b384a_row6_col3">PASS</td>
+<td class="data row6 col4" id="T_b384a_row6_col4">PASS</td>
+<td class="data row6 col5" id="T_b384a_row6_col5">PASS</td>
+<td class="data row6 col6" id="T_b384a_row6_col6">PASS</td>
+<td class="data row6 col7" id="T_b384a_row6_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row7" id="T_96e4f_level0_row7">8  978e7c8  Correct CHF orientation under reversed flow; adiabatic wall-less channels</th>
-<td class="data row7 col0" id="T_96e4f_row7_col0">PASS</td>
-<td class="data row7 col1" id="T_96e4f_row7_col1">PASS</td>
-<td class="data row7 col2" id="T_96e4f_row7_col2">PASS</td>
-<td class="data row7 col3" id="T_96e4f_row7_col3">PASS</td>
-<td class="data row7 col4" id="T_96e4f_row7_col4">PASS</td>
-<td class="data row7 col5" id="T_96e4f_row7_col5">PASS</td>
-<td class="data row7 col6" id="T_96e4f_row7_col6">PASS</td>
-<td class="data row7 col7" id="T_96e4f_row7_col7"></td>
+<th class="row_heading level0 row7" id="T_b384a_level0_row7">8  978e7c8  Correct CHF orientation under reversed flow; adiabatic wall-less channels</th>
+<td class="data row7 col0" id="T_b384a_row7_col0">PASS</td>
+<td class="data row7 col1" id="T_b384a_row7_col1">PASS</td>
+<td class="data row7 col2" id="T_b384a_row7_col2">PASS</td>
+<td class="data row7 col3" id="T_b384a_row7_col3">PASS</td>
+<td class="data row7 col4" id="T_b384a_row7_col4">PASS</td>
+<td class="data row7 col5" id="T_b384a_row7_col5">PASS</td>
+<td class="data row7 col6" id="T_b384a_row7_col6">PASS</td>
+<td class="data row7 col7" id="T_b384a_row7_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row8" id="T_96e4f_level0_row8">9  a07ccb1  Compose forced and natural convection monotonically in the HTC</th>
-<td class="data row8 col0" id="T_96e4f_row8_col0">PASS</td>
-<td class="data row8 col1" id="T_96e4f_row8_col1">PASS</td>
-<td class="data row8 col2" id="T_96e4f_row8_col2">PASS</td>
-<td class="data row8 col3" id="T_96e4f_row8_col3">PASS</td>
-<td class="data row8 col4" id="T_96e4f_row8_col4">PASS</td>
-<td class="data row8 col5" id="T_96e4f_row8_col5">PASS</td>
-<td class="data row8 col6" id="T_96e4f_row8_col6">PASS</td>
-<td class="data row8 col7" id="T_96e4f_row8_col7"></td>
+<th class="row_heading level0 row8" id="T_b384a_level0_row8">9  a07ccb1  Compose forced and natural convection monotonically in the HTC</th>
+<td class="data row8 col0" id="T_b384a_row8_col0">PASS</td>
+<td class="data row8 col1" id="T_b384a_row8_col1">PASS</td>
+<td class="data row8 col2" id="T_b384a_row8_col2">PASS</td>
+<td class="data row8 col3" id="T_b384a_row8_col3">PASS</td>
+<td class="data row8 col4" id="T_b384a_row8_col4">PASS</td>
+<td class="data row8 col5" id="T_b384a_row8_col5">PASS</td>
+<td class="data row8 col6" id="T_b384a_row8_col6">PASS</td>
+<td class="data row8 col7" id="T_b384a_row8_col7"></td>
 </tr>
 <tr>
-<th class="row_heading level0 row9" id="T_96e4f_level0_row9">11  66926e7  Add a steady-state guess toolkit</th>
-<td class="data row9 col0" id="T_96e4f_row9_col0">PASS</td>
-<td class="data row9 col1" id="T_96e4f_row9_col1">PASS</td>
-<td class="data row9 col2" id="T_96e4f_row9_col2">PASS</td>
-<td class="data row9 col3" id="T_96e4f_row9_col3">PASS</td>
-<td class="data row9 col4" id="T_96e4f_row9_col4">PASS</td>
-<td class="data row9 col5" id="T_96e4f_row9_col5">PASS</td>
-<td class="data row9 col6" id="T_96e4f_row9_col6">PASS</td>
-<td class="data row9 col7" id="T_96e4f_row9_col7">PASS</td>
+<th class="row_heading level0 row9" id="T_b384a_level0_row9">11  15e15ec  Add a steady-state guess toolkit</th>
+<td class="data row9 col0" id="T_b384a_row9_col0">PASS</td>
+<td class="data row9 col1" id="T_b384a_row9_col1">PASS</td>
+<td class="data row9 col2" id="T_b384a_row9_col2">PASS</td>
+<td class="data row9 col3" id="T_b384a_row9_col3">PASS</td>
+<td class="data row9 col4" id="T_b384a_row9_col4">PASS</td>
+<td class="data row9 col5" id="T_b384a_row9_col5">PASS</td>
+<td class="data row9 col6" id="T_b384a_row9_col6">PASS</td>
+<td class="data row9 col7" id="T_b384a_row9_col7">PASS</td>
 </tr>
 </tbody>
 </table>
@@ -7995,7 +7998,7 @@ reverted alone on the branch tip and the two hardest stages were run again.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=98f85ee1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=70af1bfc">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8006,7 +8009,8 @@ guess at 1 kW; C, choreographed transient at loose tolerance; D, flapper opening
 output grid; E, tight-tolerance transient; F, single channel at full power with a ramped scram; G, the
 general four-channel case; H, the guess toolkit on that case. Two unrelated commits of the original
 series (loss-of-coolant transients and the visualization module) were left out of this branch and are
-dropped from the table.</p>
+dropped from the table. The branch's toolkit commit, 15e15ec, is a cherry-pick of the series' 66926e7, and
+its row is labelled with the branch's id.</p>
 <p>The two regression guards pass throughout. At commit 1 the four-channel steady state cannot be solved
 from the ballpark guess, the single-channel transient dies in the coastdown at 28 s, and the
 tight-tolerance runs do not finish. At commit 2 the four-channel steady state solves and its transient
@@ -8016,7 +8020,7 @@ single-channel power. Nothing changes afterwards, and the guess-toolkit stage ar
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=dbc62b20">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=67ea58e7">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8117,7 +8121,7 @@ single-channel power. Nothing changes afterwards, and the guess-toolkit stage ar
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=7be742aa">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=6eff94a5">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8126,7 +8130,9 @@ single-channel power. Nothing changes afterwards, and the guess-toolkit stage ar
 <p>Reverting the CHF fix, the heat-transfer commit or the toolkit leaves both stages passing with the same
 numbers. The three legibility commits cannot be reverted alone because later code builds on them; that
 they are not needed rests on commit 4 passing every stage before they exist.</p>
-<h2 id="Needed">Needed<a class="anchor-link" href="#Needed">¶</a></h2><p><strong>b923864, silent failures in the solvers and core.</strong> This is the commit that adds the LOFA benchmark
+<h2 id="Needed">Needed<a class="anchor-link" href="#Needed">¶</a></h2><p>The data show that the first four commits are the minimal starting set for the LOFA; they do not show
+that the tip needs each individual fix inside commits 1 and 2.</p>
+<p><strong>b923864, silent failures in the solvers and core.</strong> This is the commit that adds the LOFA benchmark
 ladder, and the core fixes the next three are built on (commits 3 and 4 edit nine of the library files
 that commits 1 and 2 touch). A failed ODE integration used to come back as a result and now raises; a quasi-static run that
 stopped early now returns only the times it actually covered. On this case's path: the finite-difference
@@ -8164,7 +8170,7 @@ same components as <code>showcase/lofa_case.py</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=9234bc13">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=ec1dcdd4">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8191,7 +8197,7 @@ same components as <code>showcase/lofa_case.py</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=217743dd">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell jp-mod-noOutputs" id="cell-id=4f852212">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8221,7 +8227,7 @@ same components as <code>showcase/lofa_case.py</code>.</p>
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=02f5c0d1">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=e420f7a0">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8231,7 +8237,7 @@ same components as <code>showcase/lofa_case.py</code>.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=50d965de">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=d98443c9">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8269,18 +8275,19 @@ The following is a report of those loop components and their aggregate pressure 
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=5ae9786b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=a6ec685b">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>The pump leg is built without <code>ref_mdot_for</code>, so the flapper never receives the flow it watches. The
-steady state does not need it; the first event evaluation of the transient does.</p>
+<p>The pump leg is built without <code>ref_mdot_for</code>, so the flapper never receives the flow it watches.
+Construction does not catch this one: the system builds, the steady state solves because it does not
+need that flow, and the first event evaluation of the transient fails with a TypeError.</p>
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=f5cf0dd9">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=07ffd3bf">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8319,7 +8326,7 @@ while evaluating Calculation 'Flapper' (Flapper).event_margin at t=0.0
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=910cdc7e">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=9d90852d">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8329,7 +8336,7 @@ while evaluating Calculation 'Flapper' (Flapper).event_margin at t=0.0
 </div>
 </div>
 </div>
-</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=19361311">
+</div><div class="jp-Cell jp-CodeCell jp-Notebook-cell" id="cell-id=ccbc359e">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
@@ -8363,14 +8370,15 @@ HotFuel has no 'power' func and no entry in powers; its steady power cannot be r
 </div>
 </div>
 </div>
-<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=22e9c15b">
+<div class="jp-Cell jp-MarkdownCell jp-Notebook-cell" id="cell-id=cb8a2459">
 <div class="jp-Cell-inputWrapper" tabindex="0">
 <div class="jp-Collapser jp-InputCollapser jp-Cell-inputCollapser">
 </div>
 <div class="jp-InputArea jp-Cell-inputArea"><div class="jp-InputPrompt jp-InputArea-prompt">
 </div><div class="jp-RenderedHTMLCommon jp-RenderedMarkdown jp-MarkdownOutput" data-mime-type="text/markdown">
-<p>Each message names the component and what it is missing or what does not balance, and the guess error
-also says what to pass.</p>
+<p>Each message points at the components involved, and the guess error also says what to pass.
+Construction rejects some mis-wirings, not all: the missing flow reference got through it and surfaced
+only when the transient started.</p>
 <p>The full description of every change, with the tests that pin it, is in the commit messages on this
 branch.</p>
 </div>

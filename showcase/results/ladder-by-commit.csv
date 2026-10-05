@@ -69,14 +69,14 @@ index,sha,subject,stage,status,wall_s,detail
 10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",E,PASS,143.9,opened + reversed at tight tolerance
 10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",F,PASS,10.3,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
 10,fa24681,"Loss-of-coolant transients: free-surface networks, tanks, breaks, siphons",G,PASS,26.3,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
-11,66926e7,Add a steady-state guess toolkit,A,PASS,5.8,"T_out ok=True, wall>cool=True"
-11,66926e7,Add a steady-state guess toolkit,B,PASS,4.0,"T_out ok=True, wall>cool=True"
-11,66926e7,Add a steady-state guess toolkit,C,PASS,8.4,opened + reversed
-11,66926e7,Add a steady-state guess toolkit,D,PASS,423.9,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
-11,66926e7,Add a steady-state guess toolkit,E,PASS,141.1,opened + reversed at tight tolerance
-11,66926e7,Add a steady-state guess toolkit,F,PASS,10.5,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
-11,66926e7,Add a steady-state guess toolkit,G,PASS,28.7,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
-11,66926e7,Add a steady-state guess toolkit,H,PASS,11.4,expert: scipy hybr from ‖F‖=3.76e+04; ballpark: scipy hybr from ‖F‖=1.38e+05; seed: scipy hybr from ‖F‖=7.42e+04; refined: scipy hybr from ‖F‖=10.8
+11,15e15ec,Add a steady-state guess toolkit,A,PASS,5.8,"T_out ok=True, wall>cool=True"
+11,15e15ec,Add a steady-state guess toolkit,B,PASS,4.0,"T_out ok=True, wall>cool=True"
+11,15e15ec,Add a steady-state guess toolkit,C,PASS,8.4,opened + reversed
+11,15e15ec,Add a steady-state guess toolkit,D,PASS,423.9,complete=True; tight-tol spread 4.92e-05s (GATE <=0.02); loose-tol spread 0.0280s (informational)
+11,15e15ec,Add a steady-state guess toolkit,E,PASS,141.1,opened + reversed at tight tolerance
+11,15e15ec,Add a steady-state guess toolkit,F,PASS,10.5,"steady[T_out ok=True, wall>cool=True]; t_open=25.437452167012264, rev=34.0, peak=112.76C, margin=+7.53C (sat 120.3)"
+11,15e15ec,Add a steady-state guess toolkit,G,PASS,28.7,reached=2500s; t_rev hot/warm/wide=816.0/1176.0/1508.0; hot<warm=True; bypass=+0.00722; peak=107.14C margin=+13.15C (sat 120.3)
+11,15e15ec,Add a steady-state guess toolkit,H,PASS,11.4,expert: scipy hybr from ‖F‖=3.76e+04; ballpark: scipy hybr from ‖F‖=1.38e+05; seed: scipy hybr from ‖F‖=7.42e+04; refined: scipy hybr from ‖F‖=10.8
 12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,A,PASS,5.8,"T_out ok=True, wall>cool=True"
 12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,B,PASS,4.0,"T_out ok=True, wall>cool=True"
 12,5e10dc3,Add stream.viz: figures and tidy data from steady-state sweeps,C,PASS,8.2,opened + reversed

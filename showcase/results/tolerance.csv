@@ -1,13 +1,13 @@
 p_power_scale,p_power_full_hot,p_power_full_warm,p_power_full_wide,p_gap_hot,p_gap_warm,p_gap_wide,p_gap_bypass,p_pump_head,p_inertia,p_hx_outlet,p_p_ref,p_flapper_fraction,p_flapper_area,p_friction,p_htc,p_t_scram,p_ramp_width,p_z_n,p_stop_at_saturation,status,error,n_warnings,warnings,residual_entry,residual_steady,mdot_hot,mdot_warm,mdot_wide,mdot_bypass,mdot_pump,T_out_hot,t_open,t_rev_hot,t_rev_warm,t_rev_wide,peak_hot,peak_warm,peak_wide,margin,final_hot,final_warm,final_wide,final_bypass,t_last,wall_s,steady_dist,traceback,axis,label,guess_kind,seed,band,atol_rel,rtol,t_end,n
 0.7,84000.0,33600.0,50000.0,0.002,0.002,0.003,0.004,35000.0,300000.0,40.0,200000.0,0.3,0.001,regime,dittus,3.0,0.5,10,True,failed,"TransientRuntimeError: At t = 286.00000: IDA IDA_CONV_FAIL(-4): Convergence test failures occurred too many times during one internal time step or minimum step size was reached. — the modified-Newton corrector could not converge and the step fell to hmin (a stiff transient, or a tolerance the integrator cannot hold)",0,,10.778855707125311,3.2014912767777907e-10,0.5391701583864644,0.5304971477978473,1.0482775738082843,1.678686619035017,3.796631499027613,66.07201060580906,92.9752985289476,,,,66.0720106058091,50.6062378102078,47.98794005072559,54.22200892284209,0.0500664758052469,0.0501045622708559,0.0917719288767757,0.1499946331500376,286.0,11.04793044300095,,"Traceback (most recent call last):
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/showcase/lofa_case.py"", line 397, in run
+  File ""showcase/lofa_case.py"", line 397, in run
     sol = transient(agr, refs, y, t_end=t_end, n=n, atol_rel=atol_rel, rtol=rtol)
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/showcase/lofa_case.py"", line 277, in transient
+  File ""showcase/lofa_case.py"", line 277, in transient
     return agr.solve(y_steady, time=np.linspace(0.0, t_end, n), jacfn=DAE_jacobian(agr),
            ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
                      atol=agr.scaled_atol(atol_rel), rtol=rtol, max_steps=1_000_000)
                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/aggregator/aggregator.py"", line 1288, in solve
+  File ""stream/aggregator/aggregator.py"", line 1288, in solve
     data, time = differential_algebraic(
                  ~~~~~~~~~~~~~~~~~~~~~~^
         F=self.compute,
@@ -17,14 +17,14 @@ p_power_scale,p_power_full_hot,p_power_full_warm,p_power_full_wide,p_gap_hot,p_g
         ^^^^^^^^^^
     )
     ^
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 189, in differential_algebraic
+  File ""stream/solvers.py"", line 189, in differential_algebraic
     return _event_loop_dae(solve, time, y0, yp0, on_event, continuous)
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 340, in _event_loop_dae
+  File ""stream/solvers.py"", line 340, in _event_loop_dae
     solution = solve(remaining, y_cur, yp_cur)
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 267, in solve
+  File ""stream/solvers.py"", line 267, in solve
     _ida_post_solution(sol_)
     ~~~~~~~~~~~~~~~~~~^^^^^^
-  File ""/home/itay/.claude/projects/-home-itay-projects-STREAM/tools/showcase/wt/demo/stream/solvers.py"", line 208, in _ida_post_solution
+  File ""stream/solvers.py"", line 208, in _ida_post_solution
     raise TransientRuntimeError(*solution.values, message, flag=flag, symbol=symbol)
 stream.solvers.TransientRuntimeError: At t = 286.00000: IDA IDA_CONV_FAIL(-4): Convergence test failures occurred too many times during one internal time step or minimum step size was reached. — the modified-Newton corrector could not converge and the step fell to hmin (a stiff transient, or a tolerance the integrator cannot hold)
 worst scaled residuals: Tin of 'GravityFlapper': 1.774e-01, Tin of 'ResistFlap': 1.502e-01, Tin of 'Flapper': -1.265e-01

@@ -13,7 +13,7 @@ Read them in order:
 
 ## Opening them
 
-Inside the `stream-env` environment, run `jupyter lab showcase/` from the repository root. Without any environment, open the files in `showcase/html/` in a browser; that directory holds HTML exports of the executed notebooks.
+Inside the `stream-env` environment, run `jupyter lab showcase/` from the repository root. Jupyter starts each kernel in `showcase/`, and `pip install -e .` installs only `stream`, so the notebooks need the repository root on the path; the first cell of each notebook puts it there, and no PYTHONPATH is needed. Without any environment, open the files in `showcase/html/` in a browser; that directory holds HTML exports of the executed notebooks.
 
 ## Re-running a sweep
 
