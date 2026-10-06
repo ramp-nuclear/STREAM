@@ -387,6 +387,8 @@ class Bend(LumpedComponent):
         self._relative_curvature = bend_radius / hydraulic_diameter
 
     def dp_out(self, *, mdot: KgPerS, Tin: Celsius, **_) -> Pascal:
+        if mdot == 0:
+            return np.zeros_like(Tin, dtype=float)
         re = Re_mdot(mdot, self.area, self.hydraulic_diameter, self._visc(Tin))
 
         f = self.f_func(re)
