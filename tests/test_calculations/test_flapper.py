@@ -3,6 +3,7 @@ import pytest
 from hypothesis import given, settings
 
 from stream.calculations import Flapper
+from stream.calculations.flapper import continuously_differentiable_relaxation
 from stream.substances import light_water
 from stream.utilities import directed_Tin
 
@@ -50,4 +51,38 @@ def test_flapper_should_not_continue_at_opening_condition():
     F.change_state([0, 0], ref_mdot=0.5, t=100.0)
     assert not F.should_continue([0, 0], ref_mdot=0.5, t=100.0)
     assert F.t_open == 100.0
-    assert F.should_continue([0, 0], ref_mdot=0.5, t=101.0)
+    assert not F.should_continue([0, 0], ref_mdot=0.5, t=101.0)
+
+
+def test_flapper_change_state_is_idempotent_and_margin_is_consumed():
+    """change_state latches the opening once and stays latched when re-evaluated
+    at the same or a later time, and the event margin is consumed after opening."""
+    F = Flapper(open_at_current=1.0, f=2.0, fluid=light_water, area=1, open_rate=1.0)
+    assert F.event_margin([0, 0], ref_mdot=2.0) > 0
+    F.change_state([0, 0], ref_mdot=0.5, t=100.0)
+    assert F.t_open == 100.0
+    assert F._latched
+    F.change_state([0, 0], ref_mdot=0.5, t=100.0)
+    F.change_state([0, 0], ref_mdot=0.05, t=100.0)
+    assert F.t_open == 100.0
+    assert F.event_margin([0, 0], ref_mdot=0.5) == 1.0
+
+
+def test_flapper_residual_is_continuous_in_time_across_opening():
+    """The temperature residual does not jump at t_open: the inlet temperature is
+    blended with the relaxation ramp, so just after opening it matches the closed
+    branch even when Tin and Tin_minus differ."""
+    F = Flapper(
+        open_at_current=1.0,
+        f=2.0,
+        fluid=light_water,
+        area=1,
+        open_rate=1.0,
+        relaxation=continuously_differentiable_relaxation,
+    )
+    F.open(10.0)
+    Tin, Tin_minus = 100.0, 50.0
+    kw = {"mdot": 0.0, "Tin": Tin, "Tin_minus": Tin_minus}
+    closed = F.calculate([0.0, -1.0], t=10.0, **kw)
+    just_open = F.calculate([0.0, -1.0], t=10.0 + 1e-9, **kw)
+    assert abs(just_open[0] - closed[0]) < 1e-3
