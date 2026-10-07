@@ -14,8 +14,9 @@ system objects as nodes, and connected by edges depicting the connected cycles.
 """
 
 import logging
-from itertools import chain, count, takewhile
-from typing import Any, Callable, Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
+from itertools import chain, count, repeat, takewhile
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -25,6 +26,7 @@ from networkx.utils import pairwise
 from scipy.sparse import csr_matrix, dok_matrix
 
 from stream import Calculation
+from stream.smoothing import DEFAULT_MDOT_EPS, soft_pos
 from stream.units import Array1D, Celsius, KgPerS, Name, Pascal, Place
 from stream.utilities import STREAM_DEBUG, concat
 
@@ -441,7 +443,12 @@ class Junction(Calculation):
 
     _counter = count()
 
-    def __init__(self, name: str = None, weights: dict[Calculation, float] = None):
+    def __init__(
+        self,
+        name: str = None,
+        weights: dict[Calculation, float] = None,
+        mdot_eps: KgPerS | None = None,
+    ):
         r"""
 
         Parameters
@@ -452,10 +459,15 @@ class Junction(Calculation):
          Calculations which lie on edges whose weight (also known as the ``signify``
          keyword, see :func:`~stream.composition.cycle.flow_edge`) differs from 1 must
          be specified so that the correct total incoming mass flows are considered.
+        mdot_eps : KgPerS or None
+         Half-width of the direction-blending band around ``mdot = 0`` used when
+         soft-rectifying the incoming mass flows. ``None`` uses
+         ``stream.smoothing.DEFAULT_MDOT_EPS``.
         """
         self._i = next(Junction._counter)
         self.weights = weights if weights is not None else {}
         self.name = name or f"J{self._i}"
+        self.mdot_eps = mdot_eps
 
     def indices(self, variable: Name, asking=None) -> Place:
         allowed = {"Tin", "Tin_minus"}
@@ -489,7 +501,12 @@ class Junction(Calculation):
         defined as
 
         .. math::
-            T = \frac{\sum\dot{m}_\text{in}T_\text{in}}{\sum\dot{m}_\text{in}}
+            T = \frac{\sum_k w_k\, p(\pm\dot{m}_k)\, T_k}{\sum_k w_k\, p(\pm\dot{m}_k)}
+
+        where :math:`p = \mathrm{soft\_pos}` is the strictly positive smooth
+        positive part (:func:`stream.smoothing.soft_pos`), the sign is ``+`` for
+        upstream (``Tin``) streams and ``-`` for downstream (``Tin_minus``)
+        streams, and :math:`w_k` is the ``signify`` weight.
 
         Parameters
         ----------
@@ -506,18 +523,26 @@ class Junction(Calculation):
         -------
         out: Array1D
             Divergence of ``variables`` from the computed total mixing
+
+        Notes
+        -----
+        Because ``soft_pos`` is strictly positive, the denominator never
+        vanishes, so the residual is smooth in ``mdot``; away from the
+        ``mdot_eps``-wide band it is close to the hard ``mdot >= 0`` selection.
+        At total stagnation every weight collapses to ``eps/2`` and the target
+        becomes the weighted mean of all neighbour temperatures. Widen the band
+        per junction with ``mdot_eps``.
         """
 
-        def _f(_g: Callable[[Calculation, float, float], float]) -> float:
-            return sum(_g(k, v, T) for k, T in Tin.items() if (v := mdot[k]) >= 0) - sum(
-                _g(k, v, T) for k, T in Tin_minus.items() if (v := mdot[k]) < 0
-            )
+        eps = self.mdot_eps if self.mdot_eps is not None else DEFAULT_MDOT_EPS
 
-        incoming_mdot = _f(lambda k, md, T: md * self.weights.get(k, 1.0))
-        weighted_Tin = _f(lambda k, md, T: md * T * self.weights.get(k, 1.0))
-        weighted_Tin /= incoming_mdot or 1.0
+        pT = [
+            (self.weights.get(k, 1.0) * soft_pos(sgn * mdot[k], eps), T)
+            for sgn, (k, T) in chain(zip(repeat(1), Tin.items()), zip(repeat(-1), Tin_minus.items()))
+        ]
+        D, N = sum(p for p, _ in pT), sum(p * T for p, T in pT)
 
-        return weighted_Tin - np.asarray(variables)
+        return N / D - np.asarray(variables)
 
 
 def to_str(key: str | tuple) -> str:

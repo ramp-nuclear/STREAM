@@ -861,8 +861,9 @@ def test_inertia_with_transistor_in_PCS_coastdown():
     flywheel = Inertia(inertia=1e3)
     pump = Pump(mdot0=(mdot0 := 1.0))
     R = VolumetricFlowResistor(k=k1, density_func=just(1.0), name="R")
-    A = Junction("A")
-    B = Junction("B")
+    # the high-resistance branch carries ~3.2e-4 kg/s, below the default mdot_eps
+    A = Junction("A", mdot_eps=1e-4)
+    B = Junction("B", mdot_eps=1e-4)
 
     fg = flow_graph(
         flow_edge((A, B), pump, flywheel),
