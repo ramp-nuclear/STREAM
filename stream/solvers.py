@@ -102,6 +102,8 @@ def differential_algebraic(
     on_event: Callable | None
         ``on_event(t_root, y_root, ydot_root) -> bool`` applied at each confirmed
         root: it performs the state transition and returns whether to continue.
+        An exception it raises propagates with the trajectory up to and including
+        the root attached as ``t`` and ``y``.
     continuous: bool
         Controls what a stop request (``on_event`` returning ``False``) does. With
         ``continuous=False`` (default) it stops the run; with ``True`` the run
@@ -167,6 +169,12 @@ def _dae_setup(
     return solve, time, y0, yp0
 
 
+def _attach_trajectory(err: BaseException, t: Array1D, y: Array2D) -> None:
+    """Attach the trajectory reached so far to ``err`` as ``err.t`` and ``err.y``,
+    the same attributes a solver failure carries."""
+    err.t, err.y = t, y
+
+
 def _advance_eps(time: Array1D) -> float:
     """A tiny floor the next event time must exceed the previous restart time by,
     so a root that fails to advance raises instead of looping forever."""
@@ -208,7 +216,7 @@ def _event_loop_dae(
                     t_acc.append(e.t[1:])
                     y_acc.append(e.y[1:])
                 if t_acc:
-                    e.t, e.y = concat(*t_acc), concat(*y_acc)
+                    _attach_trajectory(e, concat(*t_acc), concat(*y_acc))
                 raise
         vt, vy, _ = solution.values
         keep_head = 0 if first else 1
@@ -231,7 +239,13 @@ def _event_loop_dae(
                 "aborting to avoid an infinite restart loop.",
             )
 
-        keep_going = on_event(t_root, y_root, yp_root) if on_event is not None else True
+        try:
+            keep_going = on_event(t_root, y_root, yp_root) if on_event is not None else True
+        except Exception as e:
+            t_acc.append(np.array([t_root]))
+            y_acc.append(y_root[None, :])
+            _attach_trajectory(e, concat(*t_acc), concat(*y_acc))
+            raise
         if (not keep_going) and (not continuous):
             t_acc.append(np.array([t_root]))
             y_acc.append(y_root[None, :])

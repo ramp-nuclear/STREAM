@@ -403,3 +403,27 @@ def test_event_loop_raises_instead_of_hanging_on_nonadvancing_root():
             on_event=lambda t, y, yp: True,
             continuous=False,
         )
+
+
+class _Boom(RuntimeError):
+    pass
+
+
+def test_event_loop_dae_on_event_raise_carries_pre_event_trajectory():
+    """When an event handler raises, the exception propagates with the trajectory
+    up to and including the crossing attached as e.t and e.y."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)[:2]
+        y_ = np.tile(np.asarray(y0_, float), (len(t_), 1))
+        root = _FakeRoots(np.array([0.75]), y_[-1:], np.zeros((1, y_.shape[1])))
+        return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
+
+    def on_event(t, y, yp):
+        raise _Boom("guard tripped at the crossing")
+
+    with pytest.raises(_Boom) as exc:
+        _event_loop_dae(solve, np.array([0.0, 0.5, 1.0]), np.array([2.0]), np.zeros(1), on_event=on_event)
+    e = exc.value
+    assert np.array_equal(e.t, [0.0, 0.5, 0.75])
+    assert e.y.shape[0] == len(e.t)
