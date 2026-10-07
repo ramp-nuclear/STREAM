@@ -10,6 +10,7 @@ from cytoolz import unique, valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
+from stream.scales import scale_vector
 from stream.solvers import algebraic, differential, differential_algebraic, quasi_static
 from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
@@ -52,6 +53,24 @@ class ProgressBarLike(Protocol):
     def finish(self) -> None:
         """Method to finalize and close the progressbar."""
         ...
+
+
+def _resolve_typ(agr: "Aggregator", scales: dict[str, float] | Array1D | None) -> Array1D:
+    """Resolve a ``scales`` argument to a length-``N`` nominal-magnitude vector.
+
+    ``None`` uses :data:`~stream.scales.DEFAULT_SCALES` via
+    :func:`~stream.scales.scale_vector`; a ``dict`` is treated as a
+    name -> scale registry; anything else is taken as a ready length-``N`` ``typ``
+    vector (validated against ``len(agr)``).
+    """
+    if scales is None:
+        return scale_vector(agr)
+    if isinstance(scales, dict):
+        return scale_vector(agr, registry=scales)
+    typ = np.asarray(scales, dtype=float)
+    if typ.shape != (len(agr),):
+        raise ValueError(f"scales array has length {len(typ)}; expected {len(agr)} (the state vector length)")
+    return typ
 
 
 class Aggregator:
@@ -622,6 +641,30 @@ class Aggregator:
         if not isinstance(guess, np.ndarray):
             guess = self.load(guess)
         return algebraic(F=self.compute, y0=guess, **options)
+
+    def scaled_atol(self, rel: float = 1e-6, scales: dict[str, float] | Array1D | None = None) -> Array1D:
+        r"""Per-variable absolute tolerance ``rel * typ_j`` for :meth:`solve`.
+
+        Builds a length-``N`` ``atol`` vector aligned to the state vector, for
+        threading into DAE/ODE error control as ``agr.solve(..., atol=...)`` (both
+        IDA and ``solve_ivp`` accept a per-variable array). Opt-in: nothing
+        consumes it implicitly. The ALG steady path has no ``atol`` knob.
+
+        Parameters
+        ----------
+        rel: float, default 1e-6
+            Relative factor multiplying each nominal magnitude.
+        scales: None, dict[str, float] or Array1D, default None
+            Nominal magnitudes: ``None`` -> :data:`~stream.scales.DEFAULT_SCALES`;
+            ``dict`` -> name -> scale registry; length-``N`` array -> used directly
+            (validated against ``len(self)``).
+
+        Returns
+        -------
+        Array1D
+            The vector ``rel * typ``.
+        """
+        return rel * _resolve_typ(self, scales)
 
 
 @dataclass
