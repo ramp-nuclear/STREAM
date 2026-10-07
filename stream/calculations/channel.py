@@ -18,6 +18,7 @@ from stream.physical_models.heat_transfer_coefficient import (
     wall_heat_transfer_coeff,
 )
 from stream.physical_models.pressure_drop import pressure_diff, static_pressure
+from stream.physical_models.thresholds import saturation_margin
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import LiquidFuncs
 from stream.units import (
@@ -33,7 +34,7 @@ from stream.units import (
     WPerM2,
     WPerM2K,
 )
-from stream.utilities import STREAM_DEBUG, directed, directed_Tin, pair_mean_1d
+from stream.utilities import STREAM_DEBUG, directed, directed_Tin, flatten_values, pair_mean_1d
 
 __all__ = [
     "Channel",
@@ -41,7 +42,45 @@ __all__ = [
     "ChannelHeatFlux",
     "ChannelVar",
     "Direction",
+    "SaturationReachedError",
 ]
+
+
+class SaturationReachedError(RuntimeError):
+    """A solve was stopped because a channel's bulk coolant reached saturation.
+
+    The channel model (single-phase forced convection plus subcooled boiling) is
+    valid up to *bulk* saturation. At net boiling the flow becomes two-phase, which
+    is not modelled, and the wall ``h = q/ΔT`` term develops a finite-time pole that
+    otherwise surfaces as an ``IDA_CONV_FAIL``. When raised during a transient the
+    solver attaches the valid pre-crossing trajectory as ``t`` and ``y``.
+
+    Parameters
+    ----------
+    channel: str
+        Name of the channel whose bulk crossed saturation.
+    cells: Sequence[int]
+        Indices of the cells at or past saturation.
+    T_bulk, Tsat: Sequence[float]
+        Bulk and saturation temperatures (°C) at those cells.
+    """
+
+    def __init__(self, channel: Name, cells, T_bulk, Tsat, *args):
+        self.channel = channel
+        self.cells = [int(c) for c in cells]
+        self.T_bulk = [float(v) for v in np.atleast_1d(T_bulk)]
+        self.Tsat = [float(v) for v in np.atleast_1d(Tsat)]
+        worst = int(np.argmax(np.asarray(self.T_bulk) - np.asarray(self.Tsat)))
+        message = (
+            f"Channel {channel!r} reached saturation: bulk coolant in cell(s) "
+            f"{self.cells} is at/above Tsat (worst cell {self.cells[worst]}: "
+            f"T_bulk={self.T_bulk[worst]:.2f}°C >= Tsat={self.Tsat[worst]:.2f}°C). "
+            "STREAM's single-phase model ends at bulk saturation and two-phase flow is "
+            "not modelled, so the solve was stopped here. Reduce power, raise "
+            "pressure, or increase flow to keep the channel subcooled."
+        )
+        super().__init__(message, *args)
+        self.message = message
 
 logger = logging.getLogger("stream.channel")
 
@@ -463,6 +502,7 @@ class ChannelAndContacts(Channel):
         h_wall_func: SinglePhaseLiquidHTCExArgs = wall_heat_transfer_coeff,
         pressure_func=pressure_diff,
         name: str = "CC",
+        stop_at_saturation: bool = False,
     ):
         r"""
         Parameters
@@ -477,6 +517,11 @@ class ChannelAndContacts(Channel):
             A function determining the heat transfer coefficient
         pressure_func: Callable
             A function determining the pressure gradient in the channel.
+        stop_at_saturation: bool
+            When ``True``, the channel exposes a per-cell bulk-saturation event
+            margin, so a transient stops at the crossing, which is the model's
+            validity boundary, and raises :class:`SaturationReachedError`. When
+            ``False`` (default) the channel adds no event. See :meth:`event_margin`.
 
         See Also
         --------
@@ -490,6 +535,7 @@ class ChannelAndContacts(Channel):
             name=name,
         )
         self.h_wall_func = h_wall_func
+        self.stop_at_saturation = stop_at_saturation
         self._vars |= {
             ChannelVar.h_left: slice((n := self.n) + 1, 2 * n + 1),
             ChannelVar.h_right: slice(2 * n + 1, 3 * n + 1),
@@ -708,6 +754,55 @@ class ChannelAndContacts(Channel):
         )
 
         return self.load(d)
+
+    def has_event(self) -> bool:
+        return self.stop_at_saturation
+
+    def _saturation_state(self, variables, T_left, T_right, mdot, p_abs, mdot2):
+        """Per-cell bulk temperature and saturation temperature at the current state."""
+        T_vecs = self._T_vecs(variables, T_left, T_right)
+        dp = self._dp(mdot=mdot, mdot2=mdot2, **T_vecs)
+        abs_pressure = p_abs + np.cumsum(dp)
+        tcool = variables[self._vars[ChannelVar.tbulk]]
+        density = self.fluid.density(tcool)
+        return tcool, self.fluid.sat_temperature(static_pressure(abs_pressure, mdot, self.pipe.area, density))
+
+    @unpacked
+    def event_margin(
+        self,
+        variables: Sequence[float],
+        *,
+        T_left: Celsius = None,
+        T_right: Celsius = None,
+        mdot: KgPerS,
+        p_abs: Pascal,
+        mdot2: KgPerS2 = None,
+        **_,
+    ) -> Array1D:
+        r"""Per-cell bulk-saturation margin ``Tsat(p) - T_cool`` when
+        ``stop_at_saturation`` is set, else an empty array (no event).
+
+        Bulk temperature is one value per cell, shared by both walls, so the margin
+        has one entry per cell. It crosses zero where the single-phase (with
+        subcooled boiling) model's validity ends.
+        """
+        if not self.stop_at_saturation:
+            return np.empty(0)
+        tcool, Tsat = self._saturation_state(variables, T_left, T_right, mdot, p_abs, mdot2)
+        return saturation_margin(tcool, Tsat)
+
+    def change_state(self, variables: Sequence[float], **kwargs) -> None:
+        # Not @unpacked: it rewrites the message of any error raised inside.
+        if not self.stop_at_saturation:
+            return
+        kw = {name: flatten_values(sources) for name, sources in kwargs.items()}
+        mdot, p_abs = kw["mdot"], kw["p_abs"]
+        T_left, T_right, mdot2 = kw.get("T_left"), kw.get("T_right"), kw.get("mdot2")
+        tcool, Tsat = self._saturation_state(variables, T_left, T_right, mdot, p_abs, mdot2)
+        Tsat = np.atleast_1d(Tsat)
+        crossed = np.flatnonzero(saturation_margin(np.atleast_1d(tcool), Tsat) <= 0.0)
+        if crossed.size:
+            raise SaturationReachedError(self.name, crossed, np.atleast_1d(tcool)[crossed], Tsat[crossed])
 
 
 _T = TypeVar("_T")

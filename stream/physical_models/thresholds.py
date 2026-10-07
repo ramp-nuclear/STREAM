@@ -86,7 +86,26 @@ __all__ = [
     "Sudo_Kaminaga_CHF",
     "Whittle_Forgan_OFI",
     "boiling_power",
+    "saturation_margin",
 ]
+
+
+def saturation_margin(T_bulk: Celsius, T_sat: Celsius) -> Value:
+    r"""Per-cell subcooling margin :math:`T_\text{sat} - T_\text{bulk}`.
+
+    Strictly positive while the bulk coolant is subcooled, zero at bulk saturation.
+    Bulk saturation is the validity boundary of STREAM's single-phase (with
+    subcooled boiling) channel model: beyond it the flow is two-phase, which STREAM
+    does not model.
+
+    Examples
+    --------
+    >>> float(saturation_margin(T_bulk=90.0, T_sat=100.0))
+    10.0
+    >>> float(saturation_margin(T_bulk=105.0, T_sat=100.0))
+    -5.0
+    """
+    return np.asarray(T_sat, dtype=float) - np.asarray(T_bulk, dtype=float)
 
 
 def Saha_Zuber_OSV(T_bulk: Celsius, coolant: Liquid, u: MPerS, Dh: Meter) -> WPerM2:

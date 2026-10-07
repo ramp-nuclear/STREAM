@@ -245,6 +245,21 @@ class Calculation(Protocol):
         """
         return np.empty(0)
 
+    def has_event(self) -> bool:
+        """Whether this calculation currently participates in transient events, that
+        is, whether the drivers must consult its :meth:`change_state` and
+        :meth:`should_continue`.
+
+        By default a calculation is an event node if and only if it overrides either
+        hook. A component whose event participation depends on a runtime flag should
+        override this to return that flag, so that when inactive it is classified and
+        integrated like a plain calculation rather than as a margin-less event node.
+        """
+        return (
+            type(self).change_state is not Calculation.change_state
+            or type(self).should_continue is not Calculation.should_continue
+        )
+
 
 def unpacked(calculate=None, *, exclude: Iterable[str] = ()):
     """
