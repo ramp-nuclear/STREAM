@@ -207,7 +207,9 @@ def _event_loop_dae(
                 if e.t is not None:
                     t_acc.append(e.t[1:])
                     y_acc.append(e.y[1:])
-                break
+                if t_acc:
+                    e.t, e.y = concat(*t_acc), concat(*y_acc)
+                raise
         vt, vy, _ = solution.values
         keep_head = 0 if first else 1
         t_acc.append(vt[keep_head:])
