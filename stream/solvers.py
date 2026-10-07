@@ -74,6 +74,7 @@ def differential_algebraic(
     time: Sequence[float],
     yp0: Array1D | None = None,
     R: Functional | None = None,
+    on_event: Callable | None = None,
     continuous: bool = False,
     **options,
 ) -> tuple[Array2D, Array1D]:
@@ -94,13 +95,18 @@ def differential_algebraic(
         ``compute_initcond = 'yp0'`` is set (as is default), this vector is deduced
         from ``y0``.
     R: Functional | None
-        A function controlling simulation stop events. Simulation continues unless a
-        ``False`` valued index is returned.
+        The continuous event-margin function ``R(y, t) -> float[]`` (IDA's rootfn).
+        Each component is positive while its event is not pending and sign-changes
+        at the event, so IDA localizes the true event time. When ``None`` there are
+        no events and the equation is integrated straight through.
+    on_event: Callable | None
+        ``on_event(t_root, y_root, ydot_root) -> bool`` applied at each confirmed
+        root: it performs the state transition and returns whether to continue.
     continuous: bool
-        If ``True``, simulation continues after ``R`` has yielded a non-True value,
-        whereas the simulation stops in that case for ``False``. An added behavior
-        is that using ``continuous=True`` forces a restart of the simulation, such that initial
-        steps are much smaller, and controlled by ``first_step_size``
+        Controls what a stop request (``on_event`` returning ``False``) does. With
+        ``continuous=False`` (default) it stops the run; with ``True`` the run
+        restarts past it. In either case a *non-terminal* transition (``on_event``
+        returns ``True``) restarts from the root with fresh, small initial steps.
     options:
         Other options to be passed to the ``scikits.odes`` solver.
 
@@ -112,11 +118,11 @@ def differential_algebraic(
         in which it was calculated.
     """
 
-    setup = solve, time, y0, yp0 = _dae_setup(F, mass, y0, time, yp0, R, **options)
-    if continuous:
-        return _continuous_mode_dae(*setup)
-    solution = solve(time, y0, yp0)
-    return solution.values.y, solution.values.t
+    solve, time, y0, yp0 = _dae_setup(F, mass, y0, time, yp0, R, **options)
+    if R is None or (on_event is None and not continuous):
+        solution = solve(time, y0, yp0)
+        return solution.values.y, solution.values.t
+    return _event_loop_dae(solve, time, y0, yp0, on_event, continuous)
 
 
 def _ida_post_solution(solution):
@@ -161,25 +167,80 @@ def _dae_setup(
     return solve, time, y0, yp0
 
 
-def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array1D) -> tuple[Array2D, Array1D]:
-    solution = solve(time, y0, yp0)
-    t_end = time[-1]
-    t, y, ydot = solution.values
-    while (t_stopped := t[-1]) < t_end:
-        new_time = concat([t_stopped], time[time > t_stopped])
-        logger.info(f"Continuous mode is on, restarted simulation from previous end time {t_stopped:.5f}.")
-        try:
-            new_solution = solve(new_time, y[-1], ydot[-1])
-        except TransientRuntimeError as e:
-            logger.critical(e.message)
-            if e.t is not None:
-                t = concat(t, e.t[1:])
-                y = concat(y, e.y[1:])
+def _advance_eps(time: Array1D) -> float:
+    """A tiny floor the next event time must exceed the previous restart time by,
+    so a root that fails to advance raises instead of looping forever."""
+    span = float(time[-1] - time[0])
+    return max(1e-12, 1e-9 * span)
+
+
+def _event_loop_dae(
+    solve: Callable,
+    time: Array1D,
+    y0: Array1D,
+    yp0: Array1D,
+    on_event: Callable | None = None,
+    continuous: bool = False,
+) -> tuple[Array2D, Array1D]:
+    r"""Integrate a DAE with continuous-margin events. On each ``IDA_ROOT_RETURN``
+    the true root is taken from ``solution.roots`` (not the last output point before
+    it), the transition is applied there via ``on_event``, and the run either stops
+    (terminal) or restarts *from the root* with fresh small steps. The pre-root
+    interval is never re-integrated, and a non-advancing root raises rather than
+    hanging. Returned times stay aligned to the requested grid; a terminal stop
+    additionally ends the series exactly at the event time."""
+    time = np.asarray(time)
+    eps = _advance_eps(time)
+    t_acc: list[Array1D] = []
+    y_acc: list[Array2D] = []
+    t0, y_cur, yp_cur = float(time[0]), y0, yp0
+    remaining = time
+    first = True
+    while True:
+        if first:
+            solution = solve(remaining, y_cur, yp_cur)
+        else:
+            try:
+                solution = solve(remaining, y_cur, yp_cur)
+            except TransientRuntimeError as e:
+                logger.critical(e.message)
+                if e.t is not None:
+                    t_acc.append(e.t[1:])
+                    y_acc.append(e.y[1:])
+                break
+        vt, vy, _ = solution.values
+        keep_head = 0 if first else 1
+        t_acc.append(vt[keep_head:])
+        y_acc.append(vy[keep_head:])
+        first = False
+
+        roots = solution.roots
+        if roots.t is None or len(roots.t) == 0:
             break
-        t = concat(t, new_solution.values.t[1:])
-        y = concat(y, new_solution.values.y[1:])
-        ydot = concat(ydot, new_solution.values.ydot[1:])
-    return y, t
+
+        t_root = float(roots.t[-1])
+        y_root, yp_root = roots.y[-1], roots.ydot[-1]
+        if not (t_root > t0 + eps):
+            raise TransientRuntimeError(
+                np.array([t_root]),
+                y_root,
+                yp_root,
+                f"Event at t={t_root:.6g} did not advance past t={t0:.6g}; "
+                "aborting to avoid an infinite restart loop.",
+            )
+
+        keep_going = on_event(t_root, y_root, yp_root) if on_event is not None else True
+        if (not keep_going) and (not continuous):
+            t_acc.append(np.array([t_root]))
+            y_acc.append(y_root[None, :])
+            break
+
+        logger.info(f"Event at t = {t_root:.5f}; restarting the integration from the root.")
+        t0, y_cur, yp_cur = t_root, y_root, yp_root
+        remaining = concat([t_root], time[time > t_root])
+        if len(remaining) < 2:
+            break
+    return concat(*y_acc), concat(*t_acc)
 
 
 class AlgRuntimeError(RuntimeError):

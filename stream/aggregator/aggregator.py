@@ -274,47 +274,60 @@ class Aggregator:
         evaluated_functions = {name: {node: f(t) if callable(f) else f} for name, f in self.funcs.get(node, {}).items()}
         return external | evaluated_functions
 
-    def _root(
-        self,
-        y: Sequence[float],
-        t: Second = 0,
-        progressbar: ProgressBarLike | None = None,
-    ) -> Array1D:
-        r"""A function called in transient simulation, whenever a point in time
-        is found, that is, when the roots of all constraints
-        :math:`\vec{F}(\vec{y},t)=0` are found. This method allows calculations
-        to stop the simulation at any such time, and also to have `state` in
-        their code, in a function which is guaranteed to be called sequentially
-        in time and at `physical` time points.
-
-        Parameters
-        ----------
-        y: Sequence[float]
-            guess/result from solver
-        t: Second
-            time
-        progressbar: ProgressBarLike | None
-            The progressbar to update as we go along
-
-        Returns
-        -------
-        stop_requests: Array1D
-            Having a cell For each node in the graph, which contains a boolean
-            whether that calculation permits the simulation to continue.
+    def _event_margins(self, y: Sequence[float], t: Second = 0) -> Array1D:
+        r"""Continuous, signed event margins for the whole graph, concatenated in
+        node order. This is the transient rootfn and is a **pure** function of
+        ``(y, t)`` — it performs no state change, so the solver may evaluate it at
+        speculative bisection midpoints without side effects. Sign changes localize
+        event times; the transition is applied by :meth:`_handle_event` at the
+        confirmed root, not here.
         """
-        logger.log(STREAM_DEBUG, f"time: {t:.8g}")
-        if progressbar is not None:
-            progressbar.update(int(1e3 * t))
-        list(map(partial(self._op, "change_state", y, t), self.graph))
+        parts = [
+            np.atleast_1d(np.asarray(self._op("event_margin", y, t, node), dtype=float)) for node in self.graph
+        ]
+        return concat(*parts) if parts else np.empty(0)
+
+    def _handle_event(self, y: Sequence[float], t: Second) -> bool:
+        r"""Apply state transitions at a confirmed event time (or, in the output-grid
+        fallback, at an accepted output point), then decide whether to continue.
+
+        :meth:`Calculation.change_state` is invoked on every node — it is
+        idempotent and guarded on its own condition internally, so calling
+        non-triggered nodes is a no-op, and we need not (and cannot, from Python)
+        identify which specific margin fired. Returns ``all(should_continue)``.
+        """
+        logger.log(STREAM_DEBUG, f"handling event at t: {t:.8g}")
+        for node in self.graph:
+            self._op("change_state", y, t, node)
         sc = np.fromiter(
-            map(partial(self._op, "should_continue", y, t), self.graph),
+            (self._op("should_continue", y, t, node) for node in self.graph),
             dtype=bool,
             count=self._nodes_num,
         )
         if not all(sc):
-            stopped = np.array(self.graph)[~sc]
-            logger.warning(f"At t = {t:.5f}, the simulation has been stopped by {stopped}")
-        return sc
+            stopped = np.array(self.graph, dtype=object)[~sc]
+            logger.warning(f"At t = {t:.5f}, the simulation has been stopped by {list(stopped)}")
+        return bool(sc.all())
+
+    def _has_event_overrides(self) -> bool:
+        """Whether any node overrides the default event hooks (so its events must
+        not be silently dropped even when it exposes no localizable margin)."""
+        return any(
+            type(node).change_state is not Calculation.change_state
+            or type(node).should_continue is not Calculation.should_continue
+            for node in self.graph
+        )
+
+    def _truncate_to_event(self, data: Array2D, time: Array1D, continuous: bool) -> tuple[Array2D, Array1D]:
+        """Apply transitions at every accepted output point and cut the series at
+        the first point where a node asks to stop. With ``continuous`` the
+        transitions are still applied but nothing is cut. This is the fallback for
+        event-bearing nodes without a localizable margin, so event timing is
+        quantized to the output grid."""
+        for i, t in enumerate(time):
+            if not self._handle_event(data[i], t) and not continuous:
+                return data[: i + 1], time[: i + 1]
+        return data, time
 
     @overload
     def load(self, s: DictState) -> Array1D:
@@ -608,22 +621,35 @@ class Aggregator:
                 progressbar = ProgressBar().start(max_value=int(1e3 * max(time)))
             elif not progressbar:
                 progressbar = None
-            root = partial(self._root, progressbar=progressbar)
 
-            data, time = differential_algebraic(
-                F=self.compute,
-                mass=self.mass,
-                R=root,
-                y0=y0,
-                time=time,
-                yp0=yp0,
-                nr_rootfns=self._nodes_num,
-                **options,
-            )
+            def rootfn(y, t, _bar=progressbar):
+                if _bar is not None:
+                    _bar.update(int(1e3 * t))
+                return self._event_margins(y, t)
+
+            width = len(self._event_margins(y0, 0.0))
+            if width:
+                data, time = differential_algebraic(
+                    F=self.compute,
+                    mass=self.mass,
+                    R=rootfn,
+                    on_event=lambda t_root, y_root, yp_root: self._handle_event(y_root, t_root),
+                    y0=y0,
+                    time=time,
+                    yp0=yp0,
+                    nr_rootfns=width,
+                    **options,
+                )
+            else:
+                data, time = differential_algebraic(
+                    F=self.compute, mass=self.mass, R=None, y0=y0, time=time, yp0=yp0, **options
+                )
+                if self._has_event_overrides():
+                    data, time = self._truncate_to_event(data, time, options.get("continuous", False))
             if progressbar is not None:
                 progressbar.finish()
         elif eq_type == "ALG":
-            data, time = quasi_static(F=self.compute, y0=y0, time=time, R=self._root, **options)
+            data, time = quasi_static(F=self.compute, y0=y0, time=time, R=self._handle_event, **options)
         else:
             raise ValueError(f"Unknown method {eq_type}, choose from [ODE, DAE, ALG]")
         return Solution(np.asarray(time), data)
