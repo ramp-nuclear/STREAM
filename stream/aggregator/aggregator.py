@@ -578,7 +578,16 @@ class Aggregator:
         progressbar: ProgressBarLike or bool
             Whether to use a progressbar, and if so, which one. If ``True``, use ``use progressbar.ProgressBar``
         options:
-            Other options
+            Other options, passed to the chosen backend.
+
+            If a DAE transient crawls or dies right after an event restart, pass
+            ``exclude_algvar_from_error=True``. It leaves algebraic variables out
+            of IDA's local error test, which stops the step size from collapsing
+            when one edge's flow is pinned by an algebraic law while the rest of
+            the loop carries inertia. Algebraic variables are then no longer
+            error-controlled between steps, so an event whose margin reads an
+            algebraic flow (for example a flow-based event on an inertia-free
+            network) can be localized late.
 
         Returns
         -------

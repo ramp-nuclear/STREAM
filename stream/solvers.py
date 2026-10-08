@@ -111,6 +111,13 @@ def differential_algebraic(
         returns ``True``) restarts from the root with fresh, small initial steps.
     options:
         Other options to be passed to the ``scikits.odes`` solver.
+        ``exclude_algvar_from_error=True`` (IDA's suppress-algebraic option) leaves
+        algebraic variables out of the local error test, which keeps the step size
+        from collapsing after an event restart at tight tolerance on a loop where
+        one edge's flow is pinned by an algebraic law while the rest carries
+        inertia. The price is that algebraic variables are no longer
+        error-controlled between steps, so an event margin that reads an algebraic
+        flow (an inertia-free network with a flow-based event) can be localized late.
 
 
     Returns

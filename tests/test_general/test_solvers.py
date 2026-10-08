@@ -3,6 +3,7 @@ import pytest
 from networkx import DiGraph
 from scikits.odes import dae
 
+from stream import solvers
 from stream.aggregator import Aggregator, vars_
 from stream.calculations import Gravity, Pump, Resistor
 from stream.calculations.ideal.resistors import ResistorSum
@@ -427,3 +428,20 @@ def test_event_loop_dae_on_event_raise_carries_pre_event_trajectory():
     e = exc.value
     assert np.array_equal(e.t, [0.0, 0.5, 0.75])
     assert e.y.shape[0] == len(e.t)
+
+
+@pytest.mark.parametrize("passed, expected", [({}, None), ({"exclude_algvar_from_error": True}, True)])
+def test_dae_forwards_the_algebraic_error_test_option_only_when_given(monkeypatch, passed, expected):
+    seen = {}
+
+    def fake_dae(name, residues, **options):
+        seen.update(options)
+        raise RuntimeError("stop at setup")
+
+    monkeypatch.setattr(solvers, "dae", fake_dae)
+    with pytest.raises(RuntimeError, match="stop at setup"):
+        solvers.differential_algebraic(
+            F=lambda y, t: -y, mass=np.array([1.0]), y0=np.array([1.0]), time=[0.0, 1.0], **passed
+        )
+    assert seen.get("exclude_algvar_from_error") is expected
+    assert ("exclude_algvar_from_error" in seen) is bool(passed)
