@@ -143,10 +143,6 @@ class ReactivityController:
         abort = self.state in self.abort_states and t == self.t_state
         return not abort
 
-    def worth(self, t: Second) -> float:
-        """Reactivity worth inserted by the controller as function of time"""
-        return self.input_reactivity(self.state, self.t_state, t)
-
     def worth_history(self, t: Second) -> float:
         sn, tn = self.log[0]
         for i in range(1, len(self.log)):
@@ -194,9 +190,12 @@ class PointKinetics(Calculation):
 
     In this particular calculation, the reactivity may be influenced by a
     linear thermal feedback
-    :math:`\rho = \rho_0 + \alpha_c T_c + \alpha_f T_f` by
-    corresponding coolant and fuel elements.
+    :math:`\rho = \rho_0 + \sum_i \vec{\alpha}_i \cdot (\vec{T}-\vec{T}_0)_i` by
+    corresponding coolant and fuel elements, where the temperature coefficients
+    :math:`\alpha_i` are negative by convention.
     """
+
+    _dPdt_row = 0
 
     def __init__(
         self,
@@ -218,7 +217,8 @@ class PointKinetics(Calculation):
         delayed_groups_decay_rates: PerS
             each group's decay rate.
         temp_worth: dict[Calculation, PerC] or None
-            a dictionary whose keys are fuel or channel elements, and values are their temperature worth.
+            a dictionary whose keys are fuel or channel elements, and values are their temperature
+            coefficients of reactivity (scalar or per cell), negative for negative feedback.
         ref_temp: dict[Calculation, Celsius] or None
             At such temperature/s, temperature feedback is 0.
         controls: ReactivityController
@@ -287,20 +287,21 @@ class PointKinetics(Calculation):
         dPdt: Array1D
             the change in power and the delayed power fractions
         """
-        rhoc = self.controls.worth(t)
+        rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T if T is not None else {}, rhoc)
         self._s[0] = source / self.Lambda if source is not None else 0.0
         self._A[0, 0] = (rho - self.dollar) / self.Lambda
         return self._A @ variables + self._s
 
     # noinspection PyProtocol
+    @unpacked(exclude=("T",))
     def should_continue(self, variables: Sequence[float], *, t: Second, **kwargs) -> bool:
         return self.controls.should_continue(t)
 
     @unpacked(exclude=("T",))
     def change_state(self, variables: Sequence[float], *, t: Second, **kwargs):
         power = variables[self.indices("power")]
-        dPdt = self.calculate(variables, t=t, **kwargs)[self.indices("power")]
+        dPdt = self.calculate(variables, t=t, **kwargs)[self._dPdt_row]
         self.controls.change_state(t, power, dPdt, **kwargs)
 
     @property
@@ -339,7 +340,7 @@ class PointKinetics(Calculation):
         rhoc = self.controls.worth_history(t)
         rho = self.reactivity(T or {}, rhoc)
         state["reactivity"] = rho
-        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self.indices("power")]
+        state["dPdt"] = self.calculate(vector, source=source, T=T, t=t, **kwargs)[self._dPdt_row]
         return state
 
 
@@ -350,7 +351,10 @@ def temperature_reactivity(
 ) -> float:
     r"""Calculate the reactivity, given temperature feedback
 
-    .. math:: \rho = - \sum_i \vec{w}_i \cdot (\vec{T}-\vec{T}_0)_i
+    .. math:: \rho = \sum_i \vec{\alpha}_i \cdot (\vec{T}-\vec{T}_0)_i
+
+    where the temperature coefficients :math:`\alpha_i` are negative by convention, so
+    heating above the reference gives negative feedback.
 
     Parameters
     ----------
@@ -359,13 +363,14 @@ def temperature_reactivity(
     T0: dict[Calculation, Array]
         Reference Temperatures
     weights: dict[Calculation, Array]
+        Temperature coefficients of reactivity, scalar or per cell
 
     Returns
     -------
     rho: float
         Calculated reactivity
     """
-    return -sum(np.dot(w, T[k] - T0[k]).item() for k, w in weights.items())
+    return sum(float(np.sum(np.asarray(w) * (T[k] - T0[k]))) for k, w in weights.items())
 
 
 @curry

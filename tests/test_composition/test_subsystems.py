@@ -4,7 +4,10 @@ import pytest
 from hypothesis import given, settings
 from hypothesis.extra.numpy import arrays
 
+from stream.aggregator import Aggregator
 from stream.calculations import (
+    ChannelAndContacts,
+    Flapper,
     Inertia,
     Junction,
     KirchhoffWDerivatives,
@@ -13,15 +16,21 @@ from stream.calculations import (
     Pump,
     Resistor,
 )
+from stream.calculations.flapper import continuously_differentiable_relaxation as cdr
 from stream.calculations.ideal.ideal import LumpedComponent
-from stream.composition import Calculation_factory, FlowGraph, flow_edge
+from stream.calculations.ideal.resistors import VolumetricFlowResistor
+from stream.composition import Calculation_factory, FlowGraph, flow_edge, guess_hydraulic_steady_state
+from stream.composition.cycle import flow_graph
+from stream.composition.cycle import flow_graph_to_agr_and_k as agr_k
 from stream.composition.subsystems import (
     point_kinetics_steady_state,
     symmetric_plate_steady_state,
 )
+from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
-from stream.units import pcm
-from stream.utilities import just
+from stream.substances.mocks import mock_liquid_funcs
+from stream.units import mm, pcm
+from stream.utilities import identity, just
 
 from .conftest import MTR_fuel_and_channel
 
@@ -149,7 +158,7 @@ def test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case():
     assert np.allclose(fg.aggregator.compute(y), 0.0)
 
 
-_FakeC = Calculation_factory(just(0.0), [False, False], dict(Tin=0, pressure=1))
+_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], dict(Tin=0, pressure=1))
 _FakeC.indices = LumpedComponent.indices
 fake = _FakeC("fake")
 
@@ -180,3 +189,79 @@ def test_hydraulic_steady_state_uses_strategy_when_provided():
     )
     s = fg.guess_steady_state({r: 1.0, p: 1.0}, 10, {fake: lambda mdot, T: mdot + T})
     assert s["fake"]["pressure"] == 11.0
+
+
+def test_hydraulic_guess_includes_channel_htc_so_it_loads():
+    """A ChannelAndContacts owns algebraic h_left/h_right variables; the hydraulic
+    guess must supply them so the returned State loads instead of a bare KeyError."""
+    zb = np.linspace(0, 1, 6)
+    pipe = EffectivePipe.rectangular(length=1, edge1=2 * mm, edge2=70 * mm, heated_edge=70 * mm)
+    c = ChannelAndContacts(z_boundaries=zb, fluid=light_water, pipe=pipe)
+    a, b = Junction("A"), Junction("B")
+    fg = FlowGraph(
+        flow_edge((a, b), c, r := Resistor(1.0)),
+        flow_edge((b, a), p := Pump(pressure=1.0)),
+        reference_node=(a, 1e5),
+        abs_pressure_comps=[c],
+    )
+    s = fg.guess_steady_state({c: 1.0, r: 1.0, p: 1.0}, 40.0)
+    assert {"h_left", "h_right"} <= set(s[c.name].keys())
+    y = fg.aggregator.load(s)
+    assert len(y) == len(fg.aggregator)
+
+
+def test_reversed_flow_temperature_guess_heats_most_where_the_power_is(monkeypatch):
+    """With the flow reversed the coolant enters at the top, so the guessed coolant
+    temperature rises along the downward flow, and the rise across a cell is larger
+    where the power is larger. The power shape here peaks at the bottom."""
+    z_N = 20
+    zb = np.linspace(0, 1, z_N + 1)
+    zc = 0.5 * (zb[:-1] + zb[1:])
+    f, c = MTR_fuel_and_channel(z_N=z_N, fuel_N=8, clad_N=2, z_weight=np.exp(-6 * zc))
+
+    def return_the_guess(self, y0, **_):
+        return y0
+
+    monkeypatch.setattr(Aggregator, "solve_steady", return_the_guess)
+
+    Tin = 35.0
+    state = symmetric_plate_steady_state(c=c, f=f, mdot=-0.6, p_abs=2e5, power=2e5, Tin=Tin, initial_guess_iterations=1)
+    T_cool = np.asarray(state[c.name]["T_cool"])
+    rise_along_flow = T_cool[:-1] - T_cool[1:]
+
+    assert np.all(rise_along_flow > 0)
+    assert T_cool[-1] > Tin
+    assert rise_along_flow[0] > 10 * rise_along_flow[-1]
+
+
+def test_open_flapper_gets_a_physically_consistent_dp_guess():
+    """A closed Flapper's dp guess is 0.0. An open Flapper's dp guess is the pressure
+    drop at which the flapper itself carries the guessed flow."""
+    flapper = Flapper(
+        open_at_current=0.0, f=2.0, area=1.0, open_rate=1.0, relaxation=cdr, name="F", fluid=mock_liquid_funcs
+    )
+    T = 20.0
+    flywheel = Inertia(inertia=1e3)
+    pump = Pump(mdot0=1.0)
+    R = VolumetricFlowResistor(k=1.0, density_func=just(1.0), name="R")
+    a, b = Junction("A"), Junction("B")
+    fg = flow_graph(
+        flow_edge((a, b), pump, flywheel),
+        flow_edge((b, a), R),
+        flow_edge((b, a), flapper),
+    )
+    _, K = agr_k(
+        fg,
+        inertial_comps=[flywheel],
+        k_constructor=KirchhoffWDerivatives,
+        funcs={R: dict(Tin=T), flapper: dict(t=identity, ref_mdot=np.inf)},
+    )
+    flows = {pump: 1.0, R: 0.5, flapper: 0.5}
+
+    assert guess_hydraulic_steady_state(K, flows, T)["F"]["pressure"] == 0.0
+
+    flapper.open(0.0)
+    dp = guess_hydraulic_steady_state(K, flows, T)["F"]["pressure"]
+    assert dp != 0.0
+    residual = flapper.calculate(np.array([T, dp]), mdot=flows[flapper], Tin=T, t=10.0)
+    assert residual == pytest.approx([0.0, 0.0], abs=1e-12)

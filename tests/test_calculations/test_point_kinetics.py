@@ -8,6 +8,7 @@ from stream.calculations import PointKinetics
 from stream.calculations.point_kinetics import (
     OneWayToSCRAM,
     PointKineticsWInput,
+    ReactivityController,
     temperature_reactivity,
 )
 from stream.composition import Calculation_factory
@@ -24,7 +25,7 @@ def mock_point_kinetics():
         generation_time=1,
         delayed_neutron_fractions=np.array([0.25]),
         delayed_groups_decay_rates=np.array([2]),
-        temp_worth={mock_calc: np.array([10])},
+        temp_worth={mock_calc: np.array([-10])},
         ref_temp={mock_calc: 0},
     )
 
@@ -71,7 +72,7 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     mock_pk = mock_point_kinetics()
     mock_pk.controls.input_reactivity = just(inp)
     save = mock_pk.save([p, ck], T={mock_calc: T}, t=0)
-    r = inp - mock_pk.temp_worth[mock_calc] * T
+    r = inp + mock_pk.temp_worth[mock_calc] * T
     known = dict(
         power=p,
         ck=[ck],
@@ -80,6 +81,19 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     )
     for key, value in known.items():
         are_close(save[key], value, rtol=1e-5, atol=1e-8)
+
+
+def test_feedbackless_point_kinetics_calculate_without_T():
+    """Without temperature feedback (default temp_worth and ref_temp) no temperatures
+    are routed to PointKinetics, and calculate() works without T."""
+    pk = PointKinetics(
+        generation_time=1e-4,
+        delayed_neutron_fractions=np.array([0.0065]),
+        delayed_groups_decay_rates=np.array([0.08]),
+    )
+    out = pk.calculate(np.array([1.0, 1.0]), t=0.0)
+    assert out.shape == (2,)
+    assert np.all(np.isfinite(out))
 
 
 @given(floats(allow_nan=False), floats(allow_nan=False))
@@ -91,13 +105,20 @@ def test_pk_load(p, ck):
 
 @pytest.mark.parametrize(
     ("w", "result"),
-    [({1: np.ones(5), 2: np.ones(5)}, 0), ({1: np.ones(5), 2: np.zeros(5)}, -5)],
+    [({1: -np.ones(5), 2: -np.ones(5)}, 0), ({1: -np.ones(5), 2: np.zeros(5)}, -5)],
 )
 def test_reactivity_for_linear_temperature_in_relation_to_reference(w, result):
     T = {1: np.arange(5), 2: np.ones(5)}
     T0 = {1: np.ones(5), 2: np.arange(5)}
     # noinspection PyTypeChecker
     assert np.isclose(temperature_reactivity(T, T0, w), result)
+
+
+def test_temperature_reactivity_accepts_scalar_weight_with_multicell_temperature():
+    """A scalar temp_worth (as the PerC type hint invites) combined with a multi-cell
+    temperature array must act per cell, summed over the cells."""
+    rho = temperature_reactivity({"ch": np.array([300.0, 310.0, 320.0])}, {"ch": 290.0}, {"ch": -2e-5})
+    assert rho == pytest.approx(-2e-5 * (10 + 20 + 30))
 
 
 def test_pk_with_decay():
@@ -146,3 +167,102 @@ def test_pk_should_continue_stops_at_SCRAM_time(t):
     mock_pk.controls.t_state = t
     mock_pk.controls.abort_states = {OneWayToSCRAM.SCRAM}
     assert not mock_pk.should_continue([0, 0], T=mock_pk.T0, t=t)
+
+
+# Keepin six-group U-235 thermal data as tabulated in Lamarsh, Introduction to Nuclear Reactor Theory, Table 7-1.
+_lambdak = np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01])
+_betak = np.array([0.00021, 0.00142, 0.00127, 0.00257, 0.00075, 0.00027])
+_Lam = 2e-5
+
+
+def _scram_pk(P0=1e6, limit_factor=1.2):
+    """A PointKinetics with a +20 pcm ramp that drives power up to a SCRAM trip
+    and a strong rod-insertion ramp afterwards. Abort on SCRAM."""
+    limit = limit_factor * P0
+
+    def machine(state, t, power, dPdt, **kw):
+        return OneWayToSCRAM.SCRAM if state == OneWayToSCRAM.NORMAL and power > limit else state
+
+    def rho_in(state, t_state, t, **_):
+        if state == OneWayToSCRAM.SCRAM:
+            return -0.05 * (t - t_state)
+        return 20e-5 if t > 1.0 else 0.0
+
+    ctrl = ReactivityController(input_reactivity=rho_in, state_machine=machine, abort_states={OneWayToSCRAM.SCRAM})
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    return pk, ctrl, np.concatenate([[P0], ck0])
+
+
+def test_scram_abort_stops_dae_solve_at_trip_time():
+    """The abort predicate in should_continue must see the plain time, so a SCRAM
+    transition stops the DAE solve at the trip time instead of running to t_end."""
+    pk, ctrl, y0 = _scram_pk()
+    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    time = np.linspace(0, 60, 601)
+    sol = agr.solve(y0=y0.copy(), time=time, eq_type="DAE")
+
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+    assert sol.time[-1] < time[-1]
+    assert sol.time[-1] == pytest.approx(ctrl.t_state)
+
+
+def test_winput_feeds_true_power_derivative_to_state_machine_and_save():
+    """In PointKineticsWInput the row at indices('power') is the algebraic total-power
+    residual; change_state and save must use the true power derivative, row 0."""
+    seen = {}
+
+    def spy(state, t, power, dPdt, **kw):
+        seen.update(power=power, dPdt=dPdt)
+        return state
+
+    ctrl = ReactivityController(state_machine=spy, input_reactivity=just(100e-5))
+    pk = PointKineticsWInput(
+        generation_time=_Lam,
+        delayed_neutron_fractions=_betak,
+        delayed_groups_decay_rates=_lambdak,
+        temp_worth={},
+        ref_temp={},
+        controls=ctrl,
+    )
+    P0 = 1e6
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    y = np.concatenate([[P0], ck0, [P0 + 5e4]])  # [pk_power, ck..., total_power]
+
+    true_dpdt = pk.calculate(y, T={}, t=1.0, power_input=5e4)[0]
+    assert abs(true_dpdt) > 1e6
+
+    pk.change_state(y, T={}, t=1.0, power_input=5e4)
+    assert seen["power"] == pytest.approx(P0 + 5e4)
+    assert seen["dPdt"] == pytest.approx(true_dpdt)
+
+    saved = pk.save(y, T={}, t=1.0, power_input=5e4)
+    assert saved["dPdt"] == pytest.approx(true_dpdt)
+
+
+def test_post_processing_an_output_time_uses_the_control_reactivity_active_then():
+    """Saving the state at an output time reports the reactivity and dP/dt with the
+    control reactivity that was active at that time, not the controller's final state."""
+
+    def ramp(state, t_state, t, **_):
+        return -0.05 * (t - t_state) if state == OneWayToSCRAM.SCRAM else 0.0
+
+    ctrl = ReactivityController(
+        input_reactivity=ramp,
+        state_machine=lambda s, t, p, d, **k: OneWayToSCRAM.SCRAM if t >= 5.0 else s,
+    )
+    pk = PointKinetics(
+        generation_time=_Lam, delayed_neutron_fractions=_betak, delayed_groups_decay_rates=_lambdak, controls=ctrl
+    )
+    P0 = 1e6
+    ck0 = _betak * P0 / (_lambdak * _Lam)
+    y = np.concatenate([[P0], ck0])
+
+    ctrl.change_state(5.0, P0, 0.0)
+    assert ctrl.state == OneWayToSCRAM.SCRAM
+
+    saved = pk.save(y, T={}, t=2.0)
+    assert saved["reactivity"] == pytest.approx(0.0)
+    assert saved["dPdt"] == pytest.approx(0.0, abs=1e3)

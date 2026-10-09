@@ -60,7 +60,7 @@ def create_constraints(
     np.ndarray
         Array with the same shape as `agr.graph`, with sign contraints.
     """
-    assert mutually_exclusive(list(kwargs.values())), (
+    assert mutually_exclusive(*kwargs.values()), (
         "Keyword list must be mutually exclusive - a variable cannot be in more than one category"
     )
 
