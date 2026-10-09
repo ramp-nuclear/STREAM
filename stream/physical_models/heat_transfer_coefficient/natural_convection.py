@@ -30,7 +30,8 @@ def _Elenbaas(
     Lh: Meter,
     S: Meter,
 ) -> Value:
-    ra = Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)
+    # |Ra| covers a cooled wall; the floor keeps Ra > 0 at Twall == T.
+    ra = np.abs(Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)) + 1e-30
     return (1 / 24) * ra * (S / Lh) * (1 - np.exp(-35 * Lh / (ra * S))) ** 0.75
 
 
