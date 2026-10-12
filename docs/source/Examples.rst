@@ -31,5 +31,15 @@ Kirchhoff Specific Examples
    :maxdepth: 1
 	      
    TheCubeProblem.ipynb
-   Parallel thermosyphone driven flow.ipynb
+
+Loss of Flow
+------------
+
+A pool reactor built from the library's components, shipped as :mod:`stream.examples.lofa`,
+taken from its operating point through a loss of flow into natural circulation.
+
+.. toctree::
+   :maxdepth: 1
+
+   LOFAPoolReactor.ipynb
 
