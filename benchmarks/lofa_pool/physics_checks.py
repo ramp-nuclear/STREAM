@@ -39,7 +39,7 @@ LOOPS = {
 }
 LOOP_NAMES = {
     "case": ["HotChannel", "Flapper", "Pool"],
-    "top_flapper": ["HotChannel", "PipePlenumRiser", "Flapper", "PoolLower"],
+    "top_flapper": ["HotChannel", "PipePlenumRiser", "BendPlenumRiser0", "Flapper", "PoolLower"],
 }
 
 

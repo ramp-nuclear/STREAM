@@ -63,7 +63,8 @@ def run_case(job: tuple[str, str, Params, dict]) -> dict:
 def run_axis(name: str, workers: int = 10, timeout: float | None = None) -> pd.DataFrame:
     jobs = [(name, label, params, options) for label, params, options in AXES[name]()]
     ctx = multiprocessing.get_context("spawn")
-    with ctx.Pool(workers, initializer=_quiet_threads) as pool:
+    os.environ.setdefault("OMP_NUM_THREADS", "1")
+    with ctx.Pool(workers) as pool:
         result = pool.map_async(run_case, jobs)
         rows = result.get(timeout)
     df = pd.DataFrame(rows)
@@ -71,10 +72,6 @@ def run_axis(name: str, workers: int = 10, timeout: float | None = None) -> pd.D
     RESULTS.mkdir(parents=True, exist_ok=True)
     df.to_csv(RESULTS / f"{name}.csv", index=False)
     return df
-
-
-def _quiet_threads() -> None:
-    os.environ["OMP_NUM_THREADS"] = "1"
 
 
 def load(name: str) -> pd.DataFrame:

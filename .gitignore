@@ -21,3 +21,4 @@ htmlcov/
 
 benchmarks/lofa_pool/results/
 benchmarks/lofa_pool/RESULTS.md
+benchmarks/lofa_pool/notebooks/figures/

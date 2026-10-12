@@ -45,3 +45,20 @@ def test_loop_pressure_budget_closes_around_the_pool_loop(short_run):
     assert set(budget) == set(names)
     assert buoyancy > 0
     assert abs(sum(budget.values())) < 0.05 * buoyancy
+
+
+@pytest.mark.slow
+def test_loop_pressure_budget_closes_around_the_pump_loop(short_run):
+    p, agr, K, refs, sol = short_run
+    names = [
+        "HotChannel",
+        "FrictionPrimary", "BendPrimary0", "BendPrimary1", "GravityPrimary",
+        "DecayTank",
+        "FrictionBasement", "BendBasement0", "GravityBasement",
+        "PumpA", "PumpCurveA", "FlywheelA", "ValveA",
+        "HX", "HXLoss", "FrictionRiser", "BendRiser0", "BendRiser1", "GravityRiser",
+        "Pool",
+    ]
+    budget, buoyancy = checks.loop_pressure_budget(agr, K, refs, sol, names)
+    assert set(budget) == set(names)
+    assert abs(sum(budget.values())) < 0.05 * buoyancy

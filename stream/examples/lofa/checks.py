@@ -87,23 +87,26 @@ def energy_budget(agr, K, refs, sol, p):
 def loop_pressure_budget(agr, K, refs, sol, loop_names, idx=-1):
     """Pressure difference of every named component at output index ``idx``, Pa, signed along the loop
     traversed in the order given, so the values sum to the loop residual; and the hot plate's buoyancy head, Pa.
-    The names must chain edge to edge around a closed loop in that order, otherwise ``ValueError`` is raised."""
-    edges = {comp.name: (u, v) for u, v, comps in K.g.edges(data="comps") for comp in comps}
+    The names must chain edge to edge around a closed loop in that order, otherwise ``ValueError`` is raised;
+    components sharing an edge are listed consecutively and take that edge's sign."""
+    edges = {comp.name: (u, v, key) for u, v, key, comps in K.g.edges(keys=True, data="comps") for comp in comps}
     st = agr.save(sol.data[idx])
     budget = {}
-    start, node = None, None
+    start, node, edge = None, None, None
     for name in loop_names:
-        u, v = edges.get(name, (None, None))
+        u, v, key = edges.get(name, (None, None, None))
         if u is None:
             raise ValueError(f"{name} is not a component on a flow edge")
-        if node is None:
-            start, sign, node = u, 1.0, v
-        elif u == node:
-            sign, node = 1.0, v
-        elif v == node:
-            sign, node = -1.0, u
-        else:
-            raise ValueError(f"{name} does not chain with the loop at junction {node}")
+        if (u, v, key) != edge:
+            if node is None:
+                start, sign, node = u, 1.0, v
+            elif u == node:
+                sign, node = 1.0, v
+            elif v == node:
+                sign, node = -1.0, u
+            else:
+                raise ValueError(f"{name} does not chain with the loop at junction {node}")
+        edge = (u, v, key)
         budget[name] = sign * float(np.sum(np.asarray(st[name]["pressure"], dtype=float)))
     if node != start:
         raise ValueError(f"{loop_names[-1]} does not return the loop to its start junction {start}")
