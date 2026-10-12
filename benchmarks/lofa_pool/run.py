@@ -195,12 +195,17 @@ def run_all() -> list[dict]:
         if os.path.exists(out):
             os.remove(out)
         proc = ctx.Process(target=_child, args=(rung, out))
+        start = _time.perf_counter()
         proc.start()
         proc.join(TIMEOUTS[rung])
         if proc.is_alive():
             proc.terminate()
             proc.join()
             rows.append(dict(rung=rung, title=TITLES[rung], status="TIMEOUT", wall_s=TIMEOUTS[rung], detail=f"no result within {TIMEOUTS[rung]} s", metrics={}))
+            continue
+        if not os.path.exists(out):
+            rows.append(dict(rung=rung, title=TITLES[rung], status="CRASH", wall_s=_time.perf_counter() - start,
+                             detail=f"no record written, exit code {proc.exitcode}", metrics={}))
             continue
         with open(out) as f:
             rows.append(json.load(f))

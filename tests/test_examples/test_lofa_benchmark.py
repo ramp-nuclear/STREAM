@@ -2,10 +2,12 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
 BENCH = Path(__file__).resolve().parents[2] / "benchmarks" / "lofa_pool"
+SILENT_RUNG = "4"
 
 
 def _load(name):
@@ -46,3 +48,35 @@ def test_run_records_a_synthetic_failure(monkeypatch):
     assert rec.status == "failed"
     assert "ValueError" in rec.error and "synthetic" in rec.traceback
     assert rec.library_path and np.isfinite(rec.wall_s)
+
+
+class _FakeProcess:
+    def __init__(self, target, args):
+        self.rung, self.out = args
+        self.exitcode = None
+
+    def start(self):
+        if self.rung == SILENT_RUNG:
+            self.exitcode = -11
+            return
+        with open(self.out, "w") as f:
+            json.dump(dict(rung=self.rung, status="PASS", wall_s=0.0, detail="", metrics={}), f)
+        self.exitcode = 0
+
+    def join(self, timeout=None):
+        pass
+
+    def is_alive(self):
+        return False
+
+
+def test_runner_records_a_rung_whose_child_wrote_nothing_as_a_crash(monkeypatch, tmp_path):
+    run = _load("run")
+    monkeypatch.setattr(run, "RESULTS_DIR", tmp_path)
+    monkeypatch.setattr(run.multiprocessing, "get_context", lambda method: SimpleNamespace(Process=_FakeProcess))
+    rows = run.run_all()
+    assert [r["rung"] for r in rows] == list(run.RUNGS)
+    crashed = [r for r in rows if r["status"] == "CRASH"]
+    assert len(crashed) == 1 and crashed[0]["rung"] == SILENT_RUNG
+    assert crashed[0]["detail"] == "no record written, exit code -11"
+    assert all(r["status"] == "PASS" for r in rows if r["rung"] != SILENT_RUNG)

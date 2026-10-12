@@ -1,4 +1,6 @@
-"""Stress sweep of the pool-reactor case: one spawned worker process per case, one CSV per axis."""
+"""Stress sweep of the pool-reactor case: one spawned worker process per case, one CSV per axis.
+Each axis has a wall-clock limit (``--timeout``, default ``AXIS_TIMEOUT`` seconds); an axis that
+exceeds it raises ``multiprocessing.TimeoutError``."""
 from __future__ import annotations
 
 import argparse
@@ -18,6 +20,7 @@ _spec.loader.exec_module(metrics)
 
 RESULTS = HERE / "results"
 STATUSES = ("completed", "saturation", "failed")
+AXIS_TIMEOUT = 7200.0
 OPTION_DEFAULTS = dict(guess="ballpark", seed=0, band=0.3, atol_rel=1e-4, rtol=1e-4, t_end=3600.0, n=1801)
 
 
@@ -64,7 +67,7 @@ def run_axis(name: str, workers: int = 10, timeout: float | None = None) -> pd.D
     jobs = [(name, label, params, options) for label, params, options in AXES[name]()]
     ctx = multiprocessing.get_context("spawn")
     os.environ.setdefault("OMP_NUM_THREADS", "1")
-    with ctx.Pool(workers) as pool:
+    with ctx.Pool(workers, maxtasksperchild=1) as pool:
         result = pool.map_async(run_case, jobs)
         rows = result.get(timeout)
     df = pd.DataFrame(rows)
@@ -105,11 +108,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Run the pool-reactor stress sweep.")
     parser.add_argument("--axis", default="all")
     parser.add_argument("--workers", type=int, default=10)
+    parser.add_argument("--timeout", type=float, default=AXIS_TIMEOUT,
+                        help=f"wall-clock limit of one axis in seconds (default {AXIS_TIMEOUT:g})")
     args = parser.parse_args(argv)
     names = list(AXES) if args.axis == "all" else [args.axis]
     frames = []
     for name in names:
-        frames.append(run_axis(name, workers=args.workers))
+        frames.append(run_axis(name, workers=args.workers, timeout=args.timeout))
         print(f"{name}: {frames[-1].status.value_counts().to_dict()}", flush=True)
     print(summary(frames).to_string(index=False))
 
