@@ -1,4 +1,11 @@
-"""Geometry, core groups, operating point and modelling choices of the loss-of-flow case."""
+"""Geometry, core groups, operating point and modelling choices of the loss-of-flow case.
+
+The module constants are the plate geometry (``LENGTH``, ``WIDTH`` in m, cell counts and
+widths of cladding and meat, ``Z_N`` axial cells), the cladding and fuel-meat solids, the core
+table (``CORE``, ``HEATED``, ``UNHEATED``), the primary pipe drop ``PIPE1_DROP`` in m, the
+natural-circulation flow signs ``NC_SIGNS``, the nominal per-plate flow ``PER_PLATE_REFERENCE``
+in kg/s, and six-group delayed-neutron data (``BETA``, ``LAMBDA`` in 1/s, ``GENERATION_TIME``
+in s)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,6 +25,8 @@ Z_N = 10
 
 @dataclass(frozen=True)
 class Group:
+    """One core group: coolant ``gap`` in m, power peaking ``factor`` and number of ``plates``."""
+
     gap: float
     factor: float
     plates: int
@@ -34,6 +43,7 @@ UNHEATED = tuple(k for k, g in CORE.items() if g.factor == 0)
 
 
 def plate_count_weighted_sum() -> float:
+    """Sum over the core groups of plate count times peaking factor."""
     return sum(g.plates * g.factor for g in CORE.values())
 
 
@@ -43,6 +53,7 @@ def power_share(name: str) -> float:
 
 
 def plate_pipe(gap: float) -> EffectivePipe:
+    """Rectangular channel of one plate with coolant ``gap`` in m, heated on its wide side."""
     return EffectivePipe.rectangular(length=LENGTH, edge1=WIDTH, edge2=gap, heated_edge=WIDTH)
 
 
