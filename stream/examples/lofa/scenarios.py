@@ -210,8 +210,9 @@ def _steady_fields(rec: Record, agr: Aggregator, K, refs: dict, y: np.ndarray) -
 
 def _run(p: Params, scenario: str, *, t_end: float, n: int, atol_rel: float, rtol: float, guess_kind: str,
          seed: int, band: float) -> tuple[Solution, Record]:
-    """Operating point, then the scenario's transient. Reaching saturation ends the run with
-    status ``saturation`` and the trajectory up to the stop; any other solver failure raises."""
+    """Operating point, then the scenario's transient. Reaching saturation ends the run with status
+    ``saturation`` and the trajectory up to the stop; any other exception raises; a run the solver
+    ends early without raising returns status ``failed``."""
     p = _effective(p, scenario)
     agr, K, refs, y = operating_point(p, guess_kind=guess_kind, seed=seed, band=band)
     rec = Record.empty("failed")
