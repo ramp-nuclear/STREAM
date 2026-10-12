@@ -8,7 +8,7 @@ from stream.examples.lofa.system import operating_point
 @pytest.fixture(scope="module")
 def short_run():
     p = Params()
-    sol, rec = scenarios.both_pumps(p, t_end=300.0, n=601)
+    sol, rec = scenarios.both_pumps(p, t_end=300.0, n=1501)
     agr, K, refs, y = operating_point(p)
     return p, agr, K, refs, sol
 
