@@ -23,7 +23,8 @@ def turbulent_friction(re: Value, epsilon: Value = 0) -> Value:
     r"""An approximation for the friction factor of the implicit Colebrook-White equation,
     as written in RELAP and [#KAERI]_ page 3, chapter 2.1.2.
 
-    For very low Reynolds values (approx. <7), 0.0 is returned.
+    The result is floored by the laminar :math:`64/\text{Re}`. Below Re of about 7, where the
+    approximation is undefined, the laminar value is returned.
 
     Parameters
     ----------
@@ -45,12 +46,20 @@ def turbulent_friction(re: Value, epsilon: Value = 0) -> Value:
     0.10560870441248855
     >>> turbulent_friction(1e6)
     0.011649393290640643
+    >>> turbulent_friction(1e4)
+    0.030874516278124504
+
+    At very low Reynolds numbers the laminar floor takes over:
+
     >>> turbulent_friction(5.0)
-    0.0
+    12.8
+    >>> re = np.array([5.0, 7.0, 15.0, 30.0, 60.0])
+    >>> bool(np.allclose(turbulent_friction(re), 64 / re))
+    True
     """
     inlog = np.log10(epsilon + 21.25 / re**0.9)
     outlog = np.log10(epsilon / 3.7 + (2.51 / re) * (1.14 - 2 * inlog))
-    return np.nan_to_num((-2 * outlog) ** -2)
+    return np.maximum(np.nan_to_num((-2 * outlog) ** -2), 64.0 / re)
 
 
 @njit

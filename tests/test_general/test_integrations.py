@@ -373,7 +373,7 @@ def test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundar
 
     agr = Aggregator(
         graph=DiGraph([(F, PK, vars_("T")), (PK, F, vars_("power"))]),
-        funcs={F: dict(T_left=T0, T_right=T0), PK: dict(t=identity)},
+        funcs={F: dict(T_left=T0, T_right=T0, h_left=np.inf, h_right=np.inf), PK: dict(t=identity)},
     )
 
     y0 = np.zeros(len(agr))

@@ -615,6 +615,14 @@ def _fill(val, shape):
 
 
 wall_or_default = dataclass_map(Walls, if_is)
+
+
+def _require_conductance_where_temperature(T: Walls, h: Walls) -> None:
+    for side in ("left", "right", "top", "bottom"):
+        if getattr(T, side) is not None and getattr(h, side) is None:
+            raise ValueError(f"T_{side} is wired but h_{side} is not; wire both or neither")
+
+
 in_par_walls = dataclass_map(Walls, in_parallel)
 fill_solid = dataclass_map(Solid, _fill)
 
@@ -799,6 +807,12 @@ class Fuel(Calculation):
         -------
         Functional output: CPerS or C
             Temporal derivative (for inner temperatures) and error for walls
+
+        Raises
+        ------
+        ValueError
+            If a wall's temperature is given without its conductance. A wall given
+            neither takes a conductance of 1.0 and the temperature of its edge cells.
         """
         out = np.empty(len(self))
         _v = self._vars
@@ -807,8 +821,11 @@ class Fuel(Calculation):
         power_mat[self.meat == 1] = power * self.power_shape
 
         T_last_cell = Walls(left=T[:, 0], right=T[:, -1], top=T[0, :], bottom=T[-1, :])
-        h_extraneous = wall_or_default(Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom))
-        T_extraneous = wall_or_default(Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom), T_last_cell)
+        T_given = Walls(left=T_left, right=T_right, top=T_top, bottom=T_bottom)
+        h_given = Walls(left=h_left, right=h_right, top=h_top, bottom=h_bottom)
+        _require_conductance_where_temperature(T_given, h_given)
+        h_extraneous = wall_or_default(h_given)
+        T_extraneous = wall_or_default(T_given, T_last_cell)
 
         T_walls = self.walls_eq(T_extraneous, T_last_cell, h_extraneous, self.h_to_wall)
 

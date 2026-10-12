@@ -12,6 +12,7 @@ from hypothesis.strategies import floats, integers, sampled_from, tuples
 
 # noinspection PyProtectedMember
 from stream.calculations.heat_diffusion import _fill
+from stream.physical_models.dimensionless import Pr, Re_mdot
 from stream.physical_models.heat_transfer_coefficient import (
     Bergles_Rohsenhow_partial_SCB,
     Bergles_Rohsenow_T_ONB,
@@ -22,6 +23,8 @@ from stream.physical_models.heat_transfer_coefficient import (
     wall_heat_transfer_coeff,
     wall_temperature,
 )
+from stream.physical_models.heat_transfer_coefficient.laminar import _xstar_table34, developing_laminar_h_spl
+from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
 from stream.physical_models.heat_transfer_coefficient.single_phase import maximal_h_spl
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import heavy_water, light_water
@@ -180,3 +183,49 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         assert np.allclose(h, turb)
     else:
         assert np.allclose(h, lin_interp(*re_bounds, lam, turb, md))
+
+
+def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
+    """The Elenbaas natural-convection HTC must stay finite when the wall is at or
+    below the coolant temperature (negative/zero Rayleigh), not return NaN."""
+    cool = light_water.to_properties(np.array([50.0, 50.0]))
+    kw = dict(coolant=cool, depth=0.003, T_cool=np.array([50.0, 50.0]), Lh=0.6)
+
+    cooled = Elenbaas_h_spl(T_wall=np.array([60.0, 40.0]), **kw)  # +10 K and -10 K
+    assert np.all(np.isfinite(cooled)) and np.all(cooled >= 0)
+    # Buoyancy magnitude is symmetric, so the -10 K cell matches the +10 K one.
+    hot = Elenbaas_h_spl(T_wall=np.array([60.0, 60.0]), **kw)
+    assert np.allclose(cooled, hot)
+    # Isothermal wall: the conduction limit.
+    assert np.all(np.isfinite(Elenbaas_h_spl(T_wall=np.array([50.0, 50.0]), **kw)))
+
+
+def test_elenbaas_h_is_finite_and_positive_for_a_wall_colder_than_coolant():
+    coolant = light_water.to_properties(np.array([50.0]))
+    h = Elenbaas_h_spl(coolant=coolant, depth=0.003, T_cool=np.array([50.0]), T_wall=np.array([40.0]), Lh=0.6)
+    assert np.all(h > 0)
+    assert np.all(np.isfinite(h))
+
+
+def test_developing_laminar_h_is_continuous_over_the_tabulated_range():
+    coolant = light_water.to_properties(np.array([50.0]))
+    mdot, A, Dh, aspect_ratio = 0.02, 1e-3, 5e-3, 0.1
+    re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
+    pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
+    factor = 6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257)
+
+    x_star = np.geomspace(_xstar_table34[0], _xstar_table34[-1], 4000)
+    h = developing_laminar_h_spl(
+        coolant=coolant,
+        mdot=mdot,
+        A=A,
+        Dh=Dh,
+        develop_length=x_star * Dh * re * pr * factor,
+        aspect_ratio=aspect_ratio,
+    )
+    jumps = np.abs(np.diff(h)) / h[1:]
+    bound = np.log(x_star[1] / x_star[0])
+    assert jumps.max() < bound, (
+        f"relative jump {jumps.max():.3g} between neighbouring x* exceeds {bound:.3g}, the most a "
+        "continuous h with |d ln h / d ln x*| <= 1 can change over one grid step"
+    )

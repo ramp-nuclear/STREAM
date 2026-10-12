@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import hypothesis.strategies as st
+import networkx as nx
 import numpy as np
 import pytest
 from hypothesis import given, settings
@@ -14,6 +15,8 @@ from stream.calculations import (
     Resistor,
     ResistorSum,
 )
+from stream.calculations.ideal.inertia import Inertia, bilinear
+from stream.calculations.ideal.resistors import ResistorMul, Screen
 from stream.substances import light_water
 from stream.utilities import just, summed
 
@@ -72,6 +75,34 @@ def test_resistor_factor_just_multiplies(r, factor, mdot):
     assert np.allclose(p0, p1)
 
 
+@settings(deadline=None)
+@given(pos_medium_floats, pos_medium_floats, medium_floats)
+def test_resistor_mul_factor_enters_residual(r, factor, mdot):
+    """The multiplication factor must scale the residual the solver sees, not just the
+    standalone dp_out."""
+    base = Resistor(r)
+    scaled = factor * base
+    T = 25.0
+    base_res = np.array(base.calculate([T, 0.0], mdot=mdot, Tin=T))
+    scaled_res = np.array(scaled.calculate([T, 0.0], mdot=mdot, Tin=T))
+    # out[1] = variables[1] - dp_out, so the factored residual is factor * base's.
+    assert np.allclose(scaled_res, factor * base_res)
+
+
+@given(st.integers(min_value=-1000, max_value=1000).filter(bool), pos_medium_floats)
+def test_resistor_mul_accepts_int_factor(n, r):
+    """The docstring advertises `2 * resistor`; an int factor must be accepted and
+    stored as a float."""
+    scaled = n * Resistor(r)
+    assert isinstance(scaled.factor, float)
+    assert scaled.factor == float(n)
+
+
+def test_resistor_mul_rejects_non_numeric_factor():
+    with pytest.raises(TypeError):
+        ResistorMul("x", Resistor(10.0))
+
+
 @given(pos_medium_floats, pos_medium_floats)
 def test_resistor_multiplication_is_symmetric(f, r):
     res = Resistor(r)
@@ -90,6 +121,18 @@ def test_resistor_multiplication_is_symmetric(f, r):
 )
 def test_resistor_mul_can_be_deepcopied(r, f):
     assert deepcopy(f * r)
+
+
+def test_resistor_mul_deepcopy_is_a_distinct_graph_node():
+    """Deep-copying a scaled resistor must produce a distinct graph node rather than
+    one that collapses onto the original."""
+    rm = 2.0 * Resistor(100)
+    rm_copy = deepcopy(rm)
+    assert rm_copy.resistor is not rm.resistor
+    g = nx.DiGraph()
+    g.add_node(rm)
+    g.add_node(rm_copy)
+    assert g.number_of_nodes() == 2
 
 
 @given(*(5 * [normal_floats]))
@@ -161,6 +204,49 @@ def test_local_pressure_drop_is_always_non_positive(A1, A2, mdot):
     calc = LocalPressureDrop(light_water, A1, A2)
     dp = calc.dp_out(Tin=25.0, mdot=mdot)
     assert dp <= 0.0
+
+
+def test_screen_is_finite_at_zero_flow():
+    """A Screen must not raise ZeroDivisionError at mdot = 0 (the zero-flow steady
+    guess, and the reversal crossing); its dp vanishes there."""
+    screen = Screen(clear_area=0.5, total_area=1.0, wire_diameter=0.001, fluid=light_water)
+    assert screen.dp_out(mdot=0.0, Tin=50.0) == 0.0
+    assert np.allclose(screen.calculate([50.0, 0.0], mdot=0.0, Tin=50.0), [0.0, 0.0])
+    assert np.isclose(screen.dp_out(mdot=1e-6, Tin=50.0), 0.0, atol=1e-6)
+
+
+def test_bilinear_inertia_stays_positive_for_reversed_flow():
+    """Inertance is a positive geometric quantity for either flow direction. Reversed
+    flow must not make L negative (anti-dissipative) or unbounded, and L must stay
+    strictly positive through mdot = 0."""
+    L0 = 100.0
+    L = bilinear(L0, 1.0)
+    for mdot in (-2.0, -1.0, -0.5, 0.0):
+        assert 0.0 < L(mdot=mdot) <= L0
+        assert L(mdot=mdot) == L(mdot=-mdot)
+    assert Inertia(L).dp_out(mdot=-1.0, mdot2=-0.1) > 0.0, "dp must oppose the acceleration"
+
+
+def test_bilinear_inertia_is_linear_in_mdot_below_the_knee_and_constant_above_it():
+    L0, mdot0 = 100.0, 1.0
+    L = bilinear(L0, mdot0)
+    assert L(mdot=0.5) == pytest.approx(L0 * 0.5)
+    assert L(mdot=-0.5) == pytest.approx(L0 * 0.5)
+    assert L(mdot=1.0) == pytest.approx(L0)
+    assert L(mdot=-2.0) == pytest.approx(L0)
+
+
+def test_local_pressure_drop_reynolds_uses_hydraulic_diameter():
+    """Re must be built from the equivalent-circle diameter D = 2*sqrt(A/pi), not the
+    radius sqrt(A/pi); at low flow the wrong Dh mis-reads the Idelchik table."""
+    A1, A2, Tin, mdot = 0.02, 0.008, 25.0, 0.05
+    calc = LocalPressureDrop(light_water, A1, A2)
+    seen = {}
+    calc.f_calc = lambda **kw: seen.update(kw) or 1.0
+    calc.dp_out(Tin=Tin, mdot=mdot)
+
+    D = 2 * np.sqrt(A2 / np.pi)
+    assert seen["re"] == pytest.approx(mdot * D / (A2 * light_water.viscosity(Tin)))
 
 
 @settings(deadline=None)

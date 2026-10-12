@@ -470,3 +470,10 @@ def test_annulus_given_heat_production_and_wall_temperatures(temps=(45, 75), edg
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, np.mean(temps))))
     T_num = steady["Fuel"]["T"][0]
     assert np.allclose(T_num, T_exp)
+
+
+def test_fuel_raises_when_a_wall_temperature_is_wired_without_its_conductance():
+    fuel = Fuel(np.arange(2), np.arange(2), mock_solid, y_length=1, power_shape=np.zeros((1, 1)))
+    inp = np.array((100.0, 0.0, 0.0))
+    with pytest.raises(ValueError, match="T_left is wired but h_left is not"):
+        fuel.calculate(inp, power=0, T_left=np.array([300.0]), T_right=np.array([50.0]), h_right=np.array([1.0]))

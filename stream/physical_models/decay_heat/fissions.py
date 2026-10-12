@@ -95,5 +95,5 @@ def profile_from_pk(time: Second, pk: PointKinetics) -> DecayHeatFunction:
         generation_time=pk.Lambda,
         delayed_groups_decay_rates=pk.lambdak,
         delayed_neutron_fractions=pk.betak,
-        input_reactivity_func=pk.input_reactivity,
+        controls=pk.controls,
     )

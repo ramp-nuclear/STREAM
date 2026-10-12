@@ -64,6 +64,11 @@ def _specific_heat(T: Celsius) -> JPerKgK:
     cp: JPerKgK
         Specific heat of saturated H2O
 
+    Notes
+    -----
+    The fit has a pole near 366 °C, so temperatures above 350 °C are evaluated
+    at 350 °C.
+
     Examples
     --------
     >>> _specific_heat(8.)
@@ -73,7 +78,7 @@ def _specific_heat(T: Celsius) -> JPerKgK:
     >>> _specific_heat(50.)
     4181.4264285644285
     """
-    T = np.abs(T)
+    T = np.minimum(np.abs(T), 350.0)
     A = 17.48908904
     B = -1.67507e-3
     C = -0.03189591

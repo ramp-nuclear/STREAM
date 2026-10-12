@@ -301,9 +301,8 @@ def _nusselt_coefficient_interp_developing(x: Value) -> Value:
     These are supposed to be accurate representations of an analytic solution for :math:`x > 10^{-4}`,
     and of Equation 316 (an approximate solution, see :func:`._worsoe_schmidt_leveque_type`) otherwise.
 
-    This function is more exact than :func:`._nusselt_coefficient_developing` but slightly slower.
-    The other one is used by default in our code, and its error is checked against the tabulated values directly in
-    its tests.
+    This function is more exact than :func:`._nusselt_coefficient_developing` but slightly slower, and it is
+    continuous in :math:`x^*`, which is why :func:`developing_laminar_h_spl` uses it.
 
     See Also
     --------
@@ -379,6 +378,6 @@ def developing_laminar_h_spl(
     re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
     pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
     x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
-    nudev = _nusselt_coefficient_developing(x_star)
+    nudev = _nusselt_coefficient_interp_developing(x_star)
     nusselt = two_sided_heating_nusselt(aspect_ratio, nudev)
     return nusselt * coolant.conductivity / Dh

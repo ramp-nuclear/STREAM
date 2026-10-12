@@ -5,6 +5,8 @@ of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 
 """
 
+import numbers
+from copy import deepcopy
 from functools import partial
 from itertools import chain
 from typing import Callable, Protocol, Sequence
@@ -94,16 +96,21 @@ class ResistorMul:
     """
 
     def __init__(self, factor: float, resistor: DPCalculation):
-        if not isinstance(factor, float):
-            raise TypeError(f"Cannot multiply object of type {type(resistor)} by non-float type {factor}")
-        self.factor = factor
+        if not isinstance(factor, numbers.Real):
+            raise TypeError(f"Cannot multiply object of type {type(resistor)} by non-numeric type {type(factor)}")
+        self.factor = float(factor)
         self.resistor = resistor
 
     def dp_out(self, **kwargs) -> Pascal:
         return self.factor * self.resistor.dp_out(**kwargs)
 
+    def calculate(self, variables, **kwargs):
+        # Run the wrapped class's residual with self as receiver so it sees the factored dp_out.
+        return type(self.resistor).calculate(self, variables, **kwargs)
+
     def __deepcopy__(self, memo):
-        return type(self)(self.factor, self.resistor)
+        # A shared inner resistor makes the copy compare equal to the original, collapsing both into one graph node.
+        return type(self)(self.factor, deepcopy(self.resistor, memo))
 
     def __getattr__(self, item):
         return self.resistor.__getattribute__(item)
@@ -301,7 +308,7 @@ class LocalPressureDrop(LumpedComponent):
         rho = self._rho(Tin)
         A = min(self.A1, self.A2)
         aratio = min(self.A1 / self.A2, self.A2 / self.A1)
-        Dh = np.sqrt(A / np.pi)
+        Dh = 2 * np.sqrt(A / np.pi)
         re = Re_mdot(mdot, A, Dh, self._visc(Tin))
         f = self.f_calc(mdot=mdot, aratio=aratio, re=re)
         return -local_pressure_by_mdot(mdot, rho, f, A)
@@ -534,6 +541,9 @@ class Screen(LumpedComponent):
         if re > 1000:
             return factor
         if re < 50:
+            # dp carries a factor mdot*|mdot|, so at zero flow any finite coefficient gives dp = 0.
+            if re == 0:
+                return factor
             return factor + 22 / re
 
         re_list = np.array([50, 100, 150, 200, 300, 400, 500, 1000])
