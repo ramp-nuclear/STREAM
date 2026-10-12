@@ -1,15 +1,16 @@
 import logging
+import numbers
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
 from typing import Any, Iterable, Literal, Protocol, Sequence, overload
 
 import numpy as np
-from cytoolz import valmap
+from cytoolz import unique, valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
-from stream.solvers import algebraic, differential, differential_algebraic
+from stream.solvers import algebraic, differential, differential_algebraic, quasi_static
 from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
 from stream.utilities import STREAM_DEBUG, concat, offset
@@ -141,9 +142,12 @@ class Aggregator:
         *edges: tuple[Calculation, Calculation, Iterable[Name]],
     ) -> "Aggregator":
         """
-        Connect two Aggregator objects. In case of a clash, the second object
-        prevails. If ``edges`` contains an edge already in either ``a.graph``
-        or ``b.graph``, it is updated, not overridden.
+        Connect two Aggregator objects. An edge present in both graphs carries
+        the union of the variables routed on it in ``a`` and in ``b``. A
+        calculation present in both has its functions dictionaries merged key
+        by key, with ``b``'s entry winning when both define the same key. If
+        ``edges`` contains an edge already in either ``a.graph`` or
+        ``b.graph``, its variables are added to that edge's, not overridden.
 
         .. tip::
             The two inputs may share nodes. This is very useful!
@@ -204,8 +208,20 @@ class Aggregator:
             which is provided in parts from the different calculations.
         """
         out = np.empty(self.vector_length)
+        mismatched = {}
         for node, section in self.sections.items():
-            out[section] = self._op("calculate", y, t, node)
+            result = np.asarray(self._op("calculate", y, t, node))
+            expected = section.stop - section.start
+            if result.size != expected:
+                mismatched[node.name] = (expected, result.size)
+            else:
+                out[section] = result
+        if mismatched:
+            raise ValueError(
+                f"These calculations returned a result whose length differs from their section, "
+                f"as {{name: (expected, returned)}}: {mismatched}. A scalar or length-1 result would "
+                f"silently broadcast across the section and solve a different system."
+            )
         return out
 
     def _node_external(self, node: Calculation, y: Sequence[float], t: Second) -> dict[str, dict[Calculation, Any]]:
@@ -314,7 +330,7 @@ class Aggregator:
             The system description to parse.
 
         """
-        has_time = any(isinstance(key, float) for key in s)
+        has_time = any(isinstance(key, numbers.Number) for key in s)
         return self._solution_from_states(s) if has_time else self._vector_from_state(s)
 
     def _vector_from_state(self, s: DictState) -> Array1D:
@@ -439,7 +455,7 @@ class Aggregator:
             The solution from this Aggregator's solve method.
 
         """
-        return {t: self.save(solution.data[i, :], t) for i, t in enumerate(solution.time)}
+        return {float(t): self.save(solution.data[i, :], t) for i, t in enumerate(solution.time)}
 
     def _op(self, op: str, y: Sequence[float], t: Second, node: Calculation):
         input_ = y[self.sections[node]]
@@ -489,7 +505,7 @@ class Aggregator:
     def solve(
         self,
         y0: Array1D | DictState,
-        time: Sequence[float] | None,
+        time: Sequence[float],
         yp0: Array1D = None,
         eq_type: Literal["ODE", "DAE", "ALG"] | None = None,
         *,
@@ -510,14 +526,16 @@ class Aggregator:
             Initial values or guess. Can either be an array or a State, in the
             latter case :meth:`load` will be used to obtain the desired array.
         time: Sequence[float]
-            Return results at these time points.
+            Return results at these time points. For a steady root find use
+            :meth:`solve_steady` instead.
         yp0: Array1D or None
             Initial derivatives. It helps if they're known (in the DAE case),
             but by default the consistent yp0 is found from y0.
         eq_type: 'ODE', 'DAE', 'ALG' or None
             A solver may be chosen deliberately from [ODE, DAE, ALG].
-            If None, the method is set by looking at the mass matrix and
-            whether time is none.
+            If None, the method is set by looking at the mass matrix: ODE if
+            every variable is differential, DAE if some are, and a quasi-static
+            ALG solve if none are.
         progressbar: ProgressBarLike or bool
             Whether to use a progressbar, and if so, which one. If ``True``, use ``use progressbar.ProgressBar``
         options:
@@ -528,26 +546,32 @@ class Aggregator:
         solution: Solution
             Calculated vector at requested times: [time, variable].
 
+        Raises
+        ------
+        ValueError : If ``time`` is None.
+
         References
         ----------
         Scikits.Odes documentation
         """
+        if time is None:
+            raise ValueError("solve() needs time points; use solve_steady(guess) for a steady root find.")
         if eq_type is None:
-            if all(self.mass) and time is not None:
+            if all(self.mass):
                 eq_type = "ODE"
                 logger.log(STREAM_DEBUG, "Solving TRANSIENT (ODE)")
-            elif any(self.mass) and time is not None:
+            elif any(self.mass):
                 eq_type = "DAE"
                 logger.log(STREAM_DEBUG, "Solving TRANSIENT")
             else:
                 eq_type = "ALG"
-                logger.log(STREAM_DEBUG, "Solving STEADY STATE")
+                logger.log(STREAM_DEBUG, "Solving QUASI-STATIC")
 
         if not isinstance(y0, np.ndarray):
             y0 = self.load(y0)
 
         if eq_type == "ODE":
-            data = differential(F=self.compute, y0=y0, time=time, **options)
+            data, time = differential(F=self.compute, y0=y0, time=time, **options)
         elif eq_type == "DAE":
             if progressbar and isinstance(progressbar, bool):
                 try:
@@ -573,7 +597,7 @@ class Aggregator:
             if progressbar is not None:
                 progressbar.finish()
         elif eq_type == "ALG":
-            data = algebraic(F=self.compute, y0=y0, time=time, R=self._root, **options)
+            data, time = quasi_static(F=self.compute, y0=y0, time=time, R=self._root, **options)
         else:
             raise ValueError(f"Unknown method {eq_type}, choose from [ODE, DAE, ALG]")
         return Solution(np.asarray(time), data)
@@ -597,7 +621,7 @@ class Aggregator:
         """
         if not isinstance(guess, np.ndarray):
             guess = self.load(guess)
-        return algebraic(F=self.compute, y0=guess, R=self._root, **options)
+        return algebraic(F=self.compute, y0=guess, **options)
 
 
 @dataclass
@@ -628,9 +652,12 @@ class CalculationGraph:
         *edges: tuple[Calculation, Calculation, Iterable[Name]],
     ) -> "CalculationGraph":
         """
-        Connect two CalculationGraph objects. In case of a clash, the second object
-        prevails. If ``edges`` contains an edge already in either ``a.graph``
-        or ``b.graph``, it is updated, not overridden.
+        Connect two CalculationGraph objects. An edge present in both graphs carries
+        the union of the variables routed on it in ``a`` and in ``b``. A
+        calculation present in both has its functions dictionaries merged key
+        by key, with ``b``'s entry winning when both define the same key. If
+        ``edges`` contains an edge already in either ``a.graph`` or
+        ``b.graph``, its variables are added to that edge's, not overridden.
 
         .. tip::
             The two inputs may share nodes. This is very useful!
@@ -650,15 +677,20 @@ class CalculationGraph:
             A new CalculationGraph whose graph and functions are composed out of a,b.
         """
         g = compose(a.graph, b.graph)
+        for e, a_data in a.graph.edges.items():
+            if e in b.graph.edges:
+                merged_vars = chain(a_data.get(VARS, ()), b.graph.edges[e].get(VARS, ()))
+                g.edges[e][VARS] = tuple(unique(merged_vars))
         for edge in edges:
             u, v, d = edge
             if (e := (u, v)) in g.edges:
-                g.edges[e][VARS] = tuple(chain(g.edges[e][VARS], d))
+                g.edges[e][VARS] = tuple(unique(chain(g.edges[e][VARS], d)))
             else:
                 g.add_edge(u, v, variables=d)
 
         af, bf = a.funcs or {}, b.funcs or {}
-        return CalculationGraph(graph=g, funcs=af | bf or None)
+        merged = {c: {**af.get(c, {}), **bf.get(c, {})} for c in af.keys() | bf.keys()}
+        return CalculationGraph(graph=g, funcs=merged or None)
 
     def __add__(self, other) -> "CalculationGraph":
         return self.connect(self, other)

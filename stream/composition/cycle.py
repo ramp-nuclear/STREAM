@@ -201,9 +201,8 @@ def kirchhoffify(
         add(k, component, "mdot")
 
     if inertial_comps is not None:
-        assert isinstance(k, KirchhoffWDerivatives), (
-            f"{type(k)} does not handle inertial components, as it does not index mdot2"
-        )
+        if not isinstance(k, KirchhoffWDerivatives):
+            raise TypeError(f"{type(k)} does not handle inertial components, as it does not index mdot2")
         for component in inertial_comps:
             add(k, component, "mdot", "mdot2")
 

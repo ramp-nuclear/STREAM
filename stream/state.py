@@ -5,6 +5,7 @@ objects. We provide additional useful methods in the same namespace.
 
 """
 
+import numbers
 from functools import reduce
 from itertools import chain
 from operator import or_
@@ -52,6 +53,10 @@ def _two_deep_value_switch(d: dict[_T, dict], switch: Callable[[...], Any]) -> d
     return {k: {k2: switch(v2) for k2, v2 in v.items()} for k, v in d.items()}
 
 
+def _copied(v: Any) -> Any:
+    return v.copy() if isinstance(v, np.ndarray) else v
+
+
 ListState = dict[str, dict[str, float | list]]
 DictState = dict[str, CalcState]
 
@@ -61,8 +66,10 @@ class State(dict):
 
     @classmethod
     def merge(cls, *st: DictState) -> "State":
-        """Merge states together. Later states have precedence."""
-        return cls({k: reduce(or_, (s.get(k, {}) for s in st)) for k in set(chain(*(s.keys() for s in st)))})
+        """Merge states together. Later states have precedence. Inner dicts and
+        array values are copied, so the result never aliases its input states."""
+        merged = {k: reduce(or_, (s.get(k, {}) for s in st)) for k in set(chain(*(s.keys() for s in st)))}
+        return cls(_two_deep_value_switch(merged, _copied))
 
     @classmethod
     def uniform(cls, calculations: Iterable[Calculation], value: Value, *variables: str) -> "State":
@@ -257,8 +264,8 @@ def to_dataframe(s: DictState | StateTimeseries) -> DataFrame:
         A Pandas DataFrame.
 
     """
-    has_float_keys = any(isinstance(key, float) for key in s)
-    return _state_timeseries_to_dataframe(s) if has_float_keys else State(s).to_dataframe()
+    has_time_keys = any(isinstance(key, numbers.Number) for key in s)
+    return _state_timeseries_to_dataframe(s) if has_time_keys else State(s).to_dataframe()
 
 
 def _state_timeseries_to_dataframe(s: StateTimeseries) -> DataFrame:

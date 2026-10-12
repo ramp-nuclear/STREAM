@@ -20,7 +20,8 @@ to achieve a higher level of proficiency.
    +---------+--------------------------+-------------------------------+
    |**DAE**  |Scikits.odes.ida          |:func:`differential_algebraic` |
    +---------+--------------------------+-------------------------------+
-   |**ALG**  |Scipy.optimize.root       |:func:`algebraic`              |
+   |**ALG**  |Scipy.optimize.root       |:func:`algebraic`,             |
+   |         |                          |:func:`quasi_static`           |
    +---------+--------------------------+-------------------------------+
 
 """
@@ -33,7 +34,7 @@ from scikits.odes import dae
 from scipy import optimize as opt
 from scipy.integrate import solve_ivp
 
-from stream.units import Array, Array1D, Array2D, Functional
+from stream.units import Array1D, Array2D, Functional
 from stream.utilities import concat, ignore_warnings
 
 logger = logging.getLogger("stream.aggregator")
@@ -168,8 +169,9 @@ def _continuous_mode_dae(solve: Callable, time: Array1D, y0: Array1D, yp0: Array
             new_solution = solve(new_time, y[-1], ydot[-1])
         except TransientRuntimeError as e:
             logger.critical(e.message)
-            t = concat(t, e.t)
-            y = concat(y, e.y)
+            if e.t is not None:
+                t = concat(t, e.t[1:])
+                y = concat(y, e.y[1:])
             break
         t = concat(t, new_solution.values.t[1:])
         y = concat(y, new_solution.values.y[1:])
@@ -181,58 +183,78 @@ class AlgRuntimeError(RuntimeError):
     pass
 
 
-def algebraic(
+def _root(F: Functional, y0: Array1D, t: float, **options) -> Array1D:
+    sol = opt.root(F, y0, (t,), **options)
+    if not sol["success"]:
+        raise AlgRuntimeError(f"At t={t:.3f}, Root Finding failed with the following message:\n" + sol["message"])
+    return sol.x
+
+
+def algebraic(F: Functional, y0: Array1D, **options) -> Array1D:
+    r"""Solving an Algebraic Equation :math:`0=F(y, 0)`
+
+    Parameters
+    ----------
+    F: Functional
+        The main right-hand side function :math:`F(y,t)`, evaluated at :math:`t=0`.
+    y0: Array1D
+        Initial Guess.
+    options:
+        Other options to be passed to the ``Scipy.optimize.root`` solver.
+
+    Returns
+    -------
+    solution: Array1D
+        The root of the functional. A failed root find raises :class:`AlgRuntimeError`.
+    """
+    return _root(F, y0, 0, **options)
+
+
+def quasi_static(
     F: Functional,
     y0: Array1D,
-    time: Sequence[float] | None = None,
+    time: Sequence[float],
     R: Functional = None,
     **options,
-) -> Array:
-    r"""Solving an Algebraic Equation :math:`0=F(y, t)`
+) -> tuple[Array2D, Array1D]:
+    r"""Solving an Algebraic Equation :math:`0=F(y, t)` at each of a sequence of time points
+
+    The root at each time point is found from the root at the previous one, so this is a
+    quasi-static simulation of the algebraic system.
 
     Parameters
     ----------
     F: Functional
         The main right-hand side function :math:`F(y,t)`.
     y0: Array1D
-        Initial Guess.
-    time: Sequence[float] | None
-        If ``None``, the root of the functional is found. Else, the root is found at the specified
-        time points, given sequential initial guesses. It is a quasi-static simulation,
-        if one wills it. The first vector is then the initial guess.
+        The state at ``time[0]``, which is taken as is.
+    time: Sequence[float]
+        Time points at which the root is found.
     R: Functional | None
-        A function controlling transient simulation stop events.
+        A function controlling stop events: the simulation stops after the first time point at
+        which not all of its values are truthy.
     options:
         Other options to be passed to the ``Scipy.optimize.root`` solver.
 
-
     Returns
     -------
-    solution: Array
-        The solution matrix at requested times: [time, variable].
+    solution: tuple[Array2D, Array1D]
+        The solution matrix ([time, variable]) and the times it spans. These are shorter than
+        the requested ``time`` when the stop condition ``R`` trips (the stop-triggering row
+        included), so callers must take their time axis from the returned times. A failed
+        root find raises :class:`AlgRuntimeError`.
     """
-
-    def _solve(_vec, _t):
-        _sol = opt.root(F, _vec, (_t,), **options)
-        if not _sol["success"]:
-            timestr = f"At t={_t:.3f}, " if _t is not None else ""
-            raise AlgRuntimeError(f"{timestr}Root Finding failed with the following message:\n" + _sol["message"])
-        return _sol.x
-
-    if time is not None:
-        y = np.zeros((len(time), len(y0)))
-        y[0] = y0
-        for i, t in enumerate(time[1:]):
-            sol = _solve(y[i], t)
-            if R is not None and not np.all(R(sol, t)):
-                return y[: i + 1]
-            y[i + 1] = sol
-        return y
-    else:
-        return _solve(y0, 0)
+    time = np.asarray(time)
+    y = np.zeros((len(time), len(y0)))
+    y[0] = y0
+    for i, t in enumerate(time[1:], start=1):
+        y[i] = _root(F, y[i - 1], t, **options)
+        if R is not None and not np.all(R(y[i], t)):
+            return y[: i + 1], time[: i + 1]
+    return y, time
 
 
-def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> Array2D:
+def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> tuple[Array2D, Array1D]:
     r"""Solving an Ordinary Differential Equation (ODE) :math:`\dot{y}=F(y, t)`
 
     Parameters
@@ -248,9 +270,16 @@ def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -
 
     Returns
     -------
-    solution: Array2D
-        The solution matrix at requested times: [time, variable].
+    solution: tuple[Array2D, Array1D]
+        The solution matrix ([time, variable]) and the times it spans. A solver
+        failure raises :class:`TransientRuntimeError` carrying the reached times and
+        the partial data, as the DAE path does, instead of returning a truncated
+        result.
     """
     time_limits = (time[0], time[-1])
     solution = solve_ivp(lambda t, y: F(y, t), time_limits, y0, t_eval=time, **options)
-    return np.transpose(solution.y)
+    data = np.transpose(solution.y)
+    if not solution.success:
+        reached = solution.t if solution.t is not None and len(solution.t) else None
+        raise TransientRuntimeError(reached, data, None, solution.message)
+    return data, solution.t

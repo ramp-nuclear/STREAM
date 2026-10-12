@@ -57,6 +57,11 @@ class Kirchhoff(Calculation):
         name: str or None
             Calculation's name
 
+        Raises
+        ------
+        ValueError : If the flow graph has a self-loop edge, is not strongly connected, or puts
+            the same component on more than one edge.
+        KeyError : If ``reference_node`` or one of ``abs_pressure_comps`` is not in the graph.
 
         Notes
         -----
@@ -78,6 +83,31 @@ class Kirchhoff(Calculation):
         """
         self.name = name
         self.g = graph
+
+        if selfloops := list(nx.selfloop_edges(graph)):
+            raise ValueError(
+                f"Self-loop flow edges (an edge closed on one node) are not currently supported: {selfloops}. "
+                "Close a loop with at least two junctions (or a virtual node) instead."
+            )
+
+        if graph.number_of_nodes() and not nx.is_strongly_connected(graph):
+            parts = [set(c) for c in nx.strongly_connected_components(graph)]
+            raise ValueError(
+                f"The flow graph must be strongly connected (every node reachable from every other "
+                f"along the edge orientations), but it splits into {parts}. "
+                "Close every branch into a loop, and model each hydraulically separate loop as its "
+                "own Kirchhoff calculation."
+            )
+
+        flat = list(self._edge_components)
+        seen, dupes = set(), set()
+        for comp in flat:
+            (dupes if comp in seen else seen).add(comp)
+        if dupes:
+            raise ValueError(
+                f"Each component may appear on only one flow edge, but these are reused: {dupes}. "
+                "Put a separate instance (e.g. a deepcopy) on each edge."
+            )
 
         if reference_node and reference_node[0] not in graph:
             raise KeyError(f"The reference node {reference_node} wasn't in the graph")
@@ -173,11 +203,15 @@ class Kirchhoff(Calculation):
         """
         if isinstance(asking, Junction):
             return _comps_closest(asking, self.g, self._var_book)
-        if variable == "p_abs":
-            return self._abs_pressure_book[("p_abs", asking)]
-        if variable == "ref_mdot":
-            return self.ref_mdots[asking]
-        return self._var_book[asking]
+        match variable:
+            case "p_abs":
+                return self._abs_pressure_book[("p_abs", asking)]
+            case "ref_mdot":
+                return self.ref_mdots[asking]
+            case "mdot":
+                return self._var_book[asking]
+            case _:
+                raise KeyError(f"{type(self).__name__} does not serve {variable!r} (only 'mdot', 'p_abs', 'ref_mdot').")
 
     @property
     def mass_vector(self) -> Sequence[bool]:
@@ -443,7 +477,14 @@ class Junction(Calculation):
         return dict(Tin=0)
 
     # noinspection PyMethodOverriding
-    def calculate(self, variables: Sequence[Celsius], *, Tin, Tin_minus=None, mdot) -> Array1D:
+    def calculate(
+        self,
+        variables: Sequence[Celsius],
+        *,
+        Tin: dict[Calculation, Celsius],
+        Tin_minus: dict[Calculation, Celsius] | None = None,
+        mdot: dict[Calculation, KgPerS],
+    ) -> Array1D:
         r"""Computes divergence from total mixing of temperatures in junction,
         defined as
 

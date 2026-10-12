@@ -84,7 +84,7 @@ def test_kirchhoffify_given_inertial_components_and_regular_kirchoff_throws():
         "does not handle inertial components, as it does "
         "not index mdot2"
     )
-    with pytest.raises(AssertionError, match=expected_message):
+    with pytest.raises(TypeError, match=expected_message):
         # noinspection PyTypeChecker
         kirchhoffify(a, k, inertial_comps=[1, 2])
 

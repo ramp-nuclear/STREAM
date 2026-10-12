@@ -22,8 +22,12 @@ StepStrategy = Callable[[Array1D], Array1D]
 T = TypeVar("T", bound=Value)
 
 
+_STEP_FLOOR = np.sqrt(np.finfo(float).eps)
+_STEP_RELATIVE = 1e-6
+
+
 def _default_step_strategy(y: T, *_) -> T:
-    return 1e-12 + 1e-6 * np.abs(y)
+    return _STEP_FLOOR + _STEP_RELATIVE * np.abs(y)
 
 
 def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]]:

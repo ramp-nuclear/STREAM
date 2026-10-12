@@ -638,7 +638,9 @@ def strictly_monotonous(*arrays: Sequence) -> Array:
 
 def mutually_exclusive(*arrays: Sequence) -> bool:
     """Checks if the arrays provided are mutually exclusive (don't contain the same elements)."""
-    all_values = concat(arrays)
+    if not arrays:
+        return True
+    all_values = concat(*arrays)
     unique = np.unique(all_values)
     return all_values.size == unique.size
 
