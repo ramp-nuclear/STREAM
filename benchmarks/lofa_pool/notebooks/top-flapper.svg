@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 800" width="1180" height="800" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="fwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/>
+    </marker>
+    <marker id="nc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="800" fill="#ffffff"/>
+
+  <!-- depth ruler -->
+  <line x1="140" y1="100" x2="140" y2="640" stroke="#888" stroke-width="1"/>
+  <g fill="#555" font-size="11" text-anchor="end">
+    <line x1="134" y1="100" x2="146" y2="100" stroke="#888"/><text x="128" y="104">0 m, pool surface</text>
+    <line x1="134" y1="320" x2="146" y2="320" stroke="#888"/><text x="128" y="324">-7.5 m, flapper tap</text>
+    <line x1="134" y1="390" x2="146" y2="390" stroke="#888"/><text x="128" y="394">-8.0 m, channel tops</text>
+    <line x1="134" y1="490" x2="146" y2="490" stroke="#888"/><text x="128" y="494">-8.7 m, plenum</text>
+    <line x1="134" y1="560" x2="146" y2="560" stroke="#888"/><text x="128" y="564">-13 m, decay tank</text>
+    <line x1="134" y1="640" x2="146" y2="640" stroke="#888"/><text x="128" y="644">-16 m, pumps and HX</text>
+    <text x="128" y="664" font-style="italic">not to scale</text>
+  </g>
+
+  <g transform="translate(90,0)">
+  <!-- pool -->
+  <path d="M120,100 L120,530 L470,530 L470,100" fill="#e8f1fb" stroke="#333" stroke-width="2"/>
+  <line x1="120" y1="100" x2="470" y2="100" stroke="#1f5fbf" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="130" y="118" fill="#1f5fbf" font-weight="bold">POOL, water surface at 1 atm</text>
+  <line x1="120" y1="320" x2="470" y2="320" stroke="#999" stroke-dasharray="3,3"/>
+  <line x1="120" y1="390" x2="470" y2="390" stroke="#999" stroke-dasharray="3,3"/>
+  <text x="130" y="200" fill="#333" font-weight="bold">pool upper</text>
+  <text x="130" y="215" fill="#333" font-size="11">one-cell Channel, 281 m3</text>
+  <text x="130" y="229" fill="#333" font-size="11">of pool water, 7.5 m down</text>
+  <text x="130" y="243" fill="#333" font-size="11">after the trip: flywheel trickle</text>
+  <text x="130" y="340" fill="#333" font-weight="bold">pool lower</text>
+  <text x="130" y="354" fill="#333" font-size="11">one-cell Channel, 19 m3, 0.5 m down</text>
+  <text x="130" y="368" fill="#b02a0a" font-size="11">Tin_minus := 38 C by funcs</text>
+  <text x="130" y="382" fill="#b02a0a" font-size="10">reverse inflow relabelled cold</text>
+
+  <!-- pool junction column -->
+  <line x1="280" y1="100" x2="280" y2="320" stroke="#333" stroke-width="2"/>
+  <line x1="280" y1="320" x2="280" y2="376" stroke="#333" stroke-width="2"/>
+  <circle cx="280" cy="100" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="290" y="96" font-weight="bold">J_surface</text>
+  <circle cx="280" cy="320" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="290" y="314" font-weight="bold">J_pool_tap</text>
+  <circle cx="280" cy="376" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="292" y="372" font-weight="bold">J_pool_top</text>
+
+  <!-- core: eight channels, tops open to the pool -->
+  <line x1="280" y1="376" x2="280" y2="390" stroke="#333" stroke-width="2"/>
+  <line x1="226" y1="390" x2="338" y2="390" stroke="#333" stroke-width="1"/>
+  <rect x="216" y="390" width="128" height="80" fill="#fff3e0" stroke="#333" stroke-width="1.5"/>
+  <g stroke="#333" stroke-width="1.5">
+    <line x1="226" y1="390" x2="226" y2="470"/><line x1="242" y1="390" x2="242" y2="470"/>
+    <line x1="258" y1="390" x2="258" y2="470"/><line x1="274" y1="390" x2="274" y2="470"/>
+    <line x1="290" y1="390" x2="290" y2="470"/><line x1="306" y1="390" x2="306" y2="470"/>
+    <line x1="322" y1="390" x2="322" y2="470"/><line x1="338" y1="390" x2="338" y2="470"/>
+  </g>
+  <rect x="246" y="423" width="68" height="16" fill="#fff3e0" stroke="none"/>
+  <text x="280" y="435" text-anchor="middle" font-size="11" font-weight="bold" fill="#333">CORE 0.7 m</text>
+  <rect x="216" y="470" width="128" height="30" fill="#f2f2f2" stroke="#333" stroke-width="1.5"/>
+  <text x="280" y="489" text-anchor="middle" font-weight="bold">J_plenum</text>
+  <text x="372" y="412" font-size="11">4 weighted edges: hot, normal,</text>
+  <text x="372" y="426" font-size="11">low, bypass; channel + Fuel each</text>
+  <text x="372" y="440" font-size="11">signify = plate count</text>
+  <text x="372" y="454" font-size="11">tops open to the pool</text>
+  <text x="372" y="468" font-size="11">bottoms into J_plenum</text>
+
+  <!-- flapper -->
+  <line x1="280" y1="320" x2="560" y2="320" stroke="#333" stroke-width="2"/>
+  <rect x="478" y="310" width="44" height="20" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="500" y="324" text-anchor="middle" font-size="10">Flapper</text>
+  <text x="500" y="302" text-anchor="middle" font-size="10" fill="#333">horizontal, through the pool wall</text>
+  <text x="500" y="346" text-anchor="middle" font-size="10" fill="#333">opens at 30 % of nominal</text>
+  <text x="500" y="358" text-anchor="middle" font-size="10" fill="#333">pump-return flow</text>
+
+  <!-- pipe lower -->
+  <line x1="344" y1="485" x2="560" y2="485" stroke="#333" stroke-width="2"/>
+  <line x1="560" y1="485" x2="560" y2="320" stroke="#333" stroke-width="2"/>
+  <circle cx="560" cy="320" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="570" y="314" font-weight="bold">J_pipe_tap</text>
+  <text x="590" y="410" font-size="11" font-weight="bold">pipe lower</text>
+  <text x="590" y="424" font-size="11">unheated Channel of the pipe bore,</text>
+  <text x="590" y="438" font-size="11">4 cells, climbs 1.2 m; 1 Bend</text>
+  <text x="590" y="452" font-size="11">(the plenum riser)</text>
+
+  <!-- pipe upper: over the top, down to the tank -->
+  <line x1="560" y1="320" x2="560" y2="50" stroke="#333" stroke-width="2"/>
+  <line x1="560" y1="50" x2="640" y2="50" stroke="#333" stroke-width="2"/>
+  <line x1="640" y1="50" x2="640" y2="545" stroke="#333" stroke-width="2"/>
+  <text x="652" y="140" font-size="11" font-weight="bold">pipe upper</text>
+  <text x="652" y="154" font-size="11">over the top, then down</text>
+  <text x="652" y="168" font-size="11">unheated Channel of the pipe bore,</text>
+  <text x="652" y="182" font-size="11">4 cells, 2 Bends:</text>
+  <text x="652" y="196" font-size="11">net drop 5.5 m (-7.5 to -13 m)</text>
+  <text x="652" y="210" font-size="11">after the trip: flywheel trickle</text>
+
+  <!-- decay tank -->
+  <rect x="580" y="545" width="150" height="30" fill="#f2f2f2" stroke="#333" stroke-width="1.5"/>
+  <text x="655" y="564" text-anchor="middle">Decay tank, horizontal</text>
+  <line x1="730" y1="560" x2="790" y2="560" stroke="#333" stroke-width="2"/>
+  <line x1="790" y1="560" x2="790" y2="640" stroke="#333" stroke-width="2"/>
+  <text x="780" y="600" font-size="11" text-anchor="end">basement pipe</text>
+  <text x="780" y="614" font-size="11" text-anchor="end">Friction, Bend, Gravity 3 m down</text>
+
+  <!-- pump manifold -->
+  <circle cx="790" cy="640" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="790" y="700" text-anchor="middle" font-weight="bold">J_split</text>
+  <path d="M790,640 L810,612 L910,612 L930,640" fill="none" stroke="#333" stroke-width="2"/>
+  <path d="M790,640 L810,668 L910,668 L930,640" fill="none" stroke="#333" stroke-width="2"/>
+  <rect x="820" y="602" width="80" height="20" fill="#fff" stroke="#333"/>
+  <text x="860" y="616" text-anchor="middle" font-size="10">leg A</text>
+  <rect x="820" y="658" width="80" height="20" fill="#fff" stroke="#333"/>
+  <text x="860" y="672" text-anchor="middle" font-size="10">leg B</text>
+  <text x="860" y="592" text-anchor="middle" font-size="10">Pump, curve, flywheel, valve</text>
+  <circle cx="930" cy="640" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="930" y="700" text-anchor="middle" font-weight="bold">J_merge</text>
+  <line x1="930" y1="640" x2="960" y2="640" stroke="#333" stroke-width="2"/>
+  <rect x="960" y="625" width="70" height="30" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <text x="995" y="644" text-anchor="middle" font-size="11">HX, 38 C out</text>
+
+  <!-- riser: up and over into the pool surface -->
+  <line x1="1030" y1="640" x2="1060" y2="640" stroke="#333" stroke-width="2"/>
+  <line x1="1060" y1="640" x2="1060" y2="20" stroke="#333" stroke-width="2"/>
+  <line x1="1060" y1="20" x2="280" y2="20" stroke="#333" stroke-width="2"/>
+  <line x1="280" y1="20" x2="280" y2="100" stroke="#333" stroke-width="2"/>
+  <text x="670" y="14" text-anchor="middle" font-size="11">pump return: HX loss resistor, Friction, 2 Bends, Gravity climbs 16 m, up and over into the pool surface</text>
+  <text x="670" y="38" text-anchor="middle" font-size="10" fill="#1f5fbf">the trip and the flapper read their reference flow on this edge</text>
+
+  <!-- forced-flow arrows (blue) -->
+  <g stroke="#1f5fbf" stroke-width="2.5" fill="none" marker-end="url(#fwd)">
+    <line x1="1060" y1="500" x2="1060" y2="380"/>
+    <line x1="760" y1="20" x2="620" y2="20"/>
+    <line x1="280" y1="40" x2="280" y2="80"/>
+    <line x1="268" y1="160" x2="268" y2="300"/>
+    <line x1="262" y1="330" x2="262" y2="366"/>
+    <line x1="200" y1="405" x2="200" y2="460"/>
+    <line x1="400" y1="485" x2="500" y2="485"/>
+    <line x1="548" y1="470" x2="548" y2="360"/>
+    <line x1="548" y1="290" x2="548" y2="110"/>
+    <line x1="652" y1="300" x2="652" y2="500"/>
+    <line x1="802" y1="580" x2="802" y2="630"/>
+    <line x1="830" y1="632" x2="890" y2="632"/>
+  </g>
+  <text x="196" y="436" text-anchor="end" font-size="11" fill="#1f5fbf">forced: down</text>
+
+  <!-- natural-circulation arrows (orange) -->
+  <g stroke="#d9480f" stroke-width="3" fill="none" marker-end="url(#nc)">
+    <line x1="356" y1="462" x2="356" y2="400"/>
+    <line x1="294" y1="368" x2="294" y2="332"/>
+    <line x1="310" y1="332" x2="440" y2="332"/>
+    <line x1="530" y1="332" x2="552" y2="332"/>
+    <line x1="574" y1="350" x2="574" y2="470"/>
+    <line x1="500" y1="497" x2="400" y2="497"/>
+  </g>
+  <text x="362" y="398" font-size="11" fill="#d9480f">NC: up</text>
+  </g>
+
+  <!-- legend -->
+  <g font-size="11">
+    <line x1="140" y1="705" x2="180" y2="705" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+    <text x="188" y="709">forced flow while the pumps run: riser into the surface, pool down, core down, plenum, pipe up to the tap, over the top, tank, pumps, HX</text>
+    <line x1="140" y1="730" x2="180" y2="730" stroke="#d9480f" stroke-width="3" marker-end="url(#nc)"/>
+    <text x="188" y="734">natural circulation after the flapper opens: core up, pool lower up (relabelled cold), flapper, pipe lower down, plenum; driving head = core buoyancy only, no chimney</text>
+    <text x="140" y="760" fill="#333">After the pumps trip, pool upper and pipe upper carry only the flywheel trickle. Reference pressure: J_pool_top at 1 atm + rho g 8 m, as in the built case.</text>
+    <text x="140" y="780" fill="#333">Shared with the main loop: Params, the four core groups, kinetics, trip, decay heat, pumps, flywheels, check valves, HX, scenarios.</text>
+  </g>
+</svg>
