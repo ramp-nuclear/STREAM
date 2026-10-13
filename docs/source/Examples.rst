@@ -42,4 +42,5 @@ taken from its operating point through a loss of flow into natural circulation.
    :maxdepth: 1
 
    LOFAPoolReactor.ipynb
+   LOFABothPumpsTrip.ipynb
 
