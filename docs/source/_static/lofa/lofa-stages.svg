@@ -104,7 +104,7 @@
 <text x="885" y="258" font-size="13">riser water goes straight</text>
 <text x="885" y="275" font-size="13">into the plenum</text>
 <text x="20" y="420" font-size="15" font-weight="bold">(c) the reversal window</text>
-<text x="20" y="438" fill="#555" font-size="13">200 s to 300 s</text>
+<text x="20" y="438" fill="#555" font-size="13">190 s to 300 s</text>
 <g transform="translate(1.8000000000000007,372.0) scale(1.3)">
 <path d="M28,60 L28,200 L178,200 L178,60" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
 <line x1="28" y1="60" x2="178" y2="60" stroke="#1f5fbf" stroke-dasharray="5,3"/>
@@ -145,11 +145,11 @@
 </g>
 <text x="340" y="480" font-size="13">the heated groups turn</text>
 <text x="340" y="497" font-size="13">upward, hottest first:</text>
-<text x="340" y="514" font-size="13">hot 200 s, normal 246 s,</text>
-<text x="340" y="531" font-size="13">low 280 s</text>
+<text x="340" y="514" font-size="13">hot 192 s, normal 236 s,</text>
+<text x="340" y="531" font-size="13">low 270 s</text>
 <text x="340" y="565" font-size="13">bypass still down: the core</text>
 <text x="340" y="582" font-size="13">recirculates within itself</text>
-<text x="340" y="616" font-size="13">262 s: net core flow, and</text>
+<text x="340" y="616" font-size="13">260 s: net core flow, and</text>
 <text x="340" y="633" font-size="13">the pool's, through zero</text>
 <text x="340" y="667" font-size="13">the legs still trickle forward</text>
 <text x="565" y="420" font-size="15" font-weight="bold">(d) natural circulation</text>
@@ -187,7 +187,7 @@
 <line x1="47" y1="127" x2="47" y2="168" stroke="#d9480f" stroke-width="3" marker-end="url(#o)"/>
 <line x1="66" y1="189" x2="104" y2="189" stroke="#d9480f" stroke-width="3" marker-end="url(#o)"/>
 </g>
-<text x="885" y="480" font-size="13">490 s: check valves count</text>
+<text x="885" y="480" font-size="13">488 s: check valves count</text>
 <text x="885" y="497" font-size="13">as shut</text>
 <text x="885" y="514" font-size="13">626 s: leg flow backward,</text>
 <text x="885" y="531" font-size="13">a leak only</text>

@@ -89,13 +89,13 @@
 <line x1="128" y1="165" x2="128" y2="126" stroke="#d9480f" stroke-width="3" marker-end="url(#o)"/>
 <line x1="158" y1="126" x2="158" y2="165" stroke="#d9480f" stroke-width="3" marker-end="url(#o)"/>
 </g>
-<text x="885" y="78" font-size="13">hot group reverses at 300 s,</text>
-<text x="885" y="95" font-size="13">normal at 352 s; low and</text>
+<text x="885" y="78" font-size="13">hot group reverses at 292 s,</text>
+<text x="885" y="95" font-size="13">normal at 342 s; low and</text>
 <text x="885" y="112" font-size="13">bypass stay down: the core</text>
 <text x="885" y="129" font-size="13">recirculates within itself</text>
 <text x="885" y="163" font-size="13">no path to the pool, only</text>
 <text x="885" y="180" font-size="13">the check valves' leak</text>
-<text x="885" y="214" font-size="13">411 s: bulk saturation in the</text>
+<text x="885" y="214" font-size="13">409 s: bulk saturation in the</text>
 <text x="885" y="231" font-size="13">hot channel; the model stops</text>
 <text x="885" y="248" font-size="13">there by design</text>
 <line x1="550" y1="10" x2="550" y2="400" stroke="#ddd"/>
