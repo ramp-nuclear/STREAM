@@ -4,7 +4,7 @@ A loss-of-flow case for a generic materials-testing pool reactor: a plate core i
 flow, a decay tank, two pump legs with flywheels and check valves, a heat exchanger, and a flapper
 below the core that opens when the pumps coast down, so that the core goes over to natural
 circulation with the pool as the heat sink. Point kinetics with temperature feedback and a low-flow
-trip drive the power. Every plate channel runs the regime-dependent wall heat-transfer law, which
+trip drive the power. Every heated plate channel runs the regime-dependent wall heat-transfer law, which
 composes laminar, turbulent and natural convection down to zero flow; `Params(htc="dittus")` gives
 the Dittus-Boelter correlation for comparison. The case ships with the library as
 `stream.examples.lofa`; this directory runs it as a benchmark: a ladder of rungs with pass
@@ -31,12 +31,13 @@ guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1
 fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
 reach saturation by design. The `htc` axis runs the default case with the regime-dependent law and
 with Dittus-Boelter; both rows complete, and the Dittus-Boelter row's hot-plate meat peaks about
-16 °C higher. The `cells` axis's 40-cell row records a NumPy divide-by-zero warning from the
-friction law's viscosity ratio, so it completes but counts as warned.
+16 °C higher. The `cells` axis's 40-cell row records two NumPy warnings, a divide by zero in the
+friction law's viscosity ratio and an invalid value in the laminar heat-transfer law's entry length, so it
+completes but counts as warned.
 
 ## Rungs
 
-Measured on the library at commit `ae923ef`.
+Measured on the library at commit `8fe2d91`, the first commit with the regime-dependent wall law.
 
 | Rung | Title | Status | Wall (s) |
 |---|---|---|---|

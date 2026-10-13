@@ -41,7 +41,7 @@ def test_unknown_wall_heat_transfer_law_is_a_value_error():
         system.make_channel("HotChannel", 0.0022, True, "regime", "x", True)
 
 
-def _hot_channel_h(htc: str, mdot: float) -> float:
+def _hot_channel_h(htc: str, mdot: float) -> np.ndarray:
     ch = system.make_channel("HotChannel", 0.0022, True, "regime", htc, True)
     h = ch.h_wall(T_cool=np.full(ch.n, 40.0), T_wall=np.full(ch.n, 60.0), mdot=mdot, pressure=1.8e5)
     return np.asarray(h, dtype=float)
