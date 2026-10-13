@@ -4,7 +4,6 @@ from __future__ import annotations
 from functools import partial
 
 import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 
 from stream.aggregator import Aggregator, CalculationGraph
@@ -82,7 +81,7 @@ def make_fuel(name: str, share: float = 1.0) -> Fuel:
         x_boundaries=x_boundaries(CLAD_N, FUEL_N, CLAD_W, MEAT_W),
         material=Solid.from_array(materials),
         meat_indices=meat,
-        power_shape=share * uniform_x_power_shape(Z_N, FUEL_N, CLAD_N, CLAD_W, MEAT_W, WIDTH),
+        power_shape=share * uniform_x_power_shape(Z_N, FUEL_N, CLAD_N, CLAD_W, MEAT_W, LENGTH),
         y_length=WIDTH,
         name=name,
     )
@@ -268,7 +267,16 @@ def steady(agr: Aggregator, y0: np.ndarray, **options) -> np.ndarray:
 
 def steady_checks(agr: Aggregator, K: Kirchhoff, refs: dict, y: np.ndarray) -> dict:
     """Hand checks of a solved steady state against the energy balance and the turbulent gap
-    law: at a common pressure drop the per-plate flow goes as ``A * Dh**(5/7)``."""
+    law: at a common pressure drop the per-plate flow goes as ``A * Dh**(5/7)``.
+
+    Reads ``refs["params"]``, ``refs["channels"]``, ``refs["fuels"]``, ``refs["pool"]``,
+    ``refs["pumps"]`` and ``refs["power"]``. Returns a dict with ``T_out_error_max`` (K, worst
+    heated-group outlet temperature against the energy balance), ``split_error_max`` (worst
+    relative departure of a group's per-plate flow from the gap law), ``pool_flow`` (kg/s),
+    ``inlet_matches_pool`` (core inlet within 0.05 K of the pool's top cell),
+    ``wall_above_coolant`` (every heated wall hotter than its coolant at the outlet), ``heads``
+    (pump pressure per leg, Pa), ``mdot`` (per-plate flow per group, kg/s) and ``T_in`` (core
+    inlet temperature, K)."""
     st = agr.save(y)
     p = refs["params"]
     cp = float(light_water.specific_heat(p.hx_outlet + 10.0))
@@ -352,31 +360,41 @@ def operating_point(p: Params, guess_kind: str = "ballpark", seed: int = 0, band
 
 
 _LAYOUT = {
-    "J_pool_top": (-1.5, 1.5), "J_plenum": (1.5, 1.5), "J_pool_bot": (-1.5, -0.5),
-    "J_tank_in": (1.5, -1.5), "J_tank_out": (-0.5, -1.5), "J_split": (-3.5, -1.5), "J_merge": (-3.5, 0.0),
+    "J_pool_top": (0.0, 4.5), "J_plenum": (0.0, 1.0), "J_pool_bot": (-5.5, 1.0),
+    "J_tank_in": (0.0, -1.0), "J_tank_out": (4.5, -1.0), "J_split": (4.5, -3.5), "J_merge": (-5.5, -3.5),
 }
 
 
 def draw(K: Kirchhoff, ax=None):
-    """Draw the flow graph of a built loop: junctions on a fixed schematic layout, one
-    labelled curve per edge (parallel edges fan out). Returns the axes drawn on."""
+    """Draw the flow graph of a built loop by elevation: junctions as boxes on a fixed
+    schematic layout, one labelled arrow per edge from its first to its second junction
+    (parallel edges fan out). Returns the axes drawn on."""
     if ax is None:
-        _, ax = plt.subplots(figsize=(9, 6))
+        ax = plt.figure(figsize=(10, 7)).add_axes((0.0, 0.0, 1.0, 1.0))
     g = K.g
-    pos = {node: _LAYOUT[str(node)] for node in g.nodes}
-    nx.draw_networkx_nodes(g, pos, ax=ax, node_size=900, node_color="white", edgecolors="black")
+    pos = {node: np.asarray(_LAYOUT[str(node)]) for node in g.nodes}
+    boxes = {}
     for node, (x, y) in pos.items():
-        ax.text(x, y, str(node), ha="center", va="center", fontsize=8)
+        text = ax.text(x, y, str(node), ha="center", va="center", fontsize=10, zorder=3,
+                       bbox={"boxstyle": "round,pad=0.5", "fc": "white", "ec": "black"})
+        boxes[node] = text.get_bbox_patch()
+    fan = 1.6
     for u, v, key, comps in g.edges(keys=True, data="comps"):
+        a, b = pos[u], pos[v]
+        dx, dy = b - a
         parallel = g.number_of_edges(u, v)
-        rad = 0.0 if parallel == 1 else -0.35 + 0.7 * key / (parallel - 1)
-        nx.draw_networkx_edges(g, pos, edgelist=[(u, v)], ax=ax, connectionstyle=f"arc3,rad={rad}",
-                               arrows=True, arrowstyle="-|>", node_size=900)
-        (x1, y1), (x2, y2) = pos[u], pos[v]
-        xm, ym = (x1 + x2) / 2, (y1 + y2) / 2
-        dx, dy = x2 - x1, y2 - y1
-        xm, ym = xm + rad * dy * 0.5, ym - rad * dx * 0.5
-        ax.text(xm, ym, comps[0].name, ha="center", va="center", fontsize=8,
-                bbox={"boxstyle": "round,pad=0.2", "fc": "white", "ec": "none", "alpha": 0.8})
+        offset = fan * ((parallel - 1) / 2 - key)
+        rad = -0.4 if str(u) == "J_pool_bot" and str(v) == "J_pool_top" else 2 * offset / np.hypot(dx, dy)
+        ax.annotate("", xy=b, xytext=a,
+                    arrowprops={"arrowstyle": "-|>", "connectionstyle": f"arc3,rad={rad}", "patchA": boxes[u],
+                                "patchB": boxes[v], "shrinkA": 2, "shrinkB": 2, "color": "black", "lw": 1.2})
+        control = (a + b) / 2 + rad * np.array([dy, -dx])
+        t = 0.5 if parallel < 3 else (0.38 if key % 2 else 0.62)
+        x, y = (1 - t) ** 2 * a + 2 * t * (1 - t) * control + t**2 * b
+        ax.text(x, y, comps[0].name, ha="center", va="center", fontsize=9, zorder=2,
+                bbox={"boxstyle": "round,pad=0.25", "fc": "white", "ec": "0.6", "lw": 0.6})
+    ax.set_xlim(-7.0, 6.0)
+    ax.set_ylim(-4.9, 5.3)
+    ax.set_aspect("equal")
     ax.set_axis_off()
     return ax
