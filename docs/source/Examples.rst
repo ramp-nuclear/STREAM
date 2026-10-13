@@ -43,4 +43,5 @@ taken from its operating point through a loss of flow into natural circulation.
 
    LOFAPoolReactor.ipynb
    LOFABothPumpsTrip.ipynb
+   LOFAVariations.ipynb
 
