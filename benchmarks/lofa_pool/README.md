@@ -26,7 +26,8 @@ The sweep's `guesses` axis solves the default case from the ballpark guess, the 
 five `perturbed` guesses, each the expert guess with every entry scaled by a random factor; every
 guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1e-6 row is known
 to fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
-reach saturation by design.
+reach saturation by design. The `cells` axis's 40-cell row records a NumPy divide-by-zero
+warning from the friction law's viscosity ratio, so it completes but counts as warned.
 
 ## Rungs
 
