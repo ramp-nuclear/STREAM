@@ -11,7 +11,7 @@ from stream.examples.lofa.params import Params
 
 
 def test_build_closes_gravity_and_counts_edges():
-    agr, K, refs = system.build(Params())
+    _, K, refs = system.build(Params())
     assert refs["pk"] is None
     assert len(refs["channels"]) == 4
     assert set(refs["pumps"]) == {"A", "B"}
@@ -19,7 +19,7 @@ def test_build_closes_gravity_and_counts_edges():
 
 
 def test_build_horizontal_tank_has_no_gravity():
-    agr, K, refs = system.build(Params())
+    _, _, refs = system.build(Params())
     tank = refs["tank"]
     dp = tank.pressure(T=np.full(tank.n, 40.0), Tw=np.full(tank.n, 40.0), mdot=0.0)
     assert np.allclose(dp, 0.0)
@@ -44,7 +44,7 @@ def test_decay_heat_power_law_values():
 
 
 def test_draw_labels_every_edge():
-    agr, K, refs = system.build(Params())
+    _, K, _ = system.build(Params())
     fig, ax = plt.subplots()
     out = system.draw(K, ax=ax)
     assert out is ax
@@ -80,7 +80,7 @@ def test_expert_and_perturbed_guesses_land_on_the_ballpark_state():
 @pytest.mark.slow
 def test_operating_point_is_steady_and_sums_to_the_core_power():
     p = Params()
-    agr, K, refs, y = system.operating_point(p)
+    agr, _, refs, y = system.operating_point(p)
     residual = agr.compute(y, 0.0)
     scale = agr.scaled_atol(1.0)
     assert np.max(np.abs(residual) / scale) < 1e-6
@@ -94,7 +94,7 @@ def test_operating_point_is_steady_and_sums_to_the_core_power():
 
 @pytest.mark.slow
 def test_worths_carry_plate_counts():
-    agr, K, refs, y = system.operating_point(Params())
+    _, _, refs, _ = system.operating_point(Params())
     pk = refs["pk"]
     total_coolant = sum(float(np.sum(w)) for c, w in pk.temp_worth.items() if c in refs["channels"].values())
     total_fuel = sum(float(np.sum(w)) for c, w in pk.temp_worth.items() if c in refs["fuels"].values())

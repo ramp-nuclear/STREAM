@@ -60,7 +60,7 @@ class _FakeProcess:
             self.exitcode = -11
             return
         with open(self.out, "w") as f:
-            json.dump(dict(rung=self.rung, status="PASS", wall_s=0.0, detail="", metrics={}), f)
+            json.dump({"rung": self.rung, "status": "PASS", "wall_s": 0.0, "detail": "", "metrics": {}}, f)
         self.exitcode = 0
 
     def join(self, timeout=None):

@@ -103,7 +103,7 @@ class Params:
 
 
 PIPE1_DROP = 4.3
-NC_SIGNS = dict(pool=-1.0, flapper=1.0)
+NC_SIGNS = {"pool": -1.0, "flapper": 1.0}
 PER_PLATE_REFERENCE = 0.5
 BETA = np.array([0.000215, 0.001424, 0.001274, 0.002568, 0.000748, 0.000273])
 LAMBDA = np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01])

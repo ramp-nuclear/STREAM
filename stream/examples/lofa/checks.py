@@ -80,8 +80,8 @@ def energy_budget(agr, K, refs, sol, p):
         cap = rho * cp * np.outer(fuel.dz, fuel.dx) * fuel.y_length
         parts[f"{name}_fuel"] = n * float(np.sum(cap * (T[-1] - T[0]).reshape(shape)))
         stored += parts[f"{name}_fuel"]
-    return dict(fed_J=float(fed), hx_removed_J=float(hx_removed), stored_J=float(stored), parts_J=parts,
-                unaccounted_J=float(fed - hx_removed - stored))
+    return {"fed_J": float(fed), "hx_removed_J": float(hx_removed), "stored_J": float(stored), "parts_J": parts,
+            "unaccounted_J": float(fed - hx_removed - stored)}
 
 
 def loop_pressure_budget(agr, K, refs, sol, loop_names, idx=-1):

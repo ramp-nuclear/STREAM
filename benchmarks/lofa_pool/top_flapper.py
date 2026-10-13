@@ -44,7 +44,7 @@ from stream.substances import light_water
 from stream.utilities import identity
 
 TAP_ABOVE_CORE = 0.5
-NC_SIGNS = dict(pool=-1.0, flapper=1.0)
+NC_SIGNS = {"pool": -1.0, "flapper": 1.0}
 CHANNEL_PIPES = ("PlenumRiser", "Upper")
 PIPE_CELLS = 4
 G = 9.80665
@@ -60,7 +60,7 @@ def depths(p: Params) -> dict[str, float]:
     decay tank and the pump manifold."""
     tops = p.core_depth
     plenum = tops + LENGTH
-    return dict(tap=tops - TAP_ABOVE_CORE, tops=tops, plenum=plenum, tank=plenum + PIPE1_DROP, pumps=plenum + p.basement_drop)
+    return {"tap": tops - TAP_ABOVE_CORE, "tops": tops, "plenum": plenum, "tank": plenum + PIPE1_DROP, "pumps": plenum + p.basement_drop}
 
 
 def _pipe_channel(p: Params, tag: str, length: float, drop: float) -> Channel:
@@ -141,18 +141,18 @@ def build(p: Params, kinetics: bool = False, ref_state: State | None = None) -> 
                         *[c for c in riser_parts + upper_parts if isinstance(c, Channel)]],
         k_constructor=KirchhoffWDerivatives,
         abs_pressure_comps=[channels[k] for k in HEATED],
-        funcs={flapper: dict(t=identity), trip: dict(t=identity), pool_lower: dict(Tin_minus=p.hx_outlet)},
+        funcs={flapper: {"t": identity}, trip: {"t": identity}, pool_lower: {"Tin_minus": p.hx_outlet}},
         reference_node=(j_top, p_ref),
     )
     check_gravity_mismatch(fg.kirchhoff)
 
-    refs = dict(fg=fg, channels=channels, fuels=fuels, pool=pool_lower, pool_upper=pool_upper, tank=tank, pumps=pumps,
-                flywheels=flywheels, valves=valves, pump_curves=pump_curves, flapper=flapper, trip=trip, hx=hx, pk=None,
-                params=p, nominal=nominal, power=P0, p_ref=p_ref, depths=z)
+    refs = {"fg": fg, "channels": channels, "fuels": fuels, "pool": pool_lower, "pool_upper": pool_upper, "tank": tank, "pumps": pumps,
+            "flywheels": flywheels, "valves": valves, "pump_curves": pump_curves, "flapper": flapper, "trip": trip, "hx": hx, "pk": None,
+            "params": p, "nominal": nominal, "power": P0, "p_ref": p_ref, "depths": z}
     agr = fg.aggregator
     if not kinetics:
         for k in HEATED:
-            agr = agr + symmetric_plate(channels[k], fuels[k], funcs={fuels[k]: dict(power=P0)}).to_aggregator()
+            agr = agr + symmetric_plate(channels[k], fuels[k], funcs={fuels[k]: {"power": P0}}).to_aggregator()
         return agr, fg.kirchhoff, refs
     agr = agr + system._kinetics_graph(p, channels, fuels, trip, ref_state, P0).to_aggregator()
     refs["pk"] = agr["PK"]
@@ -209,16 +209,16 @@ def steady_checks(agr: Aggregator, K: Kirchhoff, refs: dict, y: np.ndarray) -> d
     ratios = [mdot[k] / mdot["normal"] / (law[k] / law["normal"]) for k in CORE]
     wall = [float(np.asarray(st[refs["fuels"][k].name]["T_wall_left"])[-1]) >
             float(np.asarray(st[refs["channels"][k].name]["T_cool"])[-1]) for k in HEATED]
-    return dict(
-        T_out_error_max=max(T_out_err),
-        split_error_max=max(abs(r - 1.0) for r in ratios),
-        pool_flow=float(st[K.name][K.component_edge(refs["pool"])]),
-        inlet_matches_pool=abs(T_in - p.hx_outlet) < 0.05,
-        wall_above_coolant=all(wall),
-        heads={leg: float(np.asarray(st[refs["pumps"][leg].name]["pressure"])) for leg in "AB"},
-        mdot=mdot,
-        T_in=T_in,
-    )
+    return {
+        "T_out_error_max": max(T_out_err),
+        "split_error_max": max(abs(r - 1.0) for r in ratios),
+        "pool_flow": float(st[K.name][K.component_edge(refs["pool"])]),
+        "inlet_matches_pool": abs(T_in - p.hx_outlet) < 0.05,
+        "wall_above_coolant": all(wall),
+        "heads": {leg: float(np.asarray(st[refs["pumps"][leg].name]["pressure"])) for leg in "AB"},
+        "mdot": mdot,
+        "T_in": T_in,
+    }
 
 
 def operating_point(p: Params, guess_kind: str = "ballpark", seed: int = 0, band: float = 0.3):

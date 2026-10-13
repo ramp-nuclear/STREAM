@@ -56,7 +56,7 @@ class LowFlowTrip(Calculation):
 
     @property
     def variables(self):
-        return dict(flag=0)
+        return {"flag": 0}
 
     @property
     def mass_vector(self):

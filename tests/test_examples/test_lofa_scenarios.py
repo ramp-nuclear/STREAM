@@ -19,7 +19,7 @@ def test_stuck_flapper_forces_the_stuck_parameter():
 
 @pytest.mark.slow
 def test_scenario_functions_override_the_scenario_field():
-    sol, rec = scenarios.one_pump(Params(scenario="both"), t_end=120.0, n=121)
+    _, rec = scenarios.one_pump(Params(scenario="both"), t_end=120.0, n=121)
     assert rec.status == "completed", rec.error
     assert rec.t_open is None
     assert rec.t_valve_B is not None and rec.t_valve_A is None
@@ -39,7 +39,7 @@ def test_short_both_pumps_transient_trips_and_opens():
 
 @pytest.mark.slow
 def test_both_pumps_hour_holds_every_condition():
-    sol, rec = scenarios.both_pumps(Params())
+    _, rec = scenarios.both_pumps(Params())
     assert rec.status == "completed", rec.error
     assert rec.t_last >= 3600.0 * (1 - 1e-9)
     assert rec.t_trip is not None and rec.t_open is not None
@@ -54,7 +54,7 @@ def test_both_pumps_hour_holds_every_condition():
 
 @pytest.mark.slow
 def test_one_pump_half_hour_keeps_the_flapper_shut():
-    sol, rec = scenarios.one_pump(Params())
+    _, rec = scenarios.one_pump(Params())
     assert rec.status == "completed", rec.error
     assert rec.t_last >= 1800.0 * (1 - 1e-9)
     assert rec.t_valve_B is not None and rec.t_valve_A is None

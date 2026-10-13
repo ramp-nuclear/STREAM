@@ -64,7 +64,7 @@ def channel_energy(agr, K, refs, sol):
         T_start = np.where(m >= 0, T_top, T_plenum)
         removed = n * np.abs(m) * _cp(0.5 * (T_start + T_end)) * (T_end - T_start)
         fed = n * power_share(k) * power
-        out[k] = dict(removed_W=removed, fed_W=fed, mdot=m, T_start=T_start, T_end=T_end)
+        out[k] = {"removed_W": removed, "fed_W": fed, "mdot": m, "T_start": T_start, "T_end": T_end}
     return t, power, out
 
 
@@ -91,7 +91,7 @@ def mixing_check(agr, K, refs, sol, idx=-1):
             den += CORE[k].plates * (-m)
     pool_m = float(st[K.name][K.component_edge(refs["pool"])])
     hand = num / den if den else float("nan")
-    return dict(junction=float(np.asarray(st["J_pool_top"]["Tin"])), hand_mix=hand, inflow_kg_s=den, pool_flow=pool_m)
+    return {"junction": float(np.asarray(st["J_pool_top"]["Tin"])), "hand_mix": hand, "inflow_kg_s": den, "pool_flow": pool_m}
 
 
 def reversal_times(agr, K, refs, sol):
@@ -104,6 +104,26 @@ def run(module, p, atol_rel, t_end, n):
     module.start_transient(agr, refs, y, p, p.scenario)
     sol = module.transient(agr, y, t_end=t_end, n=n, atol_rel=atol_rel, rtol=atol_rel)
     return agr, K, refs, sol
+
+
+def tight_tolerance_comparison(module, p, args, df):
+    """Re-run the case at ``args.tight`` up to ``args.tight_t_end`` and compare its reversal times and
+    per-plate flows with the loose-tolerance flows ``df``. Returns the report entries and the tight flows.
+
+    The comparison is optional: a failure of the tight run, from its steady state to its transient, is
+    recorded under ``tight_error`` instead of raised, and the tight flows are then None, so the checks
+    of the loose-tolerance run are still written."""
+    try:
+        agr2, K2, refs2, sol2 = run(module, p, args.tight, args.tight_t_end, round(args.tight_t_end / args.tight_dt) + 1)
+        rev2, df2 = reversal_times(agr2, K2, refs2, sol2)
+    except Exception as e:  # noqa: BLE001
+        return {"tight_error": f"{type(e).__name__}: {e}"[:600]}, None
+    diffs = {}
+    for k in CORE:
+        a = np.interp(df2["t"], df["t"], df[k])
+        diffs[k] = {"max_abs_diff": float(np.max(np.abs(a - df2[k]))), "scale": float(np.max(np.abs(df2[k])))}
+    events = {"t_trip": float(refs2["trip"].t_trip), "t_open": float(refs2["flapper"].t_open)}
+    return {"reversals_tight": rev2, "events_tight": events, "flow_trace_diff_tolerances": diffs}, df2
 
 
 def main(argv=None):
@@ -122,7 +142,7 @@ def main(argv=None):
     p = Params()
     agr, K, refs, sol = run(module, p, 1e-4, args.t_end, args.n)
     t = np.asarray(sol.time)
-    report = dict(case=args.case, t_end=float(t[-1]))
+    report = {"case": args.case, "t_end": float(t[-1])}
 
     worst, per = junction_mass_balance(agr, K, refs, sol)
     report["kcl_worst_kg_s"] = worst
@@ -130,13 +150,13 @@ def main(argv=None):
 
     t, power, ce = channel_energy(agr, K, refs, sol)
     late = t >= 0.8 * t[-1]
-    report["channel_energy_late"] = {k: dict(removed_W=float(np.mean(v["removed_W"][late])), fed_W=float(np.mean(v["fed_W"][late])),
-                                            mdot=float(np.mean(v["mdot"][late])), T_start=float(np.mean(v["T_start"][late])),
-                                            T_end=float(np.mean(v["T_end"][late])))
+    report["channel_energy_late"] = {k: {"removed_W": float(np.mean(v["removed_W"][late])), "fed_W": float(np.mean(v["fed_W"][late])),
+                                        "mdot": float(np.mean(v["mdot"][late])), "T_start": float(np.mean(v["T_start"][late])),
+                                        "T_end": float(np.mean(v["T_end"][late]))}
                                      for k, v in ce.items()}
-    report["channel_energy_steady"] = {k: dict(removed_W=float(v["removed_W"][0]), fed_W=float(v["fed_W"][0])) for k, v in ce.items()}
-    report["power_W"] = dict(t0=float(power[0]), end=float(power[-1]),
-                             decay_law_end=float(decay_heat(refs["power"])(t[-1] - refs["trip"].t_trip)))
+    report["channel_energy_steady"] = {k: {"removed_W": float(v["removed_W"][0]), "fed_W": float(v["fed_W"][0])} for k, v in ce.items()}
+    report["power_W"] = {"t0": float(power[0]), "end": float(power[-1]),
+                         "decay_law_end": float(decay_heat(refs["power"])(t[-1] - refs["trip"].t_trip))}
 
     report["global_energy"] = energy_budget(agr, K, refs, sol, p)
     if args.case == "top_flapper":
@@ -149,23 +169,11 @@ def main(argv=None):
 
     rev, df = reversal_times(agr, K, refs, sol)
     report["reversals_1e-4"] = rev
-    report["events_1e-4"] = dict(t_trip=float(refs["trip"].t_trip), t_open=float(refs["flapper"].t_open))
+    report["events_1e-4"] = {"t_trip": float(refs["trip"].t_trip), "t_open": float(refs["flapper"].t_open)}
 
     report["tight_tolerance"] = args.tight
-    df2 = None
-    try:
-        agr2, K2, refs2, sol2 = run(module, p, args.tight, args.tight_t_end, int(round(args.tight_t_end / args.tight_dt)) + 1)
-        rev2, df2 = reversal_times(agr2, K2, refs2, sol2)
-    except Exception as e:
-        report["tight_error"] = f"{type(e).__name__}: {e}"[:600]
-    if df2 is not None:
-        report["reversals_tight"] = rev2
-        report["events_tight"] = dict(t_trip=float(refs2["trip"].t_trip), t_open=float(refs2["flapper"].t_open))
-        diffs = {}
-        for k in CORE:
-            a = np.interp(df2["t"], df["t"], df[k])
-            diffs[k] = dict(max_abs_diff=float(np.max(np.abs(a - df2[k]))), scale=float(np.max(np.abs(df2[k]))))
-        report["flow_trace_diff_tolerances"] = diffs
+    tight, df2 = tight_tolerance_comparison(module, p, args, df)
+    report.update(tight)
 
     with open(args.out, "w") as fh:
         json.dump(report, fh, indent=1, default=float)

@@ -40,11 +40,11 @@ def _steady_rung(kind: str) -> tuple[dict, np.ndarray]:
     chk = steady_checks(agr, K, refs, y)
     ok = chk["T_out_error_max"] < 0.5 and chk["split_error_max"] < 0.15 and chk["pool_flow"] * NC_SIGNS["pool"] < 0 \
         and chk["inlet_matches_pool"] and chk["wall_above_coolant"]
-    m = dict(T_out_error_max=chk["T_out_error_max"], split_error_max=chk["split_error_max"], pool_flow=chk["pool_flow"],
-             head=chk["heads"]["A"], mdot=chk["mdot"], residual_entry=float(np.linalg.norm(agr.compute(y0, 0.0))),
-             residual_steady=float(np.linalg.norm(agr.compute(y, 0.0))))
-    return dict(status="PASS" if ok else "FAIL", metrics=m,
-                detail=f"T_out err {chk['T_out_error_max']:.2f} C, split err {chk['split_error_max']:.3f}, head {chk['heads']['A']:.0f} Pa"), y
+    m = {"T_out_error_max": chk["T_out_error_max"], "split_error_max": chk["split_error_max"], "pool_flow": chk["pool_flow"],
+         "head": chk["heads"]["A"], "mdot": chk["mdot"], "residual_entry": float(np.linalg.norm(agr.compute(y0, 0.0))),
+         "residual_steady": float(np.linalg.norm(agr.compute(y, 0.0)))}
+    return {"status": "PASS" if ok else "FAIL", "metrics": m,
+            "detail": f"T_out err {chk['T_out_error_max']:.2f} C, split err {chk['split_error_max']:.3f}, head {chk['heads']['A']:.0f} Pa"}, y
 
 
 def rung_1():
@@ -64,21 +64,21 @@ def _record_rung(p, t_end, n, passes, label):
     detail = f"{label}: status {rec.status}; " + ("all conditions hold" if ok else "failed " + ", ".join(reasons))
     if rec.error:
         detail += f"; {rec.error}"
-    return dict(status="PASS" if ok else "FAIL", metrics={k: v for k, v in rec.__dict__.items() if k != "traceback"}, detail=detail)
+    return {"status": "PASS" if ok else "FAIL", "metrics": {k: v for k, v in rec.__dict__.items() if k != "traceback"}, "detail": detail}
 
 
 def rung_3():
     def passes(r):
-        return dict(
-            completed=r.status == "completed", reached=r.t_last >= 3600.0 * (1 - 1e-9), no_warnings=r.n_warnings == 0,
-            tripped=r.t_trip is not None, opened=r.t_open is not None,
-            valves=r.t_valve_A is not None and r.t_valve_B is not None,
-            reversed_all=all(getattr(r, f"t_rev_{k}") is not None for k in HEATED),
-            buoyancy_order=r.reversal_in_buoyancy_order,
-            pool_downcomer=r.final_pool * NC_SIGNS["pool"] > 0 and r.final_flapper * NC_SIGNS["flapper"] > 0,
-            margin=r.margin > 0,
-            legs_shut=abs(r.final_leg_A) < 0.01 * r.mdot_total / 2 and abs(r.final_leg_B) < 0.01 * r.mdot_total / 2,
-        )
+        return {
+            "completed": r.status == "completed", "reached": r.t_last >= 3600.0 * (1 - 1e-9), "no_warnings": r.n_warnings == 0,
+            "tripped": r.t_trip is not None, "opened": r.t_open is not None,
+            "valves": r.t_valve_A is not None and r.t_valve_B is not None,
+            "reversed_all": all(getattr(r, f"t_rev_{k}") is not None for k in HEATED),
+            "buoyancy_order": r.reversal_in_buoyancy_order,
+            "pool_downcomer": r.final_pool * NC_SIGNS["pool"] > 0 and r.final_flapper * NC_SIGNS["flapper"] > 0,
+            "margin": r.margin > 0,
+            "legs_shut": abs(r.final_leg_A) < 0.01 * r.mdot_total / 2 and abs(r.final_leg_B) < 0.01 * r.mdot_total / 2,
+        }
     r = _record_rung(Params(scenario="both"), 3600.0, 1801, passes, "both pumps")
     m = r["metrics"]
     half = "never" if m["t_half"] is None else f"{m['t_half']:.1f} s"
@@ -88,19 +88,19 @@ def rung_3():
 
 def rung_4():
     def passes(r):
-        return dict(
-            completed=r.status == "completed", reached=r.t_last >= 1800.0 * (1 - 1e-9), no_warnings=r.n_warnings == 0,
-            valve_B_shut=r.t_valve_B is not None, valve_A_open=r.t_valve_A is None,
-            flapper_shut=r.t_open is None, leg_B_leak=abs(r.final_leg_B) < 0.01 * r.mdot_total / 2,
-            settled=abs(r.final_leg_A) > 0.5 * r.mdot_total,
-        )
+        return {
+            "completed": r.status == "completed", "reached": r.t_last >= 1800.0 * (1 - 1e-9), "no_warnings": r.n_warnings == 0,
+            "valve_B_shut": r.t_valve_B is not None, "valve_A_open": r.t_valve_A is None,
+            "flapper_shut": r.t_open is None, "leg_B_leak": abs(r.final_leg_B) < 0.01 * r.mdot_total / 2,
+            "settled": abs(r.final_leg_A) > 0.5 * r.mdot_total,
+        }
     return _record_rung(Params(scenario="one"), 1800.0, 901, passes, "one pump")
 
 
 def rung_5():
     def passes(r):
-        return dict(saturation=r.status == "saturation", before_end=r.t_last < 3600.0,
-                    named=("SaturationReachedError" in r.error))
+        return {"saturation": r.status == "saturation", "before_end": r.t_last < 3600.0,
+                "named": ("SaturationReachedError" in r.error)}
     return _record_rung(Params(scenario="stuck", flapper_stuck=True), 3600.0, 1801, passes, "stuck flapper")
 
 
@@ -118,14 +118,14 @@ def _isolated_row(atol_rel: float, n: int, t_end: float) -> dict:
     cmd = [sys.executable, str(HERE / "metrics.py"), "--params", "{}", "--out", out, "--atol-rel", str(atol_rel),
            "--rtol", str(atol_rel), "--t-end", str(t_end), "--n", str(n)]
     try:
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CONFIG_TIMEOUT, env=env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=CONFIG_TIMEOUT, env=env, check=False)
     except subprocess.TimeoutExpired as e:
         tail = _stderr_tail(e.stderr)
-        return dict(status="timeout", t_trip=None, t_open=None, wall_s=CONFIG_TIMEOUT, error=tail, traceback=tail)
+        return {"status": "timeout", "t_trip": None, "t_open": None, "wall_s": CONFIG_TIMEOUT, "error": tail, "traceback": tail}
     if not os.path.exists(out):
         tail = _stderr_tail(proc.stderr)
-        return dict(status="crash", t_trip=None, t_open=None, wall_s=None,
-                    error=f"no record written, exit code {proc.returncode}: {tail}", traceback=tail)
+        return {"status": "crash", "t_trip": None, "t_open": None, "wall_s": None,
+                "error": f"no record written, exit code {proc.returncode}: {tail}", "traceback": tail}
     with open(out) as fh:
         return json.load(fh)
 
@@ -141,20 +141,20 @@ def rung_6():
     def shift(key):
         a, b = rows[(1e-4, 601)].get(key), rows[(1e-5, 601)].get(key)
         return None if a is None or b is None else abs(a - b)
-    m = dict(trip_grid_spread={a: spread("t_trip", a) for a in (1e-4, 1e-5)},
-             open_grid_spread={a: spread("t_open", a) for a in (1e-4, 1e-5)},
-             grid_bracket={a: bracket(a) for a in (1e-4, 1e-5)},
-             trip_tolerance_shift=shift("t_trip"), open_tolerance_shift=shift("t_open"),
-             statuses={f"{a:g}, {n}": r["status"] for (a, n), r in rows.items()},
-             errors={f"{a:g}, {n}": r.get("error", "") for (a, n), r in rows.items() if r["status"] != "completed"},
-             walls={f"{a:g}, {n}": r.get("wall_s") for (a, n), r in rows.items()})
+    m = {"trip_grid_spread": {a: spread("t_trip", a) for a in (1e-4, 1e-5)},
+         "open_grid_spread": {a: spread("t_open", a) for a in (1e-4, 1e-5)},
+         "grid_bracket": {a: bracket(a) for a in (1e-4, 1e-5)},
+         "trip_tolerance_shift": shift("t_trip"), "open_tolerance_shift": shift("t_open"),
+         "statuses": {f"{a:g}, {n}": r["status"] for (a, n), r in rows.items()},
+         "errors": {f"{a:g}, {n}": r.get("error", "") for (a, n), r in rows.items() if r["status"] != "completed"},
+         "walls": {f"{a:g}, {n}": r.get("wall_s") for (a, n), r in rows.items()}}
     def within(key, a):
         return m[key][a] is not None and m["grid_bracket"][a] is not None and m[key][a] < m["grid_bracket"][a]
     ok = all(r["status"] == "completed" for r in rows.values()) \
         and all(within("trip_grid_spread", a) and within("open_grid_spread", a) for a in (1e-4, 1e-5)) \
         and m["trip_tolerance_shift"] is not None and m["trip_tolerance_shift"] < 0.1 \
         and m["open_tolerance_shift"] is not None and m["open_tolerance_shift"] < 0.1
-    return dict(status="PASS" if ok else "FAIL", metrics=m, detail=json.dumps(m))
+    return {"status": "PASS" if ok else "FAIL", "metrics": m, "detail": json.dumps(m)}
 
 
 def run_rung_inprocess(rung: str) -> dict:
@@ -174,8 +174,8 @@ def run_rung_inprocess(rung: str) -> dict:
     start = _time.perf_counter()
     try:
         rec = fn()
-    except Exception as e:
-        rec = dict(status="CRASH", metrics={}, detail=f"{type(e).__name__}: {e}", traceback=traceback.format_exc())
+    except Exception as e:  # noqa: BLE001
+        rec = {"status": "CRASH", "metrics": {}, "detail": f"{type(e).__name__}: {e}", "traceback": traceback.format_exc()}
     rec["wall_s"] = _time.perf_counter() - start
     rec["rung"], rec["title"] = rung, TITLES[rung]
     return rec
@@ -201,11 +201,11 @@ def run_all() -> list[dict]:
         if proc.is_alive():
             proc.terminate()
             proc.join()
-            rows.append(dict(rung=rung, title=TITLES[rung], status="TIMEOUT", wall_s=TIMEOUTS[rung], detail=f"no result within {TIMEOUTS[rung]} s", metrics={}))
+            rows.append({"rung": rung, "title": TITLES[rung], "status": "TIMEOUT", "wall_s": TIMEOUTS[rung], "detail": f"no result within {TIMEOUTS[rung]} s", "metrics": {}})
             continue
         if not os.path.exists(out):
-            rows.append(dict(rung=rung, title=TITLES[rung], status="CRASH", wall_s=_time.perf_counter() - start,
-                             detail=f"no record written, exit code {proc.exitcode}", metrics={}))
+            rows.append({"rung": rung, "title": TITLES[rung], "status": "CRASH", "wall_s": _time.perf_counter() - start,
+                         "detail": f"no record written, exit code {proc.exitcode}", "metrics": {}})
             continue
         with open(out) as f:
             rows.append(json.load(f))
@@ -216,7 +216,7 @@ def write_report(records):
     """Append a dated table of ``records`` to RESULTS.md, headed by the commit of the library that ran."""
     identity = metrics.library_identity()
     library = identity["commit"][:7] + (" with uncommitted changes" if identity["dirty"] else "")
-    lines = [f"\n## {datetime.date.today().isoformat()} library `{library}`\n", "| Rung | Title | Status | Wall (s) | Detail |", "|---|---|---|---|---|"]
+    lines = [f"\n## {datetime.datetime.now().astimezone().date().isoformat()} library `{library}`\n", "| Rung | Title | Status | Wall (s) | Detail |", "|---|---|---|---|---|"]
     for r in records:
         lines.append(f"| {r['rung']} | {r['title']} | {r['status']} | {r['wall_s']:.0f} | {r['detail']} |")
     with open(HERE / "RESULTS.md", "a") as fh:
@@ -231,10 +231,15 @@ if __name__ == "__main__":
     args = ap.parse_args()
     os.makedirs(RESULTS_DIR, exist_ok=True)
     if args.report:
-        write_report([json.load(open(_result_path(r))) for r in RUNGS])
+        records = []
+        for r in RUNGS:
+            with open(_result_path(r)) as fh:
+                records.append(json.load(fh))
+        write_report(records)
     elif args.rung:
         rec = run_rung_inprocess(args.rung)
-        json.dump(rec, open(_result_path(args.rung), "w"), indent=1)
+        with open(_result_path(args.rung), "w") as fh:
+            json.dump(rec, fh, indent=1)
         print(json.dumps({k: v for k, v in rec.items() if k not in ("traceback", "metrics")}))
     elif args.all:
         records = run_all()

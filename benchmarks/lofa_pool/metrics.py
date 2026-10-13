@@ -44,13 +44,13 @@ def library_identity() -> dict:
 
     def git(*args):
         try:
-            proc = subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, timeout=30)
+            proc = subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, timeout=30, check=False)
         except (OSError, subprocess.TimeoutExpired):
             return None
         return proc.stdout.strip() if proc.returncode == 0 else None
 
     commit, status = git("rev-parse", "HEAD"), git("status", "--porcelain", "--", ".")
-    return dict(path=root, commit=commit or "unknown", dirty=None if status is None else bool(status))
+    return {"path": root, "commit": commit or "unknown", "dirty": None if status is None else bool(status)}
 
 
 def run(p: Params, *, guess_kind: str = "ballpark", seed: int = 0, band: float = 0.3, atol_rel: float = 1e-4,
@@ -67,7 +67,7 @@ def run(p: Params, *, guess_kind: str = "ballpark", seed: int = 0, band: float =
             _, inner = scenario(p, t_end=t_end, n=n, atol_rel=atol_rel, rtol=rtol, guess_kind=guess_kind, seed=seed, band=band)
             for k, v in asdict(inner).items():
                 setattr(rec, k, v)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             rec.status, rec.error, rec.traceback = "failed", f"{type(e).__name__}: {e}", traceback.format_exc()
     rec.wall_s = time.perf_counter() - start
     rec.n_warnings = len(caught)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields, replace
+from itertools import pairwise
 
 import numpy as np
 import pandas as pd
@@ -16,6 +17,7 @@ from stream.substances import light_water
 REVERSAL_THRESHOLD = -1e-3
 VALVE_SHUT_FRACTION = 0.01
 SCENARIOS = ("both", "one", "stuck")
+DEFAULT_PARAMS = Params()
 
 
 @dataclass
@@ -79,13 +81,13 @@ class Record:
                 values[f.name] = False
             else:
                 values[f.name] = np.nan
-        return cls(**values | dict(status=status, error=error))
+        return cls(**values | {"status": status, "error": error})
 
 
 def flows(agr, K, refs, sol: Solution) -> pd.DataFrame:
     """Mass flow of every core group, the pool, the flapper, both pump legs and the riser at each output time."""
     comps = {k: c for k, c in refs["channels"].items()}
-    comps |= dict(pool=refs["pool"], flapper=refs["flapper"], A=refs["pumps"]["A"], B=refs["pumps"]["B"], riser=refs["hx"])
+    comps |= {"pool": refs["pool"], "flapper": refs["flapper"], "A": refs["pumps"]["A"], "B": refs["pumps"]["B"], "riser": refs["hx"]}
     data = {k: agr.at_times(sol, K, K.component_edge(c)) for k, c in comps.items()}
     return pd.DataFrame({"t": np.asarray(sol.time)} | data)
 
@@ -112,7 +114,7 @@ def _in_buoyancy_order(rev: dict, p: Params) -> bool:
     times = [rev[k] for k in ordered]
     if any(t is None for t in times):
         return False
-    return all(a <= b for a, b in zip(times, times[1:]))
+    return all(a <= b for a, b in pairwise(times))
 
 
 def _transient_metrics(agr, K, refs, sol: Solution, p: Params) -> dict:
@@ -126,26 +128,26 @@ def _transient_metrics(agr, K, refs, sol: Solution, p: Params) -> dict:
     if "T_cool" in pool.variables:
         pool_T = agr.at_times(sol, pool, "T_cool")
         pool_rise = float(np.mean(pool_T[-1]) - np.mean(pool_T[0]))
-    out = dict(
-        t_trip=float(trip.t_trip) if np.isfinite(trip.t_trip) else None,
-        t_rods=float(trip.t_rods) if np.isfinite(trip.t_trip) else None,
-        t_open=float(flapper.t_open) if np.isfinite(flapper.t_open) else None,
-        t_valve_A=_first_time_below(df, "A", VALVE_SHUT_FRACTION * leg_nominal),
-        t_valve_B=_first_time_below(df, "B", VALVE_SHUT_FRACTION * leg_nominal),
-        reversal_in_buoyancy_order=_in_buoyancy_order(rev, p),
-        peak_hot=peaks["hot"],
-        peak_max=max(peaks.values()),
-        margin=float(light_water.sat_temperature(refs["p_ref"])) - max(peaks.values()),
-        final_hot=float(df["hot"].iloc[-1]),
-        final_bypass=float(df["bypass"].iloc[-1]),
-        final_pool=float(df["pool"].iloc[-1]),
-        final_leg_A=float(df["A"].iloc[-1]),
-        final_leg_B=float(df["B"].iloc[-1]),
-        final_flapper=float(df["flapper"].iloc[-1]),
-        pool_rise=pool_rise,
-        t_last=float(sol.time[-1]),
-        t_half=_first_time_below(df, "riser", 0.5 * float(df["riser"].iloc[0])),
-    )
+    out = {
+        "t_trip": float(trip.t_trip) if np.isfinite(trip.t_trip) else None,
+        "t_rods": float(trip.t_rods) if np.isfinite(trip.t_trip) else None,
+        "t_open": float(flapper.t_open) if np.isfinite(flapper.t_open) else None,
+        "t_valve_A": _first_time_below(df, "A", VALVE_SHUT_FRACTION * leg_nominal),
+        "t_valve_B": _first_time_below(df, "B", VALVE_SHUT_FRACTION * leg_nominal),
+        "reversal_in_buoyancy_order": _in_buoyancy_order(rev, p),
+        "peak_hot": peaks["hot"],
+        "peak_max": max(peaks.values()),
+        "margin": float(light_water.sat_temperature(refs["p_ref"])) - max(peaks.values()),
+        "final_hot": float(df["hot"].iloc[-1]),
+        "final_bypass": float(df["bypass"].iloc[-1]),
+        "final_pool": float(df["pool"].iloc[-1]),
+        "final_leg_A": float(df["A"].iloc[-1]),
+        "final_leg_B": float(df["B"].iloc[-1]),
+        "final_flapper": float(df["flapper"].iloc[-1]),
+        "pool_rise": pool_rise,
+        "t_last": float(sol.time[-1]),
+        "t_half": _first_time_below(df, "riser", 0.5 * float(df["riser"].iloc[0])),
+    }
     out |= {f"t_rev_{k}": rev[k] for k in HEATED}
     return out
 
@@ -162,6 +164,10 @@ def smooth_down(t: float, t0: float, w: float) -> float:
     return 1.0 if t <= t0 else (0.0 if t >= t0 + w else 0.5 * (1 + np.cos(np.pi * (t - t0) / w)))
 
 
+def _ramped_head(head: float, t0: float, width: float):
+    return lambda t: head * smooth_down(t, t0, width)
+
+
 def start_transient(agr: Aggregator, refs: dict, y: np.ndarray, p: Params, scenario: str) -> None:
     """Switch both pumps from imposed flow to imposed head at their solved heads, and ramp
     the tripping ones to zero over ``[t_pumps, t_pumps + ramp_width]``."""
@@ -174,7 +180,7 @@ def start_transient(agr: Aggregator, refs: dict, y: np.ndarray, p: Params, scena
     for leg, pump in refs["pumps"].items():
         head = float(np.asarray(st[pump.name]["pressure"]))
         if leg in tripping:
-            agr.funcs.setdefault(pump, {})["pressure"] = (lambda h: lambda t: h * smooth_down(t, p.t_pumps, p.ramp_width))(head)
+            agr.funcs.setdefault(pump, {})["pressure"] = _ramped_head(head, p.t_pumps, p.ramp_width)
         else:
             agr.funcs.setdefault(pump, {})["pressure"] = head
 
@@ -234,20 +240,20 @@ def _run(p: Params, scenario: str, *, t_end: float, n: int, atol_rel: float, rto
     return sol, rec
 
 
-def both_pumps(p: Params = Params(), *, t_end: float = 3600.0, n: int = 1801, atol_rel: float = 1e-4, rtol: float = 1e-4,
+def both_pumps(p: Params = DEFAULT_PARAMS, *, t_end: float = 3600.0, n: int = 1801, atol_rel: float = 1e-4, rtol: float = 1e-4,
                guess_kind: str = "ballpark", seed: int = 0, band: float = 0.3) -> tuple[Solution, Record]:
     """Both pumps trip at ``p.t_pumps``: coastdown, low-flow trip, flapper opening, flow
     reversal into natural circulation through the pool."""
     return _run(p, "both", t_end=t_end, n=n, atol_rel=atol_rel, rtol=rtol, guess_kind=guess_kind, seed=seed, band=band)
 
 
-def one_pump(p: Params = Params(), *, t_end: float = 1800.0, n: int = 901, atol_rel: float = 1e-4, rtol: float = 1e-4,
+def one_pump(p: Params = DEFAULT_PARAMS, *, t_end: float = 1800.0, n: int = 901, atol_rel: float = 1e-4, rtol: float = 1e-4,
              guess_kind: str = "ballpark", seed: int = 0, band: float = 0.3) -> tuple[Solution, Record]:
     """Pump B trips, pump A keeps running: its check valve shuts and the flapper stays closed."""
     return _run(p, "one", t_end=t_end, n=n, atol_rel=atol_rel, rtol=rtol, guess_kind=guess_kind, seed=seed, band=band)
 
 
-def stuck_flapper(p: Params = Params(), *, t_end: float = 3600.0, n: int = 1801, atol_rel: float = 1e-4, rtol: float = 1e-4,
+def stuck_flapper(p: Params = DEFAULT_PARAMS, *, t_end: float = 3600.0, n: int = 1801, atol_rel: float = 1e-4, rtol: float = 1e-4,
                   guess_kind: str = "ballpark", seed: int = 0, band: float = 0.3) -> tuple[Solution, Record]:
     """Both pumps trip with the flapper stuck shut: no natural-circulation path, the hot
     channel reaches saturation and the run stops there."""

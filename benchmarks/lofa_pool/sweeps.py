@@ -21,7 +21,7 @@ _spec.loader.exec_module(metrics)
 RESULTS = HERE / "results"
 STATUSES = ("completed", "saturation", "failed")
 AXIS_TIMEOUT = 7200.0
-OPTION_DEFAULTS = dict(guess="ballpark", seed=0, band=0.3, atol_rel=1e-4, rtol=1e-4, t_end=3600.0, n=1801)
+OPTION_DEFAULTS = {"guess": "ballpark", "seed": 0, "band": 0.3, "atol_rel": 1e-4, "rtol": 1e-4, "t_end": 3600.0, "n": 1801}
 
 
 def _axis(name, values, make, options=None):
@@ -42,10 +42,10 @@ AXES: dict[str, object] = {
     "riser": _axis("basement_drop", (5.3, 9.3), lambda v: Params(basement_drop=v)),
     "gap_hot": _axis("gap_hot", (0.0016, 0.0020), lambda v: Params(gap_hot=v)),
     "friction": _axis("friction", ("blasius",), lambda v: Params(friction=v)),
-    "guesses": lambda: [*((kind, Params(), dict(guess=kind)) for kind in ("ballpark", "expert")),
-                        *((f"perturbed-{s}", Params(), dict(guess="perturbed", seed=s, band=0.3)) for s in range(5))],
-    "tolerance": lambda: [(f"atol={a:g}", Params(), dict(atol_rel=a, rtol=a)) for a in (1e-3, 1e-5, 1e-6)],
-    "grid": lambda: [(f"n={n}", Params(), dict(n=n)) for n in (901, 3601)],
+    "guesses": lambda: [*((kind, Params(), {"guess": kind}) for kind in ("ballpark", "expert")),
+                        *((f"perturbed-{s}", Params(), {"guess": "perturbed", "seed": s, "band": 0.3}) for s in range(5))],
+    "tolerance": lambda: [(f"atol={a:g}", Params(), {"atol_rel": a, "rtol": a}) for a in (1e-3, 1e-5, 1e-6)],
+    "grid": lambda: [(f"n={n}", Params(), {"n": n}) for n in (901, 3601)],
     "one_pump": _axis("trip_threshold", (0.6, 0.7, 0.9), lambda v: Params(scenario="one", trip_threshold=v)),
     "stuck": lambda: [("stuck-half-power", Params(scenario="stuck", flapper_stuck=True, power_scale=0.5), {})],
 }

@@ -116,9 +116,9 @@ def _square_channel(name: str, volume: float, length: float, cells: int, horizon
     pipe = EffectivePipe.rectangular(length=length, edge1=edge, edge2=edge, heated_edge=edge)
     kwargs = {}
     if horizontal:
-        kwargs = dict(pressure_func=horizontal_pressure())
+        kwargs = {"pressure_func": horizontal_pressure()}
     elif upward:
-        kwargs = dict(pressure_func=partial(pressure_diff, g=-local_gravity))
+        kwargs = {"pressure_func": partial(pressure_diff, g=-local_gravity)}
     return Channel(z_boundaries=np.linspace(0.0, length, cells + 1), fluid=light_water, pipe=pipe, name=name, **kwargs)
 
 
@@ -185,18 +185,18 @@ def build(p: Params, kinetics: bool = False, ref_state: State | None = None) -> 
         inertial_comps=[*flywheels.values(), *channels.values(), pool, tank],
         k_constructor=KirchhoffWDerivatives,
         abs_pressure_comps=[channels[k] for k in HEATED],
-        funcs={flapper: dict(t=identity), trip: dict(t=identity)},
+        funcs={flapper: {"t": identity}, trip: {"t": identity}},
         reference_node=(j_top, p_ref),
     )
     check_gravity_mismatch(fg.kirchhoff)
 
-    refs = dict(fg=fg, channels=channels, fuels=fuels, pool=pool, tank=tank, pumps=pumps, flywheels=flywheels,
-                valves=valves, pump_curves=pump_curves, flapper=flapper, trip=trip, hx=hx, pk=None, params=p, nominal=nominal,
-                power=P0, p_ref=p_ref)
+    refs = {"fg": fg, "channels": channels, "fuels": fuels, "pool": pool, "tank": tank, "pumps": pumps, "flywheels": flywheels,
+            "valves": valves, "pump_curves": pump_curves, "flapper": flapper, "trip": trip, "hx": hx, "pk": None, "params": p, "nominal": nominal,
+            "power": P0, "p_ref": p_ref}
     agr = fg.aggregator
     if not kinetics:
         for k in HEATED:
-            agr = agr + symmetric_plate(channels[k], fuels[k], funcs={fuels[k]: dict(power=P0)}).to_aggregator()
+            agr = agr + symmetric_plate(channels[k], fuels[k], funcs={fuels[k]: {"power": P0}}).to_aggregator()
         return agr, fg.kirchhoff, refs
     agr = agr + _kinetics_graph(p, channels, fuels, trip, ref_state, P0).to_aggregator()
     refs["pk"] = agr["PK"]
@@ -242,7 +242,7 @@ def _expert(refs: dict) -> State:
     hydraulic = refs["fg"].guess_steady_state(mdots=mdots, temperature=p.hx_outlet)
     thermals = [symmetric_plate_steady_state(channels[k], fuels[k], mdot=nominal[k], p_abs=refs["p_ref"],
                                              power=refs["power"], Tin=p.hx_outlet) for k in HEATED]
-    return State.merge(hydraulic, *thermals, {refs["trip"].name: dict(flag=0.0)})
+    return State.merge(hydraulic, *thermals, {refs["trip"].name: {"flag": 0.0}})
 
 
 def guess(agr: Aggregator, K: Kirchhoff, refs: dict, kind: str, seed: int = 0, band: float = 0.3) -> np.ndarray:
@@ -285,16 +285,16 @@ def steady_checks(agr: Aggregator, K: Kirchhoff, refs: dict, y: np.ndarray) -> d
             float(np.asarray(st[refs["channels"][k].name]["T_cool"])[-1]) for k in HEATED]
     pool_flow = float(st[K.name][K.component_edge(refs["pool"])])
     T_pool_top_cell = float(np.asarray(st["Pool"]["T_cool"])[0])
-    return dict(
-        T_out_error_max=max(T_out_err),
-        split_error_max=max(abs(r - 1.0) for r in ratios),
-        pool_flow=pool_flow,
-        inlet_matches_pool=abs(T_in - T_pool_top_cell) < 0.05,
-        wall_above_coolant=all(wall),
-        heads={leg: float(np.asarray(st[refs["pumps"][leg].name]["pressure"])) for leg in "AB"},
-        mdot=mdot,
-        T_in=T_in,
-    )
+    return {
+        "T_out_error_max": max(T_out_err),
+        "split_error_max": max(abs(r - 1.0) for r in ratios),
+        "pool_flow": pool_flow,
+        "inlet_matches_pool": abs(T_in - T_pool_top_cell) < 0.05,
+        "wall_above_coolant": all(wall),
+        "heads": {leg: float(np.asarray(st[refs["pumps"][leg].name]["pressure"])) for leg in "AB"},
+        "mdot": mdot,
+        "T_in": T_in,
+    }
 
 
 def decay_heat(P0: float):
@@ -325,7 +325,7 @@ def _kinetics_graph(p: Params, channels: dict, fuels: dict, trip: LowFlowTrip, r
                              controls=controls, name="PK")
     dh = decay_heat(P0)
     graph = CalculationGraph.from_decoupled(
-        pk, funcs={pk: dict(t=identity, power_input=lambda t: dh(max(t - trip.t_trip, 0.0)))})
+        pk, funcs={pk: {"t": identity, "power_input": lambda t: dh(max(t - trip.t_trip, 0.0))}})
     for k in HEATED:
         graph = graph + symmetric_plate(channels[k], fuels[k])
         graph.graph.add_edge(channels[k], pk, variables=("T",))
@@ -376,6 +376,6 @@ def draw(K: Kirchhoff, ax=None):
         dx, dy = x2 - x1, y2 - y1
         xm, ym = xm + rad * dy * 0.5, ym - rad * dx * 0.5
         ax.text(xm, ym, comps[0].name, ha="center", va="center", fontsize=8,
-                bbox=dict(boxstyle="round,pad=0.2", fc="white", ec="none", alpha=0.8))
+                bbox={"boxstyle": "round,pad=0.2", "fc": "white", "ec": "none", "alpha": 0.8})
     ax.set_axis_off()
     return ax
