@@ -103,3 +103,20 @@ def test_worths_carry_plate_counts():
     w_avg = float(np.sum(pk.temp_worth[refs["channels"]["normal"]]))
     w_hot = float(np.sum(pk.temp_worth[refs["channels"]["hot"]]))
     assert w_avg / w_hot == pytest.approx(300 * 1.0 / (1 * 1.6), rel=1e-9)
+
+
+def test_axial_cells_resize_channels_and_plates():
+    assert Params().axial_cells == 10
+    p = Params(axial_cells=5)
+    agr_th, K_th, refs_th = system.build(p)
+    assert all(ch.n == 5 for ch in refs_th["channels"].values())
+    assert all(tuple(fuel.shape) == (5, params.FUEL_N + 2 * params.CLAD_N) for fuel in refs_th["fuels"].values())
+    ref_state = agr_th.save(system.guess(agr_th, K_th, refs_th, "ballpark"))
+    _, _, refs = system.build(p, kinetics=True, ref_state=ref_state)
+    pk = refs["pk"]
+    for k in params.HEATED:
+        assert pk.temp_worth[refs["channels"][k]].shape == (5,)
+        assert pk.temp_worth[refs["fuels"][k]].shape == (5 * params.FUEL_N,)
+    _, _, refs_default = system.build(Params())
+    assert all(ch.n == 10 for ch in refs_default["channels"].values())
+    assert all(fuel.m == 10 for fuel in refs_default["fuels"].values())

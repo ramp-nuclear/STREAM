@@ -1,11 +1,11 @@
 """Geometry, core groups, operating point and modelling choices of the loss-of-flow case.
 
 The module constants are the plate geometry (``LENGTH``, ``WIDTH`` in m, cell counts and
-widths of cladding and meat, ``Z_N`` axial cells), the cladding and fuel-meat solids, the core
-table (``CORE``, ``HEATED``, ``UNHEATED``), the primary pipe drop ``PIPE1_DROP`` in m, the
-natural-circulation flow signs ``NC_SIGNS``, the nominal per-plate flow ``PER_PLATE_REFERENCE``
-in kg/s, and six-group delayed-neutron data (``BETA``, ``LAMBDA`` in 1/s, ``GENERATION_TIME``
-in s)."""
+widths of cladding and meat, ``Z_N`` the default axial cell count), the cladding and fuel-meat
+solids, the core table (``CORE``, ``HEATED``, ``UNHEATED``), the primary pipe drop
+``PIPE1_DROP`` in m, the natural-circulation flow signs ``NC_SIGNS``, the nominal per-plate flow
+``PER_PLATE_REFERENCE`` in kg/s, and six-group delayed-neutron data (``BETA``, ``LAMBDA`` in 1/s,
+``GENERATION_TIME`` in s)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -138,6 +138,8 @@ class Params:
         ``"both"``, ``"one"`` or ``"stuck"``; the scenario functions set it.
     stop_at_saturation: bool
         Whether a heated channel ends the run when its coolant reaches saturation.
+    axial_cells: int
+        Axial cells per channel and plate.
     """
 
     power: float = 10e6
@@ -176,6 +178,7 @@ class Params:
     ramp_width: float = 0.5
     scenario: str = "both"
     stop_at_saturation: bool = True
+    axial_cells: int = Z_N
 
 
 PIPE1_DROP = 4.3

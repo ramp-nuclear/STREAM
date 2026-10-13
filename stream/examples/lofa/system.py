@@ -67,21 +67,21 @@ from stream.units import g as local_gravity
 from stream.utilities import identity
 
 
-def make_fuel(name: str, share: float = 1.0) -> Fuel:
-    """One plate; ``share`` scales the power shape so the plate takes that fraction of the
-    ``power`` it is fed."""
-    shape = (Z_N, FUEL_N + 2 * CLAD_N)
+def make_fuel(name: str, share: float = 1.0, cells: int = Z_N) -> Fuel:
+    """One plate of ``cells`` axial rows (default ``Z_N``); ``share`` scales the power shape so
+    the plate takes that fraction of the ``power`` it is fed."""
+    shape = (cells, FUEL_N + 2 * CLAD_N)
     meat = np.zeros(shape, dtype=bool)
     meat[:, CLAD_N:-CLAD_N] = True
     materials = np.empty(shape, dtype=object)
     materials[meat] = FUEL_MEAT
     materials[~meat] = CLADDING
     return Fuel(
-        z_boundaries=np.linspace(0.0, LENGTH, Z_N + 1),
+        z_boundaries=np.linspace(0.0, LENGTH, cells + 1),
         x_boundaries=x_boundaries(CLAD_N, FUEL_N, CLAD_W, MEAT_W),
         material=Solid.from_array(materials),
         meat_indices=meat,
-        power_shape=share * uniform_x_power_shape(Z_N, FUEL_N, CLAD_N, CLAD_W, MEAT_W, LENGTH),
+        power_shape=share * uniform_x_power_shape(cells, FUEL_N, CLAD_N, CLAD_W, MEAT_W, LENGTH),
         y_length=WIDTH,
         name=name,
     )
@@ -92,12 +92,13 @@ def _regime_friction(gap: float):
     return friction_factor("regime_dependent", re_bounds=(2000.0, 5000.0), k_R=k_R)
 
 
-def make_channel(name: str, gap: float, heated: bool, friction: str, stop_at_saturation: bool):
-    """One plate channel of coolant ``gap`` in m, with heat transfer to both walls when ``heated``;
-    ``friction`` is ``"regime"`` (laminar-turbulent blend) or ``"blasius"``."""
+def make_channel(name: str, gap: float, heated: bool, friction: str, stop_at_saturation: bool, cells: int = Z_N):
+    """One plate channel of coolant ``gap`` in m and ``cells`` axial cells (default ``Z_N``), with
+    heat transfer to both walls when ``heated``; ``friction`` is ``"regime"`` (laminar-turbulent
+    blend) or ``"blasius"``."""
     if friction not in ("regime", "blasius"):
         raise ValueError(f"friction must be 'regime' or 'blasius', got {friction!r}")
-    z = np.linspace(0.0, LENGTH, Z_N + 1)
+    z = np.linspace(0.0, LENGTH, cells + 1)
     pipe = plate_pipe(gap)
     if heated:
         ch = ChannelAndContacts(z_boundaries=z, fluid=light_water, pipe=pipe, name=name,
@@ -152,8 +153,8 @@ def build(p: Params, kinetics: bool = False, ref_state: State | None = None) -> 
     j_split, j_merge = Junction(name="J_split"), Junction(name="J_merge")
 
     channels = {k: make_channel(f"{k.capitalize()}Channel", p.gap_hot if k == "hot" else g.gap, k in HEATED,
-                                p.friction, p.stop_at_saturation) for k, g in CORE.items()}
-    fuels = {k: make_fuel(f"{k.capitalize()}Fuel", share=power_share(k)) for k in HEATED}
+                                p.friction, p.stop_at_saturation, cells=p.axial_cells) for k, g in CORE.items()}
+    fuels = {k: make_fuel(f"{k.capitalize()}Fuel", share=power_share(k), cells=p.axial_cells) for k in HEATED}
     pool = _square_channel("Pool", p.pool_volume * p.pool_area_scale, LENGTH, 10, horizontal=False, upward=True)
     tank = _square_channel("DecayTank", p.tank_volume * p.tank_volume_scale, 5.0, 5, horizontal=True)
 
@@ -323,8 +324,9 @@ def _kinetics_graph(p: Params, channels: dict, fuels: dict, trip: LowFlowTrip, r
     temp_worth, ref_temp = {}, {}
     for k in HEATED:
         fraction = p.feedback_scale * CORE[k].plates * CORE[k].factor / weight_sum
-        temp_worth[channels[k]] = np.full(Z_N, p.coolant_worth * fraction / Z_N)
-        temp_worth[fuels[k]] = np.full(Z_N * FUEL_N, p.fuel_worth * fraction / (Z_N * FUEL_N))
+        cells, meat = fuels[k].m, int(np.count_nonzero(fuels[k].meat))
+        temp_worth[channels[k]] = np.full(cells, p.coolant_worth * fraction / cells)
+        temp_worth[fuels[k]] = np.full(meat, p.fuel_worth * fraction / meat)
         ref_temp[channels[k]] = np.asarray(ref_state[channels[k].name]["T_cool"], dtype=float).copy()
         ref_temp[fuels[k]] = _meat_temperatures(fuels[k], ref_state)
     controls = ReactivityController(input_reactivity=lambda state, t_state, t: trip.rho(t))
