@@ -28,3 +28,7 @@ def test_params_default_to_negative_temperature_coefficients():
     p = params.Params()
     assert p.coolant_worth < 0 and p.fuel_worth < 0
     assert p.scenario == "both" and p.flapper_stuck is False
+
+
+def test_params_default_to_the_regime_dependent_wall_heat_transfer():
+    assert params.Params().htc == "regime"

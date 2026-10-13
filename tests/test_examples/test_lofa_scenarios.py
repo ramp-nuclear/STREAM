@@ -9,7 +9,7 @@ def test_record_empty_marks_times_unknown():
     rec = scenarios.Record.empty("failed", error="x")
     assert rec.status == "failed" and rec.error == "x"
     assert rec.t_trip is None and rec.t_open is None and rec.t_rev_hot is None
-    assert np.isnan(rec.peak_max)
+    assert np.isnan(rec.peak_max) and np.isnan(rec.peak_fuel_hot)
 
 
 def test_stuck_flapper_forces_the_stuck_parameter():
@@ -48,6 +48,7 @@ def test_both_pumps_hour_holds_every_condition():
     assert rec.reversal_in_buoyancy_order
     assert rec.final_pool * NC_SIGNS["pool"] > 0 and rec.final_flapper * NC_SIGNS["flapper"] > 0
     assert rec.margin > 0
+    assert rec.peak_hot < rec.peak_fuel_hot < 200.0
     assert abs(rec.final_leg_A) < 0.01 * rec.mdot_total / 2 and abs(rec.final_leg_B) < 0.01 * rec.mdot_total / 2
     assert 11.0 < rec.t_trip < 14.0 and 35.0 < rec.t_open < 45.0
 

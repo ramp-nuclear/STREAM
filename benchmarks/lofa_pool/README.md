@@ -1,12 +1,15 @@
 # Pool-reactor loss of flow
 
-A loss-of-flow case for a generic materials-testing pool reactor: a plate core in downward
-forced flow, a decay tank, two pump legs with flywheels and check valves, a heat exchanger, and a
-flapper below the core that opens when the pumps coast down, so that the core goes over to
-natural circulation with the pool as the heat sink. Point kinetics with temperature feedback and a
-low-flow trip drive the power. The case ships with the library as `stream.examples.lofa`; this
-directory runs it as a benchmark: a ladder of rungs with pass conditions, a stress sweep over its
-parameters, and a physics audit of a solved transient against conservation laws.
+A loss-of-flow case for a generic materials-testing pool reactor: a plate core in downward forced
+flow, a decay tank, two pump legs with flywheels and check valves, a heat exchanger, and a flapper
+below the core that opens when the pumps coast down, so that the core goes over to natural
+circulation with the pool as the heat sink. Point kinetics with temperature feedback and a low-flow
+trip drive the power. Every plate channel runs the regime-dependent wall heat-transfer law, which
+composes laminar, turbulent and natural convection down to zero flow; `Params(htc="dittus")` gives
+the Dittus-Boelter correlation for comparison. The case ships with the library as
+`stream.examples.lofa`; this directory runs it as a benchmark: a ladder of rungs with pass
+conditions, a stress sweep over its parameters, and a physics audit of a solved transient against
+conservation laws.
 
 ## Commands
 
@@ -24,22 +27,24 @@ return discharges into the pool surface and the flapper sits above the core.
 
 The sweep's `guesses` axis solves the default case from the ballpark guess, the expert guess and
 five `perturbed` guesses, each the expert guess with every entry scaled by a random factor; every
-guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1e-6 row is known
-to fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
-reach saturation by design. The `cells` axis's 40-cell row records a NumPy divide-by-zero
-warning from the friction law's viscosity ratio, so it completes but counts as warned.
+guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1e-6 row is known to
+fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
+reach saturation by design. The `htc` axis runs the default case with the regime-dependent law and
+with Dittus-Boelter; both rows complete, and the Dittus-Boelter row's hot-plate meat peaks about
+16 °C higher. The `cells` axis's 40-cell row records a NumPy divide-by-zero warning from the
+friction law's viscosity ratio, so it completes but counts as warned.
 
 ## Rungs
 
-Measured on the library at commit `1802387`.
+Measured on the library at commit `ae923ef`.
 
 | Rung | Title | Status | Wall (s) |
 |---|---|---|---|
-| 1 | steady, ballpark guess | PASS | 6 |
-| 3 | both pumps trip, 1 h | PASS | 23 |
-| 4 | one pump trips, 30 min | PASS | 16 |
-| 5 | stuck flapper | PASS | 20 |
-| 6 | event-time invariance | PASS | 91 |
+| 1 | steady, ballpark guess | PASS | 8 |
+| 3 | both pumps trip, 1 h | PASS | 28 |
+| 4 | one pump trips, 30 min | PASS | 20 |
+| 5 | stuck flapper | PASS | 22 |
+| 6 | event-time invariance | PASS | 104 |
 
 Rung 2 is reserved for the steady state from the library's guess toolkit and is absent until that
 library feature ships.

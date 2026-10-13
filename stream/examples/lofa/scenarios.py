@@ -83,6 +83,8 @@ class Record:
         Sampled peak coolant temperature of the hot channel, °C.
     peak_max: float
         Sampled peak coolant temperature over the heated channels, °C.
+    peak_fuel_hot: float
+        Sampled peak meat temperature of the hot plate, °C.
     margin: float
         Saturation temperature at the reference pressure minus ``peak_max``, K.
     final_hot: float
@@ -130,6 +132,7 @@ class Record:
     reversal_in_buoyancy_order: bool
     peak_hot: float
     peak_max: float
+    peak_fuel_hot: float
     margin: float
     final_hot: float
     final_bypass: float
@@ -209,6 +212,7 @@ def _transient_metrics(agr, K, refs, sol: Solution, p: Params) -> dict:
         "reversal_in_buoyancy_order": _in_buoyancy_order(rev, p),
         "peak_hot": peaks["hot"],
         "peak_max": max(peaks.values()),
+        "peak_fuel_hot": float(np.max(agr.at_times(sol, refs["fuels"]["hot"], "T"))),
         "margin": float(light_water.sat_temperature(refs["p_ref"])) - max(peaks.values()),
         "final_hot": float(df["hot"].iloc[-1]),
         "final_bypass": float(df["bypass"].iloc[-1]),

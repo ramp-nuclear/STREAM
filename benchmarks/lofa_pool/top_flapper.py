@@ -99,7 +99,7 @@ def build(p: Params, kinetics: bool = False, ref_state: State | None = None) -> 
     j_split, j_merge = Junction(name="J_split"), Junction(name="J_merge")
 
     channels = {k: make_channel(f"{k.capitalize()}Channel", p.gap_hot if k == "hot" else g.gap, k in HEATED,
-                                p.friction, p.stop_at_saturation) for k, g in CORE.items()}
+                                p.friction, p.htc, p.stop_at_saturation) for k, g in CORE.items()}
     fuels = {k: make_fuel(f"{k.capitalize()}Fuel", share=power_share(k)) for k in HEATED}
     pool_volume = p.pool_volume * p.pool_area_scale
     pool_upper = system._square_channel("PoolUpper", pool_volume * z["tap"] / p.core_depth, z["tap"], 1, horizontal=False)

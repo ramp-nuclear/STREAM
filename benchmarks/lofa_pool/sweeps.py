@@ -41,6 +41,7 @@ AXES: dict[str, object] = {
     "hx_outlet": _axis("hx_outlet", (25.0, 55.0), lambda v: Params(hx_outlet=v)),
     "riser": _axis("basement_drop", (5.3, 9.3), lambda v: Params(basement_drop=v)),
     "gap_hot": _axis("gap_hot", (0.0016, 0.0020), lambda v: Params(gap_hot=v)),
+    "htc": _axis("htc", ("regime", "dittus"), lambda v: Params(htc=v)),
     "friction": _axis("friction", ("blasius",), lambda v: Params(friction=v)),
     "cells": _axis("axial_cells", (5, 20, 40), lambda v: Params(axial_cells=v)),
     "guesses": lambda: [*((kind, Params(), {"guess": kind}) for kind in ("ballpark", "expert")),

@@ -114,6 +114,10 @@ class Params:
         Whether the flapper never opens.
     friction: str
         Plate-channel friction: ``"regime"`` (laminar-turbulent blend) or ``"blasius"``.
+    htc: str
+        Plate-channel wall heat transfer: ``"regime"`` (laminar, turbulent and natural convection
+        composed over the same Reynolds bounds as the friction law) or ``"dittus"`` (the
+        Dittus-Boelter turbulent correlation, for comparison only).
     gap_hot: float
         Coolant gap of the hot plate channel, m.
     trip_threshold: float
@@ -166,6 +170,7 @@ class Params:
     flapper_area: float = 0.05
     flapper_stuck: bool = False
     friction: str = "regime"
+    htc: str = "regime"
     gap_hot: float = 0.0022
     trip_threshold: float = 0.85
     trip_delay: float = 0.5

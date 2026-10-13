@@ -36,6 +36,27 @@ def test_unknown_guess_kind_is_a_value_error():
         system.guess(agr, K, refs, "toolkit")
 
 
+def test_unknown_wall_heat_transfer_law_is_a_value_error():
+    with pytest.raises(ValueError, match="htc"):
+        system.make_channel("HotChannel", 0.0022, True, "regime", "x", True)
+
+
+def _hot_channel_h(htc: str, mdot: float) -> float:
+    ch = system.make_channel("HotChannel", 0.0022, True, "regime", htc, True)
+    h = ch.h_wall(T_cool=np.full(ch.n, 40.0), T_wall=np.full(ch.n, 60.0), mdot=mdot, pressure=1.8e5)
+    return np.asarray(h, dtype=float)
+
+
+def test_regime_wall_heat_transfer_keeps_natural_convection_at_low_flow():
+    regime, dittus = _hot_channel_h("regime", 1e-4), _hot_channel_h("dittus", 1e-4)
+    assert np.all(np.isfinite(regime)) and np.all(regime > 0)
+    assert np.all(np.isfinite(dittus)) and np.all(dittus > 0)
+    assert np.all(regime > dittus)
+    for htc in ("regime", "dittus"):
+        h = _hot_channel_h(htc, params.PER_PLATE_REFERENCE)
+        assert np.all(np.isfinite(h)) and np.all(h > 0)
+
+
 def test_decay_heat_power_law_values():
     dh = system.decay_heat(10e6)
     assert dh(0.0) == pytest.approx(0.066 * 10e6)

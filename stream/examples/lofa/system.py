@@ -58,6 +58,7 @@ from stream.examples.lofa.params import (
     power_share,
 )
 from stream.jacobians import ALG_jacobian
+from stream.physical_models.heat_transfer_coefficient import spl_htc, wall_heat_transfer_coeff
 from stream.physical_models.pressure_drop import pressure_diff
 from stream.physical_models.pressure_drop.friction import friction_factor, rectangular_laminar_correction
 from stream.pipe_geometry import EffectivePipe
@@ -92,16 +93,31 @@ def _regime_friction(gap: float):
     return friction_factor("regime_dependent", re_bounds=(2000.0, 5000.0), k_R=k_R)
 
 
-def make_channel(name: str, gap: float, heated: bool, friction: str, stop_at_saturation: bool, cells: int = Z_N):
+def wall_htc(htc: str, gap: float):
+    """Wall heat-transfer law of a plate channel with coolant ``gap`` in m: ``"regime"`` composes
+    laminar, turbulent and natural convection; ``"dittus"`` is the Dittus-Boelter turbulent
+    correlation, kept for comparison."""
+    if htc == "dittus":
+        return wall_heat_transfer_coeff
+    if htc == "regime":
+        return partial(wall_heat_transfer_coeff,
+                       h_spl=spl_htc("regime_dependent", re_bounds=(2000.0, 5000.0), aspect_ratio=gap / WIDTH, Lh=LENGTH))
+    raise ValueError(f"htc must be 'regime' or 'dittus', got {htc!r}")
+
+
+def make_channel(name: str, gap: float, heated: bool, friction: str, htc: str, stop_at_saturation: bool,
+                 cells: int = Z_N):
     """One plate channel of coolant ``gap`` in m and ``cells`` axial cells (default ``Z_N``), with
     heat transfer to both walls when ``heated``; ``friction`` is ``"regime"`` (laminar-turbulent
-    blend) or ``"blasius"``."""
+    blend) or ``"blasius"``, and ``htc`` is the wall heat-transfer law of :func:`wall_htc`,
+    ``"regime"`` or ``"dittus"``, checked even for an unheated channel."""
     if friction not in ("regime", "blasius"):
         raise ValueError(f"friction must be 'regime' or 'blasius', got {friction!r}")
+    h_wall_func = wall_htc(htc, gap)
     z = np.linspace(0.0, LENGTH, cells + 1)
     pipe = plate_pipe(gap)
     if heated:
-        ch = ChannelAndContacts(z_boundaries=z, fluid=light_water, pipe=pipe, name=name,
+        ch = ChannelAndContacts(z_boundaries=z, fluid=light_water, pipe=pipe, h_wall_func=h_wall_func, name=name,
                                 stop_at_saturation=stop_at_saturation)
     else:
         ch = Channel(z_boundaries=z, fluid=light_water, pipe=pipe, name=name)
@@ -153,7 +169,7 @@ def build(p: Params, kinetics: bool = False, ref_state: State | None = None) -> 
     j_split, j_merge = Junction(name="J_split"), Junction(name="J_merge")
 
     channels = {k: make_channel(f"{k.capitalize()}Channel", p.gap_hot if k == "hot" else g.gap, k in HEATED,
-                                p.friction, p.stop_at_saturation, cells=p.axial_cells) for k, g in CORE.items()}
+                                p.friction, p.htc, p.stop_at_saturation, cells=p.axial_cells) for k, g in CORE.items()}
     fuels = {k: make_fuel(f"{k.capitalize()}Fuel", share=power_share(k), cells=p.axial_cells) for k in HEATED}
     pool = _square_channel("Pool", p.pool_volume * p.pool_area_scale, LENGTH, 10, horizontal=False, upward=True)
     tank = _square_channel("DecayTank", p.tank_volume * p.tank_volume_scale, 5.0, 5, horizontal=True)
