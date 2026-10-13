@@ -1,5 +1,7 @@
+import numpy as np
 import pytest
 
+from stream.aggregator import Solution
 from stream.examples.lofa import checks, scenarios
 from stream.examples.lofa.params import Params
 from stream.examples.lofa.system import operating_point
@@ -11,6 +13,12 @@ def short_run():
     sol, _ = scenarios.both_pumps(p, t_end=300.0, n=1501)
     agr, K, refs, _ = operating_point(p)
     return p, agr, K, refs, sol
+
+
+@pytest.fixture(scope="module")
+def operating_sample():
+    agr, K, refs, y = operating_point(Params())
+    return agr, K, refs, Solution(np.array([0.0]), y[np.newaxis, :])
 
 
 @pytest.mark.slow
@@ -62,3 +70,20 @@ def test_loop_pressure_budget_closes_around_the_pump_loop(short_run):
     budget, buoyancy = checks.loop_pressure_budget(agr, K, refs, sol, names)
     assert set(budget) == set(names)
     assert abs(sum(budget.values())) < 0.05 * buoyancy
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    ("names", "message"),
+    [
+        (["HotChannel", "Pool"], "does not chain"),
+        (["HotChannel", "Flapper"], "does not return"),
+        (["NoSuchComponent", "Pool", "Flapper"], "not a component"),
+        (["HotChannel"], "at least two"),
+        (["HotChannel", "HotChannel"], "repeated"),
+    ],
+)
+def test_loop_pressure_budget_rejects_a_broken_loop(operating_sample, names, message):
+    agr, K, refs, sol = operating_sample
+    with pytest.raises(ValueError, match=message):
+        checks.loop_pressure_budget(agr, K, refs, sol, names)

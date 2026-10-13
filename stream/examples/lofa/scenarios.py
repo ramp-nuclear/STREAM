@@ -26,14 +26,86 @@ class Record:
 
     A valve's shut time ``t_valve_A`` or ``t_valve_B`` is the first output sample at which that
     leg's flow is below 1 % of the nominal leg flow, so a leg still coasting forward counts as shut.
-    ``margin`` is the saturation temperature at the core-inlet reference pressure minus the sampled
-    peak coolant temperature; the saturation stop uses the local pressure, so it can fire at a
-    slightly higher local temperature than ``margin`` suggests. Reversal and valve times are quantised to the output
-    grid, and the sampled peak moves with the grid (0.6 °C between 901 and 3601 output times).
-    ``t_half`` is the first output time at which the riser flow is below half its initial
-    value, counted from t=0 and so including the ``t_pumps`` before the pumps trip; ``t_half_hand``
-    is the flywheel estimate of the time from the pump trip, inertia times nominal leg flow over the
-    solved pump head, in seconds."""
+    ``margin`` is the saturation temperature at the reference pressure at the core top minus the
+    sampled peak coolant temperature; the saturation stop uses the local pressure, so it can fire at
+    a slightly higher local temperature than ``margin`` suggests. Reversal and valve times are
+    quantised to the output grid, and the sampled peak moves with the grid (about 0.01 °C between
+    the 901- and 3601-point grids). ``t_half`` is the first output time at which the riser flow is
+    below half its initial value, counted from t=0 and so including the ``t_pumps`` before the
+    pumps trip; ``t_half_hand`` is the flywheel estimate of the time from the pump trip, inertia
+    times nominal leg flow over the solved pump head, in seconds.
+
+    Attributes
+    ----------
+    status: str
+        ``completed``, ``saturation`` or ``failed``.
+    error: str
+        The error that ended a run early, empty for a completed run.
+    residual_entry: float
+        Norm of the thermal-hydraulic residual at the steady-state guess, in the mixed units of the residual.
+    residual_steady: float
+        Norm of the full system's residual at the operating point, in the mixed units of the residual.
+    head: float
+        Solved head of pump A at the operating point, Pa.
+    mdot_total: float
+        Riser flow at the operating point, the core total, kg/s.
+    mdot_hot: float
+        Per-plate flow of the hot group at the operating point, kg/s.
+    mdot_normal: float
+        Per-plate flow of the normal group at the operating point, kg/s.
+    mdot_bypass: float
+        Per-plate flow of the bypass group at the operating point, kg/s.
+    T_out_hot: float
+        Coolant temperature in the hot channel's outlet cell at the operating point, °C.
+    T_out_error_max: float
+        Largest deviation of a heated group's outlet temperature from its energy balance, K.
+    split_error_max: float
+        Largest relative deviation of a group's flow share from the turbulent gap law.
+    t_trip: float | None
+        Time the low-flow trip latched, s.
+    t_rods: float | None
+        Time the rods start to insert, the trip time plus the trip delay, s.
+    t_open: float | None
+        Time the flapper opened, s.
+    t_valve_A: float | None
+        Shut time of leg A's check valve, s.
+    t_valve_B: float | None
+        Shut time of leg B's check valve, s.
+    t_rev_hot: float | None
+        Flow reversal time of the hot group, s.
+    t_rev_normal: float | None
+        Flow reversal time of the normal group, s.
+    t_rev_low: float | None
+        Flow reversal time of the low group, s.
+    reversal_in_buoyancy_order: bool
+        Whether the heated groups reversed in decreasing order of power factor over nominal flow.
+    peak_hot: float
+        Sampled peak coolant temperature of the hot channel, °C.
+    peak_max: float
+        Sampled peak coolant temperature over the heated channels, °C.
+    margin: float
+        Saturation temperature at the reference pressure minus ``peak_max``, K.
+    final_hot: float
+        Per-plate flow of the hot group at the last output time, kg/s.
+    final_bypass: float
+        Per-plate flow of the bypass group at the last output time, kg/s.
+    final_pool: float
+        Flow through the pool at the last output time, kg/s.
+    final_leg_A: float
+        Flow through pump leg A at the last output time, kg/s.
+    final_leg_B: float
+        Flow through pump leg B at the last output time, kg/s.
+    final_flapper: float
+        Flow through the flapper at the last output time, kg/s.
+    pool_rise: float
+        Rise of the mean pool coolant temperature over the run, K.
+    t_last: float
+        Last output time, s.
+    t_half: float | None
+        First output time the riser flow is below half its initial value, s.
+    t_half_hand: float
+        Flywheel estimate of the riser flow's half time from the pump trip, s.
+    """
 
     status: str
     error: str

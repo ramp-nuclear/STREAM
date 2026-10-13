@@ -339,11 +339,12 @@ def operating_point(p: Params, guess_kind: str = "ballpark", seed: int = 0, band
     its feedback references at the solved temperatures. Returns ``(agr, K, refs, y)`` for the
     full system, ``y`` consistent to solver tolerance."""
     agr_th, K_th, refs_th = build(p)
-    y_th = steady(agr_th, guess(agr_th, K_th, refs_th, guess_kind, seed=seed, band=band))
+    y0 = guess(agr_th, K_th, refs_th, guess_kind, seed=seed, band=band)
+    y_th = steady(agr_th, y0)
     st_th = agr_th.save(y_th)
     agr, K, refs = build(p, kinetics=True, ref_state=st_th)
     refs["th_checks"] = steady_checks(agr_th, K_th, refs_th, y_th)
-    refs["th_residual_entry"] = float(np.linalg.norm(agr_th.compute(guess(agr_th, K_th, refs_th, guess_kind, seed=seed, band=band), 0.0)))
+    refs["th_residual_entry"] = float(np.linalg.norm(agr_th.compute(y0, 0.0)))
     P0 = refs["power"]
     kin = point_kinetics_steady_state(refs["pk"], P0, power_input=decay_heat(P0)(0.0))
     y = agr.load(State.merge(st_th, kin))
@@ -357,7 +358,7 @@ _LAYOUT = {
 
 
 def draw(K: Kirchhoff, ax=None):
-    """Draw the flow graph of a built loop: junctions at their elevation-like positions, one
+    """Draw the flow graph of a built loop: junctions on a fixed schematic layout, one
     labelled curve per edge (parallel edges fan out). Returns the axes drawn on."""
     if ax is None:
         _, ax = plt.subplots(figsize=(9, 6))
@@ -366,7 +367,7 @@ def draw(K: Kirchhoff, ax=None):
     nx.draw_networkx_nodes(g, pos, ax=ax, node_size=900, node_color="white", edgecolors="black")
     for node, (x, y) in pos.items():
         ax.text(x, y, str(node), ha="center", va="center", fontsize=8)
-    for i, (u, v, key, comps) in enumerate(g.edges(keys=True, data="comps")):
+    for u, v, key, comps in g.edges(keys=True, data="comps"):
         parallel = g.number_of_edges(u, v)
         rad = 0.0 if parallel == 1 else -0.35 + 0.7 * key / (parallel - 1)
         nx.draw_networkx_edges(g, pos, edgelist=[(u, v)], ax=ax, connectionstyle=f"arc3,rad={rad}",

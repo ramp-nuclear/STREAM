@@ -53,7 +53,7 @@ def power_share(name: str) -> float:
 
 
 def plate_pipe(gap: float) -> EffectivePipe:
-    """Rectangular channel of one plate with coolant ``gap`` in m, heated on its wide side."""
+    """Rectangular channel of one plate with coolant ``gap`` in m, heated on both wide sides."""
     return EffectivePipe.rectangular(length=LENGTH, edge1=WIDTH, edge2=gap, heated_edge=WIDTH)
 
 
@@ -62,7 +62,83 @@ class Params:
     """Operating point and modelling choices. Scales multiply the nominal value named.
     ``pump_head_estimate`` is the head the loop needs at nominal flow without the pump
     curve, Pa; each pump's curve is a quadratic droop that loses ``pump_droop`` times that
-    at the nominal leg flow, so the pump's own nominal head is the estimate plus the droop."""
+    at the nominal leg flow, so the pump's own nominal head is the estimate plus the droop.
+
+    Attributes
+    ----------
+    power: float
+        Nominal core power, W.
+    power_scale: float
+        Multiplies ``power``.
+    hx_outlet: float
+        Heat-exchanger outlet temperature, °C.
+    p_surface: float
+        Pressure at the pool surface, Pa.
+    core_depth: float
+        Depth of the core top below the pool surface, m.
+    pool_volume: float
+        Water volume of the pool column, m³.
+    pool_area_scale: float
+        Multiplies ``pool_volume`` at fixed height, so it scales the pool's flow area.
+    tank_volume: float
+        Water volume of the decay tank, m³.
+    tank_volume_scale: float
+        Multiplies ``tank_volume``.
+    pipe_diameter: float
+        Inner diameter of the primary, basement and riser pipes, m.
+    pipe_friction: float
+        Darcy friction factor of those pipes.
+    basement_drop: float
+        Elevation drop from the core plenum to the pump legs, m.
+    hx_dp: float
+        Pressure loss of the heat exchanger at the nominal core flow, Pa.
+    pump_head_estimate: float
+        Head the loop needs at nominal flow without the pump curve, Pa.
+    pump_droop: float
+        Head each pump's curve loses at the nominal leg flow, as a fraction of ``pump_head_estimate``.
+    inertia: float
+        Inertance of each pump leg's flywheel, 1/m.
+    inertia_scale: float
+        Multiplies ``inertia``.
+    valve_k: float
+        Forward loss coefficient of each check valve, Pa·s²/kg².
+    valve_reverse_ratio: float
+        How many times stiffer each check valve is against reverse flow.
+    flapper_fraction: float
+        Riser flow at which the flapper opens, as a fraction of the nominal core flow.
+    flapper_f: float
+        Local loss coefficient of the open flapper.
+    flapper_area: float
+        Flow area of the open flapper, m².
+    flapper_stuck: bool
+        Whether the flapper never opens.
+    friction: str
+        Plate-channel friction: ``"regime"`` (laminar-turbulent blend) or ``"blasius"``.
+    gap_hot: float
+        Coolant gap of the hot plate channel, m.
+    trip_threshold: float
+        Riser flow at which the low-flow trip latches, as a fraction of the nominal core flow.
+    trip_delay: float
+        Time from the trip to the start of rod insertion, s.
+    rod_worth_dollars: float
+        Rod worth, dollars.
+    rod_duration: float
+        Duration of the rod insertion, s.
+    feedback_scale: float
+        Multiplies both temperature feedback coefficients.
+    coolant_worth: float
+        Coolant temperature coefficient of the whole core, absolute reactivity per K.
+    fuel_worth: float
+        Fuel-meat temperature coefficient of the whole core, absolute reactivity per K.
+    t_pumps: float
+        Time the tripping pumps start to lose their head, s.
+    ramp_width: float
+        Duration of the pump head ramp to zero, s.
+    scenario: str
+        ``"both"``, ``"one"`` or ``"stuck"``; the scenario functions set it.
+    stop_at_saturation: bool
+        Whether a heated channel ends the run when its coolant reaches saturation.
+    """
 
     power: float = 10e6
     power_scale: float = 1.0

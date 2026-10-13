@@ -10,7 +10,7 @@ parameters, and a physics audit of a solved transient against conservation laws.
 
 ## Commands
 
-From the repository root, with the repository on `PYTHONPATH`:
+From the repository root, with the library installed (`pip install -e .`):
 
 ```bash
 python benchmarks/lofa_pool/run.py --all              # every rung, appends a dated table to RESULTS.md
@@ -21,6 +21,12 @@ python benchmarks/lofa_pool/metrics.py --params '{"power_scale": 1.2}' --out row
 `run.py --rung R` runs one rung in the current process. `physics_checks.py --case {case,top_flapper}`
 audits a solved hour of the shipped loop, or of the second loop in `top_flapper.py` where the pump
 return discharges into the pool surface and the flapper sits above the core.
+
+The sweep's `guesses` axis solves the default case from the ballpark guess, the expert guess and
+five `perturbed` guesses, each the expert guess with every entry scaled by a random factor; every
+guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1e-6 row is known
+to fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
+reach saturation by design.
 
 ## Rungs
 

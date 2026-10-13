@@ -15,10 +15,11 @@ import argparse
 import importlib.util
 import json
 import os
-import warnings
 from pathlib import Path
 from types import SimpleNamespace
 
+import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
 
 from stream.examples.lofa.checks import energy_budget, junction_mass_balance, loop_pressure_budget, series
@@ -27,6 +28,8 @@ from stream.examples.lofa.scenarios import flows, start_transient, transient
 from stream.examples.lofa.scenarios import reversal_times as flow_reversal_times
 from stream.examples.lofa.system import decay_heat, operating_point
 from stream.substances import light_water
+
+matplotlib.use("Agg")
 
 HERE = Path(__file__).resolve().parent
 _spec = importlib.util.spec_from_file_location("lofa_bench_top_flapper", HERE / "top_flapper.py")
@@ -137,7 +140,6 @@ def main(argv=None):
     ap.add_argument("--tight-t-end", type=float, default=900.0)
     ap.add_argument("--tight-dt", type=float, default=2.0)
     args = ap.parse_args(argv)
-    warnings.filterwarnings("ignore", message=".*shadow edge-routed.*")
     module = LOOPS[args.case]
     p = Params()
     agr, K, refs, sol = run(module, p, 1e-4, args.t_end, args.n)
@@ -179,9 +181,6 @@ def main(argv=None):
         json.dump(report, fh, indent=1, default=float)
 
     if args.figures:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
         os.makedirs(args.figures, exist_ok=True)
         fig, axes = plt.subplots(2, 2, figsize=(12, 8))
         ax = axes[0, 0]

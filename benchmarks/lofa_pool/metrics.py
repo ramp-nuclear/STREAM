@@ -1,6 +1,6 @@
 """Run one scenario of the loss-of-flow case and write a flat record as JSON: the package's
 record plus the library that ran, the warnings raised, the wall time and the traceback of a
-failure.
+failure. Deprecation warnings are not counted: they are not solver warnings.
 
     python benchmarks/lofa_pool/metrics.py --params '{"power_scale": 1.2}' --out row.json
 """
@@ -70,8 +70,9 @@ def run(p: Params, *, guess_kind: str = "ballpark", seed: int = 0, band: float =
         except Exception as e:  # noqa: BLE001
             rec.status, rec.error, rec.traceback = "failed", f"{type(e).__name__}: {e}", traceback.format_exc()
     rec.wall_s = time.perf_counter() - start
-    rec.n_warnings = len(caught)
-    rec.warnings = " | ".join(f"{w.category.__name__}: {w.message}" for w in caught[:3])
+    counted = [w for w in caught if not issubclass(w.category, DeprecationWarning)]
+    rec.n_warnings = len(counted)
+    rec.warnings = " | ".join(f"{w.category.__name__}: {w.message}" for w in counted[:3])
     return rec
 
 

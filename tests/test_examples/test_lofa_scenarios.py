@@ -68,5 +68,7 @@ def test_stuck_flapper_stops_at_saturation_with_the_named_error():
     sol, rec = scenarios.stuck_flapper(Params())
     assert rec.status == "saturation"
     assert "SaturationReachedError" in rec.error
-    assert rec.t_last < 3600.0
+    assert rec.t_open is None
+    assert rec.t_trip is not None and 11.0 < rec.t_trip < 14.0
+    assert 300.0 < rec.t_last < 600.0
     assert sol.time[-1] == pytest.approx(rec.t_last)

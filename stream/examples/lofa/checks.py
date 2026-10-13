@@ -85,10 +85,26 @@ def energy_budget(agr, K, refs, sol, p):
 
 
 def loop_pressure_budget(agr, K, refs, sol, loop_names, idx=-1):
-    """Pressure difference of every named component at output index ``idx``, Pa, signed along the loop
-    traversed in the order given, so the values sum to the loop residual; and the hot plate's buoyancy head, Pa.
+    """Pressure budget of one closed loop at output index ``idx`` (the last output by default): the
+    pressure difference of each named component, Pa, and the hot plate's buoyancy head, Pa.
+
+    The loop is walked through the components in the order given. A component's pressure difference
+    keeps its sign when the walk follows its edge's positive flow direction and is negated when the
+    walk runs against it. The component pressure differences include their inertia terms, so when every
+    component on the walked edges is named, the entries sum to the loop's Kirchhoff residual, which the
+    solver holds at zero at every output time, steady or not; the entries show where around the loop
+    the pressure is gained and lost. The buoyancy head, given for comparison, is the gravitational
+    acceleration times the sum over the hot channel's cells of the density of the water entering from
+    ``J_plenum`` minus the cell's density, times the cell length.
+
     The names must chain edge to edge around a closed loop in that order, otherwise ``ValueError`` is raised;
-    components sharing an edge are listed consecutively and take that edge's sign."""
+    components sharing an edge are listed consecutively and take that edge's sign. At least two names are
+    needed and none may repeat."""
+    if len(loop_names) < 2:
+        raise ValueError(f"a loop needs at least two components, got {list(loop_names)}")
+    repeated = sorted({name for name in loop_names if loop_names.count(name) > 1})
+    if repeated:
+        raise ValueError(f"each component may appear once in the loop, repeated: {repeated}")
     edges = {comp.name: (u, v, key) for u, v, key, comps in K.g.edges(keys=True, data="comps") for comp in comps}
     st = agr.save(sol.data[idx])
     budget = {}
