@@ -16,7 +16,7 @@ dependencies:
   - dask
   - yaml
   - jupyter
-  - mathjax
+  - mathjax >=3,<4  # conf.py mathjax_path uses the v3 es5/ layout, removed in v4
   - matplotlib
   - nbsphinx
   - networkx
