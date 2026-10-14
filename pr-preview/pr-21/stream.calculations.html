@@ -19,7 +19,7 @@
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
       <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js?v=97d8d0d7"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -1893,6 +1893,49 @@ according to Idelchik chapter 6.</p>
 <li><p><strong>mdot</strong> (<em>float</em><em> | </em><em>ndarray</em>)</p></li>
 <li><p><strong>Tin</strong> (<em>float</em><em> | </em><em>ndarray</em>)</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | <em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.calculations.ideal.resistors.CheckValve">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CheckValve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">k_forward</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverse_ratio</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'CheckValve'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculations/ideal/resistors.html#CheckValve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculations.ideal.resistors.CheckValve" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#stream.calculations.ideal.ideal.LumpedComponent" title="stream.calculations.ideal.ideal.LumpedComponent"><code class="xref py py-class docutils literal notranslate"><span class="pre">LumpedComponent</span></code></a></p>
+<p>A smooth one-way valve: a quadratic loss forward and a much stiffer quadratic loss backward.</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = -k\dot{m}|\dot{m}|\left(1 + r\,w(-\dot{m}, \epsilon)\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(w\)</span> is <code class="xref py py-func docutils literal notranslate"><span class="pre">smooth_pos_weight</span></code>, a weight that
+rises smoothly from 0 to 1 over a band of half-width <span class="math notranslate nohighlight">\(\epsilon\)</span> around zero
+flow. Beyond the band, forward flow sees <span class="math notranslate nohighlight">\(k\)</span> and reverse flow sees
+<span class="math notranslate nohighlight">\(k(1 + r)\)</span>. The pressure drop is zero at zero flow and the law is
+continuously differentiable through it.</p>
+<p>This is a modelling device for a valve that blocks reverse flow, not a valve
+model: there is no cracking pressure and no disc dynamics, and reverse flow is
+resisted, never cut off.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>k_forward</strong> (<em>float</em>) – Forward loss coefficient <span class="math notranslate nohighlight">\(k\)</span> [Pa s^2/kg^2], so that
+<span class="math notranslate nohighlight">\(\Delta p = -k\dot{m}^2\)</span> for forward flow beyond the band.</p></li>
+<li><p><strong>reverse_ratio</strong> (<em>float</em>) – <span class="math notranslate nohighlight">\(r\)</span>, the extra stiffness of the reverse branch; reverse flow beyond
+the band sees <span class="math notranslate nohighlight">\(k(1 + r)\)</span>.</p></li>
+<li><p><strong>eps</strong> (<em>KgPerS</em>) – Half-width of the smooth band around zero flow over which the reverse
+branch is switched on [kg/s].</p></li>
+<li><p><strong>name</strong> (<em>str</em>) – The name to give this calculation.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculations.ideal.resistors.CheckValve.dp_out">
+<span class="sig-name descname"><span class="pre">dp_out</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculations/ideal/resistors.html#CheckValve.dp_out"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculations.ideal.resistors.CheckValve.dp_out" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mdot</strong> (<em>float</em><em> | </em><em>ndarray</em>)</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>float | <em>ndarray</em></p>

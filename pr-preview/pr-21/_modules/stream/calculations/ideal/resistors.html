@@ -114,6 +114,7 @@
     <span class="n">sudden_expansion_factor</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.smoothing</span><span class="w"> </span><span class="kn">import</span> <span class="n">smooth_pos_weight</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances.liquid</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiquidFuncs</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Celsius</span><span class="p">,</span>
@@ -133,6 +134,7 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"Bend"</span><span class="p">,</span>
+    <span class="s2">"CheckValve"</span><span class="p">,</span>
     <span class="s2">"DPCalculation"</span><span class="p">,</span>
     <span class="s2">"Friction"</span><span class="p">,</span>
     <span class="s2">"Gravity"</span><span class="p">,</span>
@@ -724,6 +726,56 @@
             <span class="n">Dh</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
             <span class="n">A</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">total_area</span><span class="p">,</span>
         <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="CheckValve">
+<a class="viewcode-back" href="../../../../stream.calculations.html#stream.calculations.ideal.resistors.CheckValve">[docs]</a>
+<span class="nd">@_multiplies</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CheckValve</span><span class="p">(</span><span class="n">LumpedComponent</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A smooth one-way valve: a quadratic loss forward and a much stiffer quadratic loss backward.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        \Delta p = -k\dot{m}|\dot{m}|\left(1 + r\,w(-\dot{m}, \epsilon)\right)</span>
+
+<span class="sd">    where :math:`w` is :func:`~stream.smoothing.smooth_pos_weight`, a weight that</span>
+<span class="sd">    rises smoothly from 0 to 1 over a band of half-width :math:`\epsilon` around zero</span>
+<span class="sd">    flow. Beyond the band, forward flow sees :math:`k` and reverse flow sees</span>
+<span class="sd">    :math:`k(1 + r)`. The pressure drop is zero at zero flow and the law is</span>
+<span class="sd">    continuously differentiable through it.</span>
+
+<span class="sd">    This is a modelling device for a valve that blocks reverse flow, not a valve</span>
+<span class="sd">    model: there is no cracking pressure and no disc dynamics, and reverse flow is</span>
+<span class="sd">    resisted, never cut off.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k_forward</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">reverse_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1000.0</span><span class="p">,</span> <span class="n">eps</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"CheckValve"</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        k_forward: float</span>
+<span class="sd">            Forward loss coefficient :math:`k` [Pa s^2/kg^2], so that</span>
+<span class="sd">            :math:`\Delta p = -k\dot{m}^2` for forward flow beyond the band.</span>
+<span class="sd">        reverse_ratio: float</span>
+<span class="sd">            :math:`r`, the extra stiffness of the reverse branch; reverse flow beyond</span>
+<span class="sd">            the band sees :math:`k(1 + r)`.</span>
+<span class="sd">        eps: KgPerS</span>
+<span class="sd">            Half-width of the smooth band around zero flow over which the reverse</span>
+<span class="sd">            branch is switched on [kg/s].</span>
+<span class="sd">        name: str</span>
+<span class="sd">            The name to give this calculation.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k_forward</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">=</span> <span class="n">reverse_ratio</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eps</span> <span class="o">=</span> <span class="n">eps</span>
+
+<div class="viewcode-block" id="CheckValve.dp_out">
+<a class="viewcode-back" href="../../../../stream.calculations.html#stream.calculations.ideal.resistors.CheckValve.dp_out">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dp_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">*</span> <span class="n">mdot</span> <span class="o">*</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">ratio</span> <span class="o">*</span> <span class="n">smooth_pos_weight</span><span class="p">(</span><span class="o">-</span><span class="n">mdot</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eps</span><span class="p">))</span></div>
 </div>
 
 </pre></div>
