@@ -1,0 +1,23 @@
+<map id="inheritance93fe76d477" name="inheritance93fe76d477">
+<area shape="rect" id="node1" href="#stream.calculations.ideal.resistors.Bend" target="_top" title="Pressure drop due to a low relative curvature bend in a smooth circular/square pipe" alt="" coords="403,5,475,33"/>
+<area shape="rect" id="node2" href="#stream.calculations.ideal.ideal.LumpedComponent" target="_top" title="0&#45;dimensional Kirchhoff&#45;oriented flow components" alt="" coords="148,265,296,293"/>
+<area shape="rect" id="node7" href="#stream.calculations.ideal.resistors.Friction" target="_top" title="Resistor quadratic in flow using a given friction coefficient" alt="" coords="403,57,475,85"/>
+<area shape="rect" id="node9" href="#stream.calculations.ideal.resistors.Gravity" target="_top" title="A Calculation describing in a 0D manner the pressure difference" alt="" coords="403,109,475,137"/>
+<area shape="rect" id="node10" href="#stream.calculations.ideal.heat_exchangers.HeatExchanger" target="_top" title="This heat exchanger doesn&#39;t care about input temperature, it always" alt="" coords="379,161,499,189"/>
+<area shape="rect" id="node11" href="#stream.calculations.ideal.inertia.Inertia" target="_top" title="Flow inertia. Mathematically speaking, it is equivalent to an electrical inductor." alt="" coords="403,213,475,241"/>
+<area shape="rect" id="node15" href="#stream.calculations.ideal.resistors.LocalPressureDrop" target="_top" title="Local pressure drop due to expansion or contraction according to Idelchik chapter 4." alt="" coords="368,265,510,293"/>
+<area shape="rect" id="node18" href="#stream.calculations.ideal.pumps.Pump" target="_top" title="Hydraulic component constraining :math:`Delta p` or :math:`dot{m}`." alt="" coords="403,317,475,345"/>
+<area shape="rect" id="node19" href="#stream.calculations.ideal.resistors.RegimeDependentFriction" target="_top" title="Friction resistor which depends on the Reynolds number," alt="" coords="344,369,534,397"/>
+<area shape="rect" id="node20" href="#stream.calculations.ideal.resistors.Resistor" target="_top" title="A simple linear resistor to flow. It ensures" alt="" coords="402,421,476,449"/>
+<area shape="rect" id="node21" href="#stream.calculations.ideal.resistors.ResistorSum" target="_top" title="Adding several LumpedComponent in series, into a single calculation." alt="" coords="388,473,491,501"/>
+<area shape="rect" id="node3" href="calculation.html#stream.calculation.Calculation" target="_top" title="A calculation in the context of STREAM is derived from the following DAE," alt="" coords="5,551,100,578"/>
+<area shape="rect" id="node4" href="#stream.calculations.channel.Channel" target="_top" title="A channel in a reactor core, this model utilizes the incompressible flow" alt="" coords="185,447,259,474"/>
+<area shape="rect" id="node6" href="#stream.calculations.flapper.Flapper" target="_top" title="A Flapper has 2 states, open or close. When closed, there is no flow." alt="" coords="186,499,258,526"/>
+<area shape="rect" id="node8" href="#stream.calculations.heat_diffusion.Fuel" target="_top" title="Represents a solid component in which heat is generated and/or transferred." alt="" coords="186,551,258,578"/>
+<area shape="rect" id="node12" href="#stream.calculations.kirchhoff.Junction" target="_top" title="A junction calculation should be used anywhere several hydraulic inputs and outputs meet." alt="" coords="185,603,258,630"/>
+<area shape="rect" id="node13" href="#stream.calculations.kirchhoff.Kirchhoff" target="_top" title="Dictates flow in a given circuit for an incompressible liquid" alt="" coords="182,655,262,682"/>
+<area shape="rect" id="node16" href="#stream.calculations.point_kinetics.PointKinetics" target="_top" title="The Point Kinetics model is the simplest Neutronics dynamical model. It" alt="" coords="169,707,275,734"/>
+<area shape="rect" id="node5" href="#stream.calculations.channel.ChannelAndContacts" target="_top" title="This class assumes two walls encompass a channel. It calculates the heat" alt="" coords="361,525,517,553"/>
+<area shape="rect" id="node14" href="#stream.calculations.kirchhoff.KirchhoffWDerivatives" target="_top" title="A Kirchhoff Calculation containing :math:`ddot{m}`" alt="" coords="356,655,523,682"/>
+<area shape="rect" id="node17" href="#stream.calculations.point_kinetics.PointKineticsWInput" target="_top" title="The same good&#45;old PK, but with added power_input" alt="" coords="363,707,515,734"/>
+</map>

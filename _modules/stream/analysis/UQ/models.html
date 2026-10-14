@@ -1,0 +1,651 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.analysis.UQ.models &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.analysis.UQ.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.analysis.UQ.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Tools to generate UQ models"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dask</span><span class="w"> </span><span class="kn">import</span> <span class="n">delayed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dask.delayed</span><span class="w"> </span><span class="kn">import</span> <span class="n">Delayed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">concat</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array2D</span><span class="p">,</span> <span class="n">Value</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.uncertainty</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uncertainty</span><span class="p">,</span> <span class="n">Uncertuple</span>
+
+<span class="n">Model</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="n">DataFrame</span><span class="p">]</span>
+<span class="n">DelayedModel</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="n">Delayed</span><span class="p">]</span>
+<span class="n">ModelFactory</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Delayed</span><span class="p">,</span> <span class="n">Delayed</span><span class="p">]]</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Value</span><span class="p">,</span> <span class="n">covariant</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_vector_step</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Generate finite-difference step values ``x+h``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x : T (Base ``Value``)</span>
+<span class="sd">        Vector to perturb</span>
+<span class="sd">    h : T</span>
+<span class="sd">        Perturbations required in each entry of x. x and h have to have the same shape.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    from Iterable[T]</span>
+<span class="sd">        If ``x`` and ``h`` are vectors of length ``n``,</span>
+<span class="sd">        then each element is added separately, creating a generator with ``n`` elements,</span>
+<span class="sd">        schematically ``step[i] = x[i] + h_i, step[j!=i]=x for each i``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; list(_vector_step(5., 0.5))</span>
+<span class="sd">    [5.5]</span>
+<span class="sd">    &gt;&gt;&gt; list(_vector_step(np.arange(2), np.ones(2)))</span>
+<span class="sd">    [array([1., 1.]), array([0., 2.])]</span>
+<span class="sd">    &gt;&gt;&gt; list(_vector_step(5., 1))</span>
+<span class="sd">    [6.0]</span>
+<span class="sd">    """</span>
+    <span class="k">match</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span>
+        <span class="k">case</span> <span class="nb">int</span><span class="p">()</span> <span class="o">|</span> <span class="nb">float</span><span class="p">()</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">(),</span> <span class="nb">int</span><span class="p">()</span> <span class="o">|</span> <span class="nb">float</span><span class="p">()</span> <span class="o">|</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">x</span> <span class="o">+</span> <span class="n">h</span>
+        <span class="k">case</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">ndim</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">(</span><span class="n">ndim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">h</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+            <span class="k">yield from</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">h</span><span class="p">)</span> <span class="o">+</span> <span class="n">x</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"x and h must be of the same type, float or 1D ndarray: </span><span class="si">{</span><span class="n">x</span><span class="w"> </span><span class="si">= }</span><span class="s2">, </span><span class="si">{</span><span class="n">h</span><span class="w"> </span><span class="si">= }</span><span class="s2">, </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="si">= }</span><span class="s2">, </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="si">= }</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">default_deriv_step</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The default way to make an infinitesimal change in x.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x: T</span>
+<span class="sd">        The value to change things around</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">1e-12</span> <span class="o">+</span> <span class="mf">1e-6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_matrix</span><span class="p">(</span>
+    <span class="n">nominal</span><span class="p">,</span>
+    <span class="n">perturbed_solutions</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Array1D</span><span class="p">],</span>
+    <span class="n">perturbations</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array2D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates a matrix subjacobian representation from perturbed solutions</span>
+<span class="sd">    and known perturbation values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nominal: Array1D</span>
+<span class="sd">        The solution in nominal conditions.</span>
+<span class="sd">    perturbed_solutions: Iterable[Array1D]</span>
+<span class="sd">        The solutions of the perturbed systems</span>
+<span class="sd">    perturbations: Array1D</span>
+<span class="sd">        The perturbations that yield these solutions.</span>
+<span class="sd">    length: int | None</span>
+<span class="sd">        The length of the nominal solution. Used for cases when the nominal</span>
+<span class="sd">        solution does not converge.</span>
+
+<span class="sd">    """</span>
+    <span class="c1"># noinspection PyPep8Naming</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">nominal</span><span class="p">)</span> <span class="k">if</span> <span class="n">length</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">length</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">perturbations</span><span class="p">)))</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">perturbed_solutions</span><span class="p">,</span> <span class="n">perturbations</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)):</span>
+        <span class="n">J</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">sol</span> <span class="o">-</span> <span class="n">nominal</span><span class="p">)</span> <span class="o">/</span> <span class="n">h</span>
+    <span class="k">return</span> <span class="n">J</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_uq_single_jacobian</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">sys</span><span class="p">,</span> <span class="n">stat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Uncertuple</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">j</span> <span class="o">@</span> <span class="n">sys</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">j</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">@</span> <span class="p">(</span><span class="n">stat</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_uncert_add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Uncertuple</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Uncertuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Uncertuple</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+
+<span class="n">_d_as_matrix</span> <span class="o">=</span> <span class="n">delayed</span><span class="p">(</span><span class="n">_as_matrix</span><span class="p">,</span> <span class="n">pure</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">_d_uq_single_jacobian</span> <span class="o">=</span> <span class="n">delayed</span><span class="p">(</span><span class="n">_uq_single_jacobian</span><span class="p">,</span> <span class="n">pure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">_d_uncert_add</span> <span class="o">=</span> <span class="n">delayed</span><span class="p">(</span><span class="n">_uncert_add</span><span class="p">,</span> <span class="n">pure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">nout</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_UQModel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Parent class for UQ models that are cached.</span>
+
+<span class="sd">    Used for code reuse, not as a supertype.</span>
+<span class="sd">    Contains getter and setter functions to ensure cache invalidation and that</span>
+<span class="sd">    the nominal solution is up-to-date.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nominal</span><span class="p">,</span> <span class="n">step_strategy</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span> <span class="o">=</span> <span class="n">nominal</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_step_strategy</span> <span class="o">=</span> <span class="n">step_strategy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Model</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The Model of the problem, which takes parameter values and returns a</span>
+<span class="sd">        DataFrame.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
+
+    <span class="nd">@model</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mod</span><span class="p">:</span> <span class="n">Model</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">mod</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_invalidate_cache</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The nominal model parameters. Must match the parameters of the model."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span>
+
+    <span class="nd">@parameters</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_invalidate_cache</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""A strategy for deciding how big a perturbation step to take.</span>
+<span class="sd">        This should be a small positive value, usually.</span>
+
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_strategy</span>
+
+    <span class="nd">@step_strategy</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">step_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">st</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_step_strategy</span> <span class="o">=</span> <span class="n">st</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_invalidate_cache</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_invalidate_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">|</span> <span class="n">parameters</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="UQModel">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.UQModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UQModel</span><span class="p">(</span><span class="n">_UQModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""This object performs the Jacobian analysis for numerical evaluation of</span>
+<span class="sd">    the solution values against the model parameters.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">],</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+        <span class="n">nominal</span><span class="p">:</span> <span class="n">DataFrame</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step_strategy</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_deriv_step</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parameters: dict[str, Value]</span>
+<span class="sd">            The nominal model parameters. Must match the parameters of the model.</span>
+<span class="sd">        model: Model</span>
+<span class="sd">            The Model of the problem, which takes parameter values and returns a</span>
+<span class="sd">            DataFrame.</span>
+<span class="sd">        nominal: DataFrame</span>
+<span class="sd">            The result of running the model on the default parameters. Defaults</span>
+<span class="sd">            to running it on instantiation.</span>
+<span class="sd">        step_strategy: Callable[[Value], Array1D]</span>
+<span class="sd">            A strategy for deciding how big a perturbation step to take.</span>
+<span class="sd">            This should be a small positive value, usually.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">nominal</span><span class="p">,</span> <span class="n">step_strategy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span> <span class="o">=</span> <span class="n">nominal</span> <span class="k">if</span> <span class="n">nominal</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UQModel.evaluate">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.UQModel.evaluate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Evaluate the solver with different parameter values."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">|</span> <span class="n">parameters</span><span class="p">))</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="UQModel.subjacobian">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.UQModel.subjacobian">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subjacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array2D</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Derive the Jacobian matrix of derivation by a single input parameter.</span>
+
+<span class="sd">        The Jacobian is computed through the simplest finite differences scheme,</span>
+<span class="sd">        where schematically:</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            J_{ij}=\frac{df_i}{dx_j}=\frac{f_i(\mathbf{x_0}+h_j)</span>
+<span class="sd">                   -f_i(\mathbf{x_0})}{h_j}+\mathcal{O}(h_j)</span>
+
+
+<span class="sd">        Where :math:`\mathbf{x_0} + h_j` means only the :math:`j`-th index in</span>
+<span class="sd">        :math:`\mathbf{x_0}` is adjusted by :math:`h_j`.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param: str</span>
+<span class="sd">            Parameter to perform the derivation by. Must be in parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array2D</span>
+<span class="sd">            A 2D matrix of the Jacobian submatrix for the output in regard to the given</span>
+<span class="sd">            parameter</span>
+
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_strategy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">sols</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">param</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_vector_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">_as_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">sols</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">h</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_uq_single</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Uncertuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Perform the uncertainty quantification of the model for one</span>
+<span class="sd">        parameter's uncertainty.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param: str</span>
+<span class="sd">            The parameter whose uncertainty to consider.</span>
+<span class="sd">        uncertainty: Uncertainty</span>
+<span class="sd">            The uncertainty of that parameter.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Value, Value</span>
+<span class="sd">            The systematic and statistical uncertainties in each output field.</span>
+
+<span class="sd">        """</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subjacobian</span><span class="p">(</span><span class="n">param</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">])</span>
+        <span class="n">sys_uncer</span><span class="p">,</span> <span class="n">stat_uncer</span> <span class="o">=</span> <span class="n">uncertainty</span><span class="o">.</span><span class="n">as_absolute</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_uq_single_jacobian</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">sys_uncer</span><span class="p">,</span> <span class="n">stat_uncer</span><span class="p">)</span>
+
+<div class="viewcode-block" id="UQModel.uq">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.UQModel.uq">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">uncertainties</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Uncertuple</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Performs the uncertainty quantification of the model for a given set</span>
+<span class="sd">        of uncertainties.</span>
+<span class="sd">        Assumes the uncertainties of different parameters are independent.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        uncertainties: Uncertainty</span>
+<span class="sd">            The uncertainties in each parameter to include in the analysis.</span>
+<span class="sd">            Keys must be names of parameters of the model.</span>
+<span class="sd">            Any parameter in the model that isn't listed is considered to have</span>
+<span class="sd">            zero uncertainty.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple[Value, Value]</span>
+<span class="sd">            The systematic and statistical uncertainty in each output parameter for the</span>
+<span class="sd">            given input uncertainties.</span>
+
+<span class="sd">        """</span>
+        <span class="n">uq_values</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uq_single</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">uncertainty</span> <span class="ow">in</span> <span class="n">uncertainties</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="n">_uncert_add</span><span class="p">,</span> <span class="n">uq_values</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="UQModel.uq_attach">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.UQModel.uq_attach">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uq_attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">uncertainties</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Performs the uncertainty quantification of the model for a given set</span>
+<span class="sd">        of uncertainties, just like :meth:`uq`.</span>
+
+<span class="sd">        Unlike :meth:`uq`, it returns the nominal model output DataFrame where</span>
+<span class="sd">        two columns are added: **sys** (systematic uncertainty) and</span>
+<span class="sd">        **stat** (statistical uncertainty).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        uncertainties: Uncertainty</span>
+<span class="sd">            The uncertainties in each parameter to include in the analysis.</span>
+<span class="sd">            Keys must be names of parameters of the model.</span>
+<span class="sd">            Any parameter in the model that isn't listed is considered to have</span>
+<span class="sd">            zero uncertainty.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        DataFrame</span>
+<span class="sd">            Nominal DataFrame with added uncertainty columns.</span>
+<span class="sd">        """</span>
+        <span class="n">sys</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uq</span><span class="p">(</span><span class="o">**</span><span class="n">uncertainties</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">sys</span><span class="o">=</span><span class="n">sys</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="n">stat</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="nd">@delayed</span><span class="p">(</span><span class="n">pure</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_join</span><span class="p">(</span><span class="o">*</span><span class="n">dfs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">concat</span><span class="p">(</span><span class="n">dfs</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DASKUQModel">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.DASKUQModel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DASKUQModel</span><span class="p">(</span><span class="n">_UQModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A UQ model which is computed asynchronously, using DASK."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">],</span>
+        <span class="n">model</span><span class="p">:</span> <span class="n">Model</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">features</span><span class="p">:</span> <span class="n">DelayedModel</span><span class="p">,</span>
+        <span class="n">feature_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">step_strategy</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">T</span><span class="p">],</span> <span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">default_deriv_step</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">        The functions given to this object for the model creation and model features</span>
+<span class="sd">        should be ``delayed`` in advance, and where possible, mark them as ``pure`` and</span>
+<span class="sd">        with a correct ``nout``.</span>
+<span class="sd">        The reason we don't just do this ourselves is that we want a mapping of</span>
+<span class="sd">        DASKUQModels that use the same function but with a different set of parameters</span>
+<span class="sd">        to realize that they are actually the same function.</span>
+
+<span class="sd">        It is also preferred to let people do their own delaying, so we don't get an</span>
+<span class="sd">        accidental double-delay.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parameters: dict[str, Value]</span>
+<span class="sd">            The nominal model parameters. Must match the parameters of the</span>
+<span class="sd">            features and model factory.</span>
+<span class="sd">        model: Model</span>
+<span class="sd">            The Model of the problem, which takes parameter values and returns a</span>
+<span class="sd">            DataFrame.</span>
+<span class="sd">        features: DelayedModel</span>
+<span class="sd">            Functions that take a model and the set of creation parameters and</span>
+<span class="sd">            return DataFrames with the format used by the Aggregator</span>
+<span class="sd">            (have calculation, variable, i, j, and so on).</span>
+<span class="sd">            Rows from different DataFrames given by features should be distinct,</span>
+<span class="sd">            meaning that they should have a different value somewhere that isn't the</span>
+<span class="sd">            "value" column.</span>
+<span class="sd">        persist: bool</span>
+<span class="sd">            Whether values should persist by default. Defaults to False.</span>
+<span class="sd">        feature_length: int</span>
+<span class="sd">            The length of a nominal solution for all the features.</span>
+<span class="sd">            Used to set the length of the jacobian when the nominal solution</span>
+<span class="sd">            does not converge.</span>
+<span class="sd">        step_strategy: Callable[[Value], Array1D]</span>
+<span class="sd">            A strategy for deciding how big a perturbation step to take.</span>
+<span class="sd">            This should be a small positive value, usually.</span>
+<span class="sd">        """</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">step_strategy</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="o">=</span> <span class="n">features</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_len</span> <span class="o">=</span> <span class="n">feature_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">persist</span> <span class="o">=</span> <span class="n">persist</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Delayed</span><span class="p">:</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">|</span> <span class="n">parameters</span>
+        <span class="c1"># noinspection PyArgumentList</span>
+        <span class="n">pieces</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">)</span> <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">_join</span><span class="p">(</span><span class="o">*</span><span class="n">pieces</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DASKUQModel.evaluate">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.DASKUQModel.evaluate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">parameters</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Delayed</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Evaluate the solver with different parameter values."""</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">values</span></div>
+
+
+<div class="viewcode-block" id="DASKUQModel.subjacobian">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.DASKUQModel.subjacobian">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subjacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Delayed</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Derive the Jacobian matrix of derivation by a single input parameter.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        :meth:`UQModel.subjacobian`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param: str</span>
+<span class="sd">            Parameter to perform the derivation by. Must be in parameters.</span>
+<span class="sd">        persist: bool</span>
+<span class="sd">            Flag for whether to persist the result or not (caching). Defaults to the attribute value of this object.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Array2D</span>
+<span class="sd">            A 2D matrix of the Jacobian submatrix for the output in regard to the given</span>
+<span class="sd">            parameter</span>
+
+<span class="sd">        """</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_strategy</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">sols</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">param</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_vector_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="p">)]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">_d_as_matrix</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nominal</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">sols</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">h</span><span class="p">),</span> <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_len</span><span class="p">)</span>
+        <span class="n">persist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">persist</span> <span class="k">if</span> <span class="n">persist</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">persist</span>
+        <span class="k">if</span> <span class="n">persist</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">persist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_uq_single</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">param</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">uncertainty</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">,</span>
+        <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Delayed</span><span class="p">,</span> <span class="n">Delayed</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Perform the uncertainty quantification of the model for one</span>
+<span class="sd">        parameter's uncertainty.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        param: str</span>
+<span class="sd">            The parameter whose uncertainty to consider.</span>
+<span class="sd">        uncertainty: Uncertainty</span>
+<span class="sd">            The uncertainty of that parameter.</span>
+<span class="sd">        persist: bool</span>
+<span class="sd">            Flag for whether to persist the result or not (caching).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Value, Value</span>
+<span class="sd">            The systematic and statistical uncertainties in each output field.</span>
+
+<span class="sd">        """</span>
+        <span class="n">j</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">subjacobian</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">persist</span><span class="o">=</span><span class="n">persist</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">param</span><span class="p">])</span>
+        <span class="n">sys_uncer</span><span class="p">,</span> <span class="n">stat_uncer</span> <span class="o">=</span> <span class="n">uncertainty</span><span class="o">.</span><span class="n">as_absolute</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_d_uq_single_jacobian</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="n">sys_uncer</span><span class="p">,</span> <span class="n">stat_uncer</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DASKUQModel.uq">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.DASKUQModel.uq">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uq</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">uncertainties</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Delayed</span><span class="p">,</span> <span class="n">Delayed</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Performs the uncertainty quantification of the model for a given set</span>
+<span class="sd">        of uncertainties.</span>
+<span class="sd">        Assumes the uncertainties of different parameters are independent.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        persist: bool</span>
+<span class="sd">            Flag for whether to persist the result or not (caching).</span>
+<span class="sd">        uncertainties: Uncertainty</span>
+<span class="sd">            The uncertainties in each parameter to include in the analysis.</span>
+<span class="sd">            Keys must be names of parameters of the model.</span>
+<span class="sd">            Any parameter in the model that isn't listed is considered to have</span>
+<span class="sd">            zero uncertainty.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple[Value, Value]</span>
+<span class="sd">            The systematic and statistical uncertainty in each output parameter for the</span>
+<span class="sd">            given input uncertainties.</span>
+
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">uncertainties</span><span class="p">:</span>
+            <span class="n">zd</span> <span class="o">=</span> <span class="n">delayed</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">pure</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">zd</span><span class="p">,</span> <span class="n">zd</span>
+        <span class="n">uq_values</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_uq_single</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">,</span> <span class="n">persist</span><span class="o">=</span><span class="n">persist</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">uncertainty</span> <span class="ow">in</span> <span class="n">uncertainties</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">sys</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="n">reduce</span><span class="p">(</span><span class="n">_d_uncert_add</span><span class="p">,</span> <span class="n">uq_values</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># Safe because if the iterator is empty and the initial values persist,</span>
+        <span class="c1"># we would have returned early with delayed values.</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="k">return</span> <span class="n">sys</span><span class="p">,</span> <span class="n">stat</span></div>
+
+
+<div class="viewcode-block" id="DASKUQModel.uq_attach">
+<a class="viewcode-back" href="../../../../analysis.html#stream.analysis.UQ.DASKUQModel.uq_attach">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uq_attach</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">persist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">uncertainties</span><span class="p">:</span> <span class="n">Uncertainty</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Delayed</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Performs the uncertainty quantification of the model for a given set</span>
+<span class="sd">        of uncertainties, just like :meth:`uq`.</span>
+
+<span class="sd">        Unlike :meth:`uq`, it returns the nominal model output DataFrame where</span>
+<span class="sd">        two columns are added: **sys** (systematic uncertainty) and</span>
+<span class="sd">        **stat** (statistical uncertainty).</span>
+<span class="sd">        Since this is a DaskUQModel, this is a delayed of said operation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        uncertainties: Uncertainty</span>
+<span class="sd">            The uncertainties in each parameter to include in the analysis.</span>
+<span class="sd">            Keys must be names of parameters of the model.</span>
+<span class="sd">            Any parameter in the model that isn't listed is considered to have</span>
+<span class="sd">            zero uncertainty.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Delayed</span>
+<span class="sd">            Nominal DataFrame with added uncertainty columns.</span>
+<span class="sd">        """</span>
+        <span class="n">sys</span><span class="p">,</span> <span class="n">stat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">uq</span><span class="p">(</span><span class="n">persist</span><span class="o">=</span><span class="n">persist</span><span class="p">,</span> <span class="o">**</span><span class="n">uncertainties</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nominal</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">sys</span><span class="o">=</span><span class="n">sys</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="n">stat</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

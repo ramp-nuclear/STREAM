@@ -1,0 +1,248 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.heat_transfer_coefficient.temperatures &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../heat_transfer_coefficient.html">stream.physical_models.heat_transfer_coefficient</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.heat_transfer_coefficient.temperatures</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.heat_transfer_coefficient.temperatures</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Temperatures used in the calculation of the heat transfer coefficient"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">WPerM2K</span>
+
+
+<div class="viewcode-block" id="wall_temperature">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.temperatures.wall_temperature">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">wall_temperature</span><span class="p">(</span><span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_clad</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">h_cool</span><span class="p">:</span> <span class="n">WPerM2K</span><span class="p">,</span> <span class="n">h_clad</span><span class="p">:</span> <span class="n">WPerM2K</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Computes the interface temperature, under the assumption that the interface's thermal inertia is 0, thus</span>
+<span class="sd">    incoming and outgoing fluxes should be equal. Then temperature differences should behave as follows:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        (T_\text{clad} - T_\text{wall}) h_\text{clad}</span>
+<span class="sd">        = (T_\text{wall} - T_\text{cool}) h_\text{cool}</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_cool: Celsius</span>
+<span class="sd">        Coolant bulk temperature</span>
+<span class="sd">    T_clad: Celsius</span>
+<span class="sd">        Clad temperature, closest to the interface.</span>
+<span class="sd">    h_cool: WPerM2K</span>
+<span class="sd">        Heat transfer coefficient between wall and coolant bulk.</span>
+<span class="sd">    h_clad: WPerM2K</span>
+<span class="sd">        Clad heat transfer coefficient (conductivity / distance) between T_clad placement and T_wall placement.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperature</span>
+<span class="sd">    """</span>
+    <span class="n">ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">h_clad</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">h_clad</span> <span class="o">/</span> <span class="p">(</span><span class="n">h_clad</span> <span class="o">+</span> <span class="n">h_cool</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">ratio</span> <span class="o">*</span> <span class="n">T_clad</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">ratio</span><span class="p">)</span> <span class="o">*</span> <span class="n">T_cool</span></div>
+
+
+
+<div class="viewcode-block" id="Bergles_Rohsenow_T_ONB">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.temperatures.Bergles_Rohsenow_T_ONB">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bergles_Rohsenow_T_ONB</span><span class="p">(</span><span class="n">pressure</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">q_spl</span><span class="p">:</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">Tsat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The wall temperature at which nucleate boiling begins at certain conditions.</span>
+<span class="sd">    This is simply the saturation temperature combined with the Bergles &amp; Rohsenow correlation [#BR]_ [#Collier]_.</span>
+
+<span class="sd">    Like all Bergles &amp; Rohsenow, this is for water only.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    .Bergles_Rohsenow_dT_ONB</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pressure: Pascal</span>
+<span class="sd">        Absolute pressure of coolant</span>
+<span class="sd">    q_spl: WPerM2</span>
+<span class="sd">        Single phase heat flux</span>
+<span class="sd">    Tsat: Celsius</span>
+<span class="sd">        Saturation (Boiling) temperature of coolant</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    T_inc: Celsius</span>
+<span class="sd">        Incipience temperature</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenow_T_ONB(Tsat=100., q_spl=0., pressure=1e10)</span>
+<span class="sd">    100.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">Tsat</span> <span class="o">+</span> <span class="n">Bergles_Rohsenow_dT_ONB</span><span class="p">(</span><span class="n">pressure</span><span class="p">,</span> <span class="n">q_spl</span><span class="p">)</span></div>
+
+
+
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bergles_Rohsenow_dT_ONB</span><span class="p">(</span><span class="n">pressure</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">q_spl</span><span class="p">:</span> <span class="n">WPerM2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A correlation by Bergles-Rohsenow which determines the difference between</span>
+<span class="sd">    the wall temperature at nucleate boiling and the saturation temperature.</span>
+<span class="sd">    [#BR]_ [#Collier]_</span>
+
+<span class="sd">    Like all Bergles &amp; Rohsenow, this is for water only.</span>
+
+<span class="sd">    .. math:: \Delta T_\text{ONB} = 0.556 \left( \frac{q''_\text{ONB}}{1082 p^{1.156}} \right)</span>
+<span class="sd">        ^{0.463 p^{0.0234}}</span>
+
+<span class="sd">    Where in the above expression the absolute pressure is given in **Bar**.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pressure: Pascal</span>
+<span class="sd">        Absolute pressure of coolant</span>
+<span class="sd">    q_spl: WPerM2</span>
+<span class="sd">        Single phase heat flux.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenow_dT_ONB(q_spl=0., pressure=1e10)</span>
+<span class="sd">    0.0</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Celsius</span>
+<span class="sd">        The difference between the wall temperature and saturation temperature</span>
+<span class="sd">        at which nucleate boiling begins.</span>
+
+<span class="sd">    """</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">pressure</span> <span class="o">/</span> <span class="mf">1e5</span>
+    <span class="k">return</span> <span class="mf">0.556</span> <span class="o">*</span> <span class="p">(</span><span class="n">q_spl</span> <span class="o">/</span> <span class="mi">1082</span> <span class="o">/</span> <span class="n">p</span><span class="o">**</span><span class="mf">1.156</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">0.463</span> <span class="o">*</span> <span class="n">p</span><span class="o">**</span><span class="mf">0.0234</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="film_temperature">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.temperatures.film_temperature">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">film_temperature</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Determine the coolant temperature at the wall interface.</span>
+<span class="sd">    This temperature may be used to assess the thermodynamical properties of the coolant there.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_cool: Celsius</span>
+<span class="sd">        Coolant bulk temperature.</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall interface temperature.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    film: Celsius</span>
+<span class="sd">        "Film" temperature.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; film_temperature(20., 20.)</span>
+<span class="sd">    20.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">T_cool</span> <span class="o">+</span> <span class="n">T_wall</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
