@@ -1,0 +1,608 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>test_general.test_solvers &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">test_general.test_solvers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for test_general.test_solvers</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scikits.odes</span><span class="w"> </span><span class="kn">import</span> <span class="n">dae</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">solvers</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">vars_</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gravity</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Resistor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.ideal.resistors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResistorSum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation_factory</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition.cycle</span><span class="w"> </span><span class="kn">import</span> <span class="n">flow_edge</span><span class="p">,</span> <span class="n">flow_graph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition.cycle</span><span class="w"> </span><span class="kn">import</span> <span class="n">flow_graph_to_agr_and_k</span> <span class="k">as</span> <span class="n">agr_k</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALG_jacobian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransientRuntimeError</span><span class="p">,</span> <span class="n">_event_loop_dae</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">ignore_warnings</span>
+
+
+<div class="viewcode-block" id="test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This is an example given by the Scikits.Odes developers for a simple</span>
+<span class="sd">    usage case: A planar pendulum. For further explanation please refer to</span>
+<span class="sd">    their documentation.</span>
+<span class="sd">    """</span>
+    <span class="n">length</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">lambdaval</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">theta0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span>
+    <span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">theta0</span><span class="p">)</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="n">length</span> <span class="o">-</span> <span class="n">x0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">z0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">lambdaval</span><span class="p">])</span>
+    <span class="n">zp0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">lambdaval</span> <span class="o">*</span> <span class="n">x0</span> <span class="o">/</span> <span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="n">lambdaval</span> <span class="o">*</span> <span class="n">y0</span> <span class="o">/</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="n">g</span><span class="p">,</span> <span class="o">-</span><span class="n">g</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">lamda</span> <span class="o">=</span> <span class="n">variables</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">lamda</span> <span class="o">/</span> <span class="n">m</span>
+        <span class="n">xdot</span> <span class="o">=</span> <span class="n">u</span>
+        <span class="n">ydot</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">udot</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">x</span>
+        <span class="n">vdot</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">y</span> <span class="o">-</span> <span class="n">g</span>
+        <span class="n">constraint</span> <span class="o">=</span> <span class="n">u</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">v</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span> <span class="o">*</span> <span class="n">g</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">xdot</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">udot</span><span class="p">,</span> <span class="n">vdot</span><span class="p">,</span> <span class="n">constraint</span><span class="p">])</span>
+
+    <span class="n">PendulumCalculation</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span>
+        <span class="n">calculate</span><span class="o">=</span><span class="n">calculate</span><span class="p">,</span>
+        <span class="n">mass_vector</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span>
+        <span class="n">variables</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">lamda</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">PendulumCalculation</span><span class="p">())</span>
+    <span class="n">solution</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">z0</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">],</span> <span class="n">zp0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">solution</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.866025</span><span class="p">,</span> <span class="mf">0.592663</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.304225</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="test_dae_with_undetermined_var_fails_as_TransientRuntimeError">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dae_with_undetermined_var_fails_as_TransientRuntimeError</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This test constructs a calculation in which one variable is free, meaning</span>
+<span class="sd">    its algebraic equation returns 0 for any input. It is also disconnected</span>
+<span class="sd">    from the rest of the equations.</span>
+
+<span class="sd">    Such a calculation is expected to fail.</span>
+<span class="sd">    """</span>
+    <span class="n">ExponentWithUndeterminedVar</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span>
+        <span class="n">calculate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">]),</span>
+        <span class="n">mass_vector</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="n">variables</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">free</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">ExponentWithUndeterminedVar</span><span class="p">())</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">TransientRuntimeError</span><span class="p">):</span>
+        <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">100.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">]),</span> <span class="n">time</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">],</span> <span class="n">yp0</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]))</span></div>
+
+
+
+<div class="viewcode-block" id="test_dae_solver_accepts_all_algebraic_calculations">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dae_solver_accepts_all_algebraic_calculations</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Testing the possibility of working with an all algebraic set of equations</span>
+<span class="sd">    in scikits.odes.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">residues</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">result</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">[</span><span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">compute_initcond</span><span class="o">=</span><span class="s2">"yp0"</span><span class="p">,</span> <span class="n">old_api</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">algebraic_vars_idx</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">dae</span><span class="p">(</span><span class="s2">"ida"</span><span class="p">,</span> <span class="n">residues</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">DeprecationWarning</span><span class="p">):</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">tspan</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">],</span> <span class="n">y0</span><span class="o">=</span><span class="p">[</span><span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">],</span> <span class="n">yp0</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">100</span><span class="p">,</span> <span class="mi">300</span><span class="p">])</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gravity_resistor_loop</span><span class="p">(</span><span class="n">resistance</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A minimal Kirchhoff loop whose dp row mixes a large gravity head with a</span>
+<span class="sd">    small ``resistance * mdot`` slope, exercising flow reversal.</span>
+
+<span class="sd">    The R.pressure residual row is ``p_var - dp_out`` with</span>
+<span class="sd">    ``dp_out = rho*g*h - resistance*mdot``, so its exact derivative w.r.t. the</span>
+<span class="sd">    loop mdot is ``+resistance`` for every mdot, including mdot = 0.</span>
+<span class="sd">    """</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="mf">50.0</span>
+    <span class="n">P</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">1.0e4</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">ResistorSum</span><span class="p">(</span><span class="n">Gravity</span><span class="p">(</span><span class="n">light_water</span><span class="p">,</span> <span class="n">disposition</span><span class="o">=</span><span class="mf">1.0</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="n">resistance</span><span class="o">=</span><span class="n">resistance</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"R"</span><span class="p">)</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">flow_graph</span><span class="p">(</span><span class="n">flow_edge</span><span class="p">((</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">),</span> <span class="n">P</span><span class="p">),</span> <span class="n">flow_edge</span><span class="p">((</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">),</span> <span class="n">R</span><span class="p">))</span>
+    <span class="n">agr</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">agr_k</span><span class="p">(</span><span class="n">fg</span><span class="p">,</span> <span class="p">{</span><span class="n">P</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">),</span> <span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">)})</span>
+
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">light_water</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">head</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="mf">9.80665</span> <span class="o">*</span> <span class="mf">1.0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">mdot_derivative</span><span class="p">(</span><span class="n">mdot</span><span class="p">):</span>
+        <span class="n">st</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+            <span class="p">{</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">P</span><span class="p">):</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">R</span><span class="p">):</span> <span class="n">mdot</span><span class="p">}},</span>
+            <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">((</span><span class="n">R</span><span class="p">,</span> <span class="n">P</span><span class="p">),</span> <span class="n">T</span><span class="p">),</span>
+            <span class="p">{</span><span class="n">R</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="n">head</span> <span class="o">-</span> <span class="n">resistance</span> <span class="o">*</span> <span class="n">mdot</span><span class="p">),</span> <span class="n">P</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">1.0e4</span><span class="p">)},</span>
+        <span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">st</span><span class="p">)</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">ALG_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">)(</span><span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">R</span><span class="p">]</span><span class="o">.</span><span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>  <span class="c1"># R.pressure residual row</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">K</span><span class="p">]</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+        <span class="c1"># exactly one loop-mdot column carries the R.pressure derivative</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">J</span><span class="p">[</span><span class="n">row</span><span class="p">,</span> <span class="n">c</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">mdot_derivative</span>
+
+
+<div class="viewcode-block" id="test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""The FD step floor must be ~sqrt(eps), not 1e-12, so that the mdot column of</span>
+<span class="sd">    a dp row is not quantized to the ulp of the large gravity head at flow reversal</span>
+<span class="sd">    (mdot -&gt; 0); the derivative stays ~1.0."""</span>
+    <span class="n">derivative</span> <span class="o">=</span> <span class="n">_gravity_resistor_loop</span><span class="p">(</span><span class="n">resistance</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">mdot</span> <span class="ow">in</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1e-6</span><span class="p">,</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="n">derivative</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">==</span> <span class="n">pytest</span><span class="o">.</span><span class="n">approx</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nb">abs</span><span class="o">=</span><span class="mf">2e-4</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"at mdot=</span><span class="si">{</span><span class="n">mdot</span><span class="si">}</span><span class="s2">"</span></div>
+
+
+
+<div class="viewcode-block" id="test_alg_jacobian_does_not_zero_out_subquantum_slopes">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_alg_jacobian_does_not_zero_out_subquantum_slopes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_alg_jacobian_does_not_zero_out_subquantum_slopes</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A laminar-scale slope below one quantization step of the 1e-12 floor</span>
+<span class="sd">    (~1.82 for the 9.7 kPa head) must not be returned as 0.0, which would make the</span>
+<span class="sd">    Jacobian singular in the mdot subspace at the at-rest state."""</span>
+    <span class="n">derivative</span> <span class="o">=</span> <span class="n">_gravity_resistor_loop</span><span class="p">(</span><span class="n">resistance</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">derivative</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">value</span> <span class="o">==</span> <span class="n">pytest</span><span class="o">.</span><span class="n">approx</span><span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="nb">abs</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">),</span> <span class="n">value</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_StopAfter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Minimal algebraic calculation with root x = 0 whose should_continue turns</span>
+<span class="sd">    False after ``n`` solved time points, driving the ALG quasi-static stop path."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">"stopper"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mass_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="kc">False</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"x"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_calls</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">state</span><span class="p">[</span><span class="s2">"x"</span><span class="p">]])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"x"</span><span class="p">:</span> <span class="n">vector</span><span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
+
+    <span class="n">strict_save</span> <span class="o">=</span> <span class="n">save</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_continue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_calls</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calls</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+
+
+<div class="viewcode-block" id="test_alg_quasi_static_early_stop_keeps_time_and_data_aligned">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_alg_quasi_static_early_stop_keeps_time_and_data_aligned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_alg_quasi_static_early_stop_keeps_time_and_data_aligned</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""On an early stop the output must stay aligned (time length == data rows) and</span>
+<span class="sd">    include the stop-triggering solved row, so save() round-trips without an</span>
+<span class="sd">    IndexError."""</span>
+    <span class="n">stopper</span> <span class="o">=</span> <span class="n">_StopAfter</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">_single_node_graph</span><span class="p">(</span><span class="n">stopper</span><span class="p">))</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span> <span class="n">time</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">eq_type</span><span class="o">=</span><span class="s2">"ALG"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="n">sol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># rows: the initial guess at t=0, 40 continuing points, and the stop-triggering point at t=41</span>
+    <span class="k">assert</span> <span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">pytest</span><span class="o">.</span><span class="n">approx</span><span class="p">(</span><span class="mf">41.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">sol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">42</span>
+    <span class="n">saved</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">saved</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_single_node_graph</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">DiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">g</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_EchoInput</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A 3-variable calculation whose calculate() returns the result it was built with,</span>
+<span class="sd">    whatever its length."""</span>
+
+    <span class="n">variables</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+    <span class="n">mass_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"wrong"</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mi">3</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">hash</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">var</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">"b"</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">"c"</span><span class="p">:</span> <span class="n">y</span><span class="p">[</span><span class="mi">2</span><span class="p">]}</span>
+
+
+<div class="viewcode-block" id="test_compute_rejects_wrong_length_calculate_result">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_compute_rejects_wrong_length_calculate_result">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"result"</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">7.0</span><span class="p">]),</span> <span class="mf">5.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">])])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_compute_rejects_wrong_length_calculate_result</span><span class="p">(</span><span class="n">result</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""compute() must reject any size mismatch and name the offending calculation.</span>
+<span class="sd">    A scalar or length-1 return would silently broadcast across the section, and a</span>
+<span class="sd">    length-2 return would raise a bare numpy ValueError naming no calculation."""</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">_single_node_graph</span><span class="p">(</span><span class="n">_EchoInput</span><span class="p">(</span><span class="n">result</span><span class="p">)))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"would silently broadcast"</span><span class="p">)</span> <span class="k">as</span> <span class="n">excinfo</span><span class="p">:</span>
+        <span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s2">"'wrong': (3, "</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">excinfo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_compute_reports_every_wrong_length_result_at_once">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_compute_reports_every_wrong_length_result_at_once">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_compute_reports_every_wrong_length_result_at_once</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""All calculations whose result length differs from their section are named in</span>
+<span class="sd">    one error, each with its expected and returned lengths."""</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">DiGraph</span><span class="p">()</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">([</span><span class="n">_EchoInput</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"first"</span><span class="p">),</span> <span class="n">_EchoInput</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">name</span><span class="o">=</span><span class="s2">"second"</span><span class="p">)])</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"would silently broadcast"</span><span class="p">)</span> <span class="k">as</span> <span class="n">excinfo</span><span class="p">:</span>
+        <span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s2">"'first': (3, 1)"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">excinfo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s2">"'second': (3, 2)"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">excinfo</span><span class="o">.</span><span class="n">value</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_compute_accepts_correct_length_result">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_compute_accepts_correct_length_result">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_compute_accepts_correct_length_result</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""The guard must not reject a correctly-shaped result."""</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">_single_node_graph</span><span class="p">(</span><span class="n">_EchoInput</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">]))))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">4.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">]),</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">])</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coupled_algebraic_aggregator</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A tiny coupled 2-variable algebraic system with a unique root (y=2, x=1)."""</span>
+    <span class="n">Addition</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="o">-</span> <span class="n">x</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">Multiplication</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">add</span> <span class="o">=</span> <span class="n">Addition</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Add"</span><span class="p">)</span>
+    <span class="n">multiply</span> <span class="o">=</span> <span class="n">Multiplication</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Multiply"</span><span class="p">)</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="n">DiGraph</span><span class="p">([(</span><span class="n">add</span><span class="p">,</span> <span class="n">multiply</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)),</span> <span class="p">(</span><span class="n">multiply</span><span class="p">,</span> <span class="n">add</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"x"</span><span class="p">))])</span>
+    <span class="k">return</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_solve_with_time_none_points_at_solve_steady">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_solve_with_time_none_points_at_solve_steady">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"eq_type"</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"ODE"</span><span class="p">,</span> <span class="s2">"DAE"</span><span class="p">,</span> <span class="s2">"ALG"</span><span class="p">])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_solve_with_time_none_points_at_solve_steady</span><span class="p">(</span><span class="n">eq_type</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""solve() integrates or steps through time points; without them it raises and</span>
+<span class="sd">    names solve_steady, the steady root find."""</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">_coupled_algebraic_aggregator</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"solve_steady"</span><span class="p">):</span>
+        <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]),</span> <span class="kc">None</span><span class="p">,</span> <span class="n">eq_type</span><span class="o">=</span><span class="n">eq_type</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_blowup_aggregator</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""y' = y^2 with y0 = 1: a finite-time blowup at t = 1 that makes RK45 fail</span>
+<span class="sd">    (step size underflow / overflow) before reaching the requested horizon."""</span>
+    <span class="n">Blowup</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="n">calculate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">mass_vector</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">],</span> <span class="n">variables</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">Blowup</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="test_ode_backend_raises_on_solver_failure_instead_of_truncating">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_ode_backend_raises_on_solver_failure_instead_of_truncating">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_ode_backend_raises_on_solver_failure_instead_of_truncating</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""An ODE solver failure must surface as TransientRuntimeError rather than</span>
+<span class="sd">    returning only the reached t_eval points (a truncated data array misaligned</span>
+<span class="sd">    against the requested time vector, which crashes save())."""</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">_blowup_aggregator</span><span class="p">()</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">101</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">RuntimeWarning</span><span class="p">):</span>  <span class="c1"># overflow in y**2</span>
+        <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">TransientRuntimeError</span><span class="p">):</span>
+            <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span> <span class="n">time</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_ode_backend_solution_time_and_data_stay_aligned">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_ode_backend_solution_time_and_data_stay_aligned">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_ode_backend_solution_time_and_data_stay_aligned</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""On a well-posed ODE the ODE branch must rebind time from the solver so</span>
+<span class="sd">    len(time) == data rows and save() round-trips without an IndexError."""</span>
+    <span class="n">Decay</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="n">calculate</span><span class="o">=</span><span class="k">lambda</span> <span class="n">y</span><span class="p">:</span> <span class="o">-</span><span class="n">y</span><span class="p">,</span> <span class="n">mass_vector</span><span class="o">=</span><span class="p">[</span><span class="kc">True</span><span class="p">],</span> <span class="n">variables</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">Decay</span><span class="p">())</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span> <span class="n">time</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">)</span> <span class="o">==</span> <span class="n">sol</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">saved</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">saved</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_FakeVals</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A scikits.odes-like `.values`: attribute access AND (t, y, ydot) unpacking."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydot</span> <span class="o">=</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydot</span><span class="p">))</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_FakeRoots</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ydot</span> <span class="o">=</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_FakeSol</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">roots</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">_FakeVals</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roots</span> <span class="o">=</span> <span class="n">roots</span> <span class="k">if</span> <span class="n">roots</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">_FakeRoots</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_first_segment_then</span><span class="p">(</span><span class="n">raiser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A fake `solve` for _event_loop_dae: the first call returns a segment ending</span>
+<span class="sd">    at t=0.5 with a root there (so the loop restarts from the root), and the</span>
+<span class="sd">    restart call raises via `raiser`."""</span>
+    <span class="n">calls</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"n"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="n">y0_</span><span class="p">,</span> <span class="n">yp0_</span><span class="p">):</span>
+        <span class="n">calls</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">calls</span><span class="p">[</span><span class="s2">"n"</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">t_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+            <span class="n">y_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y0_</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="n">root</span> <span class="o">=</span> <span class="n">_FakeRoots</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">]),</span> <span class="n">y_</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">y_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+            <span class="k">return</span> <span class="n">_FakeSol</span><span class="p">(</span><span class="n">t_</span><span class="p">,</span> <span class="n">y_</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">y_</span><span class="p">),</span> <span class="n">roots</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">raiser</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">solve</span>
+
+
+<div class="viewcode-block" id="test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""When a restarted DAE solve fails in its consistent-initialization step the</span>
+<span class="sd">    error carries no trajectory of its own; the TransientRuntimeError still</span>
+<span class="sd">    propagates and carries the segments integrated before it on e.t/e.y."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">raise_ic_failure</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">TransientRuntimeError</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"IC computation failed"</span><span class="p">)</span>
+
+    <span class="n">solve</span> <span class="o">=</span> <span class="n">_first_segment_then</span><span class="p">(</span><span class="n">raise_ic_failure</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">),</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">TransientRuntimeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"IC computation failed"</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">_event_loop_dae</span><span class="p">(</span><span class="n">solve</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span></div>
+
+
+
+<div class="viewcode-block" id="test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A restart that fails mid-integration raises with the accumulated trajectory</span>
+<span class="sd">    attached: earlier segments plus the failed segment's partial output, without</span>
+<span class="sd">    repeating the restart time."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">raise_with_partial</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">TransientRuntimeError</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)),</span> <span class="s2">"failed mid-restart"</span>
+        <span class="p">)</span>
+
+    <span class="n">solve</span> <span class="o">=</span> <span class="n">_first_segment_then</span><span class="p">(</span><span class="n">raise_with_partial</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">),</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">TransientRuntimeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"failed mid-restart"</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">_event_loop_dae</span><span class="p">(</span><span class="n">solve</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">t</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="sa">f</span><span class="s2">"duplicated/!monotone time: </span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="test_event_loop_raises_instead_of_hanging_on_nonadvancing_root">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_event_loop_raises_instead_of_hanging_on_nonadvancing_root">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_event_loop_raises_instead_of_hanging_on_nonadvancing_root</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A root that does not advance past the restart time (a condition that</span>
+<span class="sd">    re-roots at the segment start) raises instead of looping forever."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="n">y0_</span><span class="p">,</span> <span class="n">yp0_</span><span class="p">):</span>
+        <span class="n">t_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="n">y_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y0_</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">_FakeRoots</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t_</span><span class="p">[</span><span class="mi">0</span><span class="p">]]),</span> <span class="n">y_</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">y_</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">_FakeSol</span><span class="p">(</span><span class="n">t_</span><span class="p">[:</span><span class="mi">1</span><span class="p">],</span> <span class="n">y_</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">y_</span><span class="p">),</span> <span class="n">roots</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">TransientRuntimeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"did not advance"</span><span class="p">):</span>
+        <span class="n">_event_loop_dae</span><span class="p">(</span>
+            <span class="n">solve</span><span class="p">,</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">on_event</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">yp</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="n">continuous</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Boom</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="test_event_loop_dae_on_event_raise_carries_pre_event_trajectory">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_event_loop_dae_on_event_raise_carries_pre_event_trajectory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_event_loop_dae_on_event_raise_carries_pre_event_trajectory</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""When an event handler raises, the exception propagates with the trajectory</span>
+<span class="sd">    up to and including the crossing attached as e.t and e.y."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="n">y0_</span><span class="p">,</span> <span class="n">yp0_</span><span class="p">):</span>
+        <span class="n">t_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time_</span><span class="p">,</span> <span class="nb">float</span><span class="p">)[:</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">y_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y0_</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">t_</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">_FakeRoots</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.75</span><span class="p">]),</span> <span class="n">y_</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:],</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="n">y_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="k">return</span> <span class="n">_FakeSol</span><span class="p">(</span><span class="n">t_</span><span class="p">,</span> <span class="n">y_</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">y_</span><span class="p">),</span> <span class="n">roots</span><span class="o">=</span><span class="n">root</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_event</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">yp</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">_Boom</span><span class="p">(</span><span class="s2">"guard tripped at the crossing"</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">_Boom</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="n">_event_loop_dae</span><span class="p">(</span><span class="n">solve</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">on_event</span><span class="o">=</span><span class="n">on_event</span><span class="p">)</span>
+    <span class="n">e</span> <span class="o">=</span> <span class="n">exc</span><span class="o">.</span><span class="n">value</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">t</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_dae_forwards_the_algebraic_error_test_option_only_when_given">
+<a class="viewcode-back" href="../../tests.test_general.html#test_general.test_solvers.test_dae_forwards_the_algebraic_error_test_option_only_when_given">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">"passed, expected"</span><span class="p">,</span> <span class="p">[({},</span> <span class="kc">None</span><span class="p">),</span> <span class="p">({</span><span class="s2">"exclude_algvar_from_error"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="kc">True</span><span class="p">)])</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dae_forwards_the_algebraic_error_test_option_only_when_given</span><span class="p">(</span><span class="n">monkeypatch</span><span class="p">,</span> <span class="n">passed</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+    <span class="n">seen</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">fake_dae</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">residues</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">):</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">"stop at setup"</span><span class="p">)</span>
+
+    <span class="n">monkeypatch</span><span class="o">.</span><span class="n">setattr</span><span class="p">(</span><span class="n">solvers</span><span class="p">,</span> <span class="s2">"dae"</span><span class="p">,</span> <span class="n">fake_dae</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"stop at setup"</span><span class="p">):</span>
+        <span class="n">solvers</span><span class="o">.</span><span class="n">differential_algebraic</span><span class="p">(</span>
+            <span class="n">F</span><span class="o">=</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="o">-</span><span class="n">y</span><span class="p">,</span> <span class="n">mass</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span> <span class="n">y0</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]),</span> <span class="n">time</span><span class="o">=</span><span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="o">**</span><span class="n">passed</span>
+        <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"exclude_algvar_from_error"</span><span class="p">)</span> <span class="ow">is</span> <span class="n">expected</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="s2">"exclude_algvar_from_error"</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">bool</span><span class="p">(</span><span class="n">passed</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

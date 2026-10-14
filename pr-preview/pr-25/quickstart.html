@@ -1,0 +1,220 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A first loop &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="How-to guides" href="howto/index.html" />
+    <link rel="prev" title="Installation" href="Installation.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">A first loop</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Three-components-and-three-junctions">Three components and three junctions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Edges-and-the-flow-graph">Edges and the flow graph</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Solving-for-the-steady-state">Solving for the steady state</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Reading-the-answer">Reading the answer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Where-next">Where next</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">A first loop</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="A-first-loop">
+<h1>A first loop<a class="headerlink" href="#A-first-loop" title="Link to this heading"></a></h1>
+<p>This page builds a loop of three components: a pump lifts water from a sump to the inlet of a pipe, the pipe resists the flow, and a cooler carries the water back to the sump at 40 °C. It solves the loop for its steady state, reads a pressure, a flow and a temperature out of the answer, and checks the flow against one division done by hand. <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> puts a full reactor model together in the same order, with more components.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Resistor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span>
+</pre></div>
+</div>
+</div>
+<section id="Three-components-and-three-junctions">
+<h2>Three components and three junctions<a class="headerlink" href="#Three-components-and-three-junctions" title="Link to this heading"></a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">Pump</span></code> imposes a pressure gain of 5000 Pa along its own edge, a <code class="docutils literal notranslate"><span class="pre">Resistor</span></code> loses its resistance times the flow, here 25 000 Pa per kg/s, and a <code class="docutils literal notranslate"><span class="pre">HeatExchanger</span></code> delivers its water at 40 °C and pushes nothing. The cooler is there because every flow component carries a temperature as well as a pressure, and a loop with nothing to set the temperature leaves it undetermined. A <code class="docutils literal notranslate"><span class="pre">Junction</span></code> is a place where flow arrives and leaves. Every junction and component is named, because the names are
+the keys the answer is read with.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">inlet</span><span class="p">,</span> <span class="n">outlet</span><span class="p">,</span> <span class="n">sump</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"inlet"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"outlet"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"sump"</span><span class="p">)</span>
+<span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">5e3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"pump"</span><span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">Resistor</span><span class="p">(</span><span class="mf">2.5e4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"pipe"</span><span class="p">)</span>
+<span class="n">cooler</span> <span class="o">=</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="mf">40.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"cooler"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Edges-and-the-flow-graph">
+<h2>Edges and the flow graph<a class="headerlink" href="#Edges-and-the-flow-graph" title="Link to this heading"></a></h2>
+<p>Each <code class="docutils literal notranslate"><span class="pre">flow_edge</span></code> puts a component on an edge from one junction to the next, and the direction written is the direction of positive flow. <code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code> reads the edges and builds <code class="docutils literal notranslate"><span class="pre">fg.aggregator</span></code>, the system holding every equation of the loop, and <code class="docutils literal notranslate"><span class="pre">fg.kirchhoff</span></code>, the calculation holding every edge’s flow. <a class="reference internal" href="howto/wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a> covers junction names, edge direction and the sign of each gain.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">sump</span><span class="p">,</span> <span class="n">inlet</span><span class="p">),</span> <span class="n">pump</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">inlet</span><span class="p">,</span> <span class="n">outlet</span><span class="p">),</span> <span class="n">pipe</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">outlet</span><span class="p">,</span> <span class="n">sump</span><span class="p">),</span> <span class="n">cooler</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Solving-for-the-steady-state">
+<h2>Solving for the steady state<a class="headerlink" href="#Solving-for-the-steady-state" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">solve_steady</span></code> finds the state where every equation holds, starting from a guess. <code class="docutils literal notranslate"><span class="pre">fg.guess_steady_state</span></code> builds that guess from a flow for each component and one temperature. <code class="docutils literal notranslate"><span class="pre">agr.save</span></code> turns the bare vector the solve returns into a state read by calculation name and variable name.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">guess</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">guess_steady_state</span><span class="p">({</span><span class="n">pump</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">pipe</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">cooler</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span> <span class="mf">40.0</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Reading-the-answer">
+<h2>Reading the answer<a class="headerlink" href="#Reading-the-answer" title="Link to this heading"></a></h2>
+<p>Each component’s <code class="docutils literal notranslate"><span class="pre">pressure</span></code> is its gain from inlet to outlet. A flow belongs to an edge, not to the hardware on it, so the flows sit in the Kirchhoff calculation’s entry, keyed by edge; <code class="docutils literal notranslate"><span class="pre">component_edge</span></code> returns the key of the edge a component sits on.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">flow</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">pipe</span><span class="p">)]</span>
+<span class="n">gains</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"pump"</span><span class="p">,</span> <span class="s2">"pipe"</span><span class="p">,</span> <span class="s2">"cooler"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pipe pressure gain:    </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">'pipe'</span><span class="p">][</span><span class="s1">'pressure'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pipe flow:             </span><span class="si">{</span><span class="n">flow</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"head / resistance:     </span><span class="si">{</span><span class="mf">5e3</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">2.5e4</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"gains around the loop: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">gains</span><span class="p">)</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cooler outlet:         </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="s1">'cooler'</span><span class="p">][</span><span class="s1">'Tin'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> °C, given 40.0 °C"</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">flow</span> <span class="o">-</span> <span class="mf">5e3</span> <span class="o">/</span> <span class="mf">2.5e4</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-9</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+pipe pressure gain:    -5000.0 Pa
+pipe flow:             0.2000 kg/s
+head / resistance:     0.2000 kg/s
+gains around the loop: 0 Pa
+cooler outlet:         40.0 °C, given 40.0 °C
+</pre></div></div>
+</div>
+<p>The pipe loses about 5000 Pa, the head the pump gains, and carries about 0.2 kg/s: the head divided by the resistance, 5000 Pa divided by 25 000 Pa per kg/s. The gains around the closed loop add to zero, as the loop law requires. A component’s <code class="docutils literal notranslate"><span class="pre">Tin</span></code> entry holds the temperature it hands downstream, the next component’s inlet: the cooler’s is the 40 °C it was given.</p>
+</section>
+<section id="Where-next">
+<h2>Where next<a class="headerlink" href="#Where-next" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="howto/index.html"><span class="doc">how-to guides</span></a> take each step of this page further: wiring larger networks, choosing channels and their laws, getting a hard steady solve to converge and running transients. <a class="reference internal" href="SeriesRLCCircuit.html"><span class="doc">Series RLC Circuit</span></a> starts from the other end and writes the calculations themselves.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="howto/index.html" class="btn btn-neutral float-right" title="How-to guides" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

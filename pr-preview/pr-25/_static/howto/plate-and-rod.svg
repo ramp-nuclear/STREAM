@@ -1,0 +1,242 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 690" width="1000" height="690" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/></marker>
+    <marker id="k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+    <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker>
+  </defs>
+  <rect width="1000" height="690" fill="#ffffff"/>
+  <text x="16" y="26" fill="#333" font-size="15" font-weight="bold">(a) symmetric_plate(channel, fuel): one plate, the same channel on both faces</text>
+  <rect x="270" y="116" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="116" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="116" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="116" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="116" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="140" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="140" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="140" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="140" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="140" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="164" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="164" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="164" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="164" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="164" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="188" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="188" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="188" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="188" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="188" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="212" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="212" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="212" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="212" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="212" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="236" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="236" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="236" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="236" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="236" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="260" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="260" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="260" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="260" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="260" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="284" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="284" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="284" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="284" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="284" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="308" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="308" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="308" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="308" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="308" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="332" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="290" y="332" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="310" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="330" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="350" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="370" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="390" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="410" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="430" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="450" y="332" width="20" height="24" fill="#fff3e0" stroke="#999" stroke-width="0.75"/>
+  <rect x="470" y="332" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="490" y="332" width="20" height="24" fill="#faf6ee" stroke="#999" stroke-width="0.75"/>
+  <rect x="270" y="116" width="240" height="240" fill="none" stroke="#333" stroke-width="1.5"/>
+  <text x="270" y="108" fill="#333" font-weight="bold">Plate</text>
+  <text x="510" y="108" text-anchor="end" fill="#555">Fuel</text>
+  <line x1="390.0" y1="54" x2="390.0" y2="112" stroke="#d9480f" stroke-width="2" marker-end="url(#o)"/>
+  <text x="390.0" y="48" text-anchor="middle" fill="#333">power, the whole plate, W</text>
+  <rect x="90" y="116" width="50" height="240" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="115.0" y1="54" x2="115.0" y2="112" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="115.0" y="48" text-anchor="middle" fill="#333">mdot, p_abs, Tin</text>
+  <line x1="115.0" y1="130" x2="115.0" y2="342" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="115.0" y="374" text-anchor="middle" fill="#333" font-weight="bold">Channel</text>
+  <rect x="660" y="116" width="50" height="240" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="685.0" y1="54" x2="685.0" y2="112" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="685.0" y="48" text-anchor="middle" fill="#333">mdot, p_abs, Tin</text>
+  <line x1="685.0" y1="130" x2="685.0" y2="342" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="685.0" y="374" text-anchor="middle" fill="#333" font-weight="bold">Channel</text>
+  <text x="115.0" y="390" text-anchor="middle" fill="#555">mdot &gt; 0 runs down</text>
+  <text x="685.0" y="390" text-anchor="middle" fill="#555">the same channel,</text>
+  <text x="685.0" y="406" text-anchor="middle" fill="#555">both faces</text>
+
+  <line x1="146" y1="196" x2="264" y2="196" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <line x1="264" y1="266" x2="146" y2="266" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="205.0" y="188" text-anchor="middle" fill="#333">T_left, h_left</text>
+  <text x="205.0" y="212" text-anchor="middle" fill="#555" font-size="11">to the plate</text>
+  <text x="205.0" y="258" text-anchor="middle" fill="#333">T_wall_left</text>
+  <text x="205.0" y="282" text-anchor="middle" fill="#555" font-size="11">read by the channel</text>
+  <text x="205.0" y="296" text-anchor="middle" fill="#555" font-size="11">as its T_right</text>
+  <line x1="654" y1="196" x2="516" y2="196" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <line x1="516" y1="266" x2="654" y2="266" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="585.0" y="188" text-anchor="middle" fill="#333">T_right, h_right</text>
+  <text x="585.0" y="212" text-anchor="middle" fill="#555" font-size="11">to the plate</text>
+  <text x="585.0" y="258" text-anchor="middle" fill="#333">T_wall_right</text>
+  <text x="585.0" y="282" text-anchor="middle" fill="#555" font-size="11">read by the channel</text>
+  <text x="585.0" y="296" text-anchor="middle" fill="#555" font-size="11">as its T_left</text>
+  <line x1="52" y1="116" x2="52" y2="362" stroke="#888" stroke-width="1"/>
+  <line x1="47" y1="116" x2="57" y2="116" stroke="#888" stroke-width="1"/>
+  <line x1="47" y1="356" x2="57" y2="356" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="140" x2="55" y2="140" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="164" x2="55" y2="164" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="188" x2="55" y2="188" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="212" x2="55" y2="212" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="236" x2="55" y2="236" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="260" x2="55" y2="260" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="284" x2="55" y2="284" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="308" x2="55" y2="308" stroke="#888" stroke-width="1"/>
+  <line x1="49" y1="332" x2="55" y2="332" stroke="#888" stroke-width="1"/>
+  <text x="43" y="120" text-anchor="end" fill="#555">0</text>
+  <text x="43" y="360" text-anchor="end" fill="#555">0.7 m</text>
+  <text x="43" y="240.0" text-anchor="end" fill="#555" font-style="italic">z</text>
+  <text x="16" y="418" fill="#333" font-weight="bold">z_boundaries:</text>
+  <text x="16" y="434" fill="#333">10 cells over 0.7 m,</text>
+  <text x="16" y="450" fill="#333">the same for the plate</text>
+  <text x="16" y="466" fill="#333">and its channel</text>
+  <path d="M271,366 L271,372 L309,372 L309,366" fill="none" stroke="#888" stroke-width="1"/>
+  <path d="M311,366 L311,372 L469,372 L469,366" fill="none" stroke="#888" stroke-width="1"/>
+  <path d="M471,366 L471,372 L509,372 L509,366" fill="none" stroke="#888" stroke-width="1"/>
+  <text x="290" y="388" text-anchor="middle" fill="#333" font-size="11">2 cells</text>
+  <text x="290" y="402" text-anchor="middle" fill="#333" font-size="11">0.5 mm</text>
+  <text x="490" y="388" text-anchor="middle" fill="#333" font-size="11">2 cells</text>
+  <text x="490" y="402" text-anchor="middle" fill="#333" font-size="11">0.5 mm</text>
+  <text x="390.0" y="388" text-anchor="middle" fill="#333" font-size="11">8 cells, 0.6 mm</text>
+  <text x="390.0" y="402" text-anchor="middle" fill="#333" font-size="11" font-weight="bold">meat_indices</text>
+  <text x="390.0" y="424" text-anchor="middle" fill="#333">x_boundaries(clad_N=2, fuel_N=8, clad_w=0.0005, meat_w=0.0006)</text>
+  <text x="390.0" y="440" text-anchor="middle" fill="#555" font-style="italic">not to scale</text>
+  <line x1="760" y1="116" x2="760" y2="356" stroke="#888" stroke-width="1"/>
+  <rect x="760" y="119" width="14.2" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="143" width="41.4" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="167" width="64.4" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="191" width="81.2" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="215" width="90.0" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="239" width="90.0" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="263" width="81.2" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="287" width="64.4" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="311" width="41.4" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="760" y="335" width="14.2" height="18" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <text x="760" y="108" fill="#333" font-weight="bold">power_shape</text>
+  <text x="760" y="374" fill="#555">a cosine along z,</text>
+  <text x="760" y="390" fill="#555">flat across the meat;</text>
+  <text x="760" y="406" fill="#555">one entry per meat cell,</text>
+  <text x="760" y="422" fill="#555">sums to one</text>
+  <line x1="16" y1="486" x2="984" y2="486" stroke="#ddd" stroke-width="1"/>
+  <text x="16" y="510" fill="#333" font-size="15" font-weight="bold">(b) rod(channel, 3, fuel, 2): deep copies, alternated; renamed by the loop</text>
+  <rect x="270" y="548" width="110" height="100" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="325.0" y1="560" x2="325.0" y2="636" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="325.0" y="538" text-anchor="middle" fill="#333" font-weight="bold">Channel1</text>
+  <rect x="380" y="548" width="10" height="100" fill="#faf6ee" stroke="#333" stroke-width="1"/>
+  <rect x="390" y="548" width="40" height="100" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="430" y="548" width="10" height="100" fill="#faf6ee" stroke="#333" stroke-width="1"/>
+  <rect x="380" y="548" width="60" height="100" fill="none" stroke="#333" stroke-width="1.5"/>
+  <text x="410.0" y="538" text-anchor="middle" fill="#333" font-weight="bold">Plate1</text>
+  <rect x="440" y="548" width="110" height="100" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="495.0" y1="560" x2="495.0" y2="636" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="495.0" y="538" text-anchor="middle" fill="#333" font-weight="bold">Channel2</text>
+  <rect x="550" y="548" width="10" height="100" fill="#faf6ee" stroke="#333" stroke-width="1"/>
+  <rect x="560" y="548" width="40" height="100" fill="#fff3e0" stroke="#333" stroke-width="1"/>
+  <rect x="600" y="548" width="10" height="100" fill="#faf6ee" stroke="#333" stroke-width="1"/>
+  <rect x="550" y="548" width="60" height="100" fill="none" stroke="#333" stroke-width="1.5"/>
+  <text x="580.0" y="538" text-anchor="middle" fill="#333" font-weight="bold">Plate2</text>
+  <rect x="610" y="548" width="110" height="100" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="665.0" y1="560" x2="665.0" y2="636" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="665.0" y="538" text-anchor="middle" fill="#333" font-weight="bold">Channel3</text>
+  <line x1="366" y1="598.0" x2="394" y2="598.0" stroke="#333" stroke-width="1.5" marker-end="url(#k)" marker-start="url(#k)"/>
+  <line x1="426" y1="598.0" x2="454" y2="598.0" stroke="#333" stroke-width="1.5" marker-end="url(#k)" marker-start="url(#k)"/>
+  <line x1="536" y1="598.0" x2="564" y2="598.0" stroke="#333" stroke-width="1.5" marker-end="url(#k)" marker-start="url(#k)"/>
+  <line x1="596" y1="598.0" x2="624" y2="598.0" stroke="#333" stroke-width="1.5" marker-end="url(#k)" marker-start="url(#k)"/>
+  <line x1="270" y1="546" x2="270" y2="650" stroke="#d9480f" stroke-width="4"/>
+  <line x1="720" y1="546" x2="720" y2="650" stroke="#d9480f" stroke-width="4"/>
+  <text x="256" y="586.0" text-anchor="end" fill="#d9480f" font-weight="bold">no plate:</text>
+  <text x="256" y="602.0" text-anchor="end" fill="#333">T_left Unset,</text>
+  <text x="256" y="618.0" text-anchor="end" fill="#333">no heat</text>
+  <text x="734" y="586.0" fill="#d9480f" font-weight="bold">no plate:</text>
+  <text x="734" y="602.0" fill="#333">T_right Unset,</text>
+  <text x="734" y="618.0" fill="#333">no heat</text>
+  <text x="495.0" y="670" text-anchor="middle" fill="#555">each copy carries its original's name until the loop renames it</text>
+</svg>

@@ -1,0 +1,510 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnose a failing solve &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Read results" href="read-results.html" />
+    <link rel="prev" title="Trip, stop and restart" href="trip-stop-and-restart.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#solving">Solving</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="get-a-steady-solve-to-converge.html">Get a steady solve to converge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="run-a-transient-and-set-tolerances.html">Run a transient and set tolerances</a></li>
+<li class="toctree-l3"><a class="reference internal" href="trip-stop-and-restart.html">Trip, stop and restart</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Diagnose a failing solve</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#A-loop-to-break">A loop to break</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Read-the-report-first">Read the report first</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Check-the-answer-by-hand">Check the answer by hand</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Find-the-calculation-that-carries-the-residual">Find the calculation that carries the residual</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Locate-where-a-transient-died">Locate where a transient died</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Symptoms-and-causes">Symptoms and causes</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Diagnose a failing solve</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/diagnose-a-failing-solve.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Diagnose-a-failing-solve">
+<h1>Diagnose a failing solve<a class="headerlink" href="#Diagnose-a-failing-solve" title="Link to this heading"></a></h1>
+<p>This page breaks the plate loop of <a class="reference internal" href="get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a> and reads each fault in the order that costs least: the report, two hand checks, the residual of each calculation, the trajectory a failed transient keeps. A table maps other symptoms to their causes.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solution</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.debugging</span><span class="w"> </span><span class="kn">import</span> <span class="n">debug_derivatives</span><span class="p">,</span> <span class="n">debug_guess_flows</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">Gravity</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALG_jacobian</span><span class="p">,</span> <span class="n">DAE_jacobian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">friction_factor</span><span class="p">,</span> <span class="n">pressure_diff</span><span class="p">,</span> <span class="n">rectangular_laminar_correction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransientRuntimeError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+</pre></div>
+</div>
+</div>
+<section id="A-loop-to-break">
+<h2>A loop to break<a class="headerlink" href="#A-loop-to-break" title="Link to this heading"></a></h2>
+<p>The loop is the steady page’s, 2 kW in the plate and 6 kPa of pump head. <code class="docutils literal notranslate"><span class="pre">build</span></code> takes the plate’s <code class="docutils literal notranslate"><span class="pre">funcs</span></code>, so a build can leave the power out.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">length</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.070</span>
+<span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="mf">0.0006</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">meat</span><span class="p">[:,</span> <span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">x_boundaries</span><span class="o">=</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">),</span>
+    <span class="n">material</span><span class="o">=</span><span class="n">Solid</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">meat</span><span class="p">,</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">3500</span><span class="p">,</span> <span class="mi">750</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">2700</span><span class="p">,</span> <span class="mi">900</span><span class="p">,</span> <span class="mi">167</span><span class="p">))),</span>
+    <span class="n">y_length</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+    <span class="n">power_shape</span><span class="o">=</span><span class="n">uniform_x_power_shape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">length</span><span class="p">),</span>
+    <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Plate"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="mf">0.0022</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+<span class="n">aspect_ratio</span><span class="p">,</span> <span class="n">re_bounds</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">)</span>
+<span class="n">h_spl</span> <span class="o">=</span> <span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">Lh</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">aspect_ratio</span><span class="o">=</span><span class="n">aspect_ratio</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">k_R</span><span class="o">=</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">))</span>
+<span class="n">channel</span> <span class="o">=</span> <span class="n">ChannelAndContacts</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span>
+    <span class="n">h_wall_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">wall_heat_transfer_coeff</span><span class="p">,</span> <span class="n">h_spl</span><span class="o">=</span><span class="n">h_spl</span><span class="p">),</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">pressure_diff</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Channel"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">power</span><span class="p">,</span> <span class="n">p_top</span><span class="p">,</span> <span class="n">T_hx</span> <span class="o">=</span> <span class="mf">2e3</span><span class="p">,</span> <span class="mf">1.8e5</span><span class="p">,</span> <span class="mf">38.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="n">plate_funcs</span><span class="p">):</span>
+    <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Top"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Bottom"</span><span class="p">)</span>
+    <span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">6e3</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">)</span>
+    <span class="n">riser</span> <span class="o">=</span> <span class="n">Gravity</span><span class="p">(</span><span class="n">light_water</span><span class="p">,</span> <span class="n">disposition</span><span class="o">=-</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Riser"</span><span class="p">)</span>
+    <span class="n">hx_in</span><span class="p">,</span> <span class="n">hx_out</span> <span class="o">=</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="n">T_hx</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HXIn"</span><span class="p">),</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="n">T_hx</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HXOut"</span><span class="p">)</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+        <span class="n">flow_edge</span><span class="p">((</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span> <span class="n">channel</span><span class="p">),</span>
+        <span class="n">flow_edge</span><span class="p">((</span><span class="n">bottom</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span> <span class="n">pump</span><span class="p">,</span> <span class="n">hx_in</span><span class="p">,</span> <span class="n">riser</span><span class="p">,</span> <span class="n">hx_out</span><span class="p">),</span>
+        <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">p_top</span><span class="p">),</span>
+        <span class="n">abs_pressure_comps</span><span class="o">=</span><span class="p">[</span><span class="n">channel</span><span class="p">],</span>
+        <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="n">channel</span><span class="p">],</span>
+        <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="n">plate_funcs</span><span class="p">)</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">agr</span><span class="p">,</span> <span class="n">fg</span><span class="p">,</span> <span class="n">pump</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Read-the-report-first">
+<h2>Read the report first<a class="headerlink" href="#Read-the-report-first" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">report(agr)</span></code> from <code class="docutils literal notranslate"><span class="pre">stream.analysis.report</span></code>, read as in <a class="reference internal" href="write-a-calculation.html#Build-it-alone-and-read-the-report"><span class="std std-ref">Write a calculation</span></a>, runs before any solve.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span><span class="p">,</span> <span class="n">fg</span><span class="p">,</span> <span class="n">pump</span> <span class="o">=</span> <span class="n">build</span><span class="p">({})</span>
+<span class="n">report</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 186 Equations, 9 Nodes, 28 Edges.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Top</p></td>
+<td><p>Junction</p></td>
+<td><p>0 - 1</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Channel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>1 - 32</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Bottom</p></td>
+<td><p>Junction</p></td>
+<td><p>32 - 33</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Pump</p></td>
+<td><p>Pump</p></td>
+<td><p>33 - 35</p></td>
+<td><p>pressure, mdot0</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>HXIn</p></td>
+<td><p>HeatExchanger</p></td>
+<td><p>35 - 37</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Riser</p></td>
+<td><p>Gravity</p></td>
+<td><p>37 - 39</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>HXOut</p></td>
+<td><p>HeatExchanger</p></td>
+<td><p>39 - 41</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Kirchhoff</p></td>
+<td><p>KirchhoffWDerivatives</p></td>
+<td><p>41 - 46</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Plate</p></td>
+<td><p>Fuel</p></td>
+<td><p>46 - 186</p></td>
+<td><p>power, T_top, T_bottom, h_top, h_bottom</p></td>
+<td></td>
+<td><p>power</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The plate’s <strong>Missing</strong> column names <code class="docutils literal notranslate"><span class="pre">power</span></code>. Binding it is the fix.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span><span class="p">,</span> <span class="n">fg</span><span class="p">,</span> <span class="n">pump</span> <span class="o">=</span> <span class="n">build</span><span class="p">({</span><span class="n">fuel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)})</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"plate inputs set externally: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">fuel</span><span class="p">])</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+plate inputs set externally: [&#39;power&#39;]
+</pre></div></div>
+</div>
+<p>The plate now takes its power from <code class="docutils literal notranslate"><span class="pre">funcs</span></code>.</p>
+</section>
+<section id="Check-the-answer-by-hand">
+<h2>Check the answer by hand<a class="headerlink" href="#Check-the-answer-by-hand" title="Link to this heading"></a></h2>
+<p>A converged solve still has to be the plant one meant. The cell runs the energy balance of <a class="reference internal" href="../LOFAPoolReactor.html#Hand-checks"><span class="std std-ref">Hand checks</span></a> on the channel and adds the components’ <code class="docutils literal notranslate"><span class="pre">pressure</span></code> gains around the loop.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">seed</span><span class="p">(</span><span class="n">mdot</span><span class="p">):</span>
+    <span class="n">hydraulics</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">guess_steady_state</span><span class="p">({</span><span class="n">channel</span><span class="p">:</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">pump</span><span class="p">:</span> <span class="n">mdot</span><span class="p">},</span> <span class="n">T_hx</span><span class="p">)</span>
+    <span class="n">pair</span> <span class="o">=</span> <span class="n">symmetric_plate_steady_state</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_top</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_hx</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">hydraulics</span><span class="p">,</span> <span class="n">pair</span><span class="p">)</span>
+
+
+<span class="n">K</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">seed</span><span class="p">(</span><span class="mf">0.2</span><span class="p">),</span> <span class="n">jac</span><span class="o">=</span><span class="n">ALG_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">))</span>
+<span class="n">mdot</span><span class="p">,</span> <span class="n">T_out</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">channel</span><span class="p">)],</span> <span class="n">state</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_out"</span><span class="p">]</span>
+<span class="n">cp</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">((</span><span class="n">T_out</span> <span class="o">+</span> <span class="n">T_hx</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">gains</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Channel"</span><span class="p">,</span> <span class="s2">"Pump"</span><span class="p">,</span> <span class="s2">"HXIn"</span><span class="p">,</span> <span class="s2">"Riser"</span><span class="p">,</span> <span class="s2">"HXOut"</span><span class="p">)}</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow:                </span><span class="si">{</span><span class="n">mdot</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"mdot cp dT:          </span><span class="si">{</span><span class="n">mdot</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">cp</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">T_out</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">T_hx</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> W"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"gains [Pa]:          "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">gains</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"|sum of the gains|:  </span><span class="si">{</span><span class="nb">abs</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">gains</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+flow:                0.2227 kg/s
+mdot cp dT:          2000.0 W
+gains [Pa]:          Channel 810.5, Pump 6000.0, HXIn 0.0, Riser -6810.5, HXOut 0.0
+|sum of the gains|:  0.000 Pa
+</pre></div></div>
+</div>
+<p>The coolant carries off about 2000 W of the 2 kW, and the gains cancel. A balance that misses points at the wiring, not the solver.</p>
+</section>
+<section id="Find-the-calculation-that-carries-the-residual">
+<h2>Find the calculation that carries the residual<a class="headerlink" href="#Find-the-calculation-that-carries-the-residual" title="Link to this heading"></a></h2>
+<p>The guess below runs the loop backward, at -0.2 kg/s. <code class="docutils literal notranslate"><span class="pre">debug_derivatives(agr,</span> <span class="pre">guess)</span></code> from <code class="docutils literal notranslate"><span class="pre">stream.analysis.debugging</span></code> evaluates <span class="math notranslate nohighlight">\(F\)</span>, the aggregator’s functional, at the guess and returns it as a <code class="docutils literal notranslate"><span class="pre">State</span></code>: the residual of each algebraic row, the derivative of each differential one. The cell prints each calculation’s largest entry, then <code class="docutils literal notranslate"><span class="pre">debug_guess_flows</span></code>, the Kirchhoff flow rows.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">wrong</span> <span class="o">=</span> <span class="n">seed</span><span class="p">(</span><span class="o">-</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">calc</span><span class="p">,</span> <span class="n">rows</span> <span class="ow">in</span> <span class="n">debug_derivatives</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">wrong</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">calc</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">v</span><span class="p">))</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">rows</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">),</span> <span class="mi">2</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">debug_guess_flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">wrong</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+      Top: 2.39
+  Channel: 0.00
+   Bottom: 0.00
+     Pump: 0.00
+     HXIn: 0.00
+    Riser: 0.00
+    HXOut: 0.00
+Kirchhoff: 10977.00
+    Plate: 0.00
+{&#39;(Top -&gt; Bottom, 0)&#39;: 0.0, &#39;(Bottom -&gt; Top, 0)&#39;: 0.0, &#39;(Top -&gt; Bottom, mdot2 0)&#39;: 10977.0, &#39;(Bottom -&gt; Top, mdot2 0)&#39;: 0.0}
+</pre></div></div>
+</div>
+<p>Two calculations carry it. Kirchhoff’s keys are offset from its equations, so a residual sits under another variable’s key: the loop law, missing zero by about 11 kPa, under <code class="docutils literal notranslate"><span class="pre">(Top</span> <span class="pre">-&gt;</span> <span class="pre">Bottom,</span> <span class="pre">mdot2</span> <span class="pre">0)</span></code>. The junction at the top is about 2.4 K from its mixing temperature. A seed with the physical sign is the cure.</p>
+</section>
+<section id="Locate-where-a-transient-died">
+<h2>Locate where a transient died<a class="headerlink" href="#Locate-where-a-transient-died" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="run-a-transient-and-set-tolerances.html#When-a-run-fails"><span class="std std-ref">When a run fails</span></a> keeps the trajectory of a <code class="docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code>. Its message starts with <code class="docutils literal notranslate"><span class="pre">At</span> <span class="pre">t</span> <span class="pre">=</span></code> and the last output time reached, so the run died in the interval after it. The cell doubles the pump head at once and runs with <code class="docutils literal notranslate"><span class="pre">max_steps=50</span></code> on a grid that goes to 1 s in tenths, then to 10 s.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y0</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+<span class="n">row</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">var_index</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">channel</span><span class="p">))</span>
+<span class="n">pump</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="mf">1.2e4</span>
+<span class="n">grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">11</span><span class="p">),</span> <span class="p">[</span><span class="mf">10.0</span><span class="p">]])</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">reached</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">jacfn</span><span class="o">=</span><span class="n">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">err_handler</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">TransientRuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="n">t_last</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"At t = "</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">err</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> between </span><span class="si">{</span><span class="n">t_last</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> s and </span><span class="si">{</span><span class="n">grid</span><span class="p">[</span><span class="n">grid</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">t_last</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+    <span class="n">reached</span> <span class="o">=</span> <span class="n">Solution</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">err</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">reached</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">reached</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">row</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Channel flow [kg/s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+TransientRuntimeError between 1.0 s and 10.0 s
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_diagnose-a-failing-solve_13_1.png" src="../_images/howto_diagnose-a-failing-solve_13_1.png" />
+</div>
+</div>
+<p>The first second shows the flow climbing to its new level. Raising <code class="docutils literal notranslate"><span class="pre">max_steps</span></code>, or adding output times to that interval, lets it finish.</p>
+</section>
+<section id="Symptoms-and-causes">
+<h2>Symptoms and causes<a class="headerlink" href="#Symptoms-and-causes" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>symptom</p></th>
+<th class="head"><p>cause</p></th>
+<th class="head"><p>what to do</p></th>
+<th class="head"><p>where</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Missing</strong> lists an input</p></td>
+<td><p>nothing supplies it and it has no default</p></td>
+<td><p>draw the edge or bind it in <code class="docutils literal notranslate"><span class="pre">funcs</span></code></p></td>
+<td><p><a class="reference internal" href="bind-inputs-and-schedules.html"><span class="doc">Bind inputs and time schedules</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>one calculation’s residual far above the rest</p></td>
+<td><p>its part of the guess, or its wiring</p></td>
+<td><p>reseed from the helpers</p></td>
+<td><p><a class="reference internal" href="get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>every flow about zero</p></td>
+<td><p>no net head: a pump left at <code class="docutils literal notranslate"><span class="pre">pump.p</span> <span class="pre">=</span> <span class="pre">0.0</span></code> on an unheated loop</p></td>
+<td><p>check each pump’s head</p></td>
+<td><p><a class="reference internal" href="wire-a-flow-network.html#Junctions-and-edges"><span class="std std-ref">Wire a flow network</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>a solved flow of the opposite sign</p></td>
+<td><p>an edge drawn against the flow, or a <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> whose <code class="docutils literal notranslate"><span class="pre">disposition</span></code> has the wrong sign</p></td>
+<td><p>check each edge and height</p></td>
+<td><p><a class="reference internal" href="../explanation/sign-conventions.html"><span class="doc">Sign conventions</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code> at <code class="docutils literal notranslate"><span class="pre">t</span> <span class="pre">=</span> <span class="pre">0</span></code></p></td>
+<td><p>a <code class="docutils literal notranslate"><span class="pre">y0</span></code> that is not a solved state, or a start that needs more than <code class="docutils literal notranslate"><span class="pre">max_steps</span></code></p></td>
+<td><p>solve steady first; raise <code class="docutils literal notranslate"><span class="pre">max_steps</span></code></p></td>
+<td><p><a class="reference internal" href="run-a-transient-and-set-tolerances.html#Start-from-the-steady-state"><span class="std std-ref">Start from the steady state</span></a>, <a class="reference internal" href="run-a-transient-and-set-tolerances.html#Tolerances,-a-Jacobian-and-a-step-cap"><span class="std std-ref">Tolerances, a
+Jacobian and a step cap</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>a run that crawls or dies after an event</p></td>
+<td><p>the step collapses at the restart, one edge pinned by an algebraic law</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">exclude_algvar_from_error=True</span></code></p></td>
+<td><p><a class="reference internal" href="run-a-transient-and-set-tolerances.html#Loops-with-events"><span class="std std-ref">Loops with events</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>NumPy warns of a division by zero or an invalid value</p></td>
+<td><p>an iterate far from the answer, where a friction or heat-transfer law divides by zero</p></td>
+<td><p>reseed nearer the answer</p></td>
+<td><p><a class="reference internal" href="get-a-steady-solve-to-converge.html#Pump-off"><span class="std std-ref">Pump off</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SaturationReachedError</span></code></p></td>
+<td><p>a channel with <code class="docutils literal notranslate"><span class="pre">stop_at_saturation=True</span></code> reached bulk saturation</p></td>
+<td><p>less power, more pressure or more flow</p></td>
+<td><p><a class="reference internal" href="trip-stop-and-restart.html#When-a-channel-saturates"><span class="std std-ref">When a channel saturates</span></a>; <a class="reference internal" href="../LOFAVariations.html#A-stuck-flapper"><span class="std std-ref">A stuck
+flapper</span></a> at scale</p></td>
+</tr>
+</tbody>
+</table>
+<p>A run that completes and still looks wrong is settled by <a class="reference internal" href="../LOFAVariations.html#When-a-result-looks-wrong"><span class="std std-ref">When a result looks wrong</span></a>. The usual next task: <a class="reference internal" href="read-results.html"><span class="doc">Read results</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="trip-stop-and-restart.html" class="btn btn-neutral float-left" title="Trip, stop and restart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="read-results.html" class="btn btn-neutral float-right" title="Read results" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

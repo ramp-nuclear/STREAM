@@ -1,0 +1,342 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run a transient and set tolerances &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Trip, stop and restart" href="trip-stop-and-restart.html" />
+    <link rel="prev" title="Get a steady solve to converge" href="get-a-steady-solve-to-converge.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#solving">Solving</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="get-a-steady-solve-to-converge.html">Get a steady solve to converge</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Run a transient and set tolerances</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Start-from-the-steady-state">Start from the steady state</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Tolerances,-a-Jacobian-and-a-step-cap">Tolerances, a Jacobian and a step cap</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Loops-with-events">Loops with events</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Keep-a-variable-on-one-side-of-zero">Keep a variable on one side of zero</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#When-a-run-fails">When a run fails</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="trip-stop-and-restart.html">Trip, stop and restart</a></li>
+<li class="toctree-l3"><a class="reference internal" href="diagnose-a-failing-solve.html">Diagnose a failing solve</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Run a transient and set tolerances</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/run-a-transient-and-set-tolerances.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Run-a-transient-and-set-tolerances">
+<h1>Run a transient and set tolerances<a class="headerlink" href="#Run-a-transient-and-set-tolerances" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a> ends at a solved operating point. This page runs a transient from one, the loop of <a class="reference internal" href="../PCSCoastdown.html"><span class="doc">Primary Cooling System Coastdown</span></a> after its pump stops: with the defaults, with each option against the analytic flow, with a sign constraint, and once to failure.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_constraints</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solution</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Inertia</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span><span class="p">,</span> <span class="n">Pump</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">ResistorFromKnownPoint</span><span class="p">,</span> <span class="n">flow_edge</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAE_jacobian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">TransientRuntimeError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">hour</span>
+</pre></div>
+</div>
+</div>
+<section id="Start-from-the-steady-state">
+<h2>Start from the steady state<a class="headerlink" href="#Start-from-the-steady-state" title="Link to this heading"></a></h2>
+<p>The loop is wired as in <a class="reference internal" href="wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a>, the flywheel in <code class="docutils literal notranslate"><span class="pre">inertial_comps</span></code>. Solve the steady state first and start from it: the differential rows of <code class="docutils literal notranslate"><span class="pre">y0</span></code>, here the edge flows, are where the transient starts, and IDA keeps them as given. By default (<code class="docutils literal notranslate"><span class="pre">compute_initcond=&quot;yp0&quot;</span></code>) it makes only the algebraic rows and the derivatives consistent with them. <code class="docutils literal notranslate"><span class="pre">pump.p</span> <span class="pre">=</span> <span class="pre">0.0</span></code> then stops the pump.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">T</span><span class="p">,</span> <span class="n">head</span><span class="p">,</span> <span class="n">inertia</span> <span class="o">=</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">1.6e5</span><span class="p">,</span> <span class="mf">8e3</span>
+<span class="n">mdot0</span> <span class="o">=</span> <span class="mi">2000</span> <span class="o">/</span> <span class="n">hour</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">T</span><span class="p">))</span>
+<span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="n">head</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">)</span>
+<span class="n">flywheel</span> <span class="o">=</span> <span class="n">Inertia</span><span class="p">(</span><span class="n">inertia</span><span class="o">=</span><span class="n">inertia</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Flywheel"</span><span class="p">)</span>
+<span class="n">pcs</span> <span class="o">=</span> <span class="n">ResistorFromKnownPoint</span><span class="p">(</span><span class="n">dp</span><span class="o">=-</span><span class="n">head</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot0</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="s2">"parabolic"</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"PCS"</span><span class="p">)</span>
+<span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"A"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"B"</span><span class="p">)</span>
+<span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">),</span> <span class="n">pump</span><span class="p">,</span> <span class="n">flywheel</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">b</span><span class="p">,</span> <span class="n">a</span><span class="p">),</span> <span class="n">pcs</span><span class="p">),</span>
+    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">pcs</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T</span><span class="p">}},</span>
+    <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="n">flywheel</span><span class="p">],</span>
+    <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">agr</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span><span class="p">,</span> <span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="n">y0</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">guess_steady_state</span><span class="p">({</span><span class="n">pump</span><span class="p">:</span> <span class="n">mdot0</span><span class="p">,</span> <span class="n">pcs</span><span class="p">:</span> <span class="n">mdot0</span><span class="p">},</span> <span class="n">T</span><span class="p">))</span>
+<span class="n">row</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">var_index</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">pcs</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"steady flow:       </span><span class="si">{</span><span class="n">y0</span><span class="p">[</span><span class="n">row</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"residual:          </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"differential rows: </span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">mass</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">pump</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="mf">0.0</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+steady flow:       554.42 kg/s
+residual:          2.9e-11
+differential rows: 2 of 12
+</pre></div></div>
+</div>
+<p>The residual is about 3e-11. <code class="docutils literal notranslate"><span class="pre">solve</span></code> picks its backend from the mass vector: ODE when every row is differential, DAE (IDA) when some are, a quasi-static solve when none are. Here two are, so IDA runs. <code class="docutils literal notranslate"><span class="pre">eq_type=&quot;DAE&quot;</span></code>, or <code class="docutils literal notranslate"><span class="pre">&quot;ODE&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;ALG&quot;</span></code>, overrides it.</p>
+</section>
+<section id="Tolerances,-a-Jacobian-and-a-step-cap">
+<h2>Tolerances, a Jacobian and a step cap<a class="headerlink" href="#Tolerances,-a-Jacobian-and-a-step-cap" title="Link to this heading"></a></h2>
+<p>Every option <code class="docutils literal notranslate"><span class="pre">solve</span></code> does not take itself goes to the backend, under the backend’s own name. For IDA:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">rtol</span></code> is one number for the whole system, <code class="docutils literal notranslate"><span class="pre">1e-6</span></code> by default.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">atol</span></code> is a float or an array with one entry per row, <code class="docutils literal notranslate"><span class="pre">1e-12</span></code> by default. <code class="docutils literal notranslate"><span class="pre">agr.scaled_atol(rel)</span></code> builds the array: <code class="docutils literal notranslate"><span class="pre">rel</span></code> times each row’s nominal magnitude in <code class="docutils literal notranslate"><span class="pre">stream.scales.DEFAULT_SCALES</span></code>, keyed by variable name, <code class="docutils literal notranslate"><span class="pre">1.0</span></code> for a name it lacks.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">jacfn=DAE_jacobian(agr)</span></code> hands IDA a finite-difference Jacobian that, per column, re-evaluates only the calculation owning that variable and those reading it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_step_size</span></code> caps the internal step, <code class="docutils literal notranslate"><span class="pre">0.0</span></code> meaning no cap; <code class="docutils literal notranslate"><span class="pre">max_steps</span></code> caps the internal steps between two output times, <code class="docutils literal notranslate"><span class="pre">0</span></code> meaning IDA’s 500.</p></li>
+</ul>
+<p>A name IDA does not know, such as scipy’s <code class="docutils literal notranslate"><span class="pre">max_step</span></code>, raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>. The cell runs the first 300 s four ways and compares the flow at 100 s with the analytic coastdown, <span class="math notranslate nohighlight">\(\dot m(t) = \dot m_0 / (1 + \alpha \dot m_0 t)\)</span>, which <a class="reference internal" href="../PCSCoastdown.html#Analytic-Solution-of-the-Transient"><span class="std std-ref">the coastdown example</span></a> derives.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">300.0</span><span class="p">,</span> <span class="mi">61</span><span class="p">)</span>
+<span class="n">alpha</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pcs</span><span class="o">.</span><span class="n">dp_out</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">))</span> <span class="o">/</span> <span class="n">inertia</span>
+<span class="n">exact</span> <span class="o">=</span> <span class="n">mdot0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">mdot0</span> <span class="o">*</span> <span class="mf">100.0</span><span class="p">)</span>
+<span class="n">scaled</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">agr</span><span class="o">.</span><span class="n">scaled_atol</span><span class="p">(</span><span class="mf">1e-6</span><span class="p">),</span> <span class="n">jacfn</span><span class="o">=</span><span class="n">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+<span class="n">options</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"defaults"</span><span class="p">:</span> <span class="p">{},</span>
+    <span class="s2">"rtol 1e-3, scaled atol"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">agr</span><span class="o">.</span><span class="n">scaled_atol</span><span class="p">(</span><span class="mf">1e-3</span><span class="p">)),</span>
+    <span class="s2">"rtol 1e-6, scaled atol, jacfn"</span><span class="p">:</span> <span class="n">scaled</span><span class="p">,</span>
+    <span class="s2">"as above, max_step_size 0.1"</span><span class="p">:</span> <span class="n">scaled</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">(</span><span class="n">max_step_size</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">opts</span> <span class="ow">in</span> <span class="n">options</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">opts</span><span class="p">)</span>
+    <span class="n">flow</span> <span class="o">=</span> <span class="n">sol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span> <span class="o">==</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">row</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">rows</span><span class="p">[</span><span class="n">label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"flow at 100 s [kg/s]"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">flow</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"relative error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="p">(</span><span class="n">flow</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">exact</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">exact</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"analytic flow at 100 s: </span><span class="si">{</span><span class="n">exact</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_string</span><span class="p">())</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">max_step</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ValueError: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+analytic flow at 100 s: 120.3329 kg/s
+                              flow at 100 s [kg/s] relative error
+defaults                                  120.3329       -5.5e-09
+rtol 1e-3, scaled atol                    120.1961       -1.1e-03
+rtol 1e-6, scaled atol, jacfn             120.3330        6.1e-07
+as above, max_step_size 0.1               120.3331        1.3e-06
+ValueError: Option &#39;max_step&#39; is not supported by solver
+</pre></div></div>
+</div>
+<p>The defaults land closest, a relative error under 1e-8. A relative <code class="docutils literal notranslate"><span class="pre">1e-3</span></code> misses by about 0.1 %, the scaled <code class="docutils literal notranslate"><span class="pre">1e-6</span></code> by about 6e-7. The step cap buys nothing here.</p>
+</section>
+<section id="Loops-with-events">
+<h2>Loops with events<a class="headerlink" href="#Loops-with-events" title="Link to this heading"></a></h2>
+<p>Pass <code class="docutils literal notranslate"><span class="pre">exclude_algvar_from_error=True</span></code> on a loop where one edge’s flow is pinned by an algebraic law, a flapper, while the rest carries inertia: it leaves the algebraic rows out of IDA’s error test, which keeps the step from collapsing after an event restart at tight tolerance. Leave it off on an inertia-free network whose event margin reads an algebraic flow: the event is then localised late. <code class="docutils literal notranslate"><span class="pre">continuous</span></code> decides what an event’s stop request does: <code class="docutils literal notranslate"><span class="pre">False</span></code>, the default, stops the run;
+<code class="docutils literal notranslate"><span class="pre">True</span></code> restarts past it. The cell makes the <code class="docutils literal notranslate"><span class="pre">stream.examples.lofa</span></code> call plus <code class="docutils literal notranslate"><span class="pre">continuous=True</span></code>; this loop has no events for either to act on.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lofa_style</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">jacfn</span><span class="o">=</span><span class="n">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="n">agr</span><span class="o">.</span><span class="n">scaled_atol</span><span class="p">(</span><span class="mf">1e-4</span><span class="p">),</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-4</span><span class="p">,</span>
+                       <span class="n">max_steps</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">,</span> <span class="n">exclude_algvar_from_error</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">continuous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">flow</span> <span class="o">=</span> <span class="n">lofa_style</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span> <span class="o">==</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">row</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow at 100 s:  </span><span class="si">{</span><span class="n">flow</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"relative error: </span><span class="si">{</span><span class="p">(</span><span class="n">flow</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">exact</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">exact</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+flow at 100 s:  120.3483 kg/s
+relative error: 1.3e-04
+</pre></div></div>
+</div>
+<p>The run completes, about 1e-4 from the analytic flow, the size of its tolerances.</p>
+</section>
+<section id="Keep-a-variable-on-one-side-of-zero">
+<h2>Keep a variable on one side of zero<a class="headerlink" href="#Keep-a-variable-on-one-side-of-zero" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">create_constraints(agr,</span> <span class="pre">...)</span></code> builds IDA’s sign vector, one entry per row: each keyword is the name of a <code class="docutils literal notranslate"><span class="pre">CONSTRAINT</span></code> member (<code class="docutils literal notranslate"><span class="pre">negative</span></code>, <code class="docutils literal notranslate"><span class="pre">non_positive</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code>, <code class="docutils literal notranslate"><span class="pre">non_negative</span></code>, <code class="docutils literal notranslate"><span class="pre">positive</span></code>) and takes a list of variable names; every other row takes <code class="docutils literal notranslate"><span class="pre">default_sign</span></code>, <code class="docutils literal notranslate"><span class="pre">CONSTRAINT.none</span></code> by default. Pass it as <code class="docutils literal notranslate"><span class="pre">constraints_type</span></code>, on the DAE backend only. The cell keeps the return flow non-negative.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">signs</span> <span class="o">=</span> <span class="n">create_constraints</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">non_negative</span><span class="o">=</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">pcs</span><span class="p">)])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">signs</span><span class="p">)</span>
+<span class="n">held</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">constraints_type</span><span class="o">=</span><span class="n">signs</span><span class="p">,</span> <span class="o">**</span><span class="n">scaled</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"lowest return flow: </span><span class="si">{</span><span class="n">held</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow at 100 s:      </span><span class="si">{</span><span class="n">held</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">t</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mf">100.0</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[0. 0. 0. 0. 0. 0. 0. 0. 0. 1. 0. 0.]
+lowest return flow: 46.90 kg/s
+flow at 100 s:      120.3330 kg/s
+</pre></div></div>
+</div>
+<p>The flow stays above zero and matches the scaled run: a coastdown never reaches zero, so the constraint has nothing to stop.</p>
+</section>
+<section id="When-a-run-fails">
+<h2>When a run fails<a class="headerlink" href="#When-a-run-fails" title="Link to this heading"></a></h2>
+<p>A failed run raises <code class="docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code>, whose <code class="docutils literal notranslate"><span class="pre">t</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> hold the trajectory up to the failure. Here a step cap of 1 s meets a 280 s output interval with <code class="docutils literal notranslate"><span class="pre">max_steps</span></code> at 50. <code class="docutils literal notranslate"><span class="pre">err_handler</span></code> takes IDA’s own stderr message; the cell drops it.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mf">300.0</span><span class="p">],</span> <span class="n">max_step_size</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">err_handler</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="kc">None</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">TransientRuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="n">partial</span> <span class="o">=</span> <span class="n">Solution</span><span class="p">(</span><span class="n">err</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">err</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">err</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"times kept: </span><span class="si">{</span><span class="n">partial</span><span class="o">.</span><span class="n">time</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow at 20 s: </span><span class="si">{</span><span class="n">partial</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+At t = 20.00000: Could not reach endpoint
+times kept: [ 0. 10. 20.]
+flow at 20 s: 322.06 kg/s
+</pre></div></div>
+</div>
+<p>The trajectory holds the output times reached, up to 20 s. <a class="reference internal" href="diagnose-a-failing-solve.html"><span class="doc">Diagnose a failing solve</span></a> takes it from there.</p>
+<p><a class="reference internal" href="../LOFABothPumpsTrip.html"><span class="doc">Both Pumps Trip</span></a> runs an hour-long transient with these options, and <a class="reference internal" href="../LOFAVariations.html#How-far-to-trust-the-event-times"><span class="std std-ref">How far to trust the event times</span></a> reruns its first five minutes at two tolerances. The usual next task: <a class="reference internal" href="trip-stop-and-restart.html"><span class="doc">Trip, stop and restart</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="get-a-steady-solve-to-converge.html" class="btn btn-neutral float-left" title="Get a steady solve to converge" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="trip-stop-and-restart.html" class="btn btn-neutral float-right" title="Trip, stop and restart" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

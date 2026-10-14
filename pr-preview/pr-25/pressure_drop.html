@@ -1,0 +1,831 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pressure Drop &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Thresholds" href="thresholds.html" />
+    <link rel="prev" title="Heat Transfer Coefficient" href="heat_transfer_coefficient.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="stream.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="calculation.html">Calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.calculations.html">Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.composition.html">Composition</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="stream.physical_models.html">Physical Models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Pressure Drop</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#module-stream.physical_models.pressure_drop.friction">Friction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-stream.physical_models.pressure_drop.local">Local</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#other-pressure-drop-components">Other Pressure Drop Components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#helper-functions">Helper Functions</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="decay_heat.html">Decay Heat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stream.physical_models.html#module-stream.physical_models.dimensionless">Dimensionless Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.examples.html">Examples package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="stream.html">Documentation</a></li>
+          <li class="breadcrumb-item"><a href="stream.physical_models.html">Physical Models</a></li>
+      <li class="breadcrumb-item active">Pressure Drop</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/pressure_drop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pressure-drop">
+<h1>Pressure Drop<a class="headerlink" href="#pressure-drop" title="Link to this heading"></a></h1>
+<p>The flow of coolants through the core, pumps, heat exchangers and
+other coolant cycle components is determined by means of pressure differences.
+These differences (drops) depend on the cycle itself, and can be divided into several categories.</p>
+<p>First and foremost, there are pressure drops due to <a class="reference internal" href="#module-stream.physical_models.pressure_drop.friction"><span class="std std-ref">friction</span></a> of the coolant with the surrounding walls
+and due to <a class="reference internal" href="#module-stream.physical_models.pressure_drop.local"><span class="std std-ref">local</span></a> changes in flow area, direction and more.
+These kinds of pressure drops tend to be close to
+<span class="math notranslate nohighlight">\(\Delta p\propto \rho v^2\)</span>, and are usually described by an effective
+relation following this reasoning:</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = f \frac{\rho u^2}{2}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(f\)</span> (sometimes denoted <span class="math notranslate nohighlight">\(K\)</span>) may be dependent non-trivially on
+geometry, flow properties and regime.</p>
+<p>Other contributions come from <a class="reference internal" href="#gravitational-pressure"><span class="std std-ref">gravity</span></a> and <a class="reference internal" href="#inertial-pressure"><span class="std std-ref">inertia</span></a>.</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="blasius" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>Blasius, H., “Das Aehnlichkeitsgesetz bei Reibungsvorgängen in
+Flüssigkeiten”, Mitteilungen über Forschungsarbeiten auf dem Gebiete
+des Ingenieurwesens, vol.134, VDI-Verlag Berlin (1913).</p>
+</aside>
+<aside class="footnote brackets" id="kaeri" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id3">2</a>,<a role="doc-backlink" href="#id4">3</a>)</span>
+<p>KAERI, “Development of Research Reactor Technology”,
+Korea Atomic Energy Research Institute (KAERI), KAERI/RR-3818/2014, 2014.</p>
+</aside>
+</aside>
+<section id="module-stream.physical_models.pressure_drop.friction">
+<span id="friction"></span><h2>Friction<a class="headerlink" href="#module-stream.physical_models.pressure_drop.friction" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.Blasius_friction">
+<span class="sig-name descname"><span class="pre">Blasius_friction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">re</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#Blasius_friction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.Blasius_friction" title="Link to this definition"></a></dt>
+<dd><p>An early (1913) approximation by Blasius<a class="footnote-reference brackets" href="#blasius" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> for the turbulent pipe flow Darcy friction factor.</p>
+<div class="math notranslate nohighlight">
+\[f = \frac{0.3164}{\text{Re}^{0.25}}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>re</strong> (<em>Value</em>) – The Reynolds number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>f</strong> – The Darcy friction factor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Blasius_friction</span><span class="p">(</span><span class="mi">10_000</span><span class="p">)</span>
+<span class="go">0.03164</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.Darcy_Weisbach_pressure_by_mdot">
+<span class="sig-name descname"><span class="pre">Darcy_Weisbach_pressure_by_mdot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#Darcy_Weisbach_pressure_by_mdot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.Darcy_Weisbach_pressure_by_mdot" title="Link to this definition"></a></dt>
+<dd><p>The Darcy-Weisbach equation relates pressure loss due to
+friction in pipe flow to the average velocity of an incompressible fluid:</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = f \frac{\rho u^2}{2}\frac{L}{D_h}\]</div>
+<p>In this function, the velocity is replaced by <span class="math notranslate nohighlight">\(\dot{m}=\rho u A\)</span>
+where <cite>u</cite> is the average velocity and <cite>A</cite> the cross-section.
+The pressure drop is sensitive to the flow’s direction:</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = f \frac{\dot{m}|\dot{m}|}{2\rho A^2}\frac{L}{D_h}\]</div>
+<p>If <span class="math notranslate nohighlight">\(\dot{m}&gt;0\)</span> then the pressure returned is positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass current.</p></li>
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – Fluid density.</p></li>
+<li><p><strong>f</strong> (<em>Value</em>) – The Darcy Friction Factor.</p></li>
+<li><p><strong>L</strong> (<em>Meter</em>) – Pipe length.</p></li>
+<li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter.</p></li>
+<li><p><strong>A</strong> (<em>Meter2</em>) – Cross-sectional flow area.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dp</strong> – Pressure drop across the pipe.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pascal</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Darcy_Weisbach_pressure_by_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Darcy_Weisbach_pressure_by_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Darcy_Weisbach_pressure_by_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=-</span><span class="mf">1.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">-0.5</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.friction_factor">
+<span class="sig-name descname"><span class="pre">friction_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#friction_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.friction_factor" title="Link to this definition"></a></dt>
+<dd><p>Create a Darcy friction factor chosen from the list below with uniform signatures.
+The main usage of this function is as input for <code class="xref py py-func docutils literal notranslate"><span class="pre">pressure_diff</span></code>.</p>
+<p>Available functions:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>regime_dependent</strong></p></td>
+<td><p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.regime_dependent_friction" title="stream.physical_models.pressure_drop.friction.regime_dependent_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_friction</span></code></a>, which depends on the <a class="reference internal" href="stream.physical_models.html#stream.physical_models.dimensionless.Re" title="stream.physical_models.dimensionless.Re"><code class="xref py py-func docutils literal notranslate"><span class="pre">Re</span></code></a> No., given <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>.
+Importantly, employs <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.viscosity_correction" title="stream.physical_models.pressure_drop.friction.viscosity_correction"><code class="xref py py-func docutils literal notranslate"><span class="pre">viscosity</span></code></a> and geometry (e.g. <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.rectangular_laminar_correction" title="stream.physical_models.pressure_drop.friction.rectangular_laminar_correction"><code class="xref py py-func docutils literal notranslate"><span class="pre">rectangular</span></code></a>) corrections upon the laminar and turbulent factors.</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>laminar</strong></p></td>
+<td><p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.laminar_friction" title="stream.physical_models.pressure_drop.friction.laminar_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">laminar_friction</span></code></a>. Does not employ corrections as described
+above.</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>turbulent</strong></p></td>
+<td><p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.turbulent_friction" title="stream.physical_models.pressure_drop.friction.turbulent_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">turbulent_friction</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Blasius</strong></p></td>
+<td><p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.Blasius_friction" title="stream.physical_models.pressure_drop.friction.Blasius_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">Blasius_friction</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>Literal</em><em>[</em><em>'regime_dependent'</em><em>, </em><em>'laminar'</em><em>, </em><em>'turbulent'</em><em>, </em><em>'Blasius'</em><em>]</em>) – Method name</p></li>
+<li><p><strong>kwargs</strong> (<em>Dict</em>) – Options to pass onto the given method</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>f</strong> – Darcy friction factor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>GeneralDarcyFactor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.laminar_friction">
+<span class="sig-name descname"><span class="pre">laminar_friction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">re</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#laminar_friction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.laminar_friction" title="Link to this definition"></a></dt>
+<dd><p>Due to the Hagen-Poiseuille law, an incompressible Newtonian fluid in laminar flow through a long constant
+cylindrical pipe yields an analytic Darcy friction factor: <span class="math notranslate nohighlight">\(f=64/\text{Re}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>re</strong> (<em>Value</em>) – The Reynolds number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>f</strong> – The Darcy friction factor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.rectangular_laminar_correction">
+<span class="sig-name descname"><span class="pre">rectangular_laminar_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aspect_ratio</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#rectangular_laminar_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.rectangular_laminar_correction" title="Link to this definition"></a></dt>
+<dd><p>For a circular pipe, the laminar Darcy friction factor is analytical.
+For a rectangular pipe, corrections must be made.</p>
+<p>In this function such a correction is returned as used in<a class="footnote-reference brackets" href="#kaeri" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>aspect_ratio</strong> (<em>float</em>) – channel_depth / channel_width (less than 1)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>K_R</strong> – geometric correction coefficient</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.laminar_friction" title="stream.physical_models.pressure_drop.friction.laminar_friction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">laminar_friction</span></code></a></p>
+</div>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">float</span><span class="p">(</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="mf">1.</span><span class="p">))</span>
+<span class="go">1.1246190353017915</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">float</span><span class="p">(</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="mf">0.</span><span class="p">))</span>
+<span class="go">0.6668484123609236</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">float</span><span class="p">(</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="go">1.0363896075094456</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.regime_dependent_friction">
+<span class="sig-name descname"><span class="pre">regime_dependent_friction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_R</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turbulent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">turbulent_friction&gt;)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">laminar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CPUDispatcher(&lt;function</span> <span class="pre">laminar_friction&gt;)</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#regime_dependent_friction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.regime_dependent_friction" title="Link to this definition"></a></dt>
+<dd><p>A flow-regime-dependent friction coefficient function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperatures</p></li>
+<li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperatures</p></li>
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass flow rate</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Pipe geometry</p></li>
+<li><p><strong>re_bounds</strong> (<em>tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – Flow regime (Re values) boundaries, see <a class="reference internal" href="stream.physical_models.html#stream.physical_models.dimensionless.flow_regimes" title="stream.physical_models.dimensionless.flow_regimes"><code class="xref py py-func docutils literal notranslate"><span class="pre">flow_regimes</span></code></a>.</p></li>
+<li><p><strong>k_R</strong> (<em>float</em>) – Geometrical factor. At laminar flow the Darcy coefficient is analytical (see <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.laminar_friction" title="stream.physical_models.pressure_drop.friction.laminar_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">laminar_friction</span></code></a>)
+for a circular duct. <code class="docutils literal notranslate"><span class="pre">k_R</span></code> is a multiplicative factor such that
+<span class="math notranslate nohighlight">\(f_\text{laminar} = \frac{64}{\text{Re} k_R}\)</span>.
+See for example, <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.rectangular_laminar_correction" title="stream.physical_models.pressure_drop.friction.rectangular_laminar_correction"><code class="xref py py-func docutils literal notranslate"><span class="pre">rectangular_laminar_correction</span></code></a>.
+This correction is applied to all regimes.</p></li>
+<li><p><strong>k_H</strong> (<em>Callable</em><em>[</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>, </em><em>float</em><em>] </em><em>| </em><em>None</em>) – Viscosity factor function, which takes as input
+<span class="math notranslate nohighlight">\(k_H(P_\text{heat}/P_\text{wet}, \mu_\text{wall} / \mu_\text{bulk})\)</span>.
+By default, it is omitted.
+See <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.viscosity_correction" title="stream.physical_models.pressure_drop.friction.viscosity_correction"><code class="xref py py-func docutils literal notranslate"><span class="pre">viscosity_correction</span></code></a>.</p></li>
+<li><p><strong>turbulent</strong> (<em>Callable</em><em>[</em><em>[</em><em>Value</em><em>]</em><em>, </em><em>Value</em><em>]</em>) – Strategy for calculating the friction coefficient for turbulent flow.</p></li>
+<li><p><strong>laminar</strong> (<em>Callable</em><em>[</em><em>[</em><em>Value</em><em>]</em><em>, </em><em>Value</em><em>]</em>) – Strategy for calculation the friction coefficient for laminar flow.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>f</strong> – The Darcy friction factor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.turbulent_friction">
+<span class="sig-name descname"><span class="pre">turbulent_friction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">re</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#turbulent_friction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.turbulent_friction" title="Link to this definition"></a></dt>
+<dd><p>An approximation for the friction factor of the implicit Colebrook-White equation,
+as written in RELAP and<a class="footnote-reference brackets" href="#kaeri" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> page 3, chapter 2.1.2.</p>
+<p>The result is floored by the laminar <span class="math notranslate nohighlight">\(64/\text{Re}\)</span>. Below Re of about 7, where the
+approximation is undefined, the laminar value is returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>re</strong> (<em>Value</em>) – Reynolds Number.</p></li>
+<li><p><strong>epsilon</strong> (<em>Value.</em>) – Relative roughness (roughness height / hydraulic diameter).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>f</strong> – The Darcy friction factor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">turbulent_friction</span><span class="p">(</span><span class="mf">4e3</span><span class="p">)</span>
+<span class="go">0.039804935964641644</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">turbulent_friction</span><span class="p">(</span><span class="mf">4e3</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="go">0.10560870441248855</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">turbulent_friction</span><span class="p">(</span><span class="mf">1e6</span><span class="p">)</span>
+<span class="go">0.011649393290640643</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">turbulent_friction</span><span class="p">(</span><span class="mf">1e4</span><span class="p">)</span>
+<span class="go">0.030874516278124504</span>
+</pre></div>
+</div>
+<p>At very low Reynolds numbers the laminar floor takes over:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">turbulent_friction</span><span class="p">(</span><span class="mf">5.0</span><span class="p">)</span>
+<span class="go">12.8</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">5.0</span><span class="p">,</span> <span class="mf">7.0</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">turbulent_friction</span><span class="p">(</span><span class="n">re</span><span class="p">),</span> <span class="mi">64</span> <span class="o">/</span> <span class="n">re</span><span class="p">))</span>
+<span class="go">True</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.friction.viscosity_correction">
+<span class="sig-name descname"><span class="pre">viscosity_correction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">heat_wet_ratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu_ratio</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/friction.html#viscosity_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.friction.viscosity_correction" title="Link to this definition"></a></dt>
+<dd><p>Temperature differences yield varying viscosity, which affects friction.
+Thus, a correction must be made.</p>
+<p>In this function such a correction is returned as used in<a class="footnote-reference brackets" href="#kaeri" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>heat_wet_ratio</strong> (<em>Value</em>) – Heated perimeter / Wet perimeter</p></li>
+<li><p><strong>mu_ratio</strong> (<em>Value</em>) – Viscosity at wall / Viscosity at bulk.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>K_H</strong> – viscosity correction coefficient</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">viscosity_correction</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">viscosity_correction</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">viscosity_correction</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">2.</span><span class="p">)</span>
+<span class="go">1.4948492486349383</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+<section id="module-stream.physical_models.pressure_drop.local">
+<span id="local"></span><h2>Local<a class="headerlink" href="#module-stream.physical_models.pressure_drop.local" title="Link to this heading"></a></h2>
+<p class="rubric">References</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="idelchik" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id5">1</a>,<a role="doc-backlink" href="#id6">2</a>,<a role="doc-backlink" href="#id7">3</a>,<a role="doc-backlink" href="#id8">4</a>,<a role="doc-backlink" href="#id9">5</a>)</span>
+<p>Handbook of Hydraulic Resistance, I. E. Idelchik, ????</p>
+</aside>
+</aside>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.bend_factor">
+<span class="sig-name descname"><span class="pre">bend_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relative_curvature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#bend_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.bend_factor" title="Link to this definition"></a></dt>
+<dd><p>Compute <em>K</em>, the local pressure drop factor for</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = K\rho v^2/2,\]</div>
+<p>(where <span class="math notranslate nohighlight">\(\Delta p\)</span> is the pressure drop over a pipe bend, <span class="math notranslate nohighlight">\(\rho\)</span> is the fluid’s density
+and <span class="math notranslate nohighlight">\(v\)</span> is the fluid’s velocity), according to Idelchik Diagram 6.1<a class="footnote-reference brackets" href="#idelchik" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> (page 424).</p>
+<p>This correlation applies to the case of a low curvature smooth pipe bend</p>
+<div class="math notranslate nohighlight">
+\[R_0/D_h &lt; 3\]</div>
+<p>(where <span class="math notranslate nohighlight">\(R_0\)</span> is the pipe’s axis radius of curvature, measured from the bend center to the
+center of the pipe, and <span class="math notranslate nohighlight">\(D_h\)</span> is the hydraulic diameter of the pipe), with circular/square cross-sections
+and at large Re numbers (above 10,000).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>angle</strong> (<em>Radians</em>) – The angle of the bend.</p></li>
+<li><p><strong>relative_curvature</strong> (<em>float</em>) – The radius of curvature of the pipe’s axis divided by the hydraulic diameter.</p></li>
+<li><p><strong>re</strong> (<em>float</em>) – The Reynolds number.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>K</strong> – Local pressure drop factor.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.contraction_factor">
+<span class="sig-name descname"><span class="pre">contraction_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aratio</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#contraction_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.contraction_factor" title="Link to this definition"></a></dt>
+<dd><p>Closed form approximation for sudden contraction at high Re numbers.</p>
+<p>According to Idelchik Table 4.10, there is a closed form approximation for
+sudden contraction of the form <span class="math notranslate nohighlight">\(\frac{1}{2}\left(1-\frac{A_2}{A_1}\right)^{\frac{3}{4}}\)</span>.
+This is written to be true for Re &gt; 35000, but the table for lower Re numbers
+stops at 10000, so it is unclear what to do for interim values of Re.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>aratio</strong> (<em>Value</em>) – Area ratio in [0,1]</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | <em>ndarray</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.expansion_factor">
+<span class="sig-name descname"><span class="pre">expansion_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aratio</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#expansion_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.expansion_factor" title="Link to this definition"></a></dt>
+<dd><p>Compute <em>K</em>, the pressure drop factor (Borda, Carnot), for</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = K\rho v^2/2\]</div>
+<p>Where</p>
+<div class="math notranslate nohighlight">
+\[K = \left(1 - \frac{A_1}{A_2}\right)^2\]</div>
+<p>According to Idelchik Table 4.2<a class="footnote-reference brackets" href="#idelchik" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>, this formula is correct for large Re numbers, above 3300.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>aratio</strong> (<em>float</em>) – Area ratio in [0,1]</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>K</strong> – Pressure drop factor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">expansion_factor</span><span class="p">(</span><span class="mf">0.</span> <span class="o">/</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expansion_factor</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">expansion_factor</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="mf">2.</span><span class="p">)</span>
+<span class="go">0.25</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.local_pressure_by_mdot">
+<span class="sig-name descname"><span class="pre">local_pressure_by_mdot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#local_pressure_by_mdot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.local_pressure_by_mdot" title="Link to this definition"></a></dt>
+<dd><p>Calculates the local pressure dot according to a known mass flow rate.</p>
+<p>This pressure drop is not the static pressure drop across the local pipe area change,
+but rather the total pressure drop, i.e. the amount of lost energy in the Bernoulli equation terms.</p>
+<p>Following the quadratic velocity relation to local pressure:</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = f \frac{\rho u^2}{2}\]</div>
+<p>In this function, the velocity is replaced by <span class="math notranslate nohighlight">\(\dot{m}=\rho u A\)</span>
+where <cite>u</cite> is the average velocity and <cite>A</cite> the cross-section.
+The pressure drop is sensitive to the flow’s direction:</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = f \frac{\dot{m}|\dot{m}|}{2 \rho A^2}\]</div>
+<p>If <span class="math notranslate nohighlight">\(\dot{m}&gt;0\)</span> then the pressure returned is positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass current.</p></li>
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – Fluid density.</p></li>
+<li><p><strong>f</strong> (<em>Value</em>) – The Darcy Friction Factor.</p></li>
+<li><p><strong>A</strong> (<em>Meter2</em>) – Cross-sectional flow area.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dp</strong> – Pressure drop across the pipe.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pascal</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">local_pressure_by_mdot</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.0005</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_pressure_by_mdot</span><span class="p">(</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">-0.0005</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_pressure_by_mdot</span><span class="p">(</span><span class="mf">0.</span><span class="p">,</span> <span class="mf">1000.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.local_pressure_factor">
+<span class="sig-name descname"><span class="pre">local_pressure_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">positive_flow</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">negative_flow</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#local_pressure_factor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.local_pressure_factor" title="Link to this definition"></a></dt>
+<dd><p>Considering <span class="math notranslate nohighlight">\(\dot{m}\)</span>, returns <code class="docutils literal notranslate"><span class="pre">K</span></code> pressure coefficient of
+<code class="docutils literal notranslate"><span class="pre">positive_flow(A1,</span> <span class="pre">A2)</span></code> or <code class="docutils literal notranslate"><span class="pre">negative_flow(A1,</span> <span class="pre">A2)</span></code>.</p>
+<p>This pressure coefficient is the loss coefficient for the total pressure in the Bernoulli equation,
+i.e. actual energy loss, not energy transfer between static and dynamic pressures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass current.</p></li>
+<li><p><strong>positive_flow</strong> (<em>LocalPressureFactorFunc</em>) – Expansion/Contraction</p></li>
+<li><p><strong>negative_flow</strong> (<em>LocalPressureFactorFunc</em>) – Expansion/Contraction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>K</strong> – Pressure drop factor</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">pos</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">):</span> <span class="k">return</span> <span class="n">a1</span><span class="o">+</span><span class="n">a2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span><span class="w"> </span><span class="nf">neg</span><span class="p">(</span><span class="n">a1</span><span class="p">,</span> <span class="n">a2</span><span class="p">):</span> <span class="k">return</span> <span class="n">a1</span><span class="o">*</span><span class="n">a2</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_pressure_factor</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">positive_flow</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">negative_flow</span><span class="o">=</span><span class="n">neg</span><span class="p">,</span> <span class="n">a1</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">a2</span><span class="o">=</span><span class="mf">2.</span><span class="p">)</span>
+<span class="go">3.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">local_pressure_factor</span><span class="p">(</span><span class="n">mdot</span><span class="o">=-</span><span class="mf">1.</span><span class="p">,</span> <span class="n">positive_flow</span><span class="o">=</span><span class="n">pos</span><span class="p">,</span> <span class="n">negative_flow</span><span class="o">=</span><span class="n">neg</span><span class="p">,</span> <span class="n">a1</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">a2</span><span class="o">=</span><span class="mf">2.</span><span class="p">)</span>
+<span class="go">2.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.mdot_by_local_pressure">
+<span class="sig-name descname"><span class="pre">mdot_by_local_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop/local.html#mdot_by_local_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.local.mdot_by_local_pressure" title="Link to this definition"></a></dt>
+<dd><p>The inverse function of <a class="reference internal" href="#stream.physical_models.pressure_drop.local.local_pressure_by_mdot" title="stream.physical_models.pressure_drop.local.local_pressure_by_mdot"><code class="xref py py-func docutils literal notranslate"><span class="pre">local_pressure_by_mdot</span></code></a>, which returns
+<span class="math notranslate nohighlight">\(\dot{m}\)</span> given a known pressure difference.</p>
+<div class="math notranslate nohighlight">
+\[\dot{m}
+= \text{sign}(\Delta p)\sqrt{\frac{2\rho A^2 |\Delta p|}{f}}\]</div>
+<p>If <span class="math notranslate nohighlight">\(\Delta p &gt; 0\)</span> then the current returned is positive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dp</strong> (<em>Pascal</em>) – Pressure drop across the pipe.</p></li>
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – Fluid density.</p></li>
+<li><p><strong>f</strong> (<em>Value</em>) – The Darcy Friction Factor.</p></li>
+<li><p><strong>A</strong> (<em>Meter2</em>) – Cross-sectional flow area.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>mdot</strong> – Mass current.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>KgPerS</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mdot_by_local_pressure</span><span class="p">(</span><span class="n">dp</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1e3</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mdot_by_local_pressure</span><span class="p">(</span><span class="n">dp</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">mdot_by_local_pressure</span><span class="p">(</span><span class="n">dp</span><span class="o">=-</span><span class="mf">1.</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="mf">2.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">-1.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.sudden_contraction_factor">
+<span class="sig-name descname"><span class="pre">sudden_contraction_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#stream.physical_models.pressure_drop.local.sudden_contraction_factor" title="Link to this definition"></a></dt>
+<dd><p>The Idelchik Table 4.10 interpolation of the local sudden expansion pressure drop coefficient.<a class="footnote-reference brackets" href="#idelchik" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p>
+<p>The table used is bounded by <span class="math notranslate nohighlight">\(A_2/A_1 \in [0.1, 0.6]\)</span> and <span class="math notranslate nohighlight">\(\text{Re} \in [10, 10000]\)</span>.
+Within those boundaries, linear interpolation is performed.</p>
+<p>For larger Reynolds numbers, an analytic solution is used, <a class="reference internal" href="#stream.physical_models.pressure_drop.local.contraction_factor" title="stream.physical_models.pressure_drop.local.contraction_factor"><code class="xref py py-func docutils literal notranslate"><span class="pre">contraction_factor</span></code></a>.
+For smaller Reynolds numbers, <span class="math notranslate nohighlight">\(K = 50/\text{Re}\)</span> is used.</p>
+<p>As for area ratios <span class="math notranslate nohighlight">\(A_2/A_1 \notin [0.1, 0.6]\)</span>, where the Reynolds no. is within the table values,
+an interpolation by the Reynolds no. is performed between the limiting analytic solutions,
+while for the lower end (<span class="math notranslate nohighlight">\(\text{Re}=10\)</span>) an interpolation by the area ratio is added to match
+<span class="math notranslate nohighlight">\(K(A_2/A_1=1)=0\)</span> and <span class="math notranslate nohighlight">\(K(A_2/A_1=0)=0.5\)</span> (matching a contraction from an infinite pool,<a class="footnote-reference brackets" href="#idelchik" id="id8" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>).</p>
+<p>The above result may not be applicable for such small Re numbers, but it would not
+have a large effect since these pressure drops zero out as <span class="math notranslate nohighlight">\(\mathcal{O}(v)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>aratio</strong> (<em>float</em>) – Area ratio in [0,1]</p></li>
+<li><p><strong>re</strong> (<em>float</em>) – Reynolds number</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.local.sudden_expansion_factor">
+<span class="sig-name descname"><span class="pre">sudden_expansion_factor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aratio</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#stream.physical_models.pressure_drop.local.sudden_expansion_factor" title="Link to this definition"></a></dt>
+<dd><p>The Idelchik Table 4.2 interpolation of the local sudden expansion pressure drop coefficient.<a class="footnote-reference brackets" href="#idelchik" id="id9" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p>
+<p>The table used is bounded by <span class="math notranslate nohighlight">\(A_1/A_2 \in [0.1, 0.6]\)</span> and <span class="math notranslate nohighlight">\(\text{Re} \in [10, 3300]\)</span>.
+Within those boundaries, linear interpolation is performed.</p>
+<p>For larger Reynolds numbers, an analytic solution is used, <a class="reference internal" href="#stream.physical_models.pressure_drop.local.expansion_factor" title="stream.physical_models.pressure_drop.local.expansion_factor"><code class="xref py py-func docutils literal notranslate"><span class="pre">expansion_factor</span></code></a>.
+For smaller Reynolds numbers, <span class="math notranslate nohighlight">\(K = 31/\text{Re}\)</span> is used.</p>
+<p>As for area ratios <span class="math notranslate nohighlight">\(A_1/A_2 \notin [0.1, 0.6]\)</span>, where the Reynolds no. is within the table values,
+an interpolation by the Reynolds no. is performed between the limiting analytic solutions,
+while for the lower end (<span class="math notranslate nohighlight">\(\text{Re}=10\)</span>) an interpolation by the area ratio is added to match
+<span class="math notranslate nohighlight">\(K(A_1/A_2=1)=0\)</span> and <span class="math notranslate nohighlight">\(K(A_1/A_2=0)=1\)</span> (matching an expansion into an infinite pool).</p>
+<p>The above result may not be applicable for such small Re numbers, but it would not
+have a large effect since these pressure drops zero out as <span class="math notranslate nohighlight">\(\mathcal{O}(v)\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>aratio</strong> (<em>float</em>) – Area ratio in [0,1]</p></li>
+<li><p><strong>re</strong> (<em>float</em>) – Reynolds number</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="other-pressure-drop-components">
+<h2>Other Pressure Drop Components<a class="headerlink" href="#other-pressure-drop-components" title="Link to this heading"></a></h2>
+<section id="gravitational-pressure">
+<h3>Gravitational Pressure<a class="headerlink" href="#gravitational-pressure" title="Link to this heading"></a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.gravity_pressure">
+<span class="sig-name descname"><span class="pre">gravity_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop.html#gravity_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.gravity_pressure" title="Link to this definition"></a></dt>
+<dd><p>In the case of an incompressible barotropic fluid at rest, the force exerted by gravity over a fluid column is
+<span class="math notranslate nohighlight">\(\Delta p=\rho g\Delta h\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – Fluid density.</p></li>
+<li><p><strong>g</strong> (<em>MPerS2</em>) – Gravitational acceleration.</p></li>
+<li><p><strong>dh</strong> (<em>Meter</em>) – Height difference.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dp</strong> – Pressure drop due to gravity.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pascal</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">gravity_pressure</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">9.80665</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gravity_pressure</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mf">0.</span><span class="p">)</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># What is the pressure head (for water) on the moon?</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gravity_pressure</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="p">(</span><span class="n">moon</span> <span class="o">:=</span> <span class="mf">1.62</span><span class="p">))</span>
+<span class="go">1620.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="stream.calculations.html#stream.calculations.ideal.resistors.Gravity" title="stream.calculations.ideal.resistors.Gravity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Gravity</span></code></a> - a corresponding <a class="reference internal" href="calculation.html#calculation"><span class="std std-ref">Calculation</span></a>.</p>
+</div>
+</section>
+<section id="inertial-pressure">
+<h3>Inertial Pressure<a class="headerlink" href="#inertial-pressure" title="Link to this heading"></a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.inertia_pressure">
+<span class="sig-name descname"><span class="pre">inertia_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdot2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dl</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop.html#inertia_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.inertia_pressure" title="Link to this definition"></a></dt>
+<dd><p>A change in flow along a streamline incurs a pressure drop.
+See further explanation in <a class="reference internal" href="stream.calculations.html#module-stream.calculations.ideal.inertia" title="stream.calculations.ideal.inertia"><code class="xref py py-mod docutils literal notranslate"><span class="pre">inertia</span></code></a>.</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = \frac{dl}{A}\frac{d\dot{m}}{dt}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mdot2</strong> (<em>KgPerS2</em>) – <span class="math notranslate nohighlight">\(\ddot{m}\)</span>, time derivative of mass flow</p></li>
+<li><p><strong>dl</strong> (<em>Meter</em>) – Length element along the streamline</p></li>
+<li><p><strong>A</strong> (<em>Meter2</em>) – Area through which the liquid flows in <code class="docutils literal notranslate"><span class="pre">dl</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dp</strong> – Pressure drop (positive).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pascal</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="stream.calculations.html#stream.calculations.ideal.inertia.Inertia" title="stream.calculations.ideal.inertia.Inertia"><code class="xref py py-class docutils literal notranslate"><span class="pre">Inertia</span></code></a> - a corresponding <a class="reference internal" href="calculation.html#calculation"><span class="std std-ref">Calculation</span></a>.</p>
+</div>
+</section>
+</section>
+<section id="helper-functions">
+<h2>Helper Functions<a class="headerlink" href="#helper-functions" title="Link to this heading"></a></h2>
+<p>A ready made <a class="reference internal" href="stream.calculations.html#stream.calculations.channel.Channel" title="stream.calculations.channel.Channel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code></a>-compatible pressure function is provided:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.pressure_diff">
+<span class="sig-name descname"><span class="pre">pressure_diff</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pipe</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">_re_friction.&lt;locals&gt;._f&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop.html#pressure_diff"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.pressure_diff" title="Link to this definition"></a></dt>
+<dd><p>Returns pressure difference. Positive direction is assumed downward.
+This function calculates frictional, inertial, and gravitational pressure drops.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>T</strong> (<em>Celsius</em>) – Bulk Coolant temperature</p></li>
+<li><p><strong>Tw</strong> (<em>Celsius</em>) – Wall temperature</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass current</p></li>
+<li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Channel geometry</p></li>
+<li><p><strong>dz</strong> (<em>Meter</em>) – Cell sizes in the flow’s direction</p></li>
+<li><p><strong>f</strong> (<em>GeneralDarcyFactor</em><em> | </em><em>None</em>) – Darcy-Weisbach friction factor, default being <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.Blasius_friction" title="stream.physical_models.pressure_drop.friction.Blasius_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">friction.Blasius_friction</span></code></a>.</p></li>
+<li><p><strong>g</strong> (<em>MPerS2</em>) – Gravitational acceleration.</p></li>
+<li><p><strong>mdot2</strong> (<em>KgPerS2</em><em> | </em><em>None</em>) – <span class="math notranslate nohighlight">\(\ddot{m}\)</span>, time derivative of <code class="docutils literal notranslate"><span class="pre">mdot</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>dp</strong> – Pressure drop at each cell</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Pascal</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.Darcy_Weisbach_pressure_by_mdot" title="stream.physical_models.pressure_drop.friction.Darcy_Weisbach_pressure_by_mdot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">friction.Darcy_Weisbach_pressure_by_mdot</span></code></a>, <a class="reference internal" href="#stream.physical_models.pressure_drop.gravity_pressure" title="stream.physical_models.pressure_drop.gravity_pressure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gravity_pressure</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.pressure_drop.static_pressure">
+<span class="sig-name descname"><span class="pre">static_pressure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pressure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/pressure_drop.html#static_pressure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.pressure_drop.static_pressure" title="Link to this definition"></a></dt>
+<dd><p>Calculates the static pressure from the total (static+dynamic) Bernoulli term.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pressure</strong> (<em>Pascal</em>) – The total pressure (static+dynamic)</p></li>
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – The mass flow rate</p></li>
+<li><p><strong>area</strong> (<em>Meter2</em>) – The cross-section area of the pipe</p></li>
+<li><p><strong>density</strong> (<em>KgPerM3</em>) – The fluid density</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float | <em>ndarray</em></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">static_pressure</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.5</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">static_pressure</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">static_pressure</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">,</span> <span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.5</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="heat_transfer_coefficient.html" class="btn btn-neutral float-left" title="Heat Transfer Coefficient" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="thresholds.html" class="btn btn-neutral float-right" title="Thresholds" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

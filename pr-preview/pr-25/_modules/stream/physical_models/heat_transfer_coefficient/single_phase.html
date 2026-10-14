@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.heat_transfer_coefficient.single_phase &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../heat_transfer_coefficient.html">stream.physical_models.heat_transfer_coefficient</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.heat_transfer_coefficient.single_phase</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.heat_transfer_coefficient.single_phase</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.dimensionless</span><span class="w"> </span><span class="kn">import</span> <span class="n">Re_mdot</span><span class="p">,</span> <span class="n">flow_regimes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient.laminar</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">constant_Nusselt_h_spl</span><span class="p">,</span>
+    <span class="n">developing_laminar_h_spl</span><span class="p">,</span>
+    <span class="n">fully_developed_laminar_h_spl</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient.natural_convection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Elenbaas_h_spl</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient.turbulent</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Dittus_Boelter_h_spl</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.smoothing</span><span class="w"> </span><span class="kn">import</span> <span class="n">smooth_step</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">Liquid</span><span class="p">,</span> <span class="n">LiquidFuncs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">Meter2</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">WPerM2K</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">lin_interp</span>
+
+
+<div class="viewcode-block" id="SinglePhaseLiquidHTCExArgs">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SinglePhaseLiquidHTCExArgs</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<div class="viewcode-block" id="SinglePhaseLiquidHTCExArgs.__call__">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs.__call__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+        <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+        <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span>
+        <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">coolant_funcs</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+        <span class="n">pressure</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span>
+        <span class="c1"># The following are here to weaken the constraint only, use with caution.</span>
+        <span class="n">h_spl</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">q_scb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">film</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">incipience</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">partial_scb</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">develop_length</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Same as :class:`~.SinglePhaseLiquidHTC` except it accepts any additional</span>
+<span class="sd">        keyword parameters.</span>
+<span class="sd">        """</span>
+        <span class="o">...</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="regime_dependent_h_spl">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">regime_dependent_h_spl</span><span class="p">(</span>
+    <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">re_bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Value</span><span class="p">,</span> <span class="n">Value</span><span class="p">],</span>
+    <span class="n">coolant_funcs</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+    <span class="n">Lh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">gz_band</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">),</span>
+    <span class="n">laminar</span><span class="p">:</span> <span class="n">SinglePhaseLiquidHTCExArgs</span> <span class="o">=</span> <span class="n">developing_laminar_h_spl</span><span class="p">,</span>
+    <span class="n">turbulent</span><span class="p">:</span> <span class="n">SinglePhaseLiquidHTCExArgs</span> <span class="o">=</span> <span class="n">Dittus_Boelter_h_spl</span><span class="p">,</span>
+    <span class="n">natural</span><span class="p">:</span> <span class="n">SinglePhaseLiquidHTCExArgs</span> <span class="o">=</span> <span class="n">Elenbaas_h_spl</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A flow-regime-dependent single phase heat transfer coefficient function.</span>
+
+<span class="sd">    The forced-convection part interpolates linearly on the bulk-evaluated Reynolds</span>
+<span class="sd">    number between the ``laminar`` and ``turbulent`` functions, with ``re_bounds``</span>
+<span class="sd">    setting the transition band. The laminar function is passed bulk properties,</span>
+<span class="sd">    the turbulent one film properties.</span>
+
+<span class="sd">    Buoyancy enters by **superposition**, not by substitution: the natural-convection</span>
+<span class="sd">    contribution is combined with the forced value through the Churchill cube norm</span>
+<span class="sd">    :math:`h = (h_f^3 + h_n^3)^{1/3}` (aiding internal mixed convection only ever</span>
+<span class="sd">    *enhances* heat transfer). Finally, when the through-flow renewal genuinely dies —</span>
+<span class="sd">    Graetz number :math:`\text{Gz} = \text{Pe}\,D_h/L_h` below ``gz_band`` — the value</span>
+<span class="sd">    hands over to the pure ``natural`` (stagnant-channel) function, so a flow-reversal</span>
+<span class="sd">    instant recovers the buoyant-cavity limit.</span>
+
+<span class="sd">    Every switch here is fed by the flow (Re, Gz), never by the wall superheat the</span>
+<span class="sd">    result feeds back into, and the superposition only adds — so :math:`h(T_{wall})</span>
+<span class="sd">    \cdot \Delta T` is monotone and a cell's wall balance has a unique root. The</span>
+<span class="sd">    superposition is the aiding-flow form, so it over-predicts the coefficient in</span>
+<span class="sd">    laminar opposing flow (heated downflow), where buoyancy slows the fluid at the wall.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Coolant `film` properties. See in :func:`~.wall_heat_transfer_coeff`</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Coolant mass flow</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Flow area</span>
+<span class="sd">    T_cool: Celsius</span>
+<span class="sd">        Coolant bulk temperature</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperature</span>
+<span class="sd">    re_bounds: tuple[Value, Value]</span>
+<span class="sd">        Boundaries depicting transition between laminar, interim, and turbulent regimes.</span>
+<span class="sd">    coolant_funcs: LiquidFuncs</span>
+<span class="sd">        Coolant properties functions.</span>
+<span class="sd">    Lh: Meter</span>
+<span class="sd">        Heated length, used for the Graetz-number stagnation handover (and passed on</span>
+<span class="sd">        to the ``natural`` function).</span>
+<span class="sd">    gz_band: tuple[float, float]</span>
+<span class="sd">        Graetz-number band over which the composition hands over to the pure</span>
+<span class="sd">        ``natural`` function as the through-flow vanishes. The default engages only</span>
+<span class="sd">        at genuine stagnation scale (Pe below ~0.1·Lh/Dh); every circulating steady</span>
+<span class="sd">        state sits far above it.</span>
+<span class="sd">    laminar: SinglePhaseLiquidHTCExArgs</span>
+<span class="sd">        Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.</span>
+<span class="sd">    turbulent: SinglePhaseLiquidHTCExArgs</span>
+<span class="sd">        Turbulent heat transfer coefficient</span>
+<span class="sd">    natural: SinglePhaseLiquidHTCExArgs</span>
+<span class="sd">        Natural convection heat transfer coefficient, evaluated with bulk properties.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    h: WPerM2K</span>
+<span class="sd">        Heat transfer coefficient</span>
+<span class="sd">    """</span>
+    <span class="n">re_bulk</span> <span class="o">=</span> <span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="p">,</span> <span class="n">A</span><span class="p">,</span> <span class="n">Dh</span><span class="p">,</span> <span class="n">coolant_funcs</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T_cool</span><span class="p">))</span>
+
+    <span class="n">lam</span><span class="p">,</span> <span class="n">inter</span><span class="p">,</span> <span class="n">turb</span> <span class="o">=</span> <span class="n">flow_regimes</span><span class="p">(</span><span class="n">re_bulk</span><span class="p">,</span> <span class="n">re_bounds</span><span class="p">)</span>
+
+    <span class="n">inp</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">coolant</span><span class="o">=</span><span class="n">coolant</span><span class="p">,</span>
+            <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
+            <span class="n">Dh</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span>
+            <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span>
+            <span class="n">T_cool</span><span class="o">=</span><span class="n">T_cool</span><span class="p">,</span>
+            <span class="n">T_wall</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
+            <span class="n">coolant_funcs</span><span class="o">=</span><span class="n">coolant_funcs</span><span class="p">,</span>
+            <span class="n">Lh</span><span class="o">=</span><span class="n">Lh</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="o">|</span> <span class="n">kwargs</span>
+    <span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T_cool</span><span class="p">))</span>
+
+    <span class="n">bulk</span> <span class="o">=</span> <span class="n">coolant_funcs</span><span class="o">.</span><span class="n">to_properties</span><span class="p">(</span><span class="n">T_cool</span><span class="p">)</span>
+    <span class="n">h_turb</span> <span class="o">=</span> <span class="n">turbulent</span><span class="p">(</span><span class="o">**</span><span class="n">inp</span><span class="p">)</span>
+    <span class="n">h</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_turb</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">lam</span> <span class="o">+</span> <span class="n">inter</span><span class="p">):</span>
+        <span class="n">h_lam</span> <span class="o">=</span> <span class="n">laminar</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">(</span><span class="n">coolant</span><span class="o">=</span><span class="n">bulk</span><span class="p">)))</span>
+        <span class="n">h</span><span class="p">[</span><span class="n">inter</span><span class="p">]</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span><span class="o">*</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">h_lam</span><span class="p">,</span> <span class="n">y2</span><span class="o">=</span><span class="n">h_turb</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">re_bulk</span><span class="p">)[</span><span class="n">inter</span><span class="p">]</span>
+        <span class="n">h</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_lam</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span>
+
+    <span class="n">h_nat</span> <span class="o">=</span> <span class="n">natural</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">(</span><span class="n">coolant</span><span class="o">=</span><span class="n">bulk</span><span class="p">)))</span>
+    <span class="c1"># Scoped: extreme solver iterates drive inf/0*inf through the cube norm and blend; the NaN/inf result is the caller's rejection signal, not a healthy-path event.</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">over</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cbrt</span><span class="p">(</span><span class="n">h</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">h_nat</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">pe</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">re_bulk</span><span class="p">)</span> <span class="o">*</span> <span class="n">bulk</span><span class="o">.</span><span class="n">viscosity</span> <span class="o">*</span> <span class="n">bulk</span><span class="o">.</span><span class="n">specific_heat</span> <span class="o">/</span> <span class="n">bulk</span><span class="o">.</span><span class="n">conductivity</span>
+        <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>  <span class="c1"># log10(0) -&gt; -inf -&gt; weight 0 at true stagnation</span>
+            <span class="n">w_flow</span> <span class="o">=</span> <span class="n">smooth_step</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">pe</span> <span class="o">*</span> <span class="n">Dh</span> <span class="o">/</span> <span class="n">Lh</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">gz_band</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">gz_band</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="k">return</span> <span class="n">w_flow</span> <span class="o">*</span> <span class="n">h</span> <span class="o">+</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">w_flow</span><span class="p">)</span> <span class="o">*</span> <span class="n">h_nat</span></div>
+
+
+
+<div class="viewcode-block" id="maximal_h_spl">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.single_phase.maximal_h_spl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">maximal_h_spl</span><span class="p">(</span>
+    <span class="n">hs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SinglePhaseLiquidHTCExArgs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">Elenbaas_h_spl</span><span class="p">,</span>
+        <span class="n">Dittus_Boelter_h_spl</span><span class="p">,</span>
+        <span class="n">developing_laminar_h_spl</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SinglePhaseLiquidHTCExArgs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates a new SinglePhaseLiquidHTCExArgs function, which returns the maximal value out of the given functions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    hs: Sequence[SinglePhaseLiquidHTCExArgs]</span>
+<span class="sd">        Functions to evaluate</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    SinglePhaseLiquidHTCExArgs</span>
+<span class="sd">        A SPL HTC function with maximal values</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_max_h</span><span class="p">(</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+        <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+        <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span>
+        <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">coolant_funcs</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">,</span>
+            <span class="p">(</span>
+                <span class="n">h</span><span class="p">(</span>
+                    <span class="n">coolant</span><span class="o">=</span><span class="n">coolant</span><span class="p">,</span>
+                    <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
+                    <span class="n">Dh</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span>
+                    <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span>
+                    <span class="n">T_cool</span><span class="o">=</span><span class="n">T_cool</span><span class="p">,</span>
+                    <span class="n">T_wall</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
+                    <span class="n">coolant_funcs</span><span class="o">=</span><span class="n">coolant_funcs</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">hs</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_max_h</span></div>
+
+
+
+<span class="n">_SPL</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"natural"</span><span class="p">:</span> <span class="n">Elenbaas_h_spl</span><span class="p">,</span>
+    <span class="s2">"laminar"</span><span class="p">:</span> <span class="n">developing_laminar_h_spl</span><span class="p">,</span>
+    <span class="s2">"laminar_constant_nu"</span><span class="p">:</span> <span class="n">constant_Nusselt_h_spl</span><span class="p">,</span>
+    <span class="s2">"laminar_developed"</span><span class="p">:</span> <span class="n">fully_developed_laminar_h_spl</span><span class="p">,</span>
+    <span class="s2">"turbulent"</span><span class="p">:</span> <span class="n">Dittus_Boelter_h_spl</span><span class="p">,</span>
+    <span class="s2">"regime_dependent"</span><span class="p">:</span> <span class="n">regime_dependent_h_spl</span><span class="p">,</span>
+    <span class="s2">"maximal"</span><span class="p">:</span> <span class="n">maximal_h_spl</span><span class="p">(),</span>
+<span class="p">}</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SPLMethod</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">NATURAL</span> <span class="o">=</span> <span class="s2">"natural"</span>
+    <span class="n">LAMINAR</span> <span class="o">=</span> <span class="s2">"laminar"</span>
+    <span class="n">LAMINAR_CONSTANT_NU</span> <span class="o">=</span> <span class="s2">"laminar_constant_nu"</span>
+    <span class="n">LAMINAR_DEVELOPED</span> <span class="o">=</span> <span class="s2">"laminar_developed"</span>
+    <span class="n">TURBULENT</span> <span class="o">=</span> <span class="s2">"turbulent"</span>
+    <span class="n">REGIME_DEPENDENT</span> <span class="o">=</span> <span class="s2">"regime_dependent"</span>
+    <span class="n">MAXIMAL</span> <span class="o">=</span> <span class="s2">"maximal"</span>
+
+
+<div class="viewcode-block" id="spl_htc">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.single_phase.spl_htc">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">spl_htc</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">SPLMethod</span>
+    <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span>
+        <span class="s2">"natural"</span><span class="p">,</span>
+        <span class="s2">"laminar"</span><span class="p">,</span>
+        <span class="s2">"laminar_constant_nu"</span><span class="p">,</span>
+        <span class="s2">"laminar_developed"</span><span class="p">,</span>
+        <span class="s2">"turbulent"</span><span class="p">,</span>
+        <span class="s2">"regime_dependent"</span><span class="p">,</span>
+        <span class="s2">"maximal"</span><span class="p">,</span>
+    <span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SinglePhaseLiquidHTCExArgs</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Create a Single Phase Liquid Heat Transfer Coefficient function chosen from the</span>
+<span class="sd">    list below with `almost` uniform signatures.</span>
+<span class="sd">    The main usage of this function is as input for :func:`~.wall_heat_transfer_coeff`.</span>
+
+<span class="sd">    Available functions:</span>
+
+<span class="sd">    .. list-table::</span>
+<span class="sd">        :widths: 20, 80</span>
+
+<span class="sd">        * - **regime_dependent**</span>
+<span class="sd">          - :func:`regime_dependent_h_spl`: forced part interpolated on the</span>
+<span class="sd">            :func:`~.Re` No. over ``re_bounds``, natural part added by Churchill</span>
+<span class="sd">            cube-norm superposition, with a Graetz-number handover to the pure</span>
+<span class="sd">            natural function at stagnation. Requires ``Lh``.</span>
+<span class="sd">        * - **laminar**</span>
+<span class="sd">          - :func:`~.laminar_h_spl`. Requires the ``aspect_ratio = channel_depth / channel_width`` parameter.</span>
+<span class="sd">        * - **laminar_constant_nu**</span>
+<span class="sd">          - :func:`~.laminar_h_spl`.</span>
+<span class="sd">        * - **laminar_developed**</span>
+<span class="sd">          - :func:`~.laminar_developed`.</span>
+<span class="sd">        * - **turbulent**</span>
+<span class="sd">          - :func:`~.Dittus_Boelter_h_spl` which employs :func:`~.Dittus_Boelter`.</span>
+<span class="sd">        * - **natural**</span>
+<span class="sd">          - :func:`~.Elenbaas_h_spl`. Requires the ``Lh = heated_length`` parameter.</span>
+<span class="sd">        * - **maximal**</span>
+<span class="sd">          - Computes the natural, laminar and turbulent HTCs and selects the highest at each cell.</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: SPLMethod | Literal["natural", "laminar", "turbulent", "regime_dependent", "maximal"]</span>
+<span class="sd">        Method name</span>
+<span class="sd">    kwargs: Dict</span>
+<span class="sd">        Options to pass onto the given method</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    SinglePhaseLiquidHTCExArgs</span>
+<span class="sd">        Single Phase Liquid Heat Transfer Coefficient function</span>
+<span class="sd">    """</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">SPLMethod</span><span class="p">)</span> <span class="k">else</span> <span class="n">name</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">SinglePhaseLiquidHTCExArgs</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">_SPL</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="n">f</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">_SPL</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="vm">__doc__</span>
+    <span class="k">return</span> <span class="n">f</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

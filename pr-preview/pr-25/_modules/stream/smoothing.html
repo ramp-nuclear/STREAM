@@ -1,0 +1,242 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.smoothing &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.smoothing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.smoothing</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Smooth (continuously differentiable or C-infinity) primitives with explicit, physically scaled widths.</span>
+
+<span class="sd">These primitives replace hard sign branches and zero-flow divisions that make</span>
+<span class="sd">``F(y, t)`` non-smooth on surfaces a transient must cross, such as</span>
+<span class="sd">``mdot = 0`` at a junction or ``Gr/Re**2 = 1`` in a channel cell.</span>
+
+<span class="sd">Widths are always arguments; functions here never read module globals inside</span>
+<span class="sd">jitted code.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">KgPerS</span>
+
+<span class="n">DEFAULT_MDOT_EPS</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">=</span> <span class="mf">1e-3</span>
+
+
+<div class="viewcode-block" id="smooth_abs">
+<a class="viewcode-back" href="../../utility_packages.html#stream.smoothing.smooth_abs">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smooth_abs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""C-infinity absolute value :math:`\sqrt{x^2 + \varepsilon^2}`.</span>
+
+<span class="sd">    Equals ``eps`` at ``x = 0``, is ``&gt;= |x|`` and ``&lt;= |x| + eps`` everywhere.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; smooth_abs(0.0, 1e-3)</span>
+<span class="sd">    0.001</span>
+<span class="sd">    &gt;&gt;&gt; float(round(smooth_abs(3.0, 4.0), 10))</span>
+<span class="sd">    5.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="o">+</span> <span class="n">eps</span> <span class="o">*</span> <span class="n">eps</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="smooth_sign">
+<a class="viewcode-back" href="../../utility_packages.html#stream.smoothing.smooth_sign">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smooth_sign</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""C-infinity sign :math:`x / \sqrt{x^2 + \varepsilon^2}`.</span>
+
+<span class="sd">    Slope ``1/eps`` at the origin, tends to ``+-1`` for ``|x| &gt;&gt; eps``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; smooth_sign(0.0, 1e-3)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; float(round(smooth_sign(1e6, 1e-3), 9))</span>
+<span class="sd">    1.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">/</span> <span class="n">smooth_abs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="soft_pos">
+<a class="viewcode-back" href="../../utility_packages.html#stream.smoothing.soft_pos">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">soft_pos</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Strictly positive C-infinity positive-part</span>
+<span class="sd">    :math:`\tfrac12 (x + \sqrt{x^2 + \varepsilon^2})`.</span>
+
+<span class="sd">    ``soft_pos(0) = eps/2``; ``&gt; 0`` everywhere (including ``x &lt;= -eps``, where</span>
+<span class="sd">    it decays as ``eps**2 / (4|x|)``); tends to ``x`` for ``x &gt;&gt; eps``; its</span>
+<span class="sd">    derivative lies in ``(0, 1)``.</span>
+
+<span class="sd">    The ``x &lt; 0`` branch uses the algebraically-identical, cancellation-free</span>
+<span class="sd">    form ``eps**2 / (sqrt(x**2 + eps**2) - x)``: the direct ``x + sqrt(...)``</span>
+<span class="sd">    underflows to exactly ``0`` for large negative ``x`` (e.g. ``x = -1e6``),</span>
+<span class="sd">    which would produce a zero denominator when the result is used as a mixing</span>
+<span class="sd">    weight. The guarded denominator</span>
+<span class="sd">    ``sqrt(x**2 + eps**2) + |x|`` equals ``sqrt(...) - x`` on that branch and is</span>
+<span class="sd">    always ``&gt;= eps &gt; 0``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; soft_pos(0.0, 1e-3)</span>
+<span class="sd">    0.0005</span>
+<span class="sd">    &gt;&gt;&gt; float(round(soft_pos(1000.0, 1e-3), 6))</span>
+<span class="sd">    1000.0</span>
+<span class="sd">    &gt;&gt;&gt; soft_pos(-1e6, 1e-3) &gt; 0.0</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">smooth_abs</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">x</span> <span class="o">+</span> <span class="n">s</span><span class="p">,</span> <span class="n">eps</span> <span class="o">*</span> <span class="n">eps</span> <span class="o">/</span> <span class="p">(</span><span class="n">s</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span></div>
+
+
+
+<div class="viewcode-block" id="smooth_step">
+<a class="viewcode-back" href="../../utility_packages.html#stream.smoothing.smooth_step">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smooth_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x0</span><span class="p">,</span> <span class="n">x1</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Cubic smoothstep: ``0`` for ``x &lt;= x0``, ``1`` for ``x &gt;= x1``, and</span>
+<span class="sd">    :math:`s^2 (3 - 2 s)` between, with :math:`s = (x - x_0)/(x_1 - x_0)`.</span>
+
+<span class="sd">    Continuously differentiable with zero slope at both ends; compact support (exactly 0 / 1 outside).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; smooth_step(-1.0, 0.0, 1.0)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; smooth_step(0.5, 0.0, 1.0)</span>
+<span class="sd">    0.5</span>
+<span class="sd">    &gt;&gt;&gt; smooth_step(2.0, 0.0, 1.0)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    """</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">x1</span> <span class="o">-</span> <span class="n">x0</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">s</span> <span class="o">*</span> <span class="n">s</span> <span class="o">*</span> <span class="p">(</span><span class="mf">3.0</span> <span class="o">-</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">s</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="smooth_pos_weight">
+<a class="viewcode-back" href="../../utility_packages.html#stream.smoothing.smooth_pos_weight">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">smooth_pos_weight</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">eps</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Continuously differentiable direction weight in ``[0, 1]``: ``smooth_step(x, -eps, +eps)``.</span>
+
+<span class="sd">    Exactly 0 / 1 outside the band (compact support); ``1/2`` at ``x = 0``;</span>
+<span class="sd">    maximum slope ``0.75 / eps``.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; smooth_pos_weight(-1.0, 1e-3)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; smooth_pos_weight(0.0, 1e-3)</span>
+<span class="sd">    0.5</span>
+<span class="sd">    &gt;&gt;&gt; smooth_pos_weight(1.0, 1e-3)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">smooth_step</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">eps</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
