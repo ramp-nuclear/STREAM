@@ -19,8 +19,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js?v=97d8d0d7"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -100,9 +100,9 @@
 \[F_i = k_{i, l} \left[L_{i, l} - (x_i - x_{i - 1})\right] - k_{i, r} \left[L_{i, r} - (x_{i + 1} - x_i)\right]\]</div>
 <p>Therefore, a reasonable approach in building a calculation is implementing the following equations:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align} \frac{dx}{dt} &amp;= v \\
+\[\begin{split}\begin{aligned} \frac{dx}{dt} &amp;= v \\
 \frac{dv}{dt} &amp;= a \\
-F &amp;= ma \end{align}\end{split}\]</div>
+F &amp;= ma \end{aligned}\end{split}\]</div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>

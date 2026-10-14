@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js?v=97d8d0d7"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -312,11 +312,11 @@ from the smallest radius (0 for a cylinder). The integration is the same (since 
 <span class="math notranslate nohighlight">\(\partial_r\)</span> and <span class="math notranslate nohighlight">\(\partial_z\)</span>, respectively), but the volumes and cell areas
 are <span class="math notranslate nohighlight">\(r\)</span>-dependent. Specifically:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
+\[\begin{split}\begin{aligned}
 A_{i, j-1/2} &amp;= 2\pi r_{j-1/2}\Delta z_i \\
 A_{i-1/2, j} = A_{i+1/2, j} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2) \\
 V_{ij} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2)\Delta z_i \\
-\end{align}\end{split}\]</div>
+\end{aligned}\end{split}\]</div>
 <p>The thermal resistance is then computed in the same manner using the distances
 between cell centers <span class="math notranslate nohighlight">\(\Delta r, \Delta z\)</span>.</p>
 </section>
