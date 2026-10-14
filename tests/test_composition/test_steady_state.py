@@ -27,17 +27,21 @@ from stream.composition.steady_state import (
     _side_powers,
     _walk_temperatures,
     decompose,
+    guess_steady_state,
     seed_steady_state,
     solve_block,
 )
 from stream.composition.subsystems import MissingFlowError, symmetric_plate_steady_state
 from stream.pipe_geometry import EffectivePipe
+from stream.solvers import AlgRuntimeError
 from stream.state import State
 from stream.substances import light_water
 from stream.units import mm, pcm
 from stream.utilities import identity
 
 from .conftest import MTR_fuel_and_channel
+from .test_natural_convection import NC_MDOT
+from .test_natural_convection import _build as _nc_build
 
 TIN, P_REF, POWER, MDOT = 40.0, 2e5, 1000.0, 0.5
 
@@ -540,3 +544,86 @@ def test_seed_kinetics_from_powers():
     seed = seed_steady_state(full, fg.kirchhoff, powers={r["fuel"]: POWER})
     assert seed[r["pk"].name]["power"] == POWER
     full.load(seed)
+
+
+def _solve_without_globalization(agr, guess):
+    return agr.solve_steady(guess, globalize=False)
+
+
+def test_guess_refine_false_returns_the_seed():
+    agr, fg, _ = _forced_plate_loop()
+    seed = seed_steady_state(agr, fg.kirchhoff)
+    guess = guess_steady_state(agr, fg.kirchhoff, refine=False)
+    assert np.allclose(agr.load(seed), agr.load(guess))
+
+
+def test_guess_forced_plate_loop_converges_without_globalization():
+    agr, fg, r = _forced_plate_loop()
+    guess = guess_steady_state(agr, fg.kirchhoff)
+    y = _solve_without_globalization(agr, guess)
+    st = agr.save(y)
+    cp = light_water.specific_heat(TIN)
+    assert st[r["channel"].name]["T_cool"][-1] == pytest.approx(TIN + POWER / (MDOT * cp), rel=1e-2)
+    assert np.linalg.norm(agr.compute(agr.load(guess))) < np.linalg.norm(agr.compute(agr.load(seed_steady_state(agr, fg.kirchhoff))))
+
+
+def test_guess_refines_a_blocks_own_func_at_time_t():
+    agr, fg, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
+    guess = guess_steady_state(agr, fg.kirchhoff, t=1.0)
+    cp = light_water.specific_heat(TIN)
+    rise = guess[r["channel"].name]["T_cool"][-1] - TIN
+    assert rise == pytest.approx(2 * POWER / (MDOT * cp), rel=1e-2)
+
+
+def test_guess_chain_loop_converges_without_globalization():
+    agr, fg, _ = _chain_loop()
+    y = _solve_without_globalization(agr, guess_steady_state(agr, fg.kirchhoff))
+    assert np.linalg.norm(agr.compute(y)) < 1e-6
+
+
+@pytest.mark.slow
+def test_guess_natural_convection_loop_converges_without_globalization():
+    agr, fg, channel, fuel, pump = _nc_build(0.0, "regime_dependent")
+    guess = guess_steady_state(agr, fg.kirchhoff, flows={channel: -0.01})
+    y = _solve_without_globalization(agr, guess)
+    K = fg.kirchhoff
+    mdot = float(np.asarray(y)[agr.sections[K]][K.variables_by_type["mdot"]][0])
+    assert mdot == pytest.approx(NC_MDOT, abs=1e-4)
+
+
+def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
+    import stream.composition.steady_state as module
+
+    agr, fg, r = _forced_plate_loop()
+    seed = seed_steady_state(agr, fg.kirchhoff)
+    real = module.solve_block
+
+    def failing(agr_, nodes, state, t=0.0, **options):
+        if fg.kirchhoff in set(nodes):
+            raise AlgRuntimeError("hydraulic block refused")
+        return real(agr_, nodes, state, t=t, **options)
+
+    monkeypatch.setattr(module, "solve_block", failing)
+    with pytest.warns(UserWarning, match="hydraulic"):
+        guess = guess_steady_state(agr, fg.kirchhoff)
+    k = fg.kirchhoff
+    assert guess[k.name][k.component_edge(r["channel"])] == seed[k.name][k.component_edge(r["channel"])]
+    assert not np.allclose(guess[r["fuel"].name]["T"], seed[r["fuel"].name]["T"])
+    agr.load(guess)
+
+
+def test_guess_rejects_zero_sweeps():
+    agr, fg, _ = _forced_plate_loop()
+    with pytest.raises(ValueError):
+        guess_steady_state(agr, fg.kirchhoff, sweeps=0)
+
+
+def test_guess_parallel_core_needs_only_the_pump_flow():
+    agr, fg, r = _parallel_core()
+    k = fg.kirchhoff
+    seed = seed_steady_state(agr, k)
+    assert seed[k.name][k.component_edge(r["c1"])] == pytest.approx(seed[k.name][k.component_edge(r["c2"])])
+    guess = guess_steady_state(agr, k)
+    st = agr.save(_solve_without_globalization(agr, guess))
+    assert st[k.name][k.component_edge(r["c2"])] > st[k.name][k.component_edge(r["c1"])]
+    assert st[k.name][k.component_edge(r["c1"])] + st[k.name][k.component_edge(r["c2"])] == pytest.approx(2 * MDOT)

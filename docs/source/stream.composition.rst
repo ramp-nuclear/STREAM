@@ -33,6 +33,14 @@ Subsystems
    :show-inheritance:
 
 
+Steady-state guesses
+--------------------
+.. automodule:: stream.composition.steady_state
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 Calculation Constructors
 ------------------------
 .. automodule:: stream.composition.constructors

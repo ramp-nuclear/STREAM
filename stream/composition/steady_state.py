@@ -1,4 +1,36 @@
-"""Steady-state initial guesses for a flow network wall-coupled to fuel plates."""
+"""Steady-state initial guesses for a flow network wall-coupled to fuel plates.
+
+One call, :func:`guess_steady_state`, produces a guess for the whole system that
+:meth:`~stream.aggregator.Aggregator.solve_steady` can start from. It works in three
+stages:
+
+1. :func:`decompose` splits the aggregator into blocks: the hydraulic block (the
+   :class:`~stream.calculations.Kirchhoff` and everything on its flow graph), one
+   thermal cluster per group of wall-coupled :class:`~stream.calculations.Fuel` plates
+   and :class:`~stream.calculations.ChannelAndContacts` channels, and the point-kinetics
+   nodes that supply fuel power.
+2. :func:`seed_steady_state` seeds every block in closed form, without solving: flows
+   from what is known and the current law, temperatures by walking the network in flow
+   direction with each heated channel adding its power, pressures from
+   :func:`~stream.composition.subsystems.guess_hydraulic_steady_state`, walls and fuel
+   interiors from the local heat flux, and kinetics from
+   :func:`~stream.composition.subsystems.point_kinetics_steady_state`.
+3. The seed is refined by solving one block at a time with the rest of the system
+   frozen (:func:`solve_block`): the thermal clusters, then the hydraulics, a few times
+   over.
+
+The blocks are read from the aggregator's own wiring, so any plate layout made with the
+helpers in :mod:`stream.composition.mtr_geometry`, or by hand with the same variable
+names, is handled the same way.
+
+Use this module for a system that couples a flow network to heated plates, where the
+flows set the temperatures and the temperatures feed back into the pressure drops.
+:meth:`~stream.composition.cycle.FlowGraph.guess_steady_state` covers the hydraulic part
+alone and needs every flow and one temperature from the caller; the helpers in
+:mod:`stream.composition.subsystems` cover a single plate or a single kinetics node.
+:func:`guess_steady_state` combines them, completes the flows it is not given, and
+reconciles the blocks with each other.
+"""
 
 import warnings
 from collections.abc import Iterable, Mapping
@@ -30,6 +62,7 @@ from stream.composition.subsystems import (
     point_kinetics_steady_state,
 )
 from stream.smoothing import soft_pos
+from stream.solvers import AlgRuntimeError
 from stream.state import DictState, State
 from stream.units import Celsius, KgPerS, Second, Watt
 
@@ -37,6 +70,7 @@ __all__ = [
     "Blocks",
     "MissingPowerError",
     "decompose",
+    "guess_steady_state",
     "seed_steady_state",
     "solve_block",
 ]
@@ -509,3 +543,84 @@ def seed_steady_state(
             f"The seed does not recognise {names} and leaves them out; merge their values through overrides."
         )
     return State.merge(hydraulic, *clusters, _kinetics_seed(agr, blocks, fuel_powers, t), overrides or {})
+
+
+def guess_steady_state(
+    agr: Aggregator,
+    k: Kirchhoff,
+    *,
+    flows: Mapping[Calculation | str, KgPerS] | None = None,
+    temperature: Celsius | None = None,
+    powers: Mapping[Calculation | str, Watt] | None = None,
+    overrides: DictState | None = None,
+    t: Second = 0.0,
+    strategy: HydraulicStrategyMap | None = None,
+    refine: bool = True,
+    sweeps: int = 2,
+    **solver_options,
+) -> State:
+    """A steady-state guess for a flow network wall-coupled to fuel plates.
+
+    Seeds with :func:`seed_steady_state`, then, unless ``refine`` is off, sweeps the
+    system block by block with :func:`solve_block`: every thermal cluster with its
+    hydraulics frozen, then the hydraulic block with its walls frozen, ``sweeps``
+    times, and the clusters once more so the returned walls match the returned flows.
+    A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its seed
+    values and is named in a warning.
+
+    Parameters
+    ----------
+    agr: Aggregator
+        The full system.
+    k: Kirchhoff
+        The flow solver that sits in ``agr``.
+    flows, temperature, powers, overrides, t, strategy:
+        As in :func:`seed_steady_state`.
+    refine: bool
+        Sweep the blocks after seeding. Default ``True``.
+    sweeps: int
+        Number of cluster-then-hydraulic sweeps. One is enough for forced flow.
+    solver_options:
+        Forwarded to every block's :meth:`~stream.aggregator.Aggregator.solve_steady`.
+
+    Returns
+    -------
+    State
+        Loadable into ``agr`` and ready for :meth:`~stream.aggregator.Aggregator.solve_steady`.
+
+    Raises
+    ------
+    ValueError
+        If ``sweeps`` is less than one, or as in :func:`seed_steady_state`.
+    ~stream.composition.subsystems.MissingFlowError
+        A heated channel whose flow nothing fixes.
+    MissingPowerError
+        A fuel whose steady power is unknown.
+    """
+    if sweeps < 1:
+        raise ValueError(f"sweeps must be at least 1, was {sweeps}")
+    blocks = decompose(agr, k)
+    state = seed_steady_state(
+        agr, k, flows=flows, temperature=temperature, powers=powers, overrides=overrides, t=t, strategy=strategy
+    )
+    if not refine:
+        return state
+    agr.load(state)
+
+    def attempt(nodes, label: str) -> None:
+        nonlocal state
+        try:
+            state = State.merge(state, solve_block(agr, nodes, state, t=t, **solver_options))
+        except AlgRuntimeError as err:
+            names = sorted(getattr(n, "name", str(n)) for n in nodes)
+            warnings.warn(
+                f"The {label} block {names} did not solve from the seed and keeps its seed values: {err}"
+            )
+
+    for _ in range(sweeps):
+        for i, cluster in enumerate(blocks.thermal):
+            attempt(cluster, f"thermal cluster {i}")
+        attempt(blocks.hydraulic, "hydraulic")
+    for i, cluster in enumerate(blocks.thermal):
+        attempt(cluster, f"thermal cluster {i}")
+    return state
