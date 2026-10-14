@@ -1,0 +1,688 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="One Pump, a Stuck Flapper, and How Far to Trust the Numbers" href="LOFAVariations.html" />
+    <link rel="prev" title="A Pool Reactor for Loss-of-Flow Analysis" href="LOFAPoolReactor.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="LOFAPoolReactor.html">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Running-the-hour">Running the hour</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-flywheel-tail">The flywheel tail</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-core-reverses">The core reverses</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Power-and-reactivity">Power and reactivity</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-hot-plate">The hot plate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Does-the-energy-add-up">Does the energy add up</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-natural-circulation-loop">The natural-circulation loop</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LOFABothPumpsTrip.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Both-Pumps-Trip:-Coastdown,-Trip,-Flapper,-Natural-Convection">
+<h1>Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection<a class="headerlink" href="#Both-Pumps-Trip:-Coastdown,-Trip,-Flapper,-Natural-Convection" title="Link to this heading"></a></h1>
+<p>This page takes the pool reactor of the previous example through the loss of both pumps and follows it for an hour. The sequence it should produce is:</p>
+<ol class="arabic simple">
+<li><p>Both pumps lose their head at 10 s, over half a second.</p></li>
+<li><p>The flow decays slowly, carried by the two flywheels.</p></li>
+<li><p>The low-flow trip fires when the flow falls to 85 % of nominal, and the rods drop half a second later.</p></li>
+<li><p>The flapper, which joins the plenum below the core to the bottom of the pool beside it, opens when the flow falls to 30 % of nominal, and the pool becomes a path for the flow.</p></li>
+<li><p>The heated groups reverse one after the other, the hottest first, and the core flow turns upward.</p></li>
+<li><p>The flow in the pump legs dies out, and their check valves hold back all but a small leak.</p></li>
+<li><p>The loop settles into natural circulation: up through the core, down through the pool, back through the flapper.</p></li>
+</ol>
+<p><img alt="The loop in four stages: forced flow, coastdown and trip, the reversal window, natural circulation" src="_images/lofa-stages.svg" /></p>
+<p><em>The four stages of the hour; arrows show flow direction only.</em></p>
+<p>Each step below is checked against what the solution shows, and the hour is closed with an energy balance and a pressure balance around the natural-circulation loop.</p>
+<section id="Running-the-hour">
+<h2>Running the hour<a class="headerlink" href="#Running-the-hour" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">both_pumps</span></code> solves the operating point of the previous page, switches both pumps from imposed flow to imposed head at their solved heads, ramps the heads to zero and integrates for an hour at 1801 output times, one every 2 s. It returns the solution and a <code class="docutils literal notranslate"><span class="pre">Record</span></code> of what happened: the status, the times of the events, the peak coolant temperature and its margin to saturation, and the state of the loop at the end.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORE</span><span class="p">,</span> <span class="n">HEATED</span><span class="p">,</span> <span class="n">Params</span><span class="p">,</span> <span class="n">both_pumps</span><span class="p">,</span> <span class="n">energy_budget</span><span class="p">,</span> <span class="n">loop_pressure_budget</span><span class="p">,</span> <span class="n">operating_point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">BETA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.scenarios</span><span class="w"> </span><span class="kn">import</span> <span class="n">flows</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">g</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="n">Params</span><span class="p">()</span>
+<span class="n">sol</span><span class="p">,</span> <span class="n">rec</span> <span class="o">=</span> <span class="n">both_pumps</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"status:                     </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"reactor trip:               </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_trip</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rods start moving:          </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_rods</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flapper opens:              </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_open</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"check valves shut, A and B: </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_valve_A</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s, </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_valve_B</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hot group reverses:         </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_rev_hot</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"normal group reverses:      </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_rev_normal</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"low group reverses:         </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_rev_low</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"peak coolant temperature:   </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">peak_max</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"margin to saturation:       </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">margin</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flapper flow at the hour:   </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">final_flapper</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pool temperature rise:      </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">pool_rise</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+status:                     completed
+reactor trip:               12.49 s
+rods start moving:          12.99 s
+flapper opens:              38.89 s
+check valves shut, A and B: 488 s, 488 s
+hot group reverses:         192 s
+normal group reverses:      236 s
+low group reverses:         270 s
+peak coolant temperature:   101.14 °C
+margin to saturation:       15.70 K
+flapper flow at the hour:   1.51 kg/s
+pool temperature rise:      0.41 K
+</pre></div></div>
+</div>
+<p>The run reaches the hour. The flow falls to the trip setpoint at about 12.5 s, about two and a half seconds after the pumps lose their head, and the rods start moving half a second later. The flapper opens at about 39 s. The three heated groups reverse between about 192 and 270 s, hot plate first, low plates last, and both pump legs count as shut at about 488 s.</p>
+<p>The trip and the flapper opening are events the solver locates in time. The reversal and valve times are not: they are the first output time at which the flow has crossed its threshold (a reversal is a per-plate flow below -0.001 kg/s, a shut valve a leg flow below 1 % of its nominal value), so they are known to the 2 s spacing of the output grid.</p>
+<p>The flows over the first two minutes show the first four steps. <code class="docutils literal notranslate"><span class="pre">flows</span></code> reads the flow of every edge of interest out of the solution; it needs the loop’s aggregator and Kirchhoff calculation, which <code class="docutils literal notranslate"><span class="pre">operating_point</span></code> rebuilds identically. The vertical lines mark the pumps tripping, the reactor trip and the flapper opening, and do so on every figure of this page.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">operating_point</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">)</span>
+<span class="n">df</span><span class="p">[</span><span class="s2">"core"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">)</span>
+<span class="n">events</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"pumps trip"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="p">,</span> <span class="s2">"reactor trip"</span><span class="p">:</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_trip</span><span class="p">,</span> <span class="s2">"flapper opens"</span><span class="p">:</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_open</span><span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">):</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="n">t</span><span class="p">),</span> <span class="n">style</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">events</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="p">[</span><span class="s2">"-"</span><span class="p">,</span> <span class="s2">"--"</span><span class="p">,</span> <span class="s2">":"</span><span class="p">]):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="n">style</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+
+
+<span class="n">i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">riser</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"trip"</span><span class="p">]</span><span class="o">.</span><span class="n">threshold</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">crossing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">refs</span><span class="p">[</span><span class="s2">"trip"</span><span class="p">]</span><span class="o">.</span><span class="n">threshold</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">riser</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]],</span> <span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"trip threshold:                     </span><span class="si">{</span><span class="n">refs</span><span class="p">[</span><span class="s1">'trip'</span><span class="p">]</span><span class="o">.</span><span class="n">threshold</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"riser flow crosses it, interpolated: </span><span class="si">{</span><span class="n">crossing</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"reactor trip, located by the solver: </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_trip</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="n">first</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="mi">120</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">first</span><span class="o">.</span><span class="n">riser</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"riser (both legs)"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">first</span><span class="o">.</span><span class="n">A</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"pump leg A"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">first</span><span class="o">.</span><span class="n">B</span><span class="p">,</span> <span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"pump leg B"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">first</span><span class="o">.</span><span class="n">core</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"core, all plates"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">first</span><span class="o">.</span><span class="n">flapper</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"flapper"</span><span class="p">)</span>
+<span class="n">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Mass flow [kg/s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+trip threshold:                     205.30 kg/s
+riser flow crosses it, interpolated: 12.54 s
+reactor trip, located by the solver: 12.49 s
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABothPumpsTrip_3_1.png" src="_images/LOFABothPumpsTrip_3_1.png" />
+</div>
+</div>
+<p>The trip watches the riser flow. On the output grid that flow is first below the threshold at the 14 s sample; interpolating linearly between that sample and the one before puts the crossing at about 12.54 s, about 0.05 s after the trip time the solver located, about 12.49 s. The interpolated time is the later one, as it must be: the coastdown curves upward between samples, so the straight line between them lies above it and reaches the threshold late.</p>
+<p>Until the flapper opens, the riser and the core carry the same water, so their curves coincide, and the two legs share it equally, so theirs coincide too. When the flapper opens, the pumps’ suction finds a second path, from the bottom of the pool beside the core straight into the plenum below it, and the core flow drops sharply while the riser flow continues smoothly: the flywheels see little change in the loop’s resistance, the core sees a new parallel path.</p>
+</section>
+<section id="The-flywheel-tail">
+<h2>The flywheel tail<a class="headerlink" href="#The-flywheel-tail" title="Link to this heading"></a></h2>
+<p>The coastdown example, <a class="reference internal" href="PCSCoastdown.html"><span class="doc">Primary Cooling System Coastdown</span></a>, derives what a flywheel does to a loop whose pump stops: with inertia <span class="math notranslate nohighlight">\(L\)</span> and a quadratic loss <span class="math notranslate nohighlight">\(k\dot m^2\)</span>, the flow decays as</p>
+<div class="math notranslate nohighlight">
+\[\dot m(t) = \frac{\dot m_0}{1 + \dot m_0 \alpha t}, \qquad \alpha = k / L.\]</div>
+<p>Here each leg has its own flywheel, so the formula applies leg by leg with <span class="math notranslate nohighlight">\(\dot m_0\)</span> the nominal leg flow. Before the trip the pump head <span class="math notranslate nohighlight">\(\Delta p\)</span> balances the loop’s loss at that flow, <span class="math notranslate nohighlight">\(k \dot m_0^2 = \Delta p\)</span>, which gives <span class="math notranslate nohighlight">\(\dot m_0 \alpha = \Delta p / (L \dot m_0)\)</span>: the flow halves after</p>
+<div class="math notranslate nohighlight">
+\[t_{1/2} = \frac{L \dot m_0}{\Delta p},\]</div>
+<p>counted from the pump trip. The record keeps that estimate, from the solved pump head and the flywheel’s inertia, as <code class="docutils literal notranslate"><span class="pre">t_half_hand</span></code>, and the first output time at which the riser flow is below half its initial value as <code class="docutils literal notranslate"><span class="pre">t_half</span></code>, counted from the start of the run. The estimate holds only while the loop is the one the pumps drove, so the comparison stops at the flapper opening.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">t_half_hand</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_half_hand</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"half-flow time, flywheel estimate: </span><span class="si">{</span><span class="n">t_half_hand</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"half-flow time, sampled:           </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">t_half</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="n">tail</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_open</span><span class="p">)]</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="p">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_open</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">hyperbola</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">riser</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="p">)</span> <span class="o">/</span> <span class="n">t_half_hand</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tail</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">tail</span><span class="o">.</span><span class="n">riser</span><span class="p">,</span> <span class="s2">"o"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"solved riser flow"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">hyperbola</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s2">"$\dot m_0 / (1 + (t - 10\,\mathrm</span><span class="si">{s}</span><span class="s2">) / t_{1/2})$"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">riser</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"half the initial flow"</span><span class="p">)</span>
+<span class="n">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Riser mass flow [kg/s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+half-flow time, flywheel estimate: 12.76 s
+half-flow time, sampled:           14.00 s
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABothPumpsTrip_5_1.png" src="_images/LOFABothPumpsTrip_5_1.png" />
+</div>
+</div>
+<p>The estimate gives about 12.8 s and the sampled time is about 14 s. The sampled time is the first output time past the half-flow point, so it can be up to 2 s late; the curve shows the agreement better than the two numbers: the solved flow follows the hyperbola from the trip to the flapper opening, with the small departures expected from what the estimate leaves out, the half-second ramp of the pump heads and the inertia of the water in the core, the pool and the decay tank.</p>
+</section>
+<section id="The-core-reverses">
+<h2>The core reverses<a class="headerlink" href="#The-core-reverses" title="Link to this heading"></a></h2>
+<p>Once the forced flow is weak, the heated plates feel their own buoyancy. Each group is a column of water warmer than the pool around it, so it pushes upward against the dying downward flow, and the hottest group per unit flow pushes hardest. The figure shows the flow of one plate of each group on a symmetric logarithmic axis, linear within 0.001 kg/s of zero, with each group’s reversal time marked by a dashed line in its colour. The time axis is linear over the first 10 s and logarithmic after.
+The bypass swings back and forth for about half a minute as the heated groups finish reversing; the cell after the figure runs the first 330 s again with an output every 0.1 s to resolve the start of that swing.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">colours</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">CORE</span><span class="p">,</span> <span class="p">[</span><span class="s2">"C3"</span><span class="p">,</span> <span class="s2">"C0"</span><span class="p">,</span> <span class="s2">"C2"</span><span class="p">,</span> <span class="s2">"C1"</span><span class="p">]))</span>
+<span class="n">reversals</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"hot"</span><span class="p">:</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_rev_hot</span><span class="p">,</span> <span class="s2">"normal"</span><span class="p">:</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_rev_normal</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">:</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_rev_low</span><span class="p">}</span>
+<span class="n">t_core</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"net core flow first upward at:    </span><span class="si">{</span><span class="n">t_core</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pump legs first backward at:      </span><span class="si">{</span><span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">riser</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"leg flow at the hour:             </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">final_leg_A</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="n">late</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="mf">620.0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="mf">680.0</span><span class="p">)]</span>
+<span class="n">rise</span> <span class="o">=</span> <span class="p">(</span><span class="n">late</span><span class="o">.</span><span class="n">bypass</span> <span class="o">-</span> <span class="n">late</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">late</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">late</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">t10</span><span class="p">,</span> <span class="n">t90</span> <span class="o">=</span> <span class="n">late</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">rise</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">late</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">rise</span> <span class="o">&gt;=</span> <span class="mf">0.9</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bypass, 10 % to 90 % of its change over 620 to 680 s: </span><span class="si">{</span><span class="n">t90</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">t10</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s, from </span><span class="si">{</span><span class="n">t10</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">t90</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="n">flips</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="mi">1</span><span class="p">:][</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">steps</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="mi">1</span><span class="p">:][</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">]</span>
+<span class="n">swing</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">flips</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+<span class="n">early</span><span class="p">,</span> <span class="n">later</span> <span class="o">=</span> <span class="n">flips</span><span class="p">[</span><span class="n">flips</span> <span class="o">&lt;=</span> <span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">flips</span><span class="p">[</span><span class="n">flips</span> <span class="o">&gt;</span> <span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bypass changes sign </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">early</span><span class="p">)</span><span class="si">}</span><span class="s2"> times from </span><span class="si">{</span><span class="n">early</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">early</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s, then </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">later</span><span class="p">)</span><span class="si">}</span><span class="s2"> times from </span><span class="si">{</span><span class="n">later</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">later</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"bypass changes by more than 0.001 kg/s between samples until </span><span class="si">{</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"from </span><span class="si">{</span><span class="n">flips</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">steps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s: bypass </span><span class="si">{</span><span class="n">swing</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">swing</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kg/s, hot plate </span><span class="si">{</span><span class="n">swing</span><span class="o">.</span><span class="n">hot</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">swing</span><span class="o">.</span><span class="n">hot</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="n">tail</span> <span class="o">=</span> <span class="n">df</span><span class="p">[(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="n">later</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="n">later</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"from </span><span class="si">{</span><span class="n">later</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">later</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s: bypass </span><span class="si">{</span><span class="n">tail</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">tail</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s, hot plate </span><span class="si">{</span><span class="n">tail</span><span class="o">.</span><span class="n">hot</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">tail</span><span class="o">.</span><span class="n">hot</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">df</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">colours</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> plate"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">reversals</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">colours</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">)</span>
+<span class="n">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">"symlog"</span><span class="p">,</span> <span class="n">linthresh</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"symlog"</span><span class="p">,</span> <span class="n">linthresh</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">(</span><span class="n">top</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Mass flow per plate [kg/s]</span><span class="se">\n</span><span class="s2">positive is downward"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">,</span> <span class="n">ncol</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+net core flow first upward at:    260 s
+pump legs first backward at:      626 s
+leg flow at the hour:             -0.045 kg/s
+bypass, 10 % to 90 % of its change over 620 to 680 s: 8 s, from 632 to 640 s
+bypass changes sign 13 times from 262 to 326 s, then 6 times from 1050 to 1162 s
+bypass changes by more than 0.001 kg/s between samples until 352 s
+from 262 to 352 s: bypass -0.028 to 0.017 kg/s, hot plate -0.005 to -0.003 kg/s
+from 1050 to 1162 s: bypass -0.0042 to 0.0007 kg/s, hot plate -0.0067 to -0.0066 kg/s
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABothPumpsTrip_7_1.png" src="_images/LOFABothPumpsTrip_7_1.png" />
+</div>
+</div>
+<p>The flows fall together until the flapper opens, then all four drop at once as the flapper takes part of the pumps’ suction. As the forced flow keeps weakening, the hot plate stands still and turns upward first, at about 192 s, while the rest of the core is still flowing down: for about a minute the core recirculates internally, water going down the normal, low and bypass channels and up the hot one. The normal plates follow at about 236 s, the net flow through the core turns upward at about 260
+s, and the low plates reverse last, at about 270 s. The heated groups reverse in the order of their power per unit flow, which is the buoyancy each has to push with. The bypass is unheated: what buoyancy it has comes from the hot water it takes in at the core top, and it does not settle the way the heated plates do. From about 262 s to about 300 s it swings between about -0.028 and 0.017 kg/s per channel, several times the hot plate’s flow at the time. At this run’s tolerance the 2 s grid shows
+more than that: 13 sign changes between about 262 and 326 s, changes from one sample to the next above 0.001 kg/s until about 352 s, later wiggles that the symmetric axis, linear near zero, makes look larger than they are, and a slow swing between about 1050 and 1162 s that crosses zero 6 more times. The cell below runs the first 1250 s again at a tenfold tighter tolerance. There the swing ends by about 292 s, after 7 sign changes, the sample-to-sample changes stay below 0.001 kg/s after about
+310 s, and from 400 s on the bypass carries a small upward flow, between about -0.0016 and -0.0002 kg/s, with no sign change: the later wiggles and the slow swing are gone. They are the solver’s error at the looser tolerance, a few thousandths of a kilogram per second, tens of times its absolute flow tolerance, not flow behaviour. The short run in the cell after it resolves what drives the swing.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sol_t</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">both_pumps</span><span class="p">(</span><span class="n">Params</span><span class="p">(),</span> <span class="n">t_end</span><span class="o">=</span><span class="mf">1250.0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">626</span><span class="p">,</span> <span class="n">atol_rel</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-5</span><span class="p">)</span>
+<span class="n">tight</span> <span class="o">=</span> <span class="n">flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol_t</span><span class="p">)</span>
+<span class="n">flips_t</span> <span class="o">=</span> <span class="n">tight</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="mi">1</span><span class="p">:][</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">tight</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">steps_t</span> <span class="o">=</span> <span class="n">tight</span><span class="o">.</span><span class="n">t</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()[</span><span class="mi">1</span><span class="p">:][</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">tight</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()))</span> <span class="o">&gt;</span> <span class="mf">1e-3</span><span class="p">]</span>
+<span class="n">settled</span> <span class="o">=</span> <span class="n">tight</span><span class="p">[</span><span class="n">tight</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="mf">400.0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"at 1e-5: bypass changes sign </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">flips_t</span><span class="p">)</span><span class="si">}</span><span class="s2"> times, from </span><span class="si">{</span><span class="n">flips_t</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">flips_t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"at 1e-5: bypass changes by more than 0.001 kg/s between samples until </span><span class="si">{</span><span class="n">steps_t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"at 1e-5, from 400 to 1250 s: bypass </span><span class="si">{</span><span class="n">settled</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">settled</span><span class="o">.</span><span class="n">bypass</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+at 1e-5: bypass changes sign 7 times, from 262 to 292 s
+at 1e-5: bypass changes by more than 0.001 kg/s between samples until 310 s
+at 1e-5, from 400 to 1250 s: bypass -0.0016 to -0.0002 kg/s
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sol_z</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">both_pumps</span><span class="p">(</span><span class="n">Params</span><span class="p">(),</span> <span class="n">t_end</span><span class="o">=</span><span class="mf">330.0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">3301</span><span class="p">)</span>
+<span class="n">fine</span> <span class="o">=</span> <span class="n">flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol_z</span><span class="p">)</span>
+<span class="n">window</span> <span class="o">=</span> <span class="p">(</span><span class="n">fine</span><span class="o">.</span><span class="n">t</span> <span class="o">&gt;=</span> <span class="mf">262.0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">fine</span><span class="o">.</span><span class="n">t</span> <span class="o">&lt;=</span> <span class="mf">300.0</span><span class="p">)</span>
+<span class="n">t_w</span> <span class="o">=</span> <span class="n">fine</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="n">window</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">m</span> <span class="o">=</span> <span class="n">fine</span><span class="o">.</span><span class="n">bypass</span><span class="p">[</span><span class="n">window</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">m</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">t_w</span><span class="p">))])</span>
+<span class="n">bypass</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="s2">"bypass"</span><span class="p">]</span>
+<span class="n">rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol_z</span><span class="p">,</span> <span class="n">bypass</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">)[</span><span class="n">window</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()]),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">g</span> <span class="o">*</span> <span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="n">bypass</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">slope</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">spring</span> <span class="o">=</span> <span class="o">-</span><span class="n">slope</span>
+<span class="n">r2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">G</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
+<span class="n">L</span> <span class="o">=</span> <span class="n">bypass</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="n">bypass</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">area</span>
+<span class="n">crossings</span> <span class="o">=</span> <span class="n">t_w</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">m</span><span class="p">))</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">observed</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">crossings</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"spring, -dG/dX:          </span><span class="si">{</span><span class="n">spring</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> Pa per kg per plate, R² </span><span class="si">{</span><span class="n">r2</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"inertance, length/area:  </span><span class="si">{</span><span class="n">L</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> per m per plate"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"period, 2π·sqrt(L/k):    </span><span class="si">{</span><span class="mi">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">L</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">spring</span><span class="p">)</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"period, observed:        </span><span class="si">{</span><span class="n">observed</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> s from </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">crossings</span><span class="p">)</span><span class="si">}</span><span class="s2"> zero crossings"</span><span class="p">)</span>
+<span class="n">transit</span> <span class="o">=</span> <span class="n">bypass</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">rho</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">bypass</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">area</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"transit time at the mean speed: </span><span class="si">{</span><span class="n">transit</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="n">T_hot</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol_z</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">],</span> <span class="s2">"T_cool"</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">span</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">observed</span> <span class="o">/</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hot coolant peak above its running mean over one period: </span><span class="si">{</span><span class="n">T_hot</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">convolve</span><span class="p">(</span><span class="n">T_hot</span><span class="p">,</span><span class="w"> </span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">span</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">span</span><span class="p">,</span><span class="w"> </span><span class="n">mode</span><span class="o">=</span><span class="s1">'valid'</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+spring, -dG/dX:          343 Pa per kg per plate, R² 0.998
+inertance, length/area:  1000 per m per plate
+period, 2π·sqrt(L/k):    10.7 s
+period, observed:        9.9 s from 6 zero crossings
+transit time at the mean speed: 62 s
+hot coolant peak above its running mean over one period: 0.18 K
+</pre></div></div>
+</div>
+<p>The swing is a U-tube oscillation of the bypass’s own water. As the heated groups reverse they pour hot water into the pool top, and the bypass, still flowing down, takes it in from the top; once its flow turns, it draws cold plenum water in at the bottom. Its column then holds hot water above cold, and moving that interface changes the column’s weight in proportion to the mass displaced, the integral of the flow: over 262 to 300 s the weight falls by about 340 Pa for every kilogram per plate
+that has flowed down, with R² above 0.99. That slope is the spring, and the inertia of the water in one bypass channel, its length over its flow area, 1000 per m, is the mass. The hand estimate <span class="math notranslate nohighlight">\(2\pi\sqrt{L/k}\)</span> gives a period of about 11 s, and the zero crossings give about 10 s: a damped oscillation at the period the estimate predicts, dying out as the interface smears over the cells. Because the weight, and with it the column’s mean density, follows the integral of the flow, the mean
+density lags the flow by a quarter period, as a spring’s force lags the velocity of its mass. A density wave carried by the flow would lag by the time the water takes to cross the channel, about 60 s at the window’s mean speed, so that is not what drives it. The swing adds about 0.2 K to the hot coolant’s peak.</p>
+<p>The flywheels keep the pump legs flowing forward long after the core has reversed, and as long as they do, the flapper feeds both the core and the legs. The legs’ flow turns backward at about 626 s; the check valves let through only a backward leak, about 0.05 kg/s per leg at the end of the hour, and the kink in every curve at that time is the loop losing its last forced flow. That kink is not a jump: the bypass’s flow covers 10 to 90 % of its change between 620 and 680 s in about 8 s, from
+about 632 to about 640 s, which the logarithmic time axis compresses into what looks like a step; the 2 s output grid resolves a change that quick with only a few samples. From then on the per-plate flows are the natural circulation, declining slowly with the decay heat for the rest of the hour.</p>
+</section>
+<section id="Power-and-reactivity">
+<h2>Power and reactivity<a class="headerlink" href="#Power-and-reactivity" title="Link to this heading"></a></h2>
+<p>The point-kinetics node reads the trip through its reactivity controller, which inserts the rods’ reactivity once the trip’s delay has passed. <code class="docutils literal notranslate"><span class="pre">both_pumps</span></code> returns the solution, not the loop it ran on, and the loop rebuilt above has a trip sensor that never fired; it is given the run’s trip time so that its controller reports the reactivity the run saw. Saving the state at an output time then gives the total reactivity, rods and temperature feedback together, which is plotted in dollars.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">refs</span><span class="p">[</span><span class="s2">"trip"</span><span class="p">]</span><span class="o">.</span><span class="n">t_trip</span> <span class="o">=</span> <span class="n">rec</span><span class="o">.</span><span class="n">t_trip</span>
+<span class="n">early</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span> <span class="o">&lt;=</span> <span class="mi">60</span><span class="p">)</span>
+<span class="n">reactivity</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">t</span><span class="o">=</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">i</span><span class="p">])[</span><span class="s2">"PK"</span><span class="p">][</span><span class="s2">"reactivity"</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">early</span><span class="p">])</span>
+<span class="n">power</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pk"</span><span class="p">],</span> <span class="s2">"power"</span><span class="p">)[</span><span class="n">early</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"reactivity at 60 s: </span><span class="si">{</span><span class="n">reactivity</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">BETA</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> dollars</span><span class="se">\n</span><span class="s2">power at 60 s:      </span><span class="si">{</span><span class="n">power</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">p</span><span class="o">.</span><span class="n">power</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> % of nominal"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">top</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">early</span><span class="p">],</span> <span class="n">power</span> <span class="o">/</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"power"</span><span class="p">)</span>
+<span class="n">top</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">"log"</span><span class="p">)</span>
+<span class="n">top</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Power [MW]"</span><span class="p">)</span>
+<span class="n">bottom</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">early</span><span class="p">],</span> <span class="n">reactivity</span> <span class="o">/</span> <span class="n">BETA</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s2">"reactivity"</span><span class="p">)</span>
+<span class="n">bottom</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Reactivity [$]"</span><span class="p">)</span>
+<span class="n">bottom</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">):</span>
+    <span class="n">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">top</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+reactivity at 60 s: -9.87 dollars
+power at 60 s:      3.7 % of nominal
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABothPumpsTrip_12_1.png" src="_images/LOFABothPumpsTrip_12_1.png" />
+</div>
+</div>
+<p>Between the pumps tripping and the reactor trip the power barely moves: the coolant warms as the flow falls, and its negative feedback is small. The rods insert 10 dollars over one second, and the power falls by an order of magnitude within that second, the prompt drop, then decays with the delayed neutrons and settles onto the decay heat. A minute in, the core makes about 3.7 % of its nominal power and the total reactivity is about -9.9 dollars, the rods less a little positive feedback from
+water and fuel cooler than at the operating point.</p>
+</section>
+<section id="The-hot-plate">
+<h2>The hot plate<a class="headerlink" href="#The-hot-plate" title="Link to this heading"></a></h2>
+<p>The figure follows the hot plate through the hour: the hottest coolant along its channel and the hottest point of its surface. The horizontal line is the saturation temperature at the pressure of the core top, with 8 m of water above it, the reference for the margin in the record.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">T_sat</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">refs</span><span class="p">[</span><span class="s2">"p_ref"</span><span class="p">]))</span>
+<span class="n">T_cool</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">],</span> <span class="s2">"T_cool"</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">T_wall</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"fuels"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">],</span> <span class="s2">"T_wall_left"</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"saturation temperature:  </span><span class="si">{</span><span class="n">T_sat</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"peak coolant:            </span><span class="si">{</span><span class="n">T_cool</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C at </span><span class="si">{</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">T_cool</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"peak surface:            </span><span class="si">{</span><span class="n">T_wall</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C at </span><span class="si">{</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">T_wall</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"margin to saturation:    </span><span class="si">{</span><span class="n">rec</span><span class="o">.</span><span class="n">margin</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">T_wall</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"plate surface, hottest point"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">T_cool</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"coolant, hottest cell"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">T_sat</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"black"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"saturation at the core top"</span><span class="p">)</span>
+<span class="n">mark</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"symlog"</span><span class="p">,</span> <span class="n">linthresh</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Temperature [°C]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+saturation temperature:  116.84 °C
+peak coolant:            101.14 °C at 278 s
+peak surface:            105.74 °C at 278 s
+margin to saturation:    15.70 K
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABothPumpsTrip_14_1.png" src="_images/LOFABothPumpsTrip_14_1.png" />
+</div>
+</div>
+<p>The time axis is again linear over the first 10 s and logarithmic after. The hot plate heats while the flow falls at full power, cools as soon as the rods are in, takes a step up when the flapper opens and the core loses part of its flow, and heats again as the flow keeps falling faster than the decay heat. Both temperatures then peak twice. The first peak is the reversal, near 200 s, as the hot channel’s flow passes through zero and its water barely moves. The second and higher one comes as the
+reversed flows settle: at about 278 s the plate surface reaches about 106 °C and the coolant about 101 °C. The coolant stays about 16 K below the saturation temperature of about 117 °C, which is the margin the record reports: about 16 K at ten axial cells; the trust page measures how that moves with the grid, in <a class="reference internal" href="LOFAVariations.html#How-many-cells-along-the-plate"><span class="std std-ref">How many cells along the plate</span></a>, and finer cells give a smaller margin. The plate surface stays below saturation too, by about 11
+K at its peak, so the wall does not reach the point where it could nucleate bubbles. The margin and the run’s saturation stop are about the coolant, not the wall. Once the pump legs are still, both temperatures decline with the decay heat.</p>
+</section>
+<section id="Does-the-energy-add-up">
+<h2>Does the energy add up<a class="headerlink" href="#Does-the-energy-add-up" title="Link to this heading"></a></h2>
+<p>Over the hour the core feeds energy into the water; the heat exchanger removes it while the pump legs still carry flow, and the rest stays in the water and the plates as a change of their temperatures. <code class="docutils literal notranslate"><span class="pre">energy_budget</span></code> integrates the power and the heat exchanger’s duty over the output times and adds up the change of stored energy of every water volume and every plate between the first and last output time.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">e</span> <span class="o">=</span> <span class="n">energy_budget</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+<span class="n">parts</span> <span class="o">=</span> <span class="n">e</span><span class="p">[</span><span class="s2">"parts_J"</span><span class="p">]</span>
+<span class="n">water</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">parts</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"_fuel"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"unaccounted, share of the energy fed: </span><span class="si">{</span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">e</span><span class="p">[</span><span class="s1">'unaccounted_J'</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">e</span><span class="p">[</span><span class="s1">'fed_J'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"fed by the core"</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s2">"fed_J"</span><span class="p">],</span>
+        <span class="s2">"removed by the heat exchanger"</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s2">"hx_removed_J"</span><span class="p">],</span>
+        <span class="s2">"stored in the water"</span><span class="p">:</span> <span class="n">water</span><span class="p">,</span>
+        <span class="s2">"  of which the pool"</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="s2">"Pool"</span><span class="p">],</span>
+        <span class="s2">"  of which the decay tank"</span><span class="p">:</span> <span class="n">parts</span><span class="p">[</span><span class="s2">"DecayTank"</span><span class="p">],</span>
+        <span class="s2">"stored in the plates"</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s2">"stored_J"</span><span class="p">]</span> <span class="o">-</span> <span class="n">water</span><span class="p">,</span>
+        <span class="s2">"unaccounted"</span><span class="p">:</span> <span class="n">e</span><span class="p">[</span><span class="s2">"unaccounted_J"</span><span class="p">],</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="mf">1e6</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="s2">"energy [MJ]"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+unaccounted, share of the energy fed: -0.12 %
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>energy [MJ]</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>fed by the core</th>
+      <td>716.87</td>
+    </tr>
+    <tr>
+      <th>removed by the heat exchanger</th>
+      <td>531.89</td>
+    </tr>
+    <tr>
+      <th>stored in the water</th>
+      <td>186.50</td>
+    </tr>
+    <tr>
+      <th>of which the pool</th>
+      <td>514.81</td>
+    </tr>
+    <tr>
+      <th>of which the decay tank</th>
+      <td>-328.94</td>
+    </tr>
+    <tr>
+      <th>stored in the plates</th>
+      <td>-0.63</td>
+    </tr>
+    <tr>
+      <th>unaccounted</th>
+      <td>-0.89</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>The budget closes to about -0.1 % of the energy fed: the energy removed and stored exceeds the energy fed by about 0.7 MJ. The remainder is consistent with the bookkeeping: the power and the heat exchanger’s duty are integrated by the trapezoidal rule on the 2 s output grid, which smears the second in which the power drops by an order of magnitude, and the stored energy takes each volume’s density and heat capacity at its initial temperature.</p>
+<p>The split is worth a look. Of about 717 MJ fed, the heat exchanger removed about 532 MJ even though the pumps tripped at 10 s, and the decay tank lost about 329 MJ. Both are the coastdown at work: the flywheels push the warm water of the decay tank through the heat exchanger and replace it by water at the heat exchanger’s outlet temperature. The pool gained about 515 MJ, and that is where the decay heat goes once the legs are still.</p>
+</section>
+<section id="The-natural-circulation-loop">
+<h2>The natural-circulation loop<a class="headerlink" href="#The-natural-circulation-loop" title="Link to this heading"></a></h2>
+<p>At the end of the hour the flow runs up the core, down the pool column and back through the flapper into the plenum. <code class="docutils literal notranslate"><span class="pre">loop_pressure_budget</span></code> gives the pressure difference of each component on that loop at the last output time, signed along the loop, so that they sum to the loop law the solver enforces; and the hot plate’s buoyancy head, the weight of a column of water at the plenum temperature less that of the hot channel’s warmer water.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">budget</span><span class="p">,</span> <span class="n">buoyancy</span> <span class="o">=</span> <span class="n">loop_pressure_budget</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="p">[</span><span class="s2">"HotChannel"</span><span class="p">,</span> <span class="s2">"Flapper"</span><span class="p">,</span> <span class="s2">"Pool"</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">dp</span> <span class="ow">in</span> <span class="n">budget</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">dp</span><span class="si">:</span><span class="s2">12.2f</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'sum'</span><span class="si">:</span><span class="s2">12s</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">budget</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">:</span><span class="s2">12.1e</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hot plate buoyancy head: </span><span class="si">{</span><span class="n">buoyancy</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> Pa"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+HotChannel        6807.09 Pa
+Flapper              2.29 Pa
+Pool             -6809.37 Pa
+sum              -4.4e-10 Pa
+hot plate buoyancy head: 39.08 Pa
+</pre></div></div>
+</div>
+<p>The sum is zero to the solver’s tolerance: that is the loop law holding, and it says nothing more. The physics is in the terms. The hot channel’s and the pool’s are both close to the weight of a 0.7 m column of water, about 6807 and 6809 Pa with opposite signs; the column in the hot channel is lighter by its buoyancy head, about 39 Pa, and also pays for its friction. What is left between the two columns, about 2.3 Pa, is what the flapper dissipates. Most of the hot plate’s buoyancy is spent on
+driving its own small flow through a 2.2 mm gap; the flapper, carrying the flow of the whole core, needs very little.</p>
+<p>The loss of both pumps thus ends in a steady natural circulation through the flapper of about 1.5 kg/s, with the pool as the heat sink: after the hour it is only about 0.41 K warmer. With the pumps gone, buoyancy alone drives that flow, and this page is the library’s thermosyphon example. These numbers come from one output grid and one solver tolerance. The next example, <em>One Pump, a Stuck Flapper, and How Far to Trust the Numbers</em>, runs the variations of this scenario and asks how much of what
+this page shows converges with the grid and the tolerance.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LOFAPoolReactor.html" class="btn btn-neutral float-left" title="A Pool Reactor for Loss-of-Flow Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LOFAVariations.html" class="btn btn-neutral float-right" title="One Pump, a Stuck Flapper, and How Far to Trust the Numbers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

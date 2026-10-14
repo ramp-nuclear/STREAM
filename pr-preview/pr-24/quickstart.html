@@ -1,0 +1,297 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quickstart Guide &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Examples" href="Examples.html" />
+    <link rel="prev" title="Installation" href="Installation.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quickstart Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#creating-calculations">Creating Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#composition">Composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#external-input-variables">External Input variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#initial-guess-initial-conditions">Initial Guess / Initial Conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#introspection-of-the-created-system-state">Introspection of the Created System / State</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#steady-state-solution">Steady State Solution</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#transient-simulation">Transient Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uncertainty-quantification">Uncertainty Quantification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#analyzing-the-output">Analyzing the Output</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quickstart Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quickstart-guide">
+<h1>Quickstart Guide<a class="headerlink" href="#quickstart-guide" title="Link to this heading"></a></h1>
+<p>In this guide we’ll go through a typical simulation with which <a class="reference internal" href="stream.html#module-stream"><span class="std std-ref">STREAM</span></a> may be of use.</p>
+<section id="creating-calculations">
+<h2>Creating Calculations<a class="headerlink" href="#creating-calculations" title="Link to this heading"></a></h2>
+<p>Consider the physical system you would like to simulate, and look at the <a class="reference internal" href="stream.calculations.html#module-stream.calculations"><span class="std std-ref">Calculations</span></a> already implemented
+- you may find just the components needed. If not, please refer to <a class="reference internal" href="calculation.html#calculation"><span class="std std-ref">Calculation</span></a> to see how one goes about
+creating a custom component.
+If all you want is a simple component, consider using <a class="reference internal" href="stream.composition.html#stream.composition.constructors.Calculation_factory" title="stream.composition.constructors.Calculation_factory"><code class="xref py py-func docutils literal notranslate"><span class="pre">Calculation_factory</span></code></a>.</p>
+</section>
+<section id="composition">
+<h2>Composition<a class="headerlink" href="#composition" title="Link to this heading"></a></h2>
+<p>Assuming you have all of your calculations instantiated, the next step is combining these interdependent
+calculations, usually with the end result being an <code class="xref py py-class docutils literal notranslate"><span class="pre">CalculationGraph</span></code>. Aptly named, the
+<a class="reference internal" href="stream.composition.html#module-stream.composition"><span class="std std-ref">Composition</span></a> subpackage offers functionality for composing standard calculations.</p>
+</section>
+<section id="external-input-variables">
+<h2>External Input variables<a class="headerlink" href="#external-input-variables" title="Link to this heading"></a></h2>
+<p>Any variables required by the calculations which are not provided by some other calculation must be provided by the
+user in the form of <code class="xref py py-attr docutils literal notranslate"><span class="pre">funcs</span></code>. These inputs may be time-dependent functions or any other
+value.</p>
+<p>Next, an <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> instance may be created:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cg</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">cg</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="initial-guess-initial-conditions">
+<h2>Initial Guess / Initial Conditions<a class="headerlink" href="#initial-guess-initial-conditions" title="Link to this heading"></a></h2>
+<p>In order to run the simulation, either finding a steady state solution or a transient based on given, one must provide
+an initial guess / conditions. <a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a> is useful in that regard, and especially the following may be of help:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="aggregator.html#stream.state.State.merge" title="stream.state.State.merge"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge</span></code></a></p></td>
+<td><p>Merge states together.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="aggregator.html#stream.state.State.uniform" title="stream.state.State.uniform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uniform</span></code></a></p></td>
+<td><p>Create a state, or a partial state for given calculations and given target variables, which are assigned a uniform value.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.save" title="stream.aggregator.Aggregator.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a></p></td>
+<td><p>Given either a vector solution of the system or a Solution object, creates a human-readable state description of the solution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.load" title="stream.aggregator.Aggregator.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a></p></td>
+<td><p>Given a description of the system state either at one time or at many, returns a vector or a solution that fits this information.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="stream.composition.html#module-stream.composition.subsystems" title="stream.composition.subsystems"><code class="xref py py-obj docutils literal notranslate"><span class="pre">subsystems</span></code></a></p></td>
+<td><p>Helper functions for creating steady state initial guesses for small and specific subsystems</p></td>
+</tr>
+</tbody>
+</table>
+<p>Note that a <cite>State</cite> is basically a <code class="docutils literal notranslate"><span class="pre">dict[Calculation,</span> <span class="pre">dict[Any,</span> <span class="pre">Value]]</span></code></p>
+</section>
+<section id="introspection-of-the-created-system-state">
+<h2>Introspection of the Created System / State<a class="headerlink" href="#introspection-of-the-created-system-state" title="Link to this heading"></a></h2>
+<p>Hooray! You now have a system of equations in the shape of an <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a>
+and your <a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>.
+Some tools may be useful to see what you actually have, mostly in the <a class="reference internal" href="analysis.html#module-stream.analysis" title="stream.analysis"><code class="xref py py-mod docutils literal notranslate"><span class="pre">analysis</span></code></a> module.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="analysis.html#stream.analysis.report.report" title="stream.analysis.report.report"><code class="xref py py-obj docutils literal notranslate"><span class="pre">report</span></code></a></p></td>
+<td><p>Print a report with useful information regarding an <a class="reference internal" href="aggregator.html#module-stream.aggregator"><span class="std std-ref">Aggregator</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">draw_aggregator</span></code></p></td>
+<td><p>Draw an Aggregator's graph.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="analysis.html#stream.analysis.debugging.debug_derivatives" title="stream.analysis.debugging.debug_derivatives"><code class="xref py py-obj docutils literal notranslate"><span class="pre">debug_derivatives</span></code></a></p></td>
+<td><p>Return the application of the Aggregator's functional on a guess, tagged.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="steady-state-solution">
+<h2>Steady State Solution<a class="headerlink" href="#steady-state-solution" title="Link to this heading"></a></h2>
+<p>Given the initial conditions, one may find a root of the functional <span class="math notranslate nohighlight">\(\vec{F}(\vec{y}, t)\)</span>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">steady_state</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">initial_conditions</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>A graph-aware Jacobian may be used as <code class="docutils literal notranslate"><span class="pre">jac=</span></code>
+<code class="xref py py-func docutils literal notranslate"><span class="pre">ALG_jacobian</span></code>.
+Applying <code class="docutils literal notranslate"><span class="pre">agr.save(steady_state)</span></code> would yield a <a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>, with added information computed post-mortum
+(this can be avoided by setting <code class="docutils literal notranslate"><span class="pre">strict=True</span></code>).
+Adding computed thermo-hydraulic critical phenomena thresholds may be done using <a class="reference internal" href="analysis.html#stream.analysis.thresholds.threshold_analysis" title="stream.analysis.thresholds.threshold_analysis"><code class="xref py py-func docutils literal notranslate"><span class="pre">threshold_analysis</span></code></a>.</p>
+</section>
+<section id="transient-simulation">
+<h2>Transient Simulation<a class="headerlink" href="#transient-simulation" title="Link to this heading"></a></h2>
+<p>Running a transient solution is done similarly, with the addition of a time parameter.
+Here is an example with some important parameters, assuming (as typicali, and can be controlled using <code class="docutils literal notranslate"><span class="pre">eq_type</span></code>) that the Aggregator forms a DAE:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">solution</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span>
+    <span class="n">initial_state</span><span class="p">,</span>
+    <span class="n">time</span><span class="p">,</span>
+    <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span><span class="p">,</span>
+    <span class="n">atol</span><span class="o">=</span><span class="n">absolute_tolerance_vector</span><span class="p">,</span>
+    <span class="n">jacfn</span><span class="o">=</span><span class="n">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span>
+    <span class="n">continuous</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">max_step_size</span><span class="o">=</span><span class="mf">1e-1</span><span class="p">,</span>
+    <span class="n">constraints_type</span><span class="o">=</span><span class="n">contraints_vector</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Here the graph-aware Jacobian is <a class="reference internal" href="aggregator.html#stream.jacobians.DAE_jacobian" title="stream.jacobians.DAE_jacobian"><code class="xref py py-func docutils literal notranslate"><span class="pre">DAE_jacobian</span></code></a>,
+the absolute tolerance may be set for each equation separately (using <a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a> and loading is a good way to do that),
+while the relative tolerance is global. The constraints vector controls the sign of the variables (See SUNDIALS IDA),
+and can limit the search space somewhat. It follows the following mapping:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">dict</span><span class="p">(</span><span class="n">NONE</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">NON_NEG</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">POS</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">NON_POS</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">NEG</span><span class="o">=-</span><span class="mf">2.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For most use cases, the defaults are really good enough, but know that these options can be controlled.</p>
+</section>
+<section id="uncertainty-quantification">
+<h2>Uncertainty Quantification<a class="headerlink" href="#uncertainty-quantification" title="Link to this heading"></a></h2>
+<p>A common use case for a system code like STREAM is when one needs a relatively fast and simple
+model that can be used for parametric studies, as well as uncertainty quantification (UQ) problems.
+In STREAM, the <a class="reference internal" href="analysis.html#module-stream.analysis.UQ" title="stream.analysis.UQ"><code class="xref py py-mod docutils literal notranslate"><span class="pre">UQ</span></code></a> module is used for UQ problems, and it provides two
+similar but distinct classes: The <a class="reference internal" href="analysis.html#stream.analysis.UQ.UQModel" title="stream.analysis.UQ.UQModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">UQModel</span></code></a> class and the
+<a class="reference internal" href="analysis.html#stream.analysis.UQ.DASKUQModel" title="stream.analysis.UQ.DASKUQModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">DASKUQModel</span></code></a>.
+Both classes are based on a Jacobian approach to UQ, where numeric partial derivatives of a model
+are computed to get a linear approximation to the uncertainty of each model feature to its inputs.
+Both models base their uncertainty propagation on the concepts of statistical and systematic
+uncertainties, where statistical contributions are added in 2-norm, and systematic contributions
+are added in 1-norm.</p>
+<p>For interactive and simple use cases, we suggest you use the UQModel class.
+The UQModel class is simpler, and its use requires just initialization and a call to its
+<a class="reference internal" href="analysis.html#stream.analysis.UQ.UQModel.uq" title="stream.analysis.UQ.UQModel.uq"><code class="xref py py-meth docutils literal notranslate"><span class="pre">uq</span></code></a> method:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">uqmod</span> <span class="o">=</span> <span class="n">UQModel</span><span class="p">(</span><span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+<span class="n">systematic</span><span class="p">,</span> <span class="n">statistical</span> <span class="o">=</span> <span class="n">uqmod</span><span class="o">.</span><span class="n">uq</span><span class="p">(</span><span class="o">**</span><span class="n">uncertainty_dictionary</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>This method call will return the total statistical and systematic uncertainty as vectors for the
+model features.</p>
+<p>For high throughput cases, one will most likely prefer the DASKUQModel class.
+This class is designed around lazy execution, and calls to its methods most often return a DASK
+Delayed object, which is a lazy object that takes a little effort to wrap one’s head around.
+You will likely prefer this class when you need to run multiple models, or the same model in a
+large parametric search.
+Like the simple case above, most users will initialize their DASKUQModel and then call its
+<a class="reference internal" href="analysis.html#stream.analysis.UQ.DASKUQModel.uq" title="stream.analysis.UQ.DASKUQModel.uq"><code class="xref py py-meth docutils literal notranslate"><span class="pre">uq</span></code></a> method.</p>
+</section>
+<section id="analyzing-the-output">
+<h2>Analyzing the Output<a class="headerlink" href="#analyzing-the-output" title="Link to this heading"></a></h2>
+<p>After running the simulation, one is free to manipulate the output, which is just an array (1D for a steady state
+solution and 2D for a transient, wrapped with its time as <code class="xref py py-class docutils literal notranslate"><span class="pre">Solution</span></code>). In that regard, the following may be helpful for extracting data and manipulating it:</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.save" title="stream.aggregator.Aggregator.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a></p></td>
+<td><p>Given either a vector solution of the system or a Solution object, creates a human-readable state description of the solution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.var_index" title="stream.aggregator.Aggregator.var_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var_index</span></code></a></p></td>
+<td><p>Return the Place at which a given variable lies</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.at_times" title="stream.aggregator.Aggregator.at_times"><code class="xref py py-obj docutils literal notranslate"><span class="pre">at_times</span></code></a></p></td>
+<td><p>Given a transient solution and a variable, returns the variable at the calculated times.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-obj docutils literal notranslate"><span class="pre">State</span></code></a></p></td>
+<td><p>A nested dictionary with str keys that connects calculations to a dictionary of the values of their variables.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="aggregator.html#stream.state.to_dataframe" title="stream.state.to_dataframe"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dataframe</span></code></a></p></td>
+<td><p>Transforms the state(s) into a DataFrame.</p></td>
+</tr>
+</tbody>
+</table>
+<p>When saving (<code class="docutils literal notranslate"><span class="pre">agr.save</span></code>) a steady state solution, you get <a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>.
+When saving a transient solution, you get <a class="reference internal" href="aggregator.html#stream.state.StateTimeseries" title="stream.state.StateTimeseries"><code class="xref py py-const docutils literal notranslate"><span class="pre">StateTimeseries</span></code></a> mapping from timepoint to State.
+If you want to use a <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, those can be created using <a class="reference internal" href="aggregator.html#stream.state.to_dataframe" title="stream.state.to_dataframe"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_dataframe</span></code></a>, containing the following columns: calculation, variable, indices (i, j), and finally value.</p>
+<hr class="docutils" />
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p>You may find the <a class="reference internal" href="Examples.html#examples"><span class="std std-ref">Examples</span></a> a more concrete down-to-earth approach to learning <cite>STREAM</cite>.</p>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Examples.html" class="btn btn-neutral float-right" title="Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
