@@ -26,6 +26,10 @@ jobs:
         pip install -e .
       shell: micromamba-shell {0}
 
+    - name: Fetch MathJax
+      run: python docs/mathjax_assets.py fetch
+      shell: micromamba-shell {0}
+
     - name: Build Sphinx documentation
       run: |
         cd docs

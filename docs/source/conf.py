@@ -34,7 +34,9 @@ autodoc_typehints = "description"
 autodoc_member_order = "groupwise"
 autodoc_inherit_docstrings = False
 
-mathjax_path = "mathjax/es5/tex-chtml-full.js"
+# MathJax is hosted locally (see docs/mathjax_assets.py), fonts included, so no CDN is needed
+mathjax_path = "mathjax/tex-chtml.js"
+mathjax4_config = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}}
 
 extensions = [
     "sphinx_rtd_theme",

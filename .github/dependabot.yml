@@ -4,3 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "npm"
+    directory: "/docs/mathjax"
+    schedule:
+      interval: "weekly"
+    groups:
+      mathjax:
+        patterns:
+          - "mathjax"
+          - "@mathjax/*"

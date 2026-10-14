@@ -67,11 +67,11 @@ from the smallest radius (0 for a cylinder). The integration is the same (since 
 are :math:`r`-dependent. Specifically:
 
 .. math::
-    \begin{align}
+    \begin{aligned}
     A_{i, j-1/2} &= 2\pi r_{j-1/2}\Delta z_i \\
     A_{i-1/2, j} = A_{i+1/2, j} &= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2) \\
     V_{ij} &= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2)\Delta z_i \\
-    \end{align}
+    \end{aligned}
 
 The thermal resistance is then computed in the same manner using the distances
 between cell centers :math:`\Delta r, \Delta z`.
