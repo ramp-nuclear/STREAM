@@ -34,6 +34,7 @@ from stream.physical_models.pressure_drop.local import (
     sudden_expansion_factor,
 )
 from stream.pipe_geometry import EffectivePipe
+from stream.smoothing import smooth_pos_weight
 from stream.substances.liquid import LiquidFuncs
 from stream.units import (
     Celsius,
@@ -52,6 +53,7 @@ from stream.units import (
 from stream.utilities import summed
 
 __all__ = [
+    "CheckValve",
     "DPCalculation",
     "Resistor",
     "Friction",
@@ -562,3 +564,47 @@ class Screen(LumpedComponent):
             Dh=1.0,
             A=self.total_area,
         )
+
+
+@_multiplies
+class CheckValve(LumpedComponent):
+    r"""A smooth one-way valve: a quadratic loss forward and a much stiffer quadratic loss backward.
+
+    .. math::
+        \Delta p = -k\dot{m}|\dot{m}|\left(1 + r\,w(-\dot{m}, \epsilon)\right)
+
+    where :math:`w` is :func:`~stream.smoothing.smooth_pos_weight`, a weight that
+    rises smoothly from 0 to 1 over a band of half-width :math:`\epsilon` around zero
+    flow. Beyond the band, forward flow sees :math:`k` and reverse flow sees
+    :math:`k(1 + r)`. The pressure drop is zero at zero flow and the law is
+    continuously differentiable through it.
+
+    This is a modelling device for a valve that blocks reverse flow, not a valve
+    model: there is no cracking pressure and no disc dynamics, and reverse flow is
+    resisted, never cut off.
+    """
+
+    def __init__(self, k_forward: float, reverse_ratio: float = 1000.0, eps: KgPerS = 0.1, name: str = "CheckValve"):
+        r"""
+
+        Parameters
+        ----------
+        k_forward: float
+            Forward loss coefficient :math:`k` [Pa s^2/kg^2], so that
+            :math:`\Delta p = -k\dot{m}^2` for forward flow beyond the band.
+        reverse_ratio: float
+            :math:`r`, the extra stiffness of the reverse branch; reverse flow beyond
+            the band sees :math:`k(1 + r)`.
+        eps: KgPerS
+            Half-width of the smooth band around zero flow over which the reverse
+            branch is switched on [kg/s].
+        name: str
+            The name to give this calculation.
+        """
+        self.name = name
+        self.k = k_forward
+        self.ratio = reverse_ratio
+        self.eps = eps
+
+    def dp_out(self, *, mdot: KgPerS, **_) -> Pascal:
+        return -self.k * mdot * abs(mdot) * (1 + self.ratio * smooth_pos_weight(-mdot, self.eps))
