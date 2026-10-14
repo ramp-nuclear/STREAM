@@ -24,6 +24,9 @@ to achieve a higher level of proficiency.
    |         |                          |:func:`quasi_static`           |
    +---------+--------------------------+-------------------------------+
 
+Beyond the ``eq_type`` backends above, :func:`scaled_newton` provides a
+globalized steady solve, an equilibrated, Armijo-damped Newton, for root finds
+from far guesses where :func:`algebraic`'s ``hybr`` stalls.
 """
 
 import logging
@@ -252,6 +255,179 @@ def quasi_static(
         if R is not None and not np.all(R(y[i], t)):
             return y[: i + 1], time[: i + 1]
     return y, time
+
+
+def _equilibrate(J: Array2D) -> tuple[Array2D, Array1D, Array1D]:
+    r"""Row-then-column infinity-norm equilibration of a matrix (single pass).
+
+    Scales ``J`` by dividing each row by its infinity norm and then each of the
+    row-scaled columns by its infinity norm, so the returned ``J_eq`` has unit
+    largest row and column magnitudes. Both scale vectors are floored at
+    ``1e-30`` so a vanishing row/column is never divided by zero (and never
+    amplified).
+
+    Parameters
+    ----------
+    J : Array2D
+        The matrix to equilibrate (typically a Jacobian).
+
+    Returns
+    -------
+    J_eq : Array2D
+        The equilibrated matrix, ``J / (rs[:, None] * cs[None, :])``.
+    rs : Array1D
+        Row scales (row infinity norms of ``J``, floored).
+    cs : Array1D
+        Column scales (column infinity norms of the row-scaled ``J``, floored).
+
+    Notes
+    -----
+    Single-pass (not Ruiz-iterated). Row scaling scales the residual and column
+    scaling scales the variables, so a linear solve on ``J_eq`` recovers the
+    original solution as ``dy = dy_eq / cs`` from a right-hand side ``-(F / rs)``.
+    """
+    rs = np.maximum(np.max(np.abs(J), axis=1), 1e-30)
+    Jr = J / rs[:, None]
+    cs = np.maximum(np.max(np.abs(Jr), axis=0), 1e-30)
+    return Jr / cs[None, :], rs, cs
+
+
+def _scaled_newton_core(
+    F: Functional,
+    y0: Array1D,
+    jac: Callable[[Array1D, float], Array2D],
+    *,
+    t: float,
+    tol: float,
+    maxit: int,
+    tikhonov: float,
+) -> tuple[Array1D, bool, bool, float, int]:
+    """Inner loop of :func:`scaled_newton`.
+
+    Runs equilibrated, Tikhonov-regularized, Armijo-damped Newton iterations and
+    reports status flags instead of raising. See :func:`scaled_newton` for the
+    references.
+
+    Returns
+    -------
+    y : Array1D
+        The last iterate reached.
+    converged : bool
+        ``True`` if ``||F(y, t)|| < tol`` was reached.
+    exhausted : bool
+        ``True`` if an Armijo search found no descent (``a`` fell to ``2**-30``
+        with no merit decrease).
+    nF : float
+        ``||F(y, t)||`` at the returned iterate.
+    it : int
+        Number of completed iterations.
+    """
+    y = np.array(y0, float)
+    for it in range(maxit):
+        Fy = F(y, t)
+        nF = float(np.linalg.norm(Fy))
+        if nF < tol:
+            return y, True, False, nF, it
+        J = np.array(jac(y, t))  # copy: ALG_jacobian returns a shared closure buffer
+        Jeq, rs, cs = _equilibrate(J)
+        A, b = Jeq + tikhonov * np.eye(len(Jeq)), -(Fy / rs)
+        try:
+            dy = np.linalg.solve(A, b) / cs
+        except np.linalg.LinAlgError:
+            dy = np.linalg.lstsq(A, b)[0] / cs
+        a = 1.0
+        merit = float(np.linalg.norm(F(y + a * dy, t)))
+        while merit >= nF and a > 2**-30:
+            a *= 0.5
+            merit = float(np.linalg.norm(F(y + a * dy, t)))
+        if merit >= nF:
+            return y, False, True, nF, it
+        y = y + a * dy
+    nF = float(np.linalg.norm(F(y, t)))
+    return y, nF < tol, False, nF, maxit
+
+
+def scaled_newton(
+    F: Functional,
+    y0: Array1D,
+    jac: Callable[[Array1D, float], Array2D],
+    *,
+    t: float = 0.0,
+    tol: float = 1e-6,
+    maxit: int = 100,
+    tikhonov: float = 1e-10,
+) -> Array1D:
+    r"""Globalized damped Newton steady solve with equilibrated linear solves.
+
+    Each iteration equilibrates the Jacobian (row-then-column infinity norm)
+    [#Higham]_, solves the Tikhonov-regularized [#Tikhonov]_, equilibrated
+    linear system for a Newton step, and backtracks the step with a merit line
+    search [#NocedalWright]_ on ``||F(y + a*dy, t)||``. It is meant
+    for steady solves from far guesses where the globalization in
+    :func:`scipy.optimize.root` (``hybr``) stalls; once the damped steps bring
+    the iterate near a root, full Newton steps resume.
+
+    Parameters
+    ----------
+    F : Functional
+        Residual ``F(y, t) -> Array1D`` (the aggregator ``compute`` signature).
+        The root ``F = 0`` is sought.
+    y0 : Array1D
+        Initial guess.
+    jac : Callable
+        Analytic/approximate Jacobian ``jac(y, t) -> Array2D`` of ``F``.
+    t : float, optional
+        Time argument threaded into ``F`` and ``jac`` (default ``0.0``).
+    tol : float, optional
+        Convergence tolerance on ``||F||`` (default ``1e-6``).
+    maxit : int, optional
+        Maximum Newton iterations (default ``100``).
+    tikhonov : float, optional
+        Tikhonov regularization [#Tikhonov]_: a small multiple of the identity
+        added to the *equilibrated* (``O(1)``) Jacobian so a rank-deficient step
+        stays finite (default ``1e-10``). If the shifted matrix is still
+        singular, the step is the minimum-norm least-squares solution.
+
+    Returns
+    -------
+    Array1D
+        The converged state ``y`` with ``||F(y, t)|| < tol``.
+
+    Raises
+    ------
+    AlgRuntimeError
+        If the backtracking line search [#NocedalWright]_ finds no descent
+        (raised immediately, not spun out to ``maxit``) or ``maxit`` is
+        exhausted. The best iterate reached is attached as the ``y`` attribute
+        for diagnosis.
+
+    Notes
+    -----
+    The equilibration serves conditioning diagnostics and insurance for
+    badly-scaled systems (making ``cond``/rank meaningful and giving Tikhonov a
+    sane ``O(1)`` metric); the *damping* provides the convergence. The Tikhonov
+    term is a defensive default with no measurable effect on well-posed systems.
+
+    References
+    ----------
+    .. [#NocedalWright] J. Nocedal, S. J. Wright, "Numerical Optimization", 2nd
+       edition, Springer, 2006, chapter 3 (backtracking line search with the
+       Armijo sufficient decrease condition, Algorithm 3.1).
+    .. [#Tikhonov] A. N. Tikhonov, V. Y. Arsenin, "Solutions of Ill-Posed
+       Problems", Winston, Washington DC, 1977.
+    .. [#Higham] N. J. Higham, "Accuracy and Stability of Numerical Algorithms",
+       2nd edition, SIAM, 2002, section 7.3 (row and column scaling); LAPACK
+       routine ``dgeequ``.
+    """
+    y, converged, exhausted, nF, it = _scaled_newton_core(
+        F, y0, jac, t=t, tol=tol, maxit=maxit, tikhonov=tikhonov
+    )
+    if converged:
+        return y
+    reason = "Armijo line search found no descent direction" if exhausted else f"exceeded maxit={maxit}"
+    err = AlgRuntimeError(f"scaled_newton failed at iteration {it} ({reason}); ||F||={nF:.3e}.")
+    err.y = y
+    raise err
 
 
 def differential(F: Functional, y0: Array1D, time: Sequence[float], **options) -> tuple[Array2D, Array1D]:

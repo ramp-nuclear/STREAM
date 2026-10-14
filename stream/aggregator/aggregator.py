@@ -10,7 +10,15 @@ from cytoolz import unique, valmap
 from networkx import DiGraph, compose
 
 from stream.calculation import Calculation
-from stream.solvers import algebraic, differential, differential_algebraic, quasi_static
+from stream.scales import scale_vector
+from stream.solvers import (
+    AlgRuntimeError,
+    algebraic,
+    differential,
+    differential_algebraic,
+    quasi_static,
+    scaled_newton,
+)
 from stream.state import DictState, State, StateTimeseries
 from stream.units import Array1D, Array2D, Name, Place, Second
 from stream.utilities import STREAM_DEBUG, concat, offset
@@ -52,6 +60,24 @@ class ProgressBarLike(Protocol):
     def finish(self) -> None:
         """Method to finalize and close the progressbar."""
         ...
+
+
+def _resolve_typ(agr: "Aggregator", scales: dict[str, float] | Array1D | None) -> Array1D:
+    """Resolve a ``scales`` argument to a length-``N`` nominal-magnitude vector.
+
+    ``None`` uses :data:`~stream.scales.DEFAULT_SCALES` via
+    :func:`~stream.scales.scale_vector`; a ``dict`` is treated as a
+    name -> scale registry; anything else is taken as a ready length-``N`` ``typ``
+    vector (validated against ``len(agr)``).
+    """
+    if scales is None:
+        return scale_vector(agr)
+    if isinstance(scales, dict):
+        return scale_vector(agr, registry=scales)
+    typ = np.asarray(scales, dtype=float)
+    if typ.shape != (len(agr),):
+        raise ValueError(f"scales array has length {len(typ)}; expected {len(agr)} (the state vector length)")
+    return typ
 
 
 class Aggregator:
@@ -602,17 +628,46 @@ class Aggregator:
             raise ValueError(f"Unknown method {eq_type}, choose from [ODE, DAE, ALG]")
         return Solution(np.asarray(time), data)
 
-    def solve_steady(self, guess: Array1D | DictState, **options) -> Array1D:
-        """Solving an Algebraic Equation :math:`0=F(y)` using
-        :func:`~stream.solvers.algebraic`
+    def solve_steady(
+        self,
+        guess: Array1D | DictState,
+        *,
+        globalize: Literal["auto", True, False] = "auto",
+        scales: dict[str, float] | Array1D | None = None,
+        **options,
+    ) -> Array1D:
+        r"""Solving an Algebraic Equation :math:`0=F(y)` using
+        :func:`~stream.solvers.algebraic`, with an optional globalized fallback.
 
         Parameters
         ----------
         guess: Array1D or DictState
             Initial guess. Can either be an array or a State, in the
             latter case :meth:`load` will be used to obtain the desired array.
+        globalize: {'auto', True, False}, default 'auto'
+            Selects the steady-solve strategy (keyword-only):
+
+            - ``'auto'``: run :func:`~stream.solvers.algebraic`
+              (:func:`scipy.optimize.root`) with ``options`` and return its result;
+              **only** if it raises :class:`~stream.solvers.AlgRuntimeError`, fall
+              back to :func:`~stream.solvers.scaled_newton`, whose own
+              :class:`~stream.solvers.AlgRuntimeError` propagates if it also fails.
+            - ``True``: skip scipy entirely and go straight to
+              :func:`~stream.solvers.scaled_newton`.
+            - ``False``: scipy only, with no fallback; an
+              :class:`~stream.solvers.AlgRuntimeError` from scipy propagates.
+        scales: None, dict[str, float] or Array1D, default None
+            Source of the per-variable nominal magnitudes (``typ``) used to build
+            the fallback's scaled finite-difference step. ``None`` uses
+            :data:`~stream.scales.DEFAULT_SCALES`; a ``dict`` is a
+            name -> scale registry; a length-``N`` array is used directly as the
+            ``typ`` vector. Ignored on the scipy success path.
         options:
-            Solver options
+            Solver options forwarded verbatim to :func:`~stream.solvers.algebraic`
+            on the scipy path (the keywords above are keyword-only and never
+            reach ``scipy.optimize.root``). A caller-supplied ``jac`` is also used
+            by the fallback; only when it is absent does the fallback build
+            ``ALG_jacobian(self, scaled_step(typ))``.
 
         Returns
         -------
@@ -621,7 +676,44 @@ class Aggregator:
         """
         if not isinstance(guess, np.ndarray):
             guess = self.load(guess)
-        return algebraic(F=self.compute, y0=guess, **options)
+
+        if globalize is not True:
+            try:
+                return algebraic(F=self.compute, y0=guess, **options)
+            except AlgRuntimeError:
+                if globalize is False:
+                    raise
+
+        jac = options.get("jac")
+        if jac is None:
+            from stream.jacobians import ALG_jacobian, scaled_step  # lazy: jacobians imports Aggregator
+
+            jac = ALG_jacobian(self, scaled_step(_resolve_typ(self, scales)))
+        return scaled_newton(self.compute, guess, jac)
+
+    def scaled_atol(self, rel: float = 1e-6, scales: dict[str, float] | Array1D | None = None) -> Array1D:
+        r"""Per-variable absolute tolerance ``rel * typ_j`` for :meth:`solve`.
+
+        Builds a length-``N`` ``atol`` vector aligned to the state vector, for
+        threading into DAE/ODE error control as ``agr.solve(..., atol=...)`` (both
+        IDA and ``solve_ivp`` accept a per-variable array). Opt-in: nothing
+        consumes it implicitly. The ALG steady path has no ``atol`` knob.
+
+        Parameters
+        ----------
+        rel: float, default 1e-6
+            Relative factor multiplying each nominal magnitude.
+        scales: None, dict[str, float] or Array1D, default None
+            Nominal magnitudes: ``None`` -> :data:`~stream.scales.DEFAULT_SCALES`;
+            ``dict`` -> name -> scale registry; length-``N`` array -> used directly
+            (validated against ``len(self)``).
+
+        Returns
+        -------
+        Array1D
+            The vector ``rel * typ``.
+        """
+        return rel * _resolve_typ(self, scales)
 
 
 @dataclass
