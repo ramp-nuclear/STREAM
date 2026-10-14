@@ -84,10 +84,17 @@ class Result:
     ylabel_source: tuple[str, ...] = ()
     sigma: float = 1.0
     walk_reducer: str | None = None
+    walk_reducers: dict = dc_field(default_factory=dict)
     level_space: dict[str, list] = dc_field(default_factory=dict)
     coordinate: str | None = None
     target: float | str | None = None
+    targets: dict = dc_field(default_factory=dict)
     walk_quantity: str | None = None
+    limits: dict = dc_field(default_factory=dict)
+    safe_side: str | None = None
+    binding: bool = False
+    y: str | None = None
+    holes: list = dc_field(default_factory=list)
 
     @property
     def ylabel(self) -> str:
@@ -109,18 +116,29 @@ class Result:
     def _target_text(self, labels: Labels) -> str:
         if self.target is None or self.walk_quantity is None:
             return ""
+        if self.binding:
+            return f"limiting of {', '.join(labels.display(q) for q in self.targets)}"
+        if len(self.targets) > 1:
+            return ", ".join(self._one_target(labels, q, t) for q, t in self.targets.items())
         head = " ".join(p for p in (self.walk_reducer, labels.display(self.walk_quantity)) if p)
-        if isinstance(self.target, str):
-            return f"{head} = {labels.display(self.target)}"
-        unit = labels[self.walk_quantity].unit
-        return f"{head} = {labels.value(self.walk_quantity, self.target)}" + (f" {unit}" if unit else "")
+        return f"{head} = {self._value_text(labels, self.walk_quantity, self.target)}"
+
+    def _one_target(self, labels: Labels, q: str, target) -> str:
+        head = " ".join(p for p in (self.walk_reducers.get(q), labels.display(q)) if p)
+        return f"{head} = {self._value_text(labels, q, target)}"
+
+    def _value_text(self, labels: Labels, q: str, target) -> str:
+        if isinstance(target, str):
+            return labels.display(target)
+        unit = labels[q].unit
+        return f"{labels.value(q, target)}" + (f" {unit}" if unit else "")
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
-             band="total", errorbars=False, style_sheet=None, labels=None):
+             band="total", errorbars=False, limit="line", style_sheet=None, labels=None):
         """Draw this result; see :func:`stream.viz.draw.plot`."""
         from .draw import plot
 
-        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, style_sheet, labels)
+        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, style_sheet, labels)
 
 
 @dataclass
@@ -177,6 +195,17 @@ def _numeric(sweep: Sweep, dims) -> frozenset[str]:
 
 def _level_space(sweep: Sweep) -> dict[str, list]:
     return {p: [float(v) for v in sweep.levels(p)] for p in sweep.parameters}
+
+
+def _limits_of(sweep: Sweep, quantities) -> dict:
+    return {q: sweep.limits[q] for q in quantities if q in sweep.limits}
+
+
+def binder_column(frame: DataFrame, with_calculation: bool) -> pd.Series:
+    """``quantity`` or ``quantity of calculation`` per row."""
+    if with_calculation:
+        return frame["quantity"].astype(str) + " of " + frame["calculation"].astype(str)
+    return frame["quantity"].astype(str)
 
 
 def _rows(sweep: Sweep, table: DataFrame, k: int, calc: str, q: str) -> DataFrame:
@@ -265,6 +294,7 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
         ylabel_source=tuple(quantities),
         sigma=sigma,
         level_space=_level_space(sweep),
+        limits=_limits_of(sweep, quantities),
     )
 
 
@@ -326,6 +356,7 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
         ylabel_source=(q,),
         sigma=sigma,
         level_space=_level_space(sweep),
+        limits=_limits_of(sweep, [q]),
         quantity=q,
         z=np.asarray(z, float),
         xs=np.asarray(xs, float),
@@ -416,4 +447,5 @@ def reduce(
         sigma=sigma,
         level_space=_level_space(sweep),
         coordinate=coordinate if name.startswith("where_") else None,
+        limits=_limits_of(sweep, quantities),
     )

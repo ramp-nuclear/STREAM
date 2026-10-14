@@ -30,3 +30,11 @@ def test_replace_returns_a_modified_copy():
     assert other.band_alpha == 0.5
     assert DEFAULT_STYLE.band_alpha != 0.5
     assert isinstance(other, Style)
+
+
+def test_limit_and_shade_fields():
+    from stream.viz import Style
+
+    s = Style()
+    assert (s.limit_linewidth, s.shade_alpha, s.shade_hatch) == (1.6, 0.55, "////")
+    assert s.replace(shade_hatch="xx").shade_hatch == "xx"

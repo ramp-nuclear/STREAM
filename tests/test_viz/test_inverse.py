@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from conftest import make_case_frame
 
+from stream.viz import Sweep, at_least, at_most
 from stream.viz.inverse import crossings, first_crossing, slice_at
 
 
@@ -55,7 +57,7 @@ def test_slice_at_outside_grid_raises(sweep):
 def test_required_power_for_min_chfr(sweep):
     r = sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot")
     assert r.kind == "curve" and r.x == "mdot"
-    assert list(r.frame.columns) == ["quantity", "calculation", "mdot", "lower", "value", "upper", "inner_lower", "inner_upper"]
+    assert list(r.frame.columns) == ["quantity", "calculation", "mdot", "lower", "value", "upper", "inner_lower", "inner_upper", "safe"]
     np.testing.assert_allclose(r.frame.mdot, [0.2, 0.3])
     np.testing.assert_allclose(r.frame.value, [3e6, 4e6], rtol=1e-6)
     assert r.ylabel == "Power [W]"
@@ -174,3 +176,164 @@ def test_required_envelopes_are_the_three_walks(banded_sweep):
     assert up.value == pytest.approx(5e6)
     assert up.lower <= up.value <= up.upper
     assert up.inner_lower <= up.value <= up.inner_upper
+
+
+def limited_sweep(agr, grid_cases, **limits):
+    return Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, limits=limits)
+
+
+def test_required_without_equals_uses_the_declared_limit(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5))
+    r = sweep.required("CHFR", solve_for="power", versus="mdot")
+    explicit = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
+    np.testing.assert_allclose(r.frame.value, explicit.frame.value)
+    assert list(r.frame.safe) == ["below", "below"]
+    assert r.safe_side == "below"
+    assert r.targets == {"CHFR": 1.5}
+
+
+def test_required_without_equals_and_without_limit_raises(sweep):
+    with pytest.raises(ValueError, match="no limit declared for 'CHFR'; pass equals= or declare it in limits="):
+        sweep.required("CHFR", solve_for="power", versus="mdot")
+
+
+def test_required_explicit_equals_has_no_side(sweep):
+    r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
+    assert r.frame.safe.isna().all() and r.safe_side is None
+
+
+def test_required_dict_targets_and_reducers(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases)
+    r = sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0},
+                       reduce={"CHFR": "min", "T_cool": "max"}, solve_for="power", versus="mdot")
+    assert set(r.frame.quantity) == {"CHFR", "T_cool"}
+    chfr = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot").frame
+    np.testing.assert_allclose(r.frame[r.frame.quantity == "CHFR"].value.to_numpy(), chfr.value.to_numpy())
+    assert r.targets == {"CHFR": 1.5, "T_cool": 60.0}
+    assert "min CHFR = 1.5, max Coolant temperature = 60 °C" in r.subtitle
+
+
+def test_required_dict_with_wrong_keys_raises(sweep):
+    with pytest.raises(ValueError, match="equals= has keys CHFR, OSVr but the quantities are CHFR, T_cool; give one entry per quantity"):
+        sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "OSVr": 1.1}, solve_for="power", versus="mdot")
+
+
+def test_required_default_reducer_follows_the_side(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, T_cool=at_most(60.0))
+    r = sweep.required("T_cool", solve_for="power", versus="mdot")
+    explicit = sweep.required("T_cool", equals=60.0, reduce="max", solve_for="power", versus="mdot")
+    np.testing.assert_allclose(r.frame.value, explicit.frame.value)
+    np.testing.assert_allclose(r.frame.value, [5e6, 5e6])
+    assert list(r.frame.safe) == ["below", "below"]
+    assert r.walk_reducers == {"T_cool": "max"}
+
+
+def test_required_safe_above_when_the_quantity_improves_with_solve_for(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5))
+    with pytest.warns(UserWarning):
+        r = sweep.required("CHFR", solve_for="mdot", versus="power")
+    assert set(r.frame.safe[r.frame.value.notna()]) == {"above"}
+
+
+def test_required_missing_solve_for_raises(sweep):
+    with pytest.raises(ValueError, match="required\\(\\) needs solve_for="):
+        sweep.required("CHFR", equals=1.5, versus="mdot")
+
+
+def test_required_limiting_keeps_the_binding_quantity(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(60.0))
+    both = sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0}, solve_for="power", versus="mdot")
+    r = sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0}, solve_for="power", versus="mdot", limiting=True)
+    assert r.binding is True and "quantity" not in r.dims and len(r.frame) == 2
+    assert list(r.frame.binder) == ["CHFR", "CHFR"]
+    chfr = both.frame[both.frame.quantity == "CHFR"].sort_values("mdot")
+    np.testing.assert_allclose(r.frame.sort_values("mdot").value, chfr.value)
+    assert r.subtitle.startswith("limiting of CHFR, Coolant temperature")
+
+
+def test_required_limiting_needs_sides(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5))
+    with pytest.raises(ValueError, match="limiting needs the side of every limit; declare T_cool in limits="):
+        sweep.required(
+            ["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0}, reduce={"CHFR": "min", "T_cool": "max"},
+            solve_for="power", versus="mdot", limiting=True,
+        )
+
+
+def test_required_limiting_with_nothing_to_collapse_raises(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5))
+    with pytest.raises(ValueError, match="limiting=True but only CHFR of CC is walked; nothing to collapse"):
+        sweep.required("CHFR", solve_for="power", versus="mdot", limiting=True)
+
+
+def test_required_limiting_with_disagreeing_sides_raises(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_least(45.0))
+    with pytest.raises(ValueError, match="CHFR is safe below the required power and T_cool above it; the feasible region is an interval, not one curve"):
+        sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
+
+
+def two_channel_sweep(agr, grid_cases, **limits):
+    from conftest import FakeChannel, channel_rows, frame
+
+    def make(power, mdot):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("hot", "CHFR", 0, j, chfr[j] * 0.8) for j in range(4)]
+        rows += [("hot", "T_cool", 0, j, T[j] + 5.0) for j in range(4)]
+        return frame(rows)
+
+    agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
+    return Sweep(grid_cases, [make(**c) for c in grid_cases], agr, limits=limits)
+
+
+def test_required_limiting_skips_a_quantity_safe_everywhere(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(1e9))
+    with pytest.warns(UserWarning, match="the curve never reaches 1e\\+09"):
+        both = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot")
+    with pytest.warns(UserWarning, match="never reaches"):
+        r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
+    assert list(both.frame[both.frame.quantity == "T_cool"].safe) == ["everywhere", "everywhere"]
+    assert list(r.frame.binder) == ["CHFR", "CHFR"]
+    chfr = both.frame[both.frame.quantity == "CHFR"].sort_values("mdot")
+    np.testing.assert_allclose(r.frame.sort_values("mdot").value, chfr.value)
+
+
+def test_required_limiting_with_a_quantity_unsafe_everywhere_gives_nan(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(10.0))
+    with pytest.warns(UserWarning, match="never reaches 10"):
+        r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
+    assert len(r.frame) == 2 and r.frame.value.isna().all()
+    assert list(r.frame.safe) == ["nowhere", "nowhere"]
+    assert list(r.frame.binder) == ["T_cool", "T_cool"]
+
+
+def test_required_limiting_across_calculations_names_the_calculation(agr, grid_cases):
+    sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.5))
+    both = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"])
+    r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
+    assert r.binding and "calculation" not in r.dims and len(r.frame) == 2
+    assert set(r.frame.binder) == {"CHFR of hot"}
+    hot = both.frame[both.frame.calculation == "hot"].sort_values("mdot")
+    np.testing.assert_allclose(r.frame.sort_values("mdot").value, hot.value)
+
+
+def test_required_quantity_target_with_a_limit_has_a_side(agr):
+    from conftest import frame
+
+    def rows(power):
+        rising = [("CC", "hot", 0, j, power / 1e6 + j) for j in range(4)]
+        falling = [("CC", "cold", 0, j, 10.0 - power / 1e6 + j) for j in range(4)]
+        return frame(rising + falling)
+
+    cases = [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
+    s = Sweep(cases, [rows(c["power"]) for c in cases], agr, limits={"hot": at_most(0.0)})
+    r = s.required("hot", equals="cold", reduce="max", solve_for="power", versus="mdot")
+    assert list(r.frame.safe) == ["below", "below"] and r.safe_side == "below"
+
+
+def test_safe_side_from_the_first_point_after_a_crossing_on_the_grid_start(agr, grid_cases):
+    sweep = limited_sweep(agr, grid_cases, T_cool=at_most(57.0))
+    r = sweep.required("T_cool", solve_for="power", versus="mdot")
+    np.testing.assert_allclose(r.frame.value, [2e6, 2e6])
+    assert list(r.frame.safe) == ["below", "below"]

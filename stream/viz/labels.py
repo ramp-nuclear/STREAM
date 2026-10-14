@@ -153,5 +153,6 @@ STREAM_LABELS = Labels(
         "band": "uncertainty",
         "band_sys": "systematic",
         "band_total": "systematic + statistical",
+        "binding": "binding",
     }
 )

@@ -8,6 +8,7 @@ from numbers import Real
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
@@ -18,6 +19,8 @@ from .style import DEFAULT_STYLE, Style
 
 BOUNDS = ("nominal", "lower", "upper")
 BANDS = ("total", "split", "none")
+LIMITS = ("line", "shade", "none")
+BOUND_COLUMNS = {"nominal": "value", "lower": "lower", "upper": "upper"}
 FIELD_ARGUMENTS = ("color", "style", "marker", "col", "row")
 
 
@@ -39,12 +42,22 @@ def _subset(frame, dims, levels):
     return frame[keep]
 
 
-def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, errorbars: bool, labels: Labels) -> tuple[bool, bool]:
-    """Draw one line per level combination; return whether the total and the inner band were drawn."""
+def binder_colors(frame, style: Style) -> dict[str, str]:
+    """A palette colour per binder, in order of first appearance."""
+    names = list(dict.fromkeys(frame["binder"].astype(str)))
+    return {name: style.palette[k % len(style.palette)] for k, name in enumerate(names)}
+
+
+def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, errorbars: bool, labels: Labels,
+               binding: dict[str, str] | None = None) -> tuple[bool, bool]:
+    """Draw one line per level combination; return whether the total and the inner band were drawn.
+
+    ``binding`` maps each binder to its colour; the points of each binder get a marker in it.
+    """
     dims, combos = _levels_of(result, enc)
     xs = labels.scale(result.x)
     ys = labels.scale(y_axis(result, labels)[1])
-    line_column = {"nominal": "value", "lower": "lower", "upper": "upper"}[bound]
+    line_column = BOUND_COLUMNS[bound]
     show_band = result.banded and bound == "nominal" and band != "none"
     drawn = inner_drawn = False
     for levels in combos:
@@ -60,9 +73,11 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
             lo, hi = sub["lower"].to_numpy() * ys, sub["upper"].to_numpy() * ys
             if np.any(hi > lo):
                 ax.errorbar(x, y, yerr=[y - lo, hi - y], capsize=3, **props)
+                _draw_binders(ax, sub, x, y, binding)
                 drawn = True
                 continue
         ax.plot(x, y, **props)
+        _draw_binders(ax, sub, x, y, binding)
         if show_band:
             lo, hi = sub["lower"].to_numpy() * ys, sub["upper"].to_numpy() * ys
             if np.any(hi > lo):
@@ -76,12 +91,24 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
     return drawn, inner_drawn
 
 
-def draw_field(field, ax, style: Style, bound: str, labels: Labels) -> None:
-    """Draw a rank-2 quantity as a colour mesh with a colour bar."""
-    column = {"nominal": "value", "lower": "lower", "upper": "upper"}[bound]
-    zs, xs, vs = labels.scale("z"), labels.scale("x"), labels.scale(field.quantity)
+def _draw_binders(ax, sub, x, y, binding: dict[str, str] | None) -> None:
+    for name, color in (binding or {}).items():
+        hit = (sub["binder"].astype(str) == name).to_numpy()
+        if hit.any():
+            ax.plot(x[hit], y[hit], linestyle="none", marker="o", color=color, zorder=3)
+
+
+def _cell_bounds(field) -> tuple[np.ndarray, np.ndarray]:
     zb = field.z_bounds if field.z_bounds is not None else np.arange(len(field.z) + 1) - 0.5
     xb = field.x_bounds if field.x_bounds is not None else np.arange(len(field.xs) + 1) - 0.5
+    return zb, xb
+
+
+def draw_field(field, ax, style: Style, bound: str, labels: Labels) -> None:
+    """Draw a rank-2 quantity as a colour mesh with a colour bar."""
+    column = BOUND_COLUMNS[bound]
+    zs, xs, vs = labels.scale("z"), labels.scale("x"), labels.scale(field.quantity)
+    zb, xb = _cell_bounds(field)
     mesh = ax.pcolormesh(xb * xs, zb * zs, field.arrays[column] * vs, cmap=style.ramp, shading="flat")
     bar = ax.figure.colorbar(mesh, ax=ax)
     bar.set_label(labels.axis(field.quantity))
@@ -101,6 +128,123 @@ def draw_field(field, ax, style: Style, bound: str, labels: Labels) -> None:
     ax.grid(False)
 
 
+def _limit_text(labels: Labels, q: str, limit) -> str:
+    unit = labels[q].unit
+    return f"{labels.display(q)} = {labels.value(q, limit.value)}" + (f" {unit}" if unit else "")
+
+
+def _quantities_on(result) -> list[str]:
+    if "quantity" in result.frame.columns:
+        return list(dict.fromkeys(result.frame["quantity"].astype(str)))
+    return list(result.ylabel_source)
+
+
+def _shade(ax, style: Style, color: str, span: tuple[float, float], x=None, y=None) -> None:
+    kwargs = dict(facecolor="white", alpha=style.shade_alpha, hatch=style.shade_hatch, edgecolor=color, linewidth=0)
+    if x is None:
+        ax.axhspan(span[0], span[1], **kwargs)
+    else:
+        ax.fill_between(x, y, span[1], **kwargs)
+
+
+def _is_required(result) -> bool:
+    return result.kind == "curve" and result.reducer is None and bool(result.targets)
+
+
+def _limit_color(enc: Encoding, style: Style, q: str) -> str:
+    return enc.maps["color"][q] if enc.channels.get("color") == "quantity" else style.palette[2]
+
+
+def _one_curve_error(result) -> ValueError:
+    if not result.dims or "quantity" in result.dims or "calculation" in result.dims:
+        return ValueError("shade needs one quantity per axes; put quantity on col= or row=")
+    dim = next(iter(result.dims))
+    return ValueError(f"shade needs one curve per axes; put {dim} on col= or row=")
+
+
+def _check_shade(result, enc: Encoding) -> None:
+    if _is_required(result):
+        if result.safe_side is None:
+            raise ValueError(f"shading needs the side of the limit; declare {result.walk_quantity} in limits=")
+        if len(result.frame) != len(result.frame.drop_duplicates(result.x)):
+            raise _one_curve_error(result)
+        return
+    drawn = _quantities_on(result)
+    if len(drawn) > 1 or "calculation" in enc.channels.values():
+        raise ValueError("shade needs one quantity per axes; put quantity on col= or row=")
+    if drawn[0] not in result.limits:
+        raise ValueError(f"no limit declared for {drawn[0]!r}; declare it in limits= to shade")
+
+
+def draw_limit_lines(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+    """Dashed lines at the declared limits of the drawn quantities; checks a shade request first."""
+    if limit == "shade":
+        _check_shade(result, enc)
+    if limit == "none" or _is_required(result):
+        return
+    ys = labels.scale(y_axis(result, labels)[1])
+    for q in _quantities_on(result):
+        lim = result.limits.get(q)
+        if lim is None:
+            continue
+        color = _limit_color(enc, style, q)
+        y = lim.value * ys
+        ax.axhline(y, linestyle="--", linewidth=style.limit_linewidth, color=color, zorder=2)
+        ax.annotate(_limit_text(labels, q, lim), xy=(1.0, y), xycoords=("axes fraction", "data"),
+                    xytext=(-2, 3), textcoords="offset points", ha="right", va="bottom", fontsize=9, color=color)
+
+
+def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+    """Hatch the unsafe side up to the current axes edge; the axes limits are kept as they are."""
+    if limit != "shade":
+        return
+    lo, hi = ax.get_ylim()
+    ys = labels.scale(y_axis(result, labels)[1])
+    if _is_required(result):
+        xs = labels.scale(result.x)
+        sub = result.frame.sort_values(result.x)
+        x, y = sub[result.x].to_numpy(float) * xs, sub["value"].to_numpy(float) * ys
+        edge = hi if result.safe_side == "below" else lo
+        _shade(ax, style, style.palette[2], (lo, edge), x=x, y=y)
+    else:
+        q = _quantities_on(result)[0]
+        lim = result.limits[q]
+        y = lim.value * ys
+        _shade(ax, style, _limit_color(enc, style, q), (lo, y) if lim.side == "above" else (y, hi))
+    ax.set_ylim(lo, hi)
+
+
+def draw_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+    """Dashed lines at the declared limits of the drawn quantities, and the unsafe side shaded on request."""
+    draw_limit_lines(result, ax, enc, style, labels, limit)
+    if limit == "shade":
+        ax.autoscale_view()
+        shade_limits(result, ax, enc, style, labels, limit)
+
+
+def draw_field_limit(field, ax, style: Style, labels: Labels, limit: str, bound: str = "nominal") -> None:
+    """The limit contour over a field image, and the cells beyond it hatched on request."""
+    lim = field.limits.get(field.quantity)
+    if limit == "none" or lim is None:
+        if limit == "shade" and lim is None:
+            raise ValueError(f"no limit declared for {field.quantity!r}; declare it in limits= to shade")
+        return
+    zs, xs, vs = labels.scale("z"), labels.scale("x"), labels.scale(field.quantity)
+    xx, zz = np.meshgrid(field.xs * xs, field.z * zs)
+    drawn = field.arrays[BOUND_COLUMNS[bound]]
+    values = drawn * vs
+    level = lim.value * vs
+    if np.nanmin(values) < level < np.nanmax(values):
+        cs = ax.contour(xx, zz, values, levels=[level], colors=[style.palette[2]], linewidths=style.limit_linewidth)
+        ax.clabel(cs, fmt={level: _limit_text(labels, field.quantity, lim)}, fontsize=9, inline=True)
+    unsafe = lim.unsafe(drawn)
+    if limit == "shade" and unsafe.any():
+        zb, xb = _cell_bounds(field)
+        cells = np.ma.masked_array(np.zeros(unsafe.shape), mask=~unsafe)
+        ax.pcolor(xb * xs, zb * zs, cells, cmap=ListedColormap(["white"]), alpha=style.shade_alpha,
+                  edgecolor=style.palette[2], linewidth=0, hatch=style.shade_hatch)
+
+
 def _band_texts(band: str, inner_drawn: bool, sigma_text: str, labels: Labels) -> list[tuple[str | None, bool]]:
     """Each band entry's legend text and whether it is the inner systematic swatch."""
     if band == "split":
@@ -111,7 +255,8 @@ def _band_texts(band: str, inner_drawn: bool, sigma_text: str, labels: Labels) -
     return [(None if text is None else f"{text}{sigma_text}", False)]
 
 
-def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: str, sigma_text: str, labels: Labels, style: Style) -> None:
+def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: str, sigma_text: str, labels: Labels, style: Style,
+                 binding: dict[str, str] | None = None) -> None:
     """Put a legend on ``ax`` when there is a block or a band entry to show."""
     handles, texts = [], []
     for block in enc.legend:
@@ -128,11 +273,20 @@ def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: s
             alpha = style.band_alpha_inner if is_inner else style.band_alpha
             handles.append(Patch(facecolor=style.palette[-1], alpha=alpha))
             texts.append(text)
+    if binding:
+        handles.append(Line2D([], [], color="none", label=labels["binding"].display))
+        texts.append(labels["binding"].display)
+        for name, color in binding.items():
+            handles.append(Line2D([], [], linestyle="none", marker="o", color=color))
+            texts.append(f"  {name}")
     if not texts:
         return
-    if len(enc.legend) == 1 and not band_drawn:
+    if len(enc.legend) == 1 and not band_drawn and not binding:
         block = enc.legend[0]
         ax.legend(handles[1:], [t.strip() for t in texts[1:]], title=block.title)
+        return
+    if not enc.legend and not band_drawn and binding:
+        ax.legend(handles[1:], [t.strip() for t in texts[1:]], title=labels["binding"].display)
         return
     ax.legend(handles, texts)
 
@@ -163,10 +317,11 @@ def _check_field_arguments(values: dict, band: str, errorbars: bool) -> None:
 
 
 def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal", band="total",
-         errorbars=False, style_sheet=None, labels=None):
+         errorbars=False, limit="line", style_sheet=None, labels=None):
     """Draw ``result`` and return ``(figure, axes)``; ``axes`` is an array for a panel grid."""
     _check("bound", bound, BOUNDS)
     _check("band", band, BANDS)
+    _check("limit", limit, LIMITS)
     sheet = style_sheet or DEFAULT_STYLE
     merged = result.labels.merged(labels)
     if ax is not None and (col or row):
@@ -177,26 +332,31 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             _check_field_arguments(dict(zip(FIELD_ARGUMENTS, (color, style, marker, col, row))), band, errorbars)
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
             draw_field(result, ax, sheet, bound, merged)
+            draw_field_limit(result, ax, sheet, merged, limit, bound)
             ax.set_title(result.subtitle_with(merged), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
             return fig, ax
         enc = encode(result.dims, result.numeric, merged, sheet, color, style, marker, col, row, result.level_space)
+        binding = binder_colors(result.frame, sheet) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
-            drawn, inner_drawn = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged)
+            drawn, inner_drawn = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged, binding)
+            draw_limits(result, ax, enc, sheet, merged, limit)
             finish_axes(ax, result, merged, sheet, result.subtitle_with(merged))
-            build_legend(ax, enc, drawn, inner_drawn, band, sigma_text, merged, sheet)
+            build_legend(ax, enc, drawn, inner_drawn, band, sigma_text, merged, sheet, binding=binding)
             return fig, ax
         cols = result.dims.get(enc.col, [None]) if enc.col else [None]
         rows = result.dims.get(enc.row, [None]) if enc.row else [None]
         w, h = sheet.panel_size
         fig, axes = plt.subplots(len(rows), len(cols), figsize=(w * len(cols), h * len(rows)), sharex=True, sharey=True, squeeze=False)
         drawn_any = inner_any = False
+        panels = []
         for (ri, rv), (ci, cv) in product(enumerate(rows), enumerate(cols)):
             panel_ax = axes[ri, ci]
             fixed = {k: v for k, v in ((enc.row, rv), (enc.col, cv)) if k is not None}
             sub = _subset(result.frame, list(fixed), list(fixed.values()))
             panel = _with_frame(result, sub, fixed)
-            drawn, inner_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged)
+            drawn, inner_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged, binding)
+            panels.append((panel, panel_ax))
             drawn_any, inner_any = drawn_any or drawn, inner_any or inner_drawn
             title = ", ".join(p for p in (_panel_text(merged, fixed), result.subtitle_with(merged)) if p)
             finish_axes(panel_ax, panel, merged, sheet, title)
@@ -204,7 +364,13 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
                 panel_ax.set_ylabel("")
             if ri != len(rows) - 1:
                 panel_ax.set_xlabel("")
-        build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet)
+        for panel, panel_ax in panels:
+            draw_limit_lines(panel, panel_ax, enc, sheet, merged, limit)
+        if limit == "shade":
+            axes[0, 0].autoscale_view()
+            for panel, panel_ax in panels:
+                shade_limits(panel, panel_ax, enc, sheet, merged, limit)
+        build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding)
         fig.tight_layout()
         return fig, axes
 

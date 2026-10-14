@@ -29,6 +29,9 @@ class Style:
     legend_frame: bool = False
     grid_alpha: float = 0.25
     subtitle_size: float = 9.5
+    limit_linewidth: float = 1.6
+    shade_alpha: float = 0.55
+    shade_hatch: str = "////"
 
     def replace(self, **changes) -> Style:
         """A copy with the given fields changed."""

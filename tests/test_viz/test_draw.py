@@ -1,9 +1,10 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from conftest import make_case_frame
 from matplotlib.collections import PolyCollection
 
-from stream.viz import Style
+from stream.viz import Style, Sweep, at_least, at_most
 
 
 def legend_texts(ax):
@@ -223,4 +224,233 @@ def test_required_curve_plot(sweep):
     fig, ax = r.plot(labels={"power": ("Power", "MW", 1e-6)})
     assert ax.get_ylabel() == "Power [MW]"
     np.testing.assert_allclose(ax.get_lines()[0].get_ydata(), 1e-6 * r.frame.value)
+    plt.close(fig)
+
+
+def test_binding_markers_and_legend(agr, grid_cases):
+    from conftest import make_case_frame
+
+    from stream.viz import Sweep, at_least, at_most
+
+    sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr,
+                  limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
+    r = sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0}, solve_for="power", versus="mdot", limiting=True)
+    fig, ax = r.plot()
+    lines = ax.get_lines()
+    assert len(lines) == 2
+    assert lines[1].get_linestyle() == "None" and lines[1].get_marker() == "o"
+    assert legend_texts(ax) == ["CHFR"]
+    assert ax.get_legend().get_title().get_text() == "binding"
+    plt.close(fig)
+
+
+def _marker_colors(ax):
+    from matplotlib.colors import to_hex
+
+    return [to_hex(line.get_color()) for line in ax.get_lines() if line.get_marker() == "o" and line.get_linestyle() == "None"]
+
+
+def _legend_marker_colors(ax):
+    from matplotlib.colors import to_hex
+
+    leg = ax.get_legend()
+    return {t.get_text(): to_hex(h.get_color()) for t, h in zip(leg.get_texts(), leg.legend_handles)}
+
+
+def test_binding_markers_match_the_legend_colours(agr, grid_cases):
+    from conftest import make_case_frame
+
+    from stream.viz import Sweep, at_least, at_most
+
+    sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr,
+                  limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
+    r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
+    fig, ax = r.plot()
+    assert set(_marker_colors(ax)) == {_legend_marker_colors(ax)["CHFR"]}
+    plt.close(fig)
+
+
+def test_binding_markers_on_errorbars(agr, grid_cases):
+    from conftest import make_case_frame
+
+    from stream.viz import Sweep, at_least, at_most
+
+    sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr,
+                  limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
+    r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
+    fig, ax = r.plot(errorbars=True)
+    assert len(_marker_colors(ax)) == 1
+    plt.close(fig)
+
+
+def test_binding_marker_colours_agree_across_panels(agr):
+    from conftest import FakeChannel, channel_rows, frame
+
+    from stream.viz import Sweep, at_least
+
+    def make(power, mdot, peak):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("hot", "CHFR", 0, j, chfr[j] * peak) for j in range(4)]
+        return frame(rows)
+
+    agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
+    cases = [dict(power=p, mdot=m, peak=k) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
+    sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
+    r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
+    assert set(r.frame[r.frame.peak == 0.8].binder) == {"CHFR of hot"}
+    assert set(r.frame[r.frame.peak == 1.25].binder) == {"CHFR of CC"}
+    fig, axes = r.plot(col="peak")
+    legend = _legend_marker_colors(axes[0, -1])
+    assert set(_marker_colors(axes[0, 0])) == {legend["CHFR of hot"]}
+    assert set(_marker_colors(axes[0, 1])) == {legend["CHFR of CC"]}
+    assert legend["CHFR of hot"] != legend["CHFR of CC"]
+    plt.close(fig)
+
+
+def limited(agr, grid_cases, **limits):
+    return Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, limits=limits)
+
+
+def dashed_lines(ax):
+    return [ln for ln in ax.get_lines() if ln.get_linestyle() == "--"]
+
+
+def hatched(ax):
+    collections = [c for c in ax.collections if c.get_hatch() or any(getattr(c, "hatches", ()))]
+    return collections + [p for p in ax.patches if p.get_hatch()]
+
+
+def test_limit_line_on_a_curve(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot")
+    (line,) = dashed_lines(ax)
+    assert line.get_ydata()[0] == pytest.approx(1.5)
+    assert any(t.get_text() == "CHFR = 1.5" for t in ax.texts)
+    plt.close(fig)
+    fig, ax = sweep.reduce("T_cool", "max", versus="power").plot()
+    assert dashed_lines(ax) == [] and len(ax.texts) == 0
+    plt.close(fig)
+
+
+def test_limit_line_scaled_and_coloured_by_quantity(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    r = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3))
+    fig, ax = r.plot(labels={"CHFR": ("CHFR", "", 10.0)})
+    (line,) = dashed_lines(ax)
+    assert line.get_ydata()[0] == pytest.approx(15.0)
+    chfr_colour = next(ln for ln in ax.get_lines() if ln.get_linestyle() == "-").get_color()
+    assert line.get_color() == chfr_colour
+    plt.close(fig)
+
+
+def test_limit_shade_hatches_the_unsafe_side(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", limit="shade")
+    (patch,) = hatched(ax)
+    assert patch.get_hatch() == "////"
+    lo, hi = ax.get_ylim()
+    assert patch.get_window_extent(fig.canvas.get_renderer()).height > 0
+    assert lo < 1.5 < hi
+    plt.close(fig)
+    sweep2 = limited(agr, grid_cases, T_cool=at_most(50.0))
+    fig, ax = sweep2.reduce("T_cool", "max", versus="power").plot(limit="shade")
+    assert len(hatched(ax)) == 1
+    plt.close(fig)
+
+
+def test_limit_shade_refusals(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    with pytest.raises(ValueError, match="shade needs one quantity per axes; put quantity on col= or row="):
+        sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(limit="shade")
+    with pytest.raises(ValueError, match="no limit declared for 'T_cool'; declare it in limits= to shade"):
+        sweep.reduce("T_cool", "max", versus="power").plot(limit="shade")
+    r = limited(agr, grid_cases).required("CHFR", equals=1.6, solve_for="power", versus="mdot")
+    with pytest.raises(ValueError, match="shading needs the side of the limit; declare CHFR in limits="):
+        r.plot(limit="shade")
+    with pytest.raises(ValueError, match="limit='both'; use one of line, shade, none"):
+        sweep.reduce("CHFR", "min", versus="power").plot(limit="both")
+
+
+def test_limit_shade_allowed_with_quantity_on_panels(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(50.0))
+    fig, axes = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity", limit="shade")
+    assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
+    plt.close(fig)
+
+
+def test_limit_none_and_required_shade(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(limit="none")
+    assert dashed_lines(ax) == [] and hatched(ax) == []
+    plt.close(fig)
+    r = sweep.required("CHFR", solve_for="power", versus="mdot")
+    fig, ax = r.plot()
+    assert dashed_lines(ax) == []
+    plt.close(fig)
+    fig, ax = r.plot(limit="shade")
+    assert len(hatched(ax)) == 1
+    plt.close(fig)
+
+
+def test_field_limit_contour(agr, grid_cases):
+    sweep = limited(agr, grid_cases, T=at_most(60.0))
+    fig, ax = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()
+    assert any(type(c).__name__ == "QuadContourSet" for c in ax.collections)
+    plt.close(fig)
+    field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    fig, ax = field.plot(limit="shade")
+    (cells,) = hatched(ax)
+    assert isinstance(cells, PolyCollection)
+    assert len(cells.get_paths()) == at_most(60.0).unsafe(field.arrays["value"]).sum() == 2
+    plt.close(fig)
+
+
+def test_limit_shade_on_panels_keeps_every_limit_in_view(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(100.0))
+    for order in (["CHFR", "T_cool"], ["T_cool", "CHFR"]):
+        r = sweep.profile(order, where=dict(power=4e6, mdot=0.3))
+        fig, axes = r.plot(col="quantity", limit="shade")
+        for ax in axes.ravel():
+            lo, hi = ax.get_ylim()
+            assert lo < 1.5 and 100.0 < hi
+            assert len(hatched(ax)) == 1
+        plt.close(fig)
+
+
+def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
+    from conftest import FakeChannel, channel_rows, frame
+
+    def make(power, mdot, peak):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("hot", "CHFR", 0, j, chfr[j] * peak) for j in range(4)]
+        return frame(rows)
+
+    agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
+    cases = [dict(power=p, mdot=m, peak=k) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
+    sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
+    r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
+    with pytest.raises(ValueError, match="shade needs one curve per axes; put peak on col= or row="):
+        r.plot(color="peak", limit="shade")
+    fig, axes = r.plot(col="peak", limit="shade")
+    assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
+    plt.close(fig)
+    r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"])
+    with pytest.raises(ValueError, match="shade needs one quantity per axes; put quantity on col= or row="):
+        r.plot(limit="shade")
+
+
+def test_field_shade_reads_the_drawn_bound_and_skips_safe_fields(agr, grid_cases):
+    sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"T": at_most(60.0)})
+    field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    fig, ax = field.plot(bound="upper", limit="shade")
+    (cells,) = hatched(ax)
+    assert len(cells.get_paths()) == at_most(60.0).unsafe(field.arrays["upper"]).sum() == 3
+    plt.close(fig)
+    safe = limited(agr, grid_cases, T=at_most(100.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    fig, ax = safe.plot(limit="shade")
+    assert hatched(ax) == []
     plt.close(fig)

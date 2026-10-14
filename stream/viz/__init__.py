@@ -18,6 +18,9 @@ with generated labels and legends under the STREAM style.
 from .envelope import at as at
 from .labels import Label as Label
 from .labels import Labels as Labels
+from .limits import Limit as Limit
+from .limits import at_least as at_least
+from .limits import at_most as at_most
 from .style import Style as Style
 from .sweep import Sweep as Sweep
 from .sweep import run_cases as run_cases

@@ -9,6 +9,12 @@ Sweep
 .. automodule:: stream.viz.sweep
    :members:
 
+Limits
+------
+
+.. automodule:: stream.viz.limits
+   :members:
+
 Results
 -------
 

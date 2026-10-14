@@ -6,12 +6,14 @@ import warnings
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from numbers import Real
+from types import MappingProxyType
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
 from .labels import STREAM_LABELS, Labels
+from .limits import Limit
 
 STATE_COLUMNS = ("calculation", "variable", "i", "j", "value")
 BAND_COLUMNS = ("sys", "stat")
@@ -87,7 +89,7 @@ class Sweep:
         Display names and units, merged over the module defaults.
     """
 
-    def __init__(self, cases, frames, agr, labels=None):
+    def __init__(self, cases, frames, agr, labels=None, limits=None, fill_holes=False):
         self.cases = _check_cases(cases)
         self.parameters: tuple[str, ...] = tuple(self.cases[0]) if self.cases else ()
         if len(self.cases) != len(frames):
@@ -104,12 +106,15 @@ class Sweep:
         self.banded = any(_has_band(f) for f in checked.values())
         self.bad_rows: dict[int, list[int]] = {}
         self.table = self._stack(checked)
+        self.fill_holes = bool(fill_holes)
+        self.filled: dict[int, dict[str, tuple[int, int]]] = {}
+        self.limits = MappingProxyType(_check_limits(limits, self.table))
         self._coords_cache: dict[str, object] = {}
 
     @classmethod
-    def single(cls, frame: DataFrame, agr, labels=None) -> Sweep:
+    def single(cls, frame: DataFrame, agr, labels=None, limits=None) -> Sweep:
         """A sweep of one case and no parameters."""
-        return cls([{}], [frame], agr, labels)
+        return cls([{}], [frame], agr, labels, limits)
 
     @property
     def labels(self) -> Labels:
@@ -271,13 +276,13 @@ class Sweep:
 
         return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty)
 
-    def required(self, quantity, equals, solve_for, versus, reduce=None, of=None, at=None, where=None,
-                 method="linear", nearest=False, sigma=1.0, uncertainty=True):
+    def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
+                 method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False):
         """The value of ``solve_for`` at which the reduced quantity equals ``equals``, against ``versus``."""
         from .inverse import required
 
         return required(self, quantity, equals, solve_for, versus, reducer=reduce, of=of, at=at, where=where,
-                        method=method, nearest=nearest, sigma=sigma, uncertainty=uncertainty)
+                        method=method, nearest=nearest, sigma=sigma, uncertainty=uncertainty, limiting=limiting)
 
 
 def _calculation_names(agr) -> list[str]:
@@ -308,6 +313,20 @@ def _coords_of(calc) -> Coords | None:
         weights = np.abs(np.diff(bounds)) if bounds is not None else np.ones_like(centers)
         return Coords(names=("z",), centers=(centers,), bounds=(bounds,), weights=(weights,))
     return None
+
+
+def _check_limits(limits, table: DataFrame) -> dict[str, Limit]:
+    out = {}
+    variables = sorted(table["variable"].unique().tolist()) if len(table) else []
+    for name, limit in (limits or {}).items():
+        if not isinstance(limit, Limit):
+            raise TypeError(f"limits[{name!r}] must come from at_least() or at_most(), not {limit!r}")
+        if name not in variables:
+            raise ValueError(
+                f"{name!r} in limits= is not a variable of any calculation; the variables are {', '.join(variables)}"
+            )
+        out[name] = limit
+    return out
 
 
 def _check_cases(cases) -> list[dict[str, float]]:
