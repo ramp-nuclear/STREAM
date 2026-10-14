@@ -16,6 +16,7 @@ from pathlib import Path
 
 import numpy as np
 
+from stream.composition import guess_steady_state
 from stream.examples.lofa import HEATED, build, guess, steady, steady_checks
 from stream.examples.lofa.params import NC_SIGNS, Params
 
@@ -26,16 +27,20 @@ _spec.loader.exec_module(metrics)
 
 RESULTS_DIR = HERE / "results"
 
-RUNGS = ("1", "3", "4", "5", "6")
+RUNGS = ("1", "2", "3", "4", "5", "6")
 CONFIG_TIMEOUT = 3600
-TIMEOUTS = {"1": 600, "3": 2400, "4": 1800, "5": 2400, "6": 4 * CONFIG_TIMEOUT + 300}
-TITLES = {"1": "steady, ballpark guess", "3": "both pumps trip, 1 h", "4": "one pump trips, 30 min",
+TIMEOUTS = {"1": 600, "2": 600, "3": 2400, "4": 1800, "5": 2400, "6": 4 * CONFIG_TIMEOUT + 300}
+TITLES = {"1": "steady, ballpark guess", "2": "steady, library guess", "3": "both pumps trip, 1 h", "4": "one pump trips, 30 min",
           "5": "stuck flapper", "6": "event-time invariance"}
+
+
+def _library_guess(agr, K, refs) -> np.ndarray:
+    return agr.load(guess_steady_state(agr, K, overrides={refs["trip"].name: {"flag": 0.0}}))
 
 
 def _steady_rung(kind: str) -> tuple[dict, np.ndarray]:
     agr, K, refs = build(Params())
-    y0 = guess(agr, K, refs, kind)
+    y0 = _library_guess(agr, K, refs) if kind == "library" else guess(agr, K, refs, kind)
     y = steady(agr, y0)
     chk = steady_checks(agr, K, refs, y)
     ok = chk["T_out_error_max"] < 0.5 and chk["split_error_max"] < 0.15 and chk["pool_flow"] * NC_SIGNS["pool"] < 0 \
@@ -49,6 +54,10 @@ def _steady_rung(kind: str) -> tuple[dict, np.ndarray]:
 
 def rung_1():
     return _steady_rung("ballpark")[0]
+
+
+def rung_2():
+    return _steady_rung("library")[0]
 
 
 def _result_path(rung: str) -> str:
@@ -161,6 +170,8 @@ def run_rung_inprocess(rung: str) -> dict:
     match rung:
         case "1":
             fn = rung_1
+        case "2":
+            fn = rung_2
         case "3":
             fn = rung_3
         case "4":

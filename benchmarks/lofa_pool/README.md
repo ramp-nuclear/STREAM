@@ -47,8 +47,8 @@ Measured on the library at commit `8fe2d91`, the first commit with the regime-de
 | 5 | stuck flapper | PASS | 22 |
 | 6 | event-time invariance | PASS | 104 |
 
-Rung 2 is reserved for the steady state from the library's guess toolkit and is absent until that
-library feature ships.
+Rung 2 solves the same steady state as rung 1, starting from `stream.composition.guess_steady_state`
+instead of the ballpark guess; its pass conditions are those of rung 1.
 
 Rungs 1, 3, 4 and 5 also run as slow tests of `stream.examples.lofa`.
 Rung 6 and the sweep are benchmark-only.
