@@ -52,6 +52,8 @@ extensions = [
     "sphinx.ext.coverage",
 ]
 
+nbsphinx_timeout = -1
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 # List of patterns, relative to source directory, that match files and
