@@ -79,3 +79,11 @@ def test_labels_is_a_mapping_in_insertion_order():
     assert list(labels) == ["b", "a"]
     assert len(labels) == 2
     assert "a" in labels
+
+
+def test_value_and_describe_pass_strings_through():
+    from stream.viz.labels import Labels
+
+    labels = Labels({"wall_law": "Wall law"})
+    assert labels.value("wall_law", "regime") == "regime"
+    assert labels.describe({"wall_law": "regime", "power": 4e6}) == "Wall law = regime, power = 4e+06"

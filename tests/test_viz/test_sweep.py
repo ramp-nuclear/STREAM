@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 from conftest import frame, make_case_frame
 
+from stream.viz import cases
 from stream.viz.labels import Label
 from stream.viz.sweep import Coords, FrameList, Sweep, run_cases
 
@@ -69,7 +70,7 @@ def test_misaligned_lists_raise(grid_cases, agr):
 
 def test_non_float_case_value_raises(agr):
     with pytest.raises(TypeError, match="case 0.*'tag'.*'up'"):
-        Sweep([dict(power=1.0, tag="up")], [make_case_frame(1.0, 0.3)], agr)
+        Sweep([dict(power=1.0, tag=["up"])], [make_case_frame(1.0, 0.3)], agr)
 
 
 def test_integers_become_floats(agr):
@@ -287,3 +288,67 @@ def test_coords_plate_without_bounds_gets_unit_weights(agr):
     np.testing.assert_allclose(c.weights[0], [1.0, 1.0])
     np.testing.assert_allclose(c.weights[1], [1.0, 1.0, 1.0])
     assert c.mask is None
+
+
+def wall_cases():
+    return [dict(power=p, wall_law=w) for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6)]
+
+
+def wall_sweep(agr):
+    cs = wall_cases()
+    return Sweep(cs, [make_case_frame(c["power"], 0.3) for c in cs], agr)
+
+
+def test_string_parameter_levels_keep_first_appearance_order(agr):
+    sweep = wall_sweep(agr)
+    assert sweep.categorical == frozenset({"wall_law"})
+    assert list(sweep.levels("wall_law")) == ["regime", "Dittus"]
+    np.testing.assert_allclose(sweep.levels("power"), [2e6, 4e6, 6e6])
+
+
+def test_mixed_kinds_in_one_parameter_raise(agr):
+    cs = wall_cases()
+    cs[3]["wall_law"] = 1.0
+    with pytest.raises(TypeError, match="parameter 'wall_law' is a number in case 3 and a string in case 0; a parameter is one or the other"):
+        Sweep(cs, [make_case_frame(c["power"], 0.3) for c in cs], agr)
+
+
+def test_where_matches_a_string_exactly(agr):
+    sweep = wall_sweep(agr)
+    assert list(sweep.select(dict(wall_law="Dittus"))) == [3, 4, 5]
+    with pytest.raises(ValueError, match="'Regime' is not a level of wall_law; the levels are regime, Dittus"):
+        sweep.select(dict(wall_law="Regime"))
+    with pytest.raises(ValueError, match="'Regime' is not a level of wall_law"):
+        sweep.select(dict(wall_law="Regime"), nearest=True)
+
+
+def test_string_parameter_colours_and_titles(agr):
+    sweep = wall_sweep(agr)
+    r = sweep.reduce("CHFR", "min", versus="power")
+    assert r.dims == {"wall_law": ["regime", "Dittus"]} and r.numeric == frozenset()
+    fig, ax = r.plot()
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["regime", "Dittus"]
+    assert ax.get_legend().get_title().get_text() == "wall_law"
+    fig, axes = r.plot(col="wall_law")
+    assert axes[0, 0].get_title().startswith("wall_law = regime")
+    assert sweep.profile("CHFR", where=dict(power=4e6, wall_law="Dittus")).subtitle == "Power = 4e+06 W, wall_law = Dittus, CC"
+
+
+def test_string_parameter_refused_as_an_axis(agr):
+    sweep = wall_sweep(agr)
+    with pytest.raises(ValueError, match="wall_law is categorical; it can colour, style or panel a figure, not be an axis"):
+        sweep.reduce("CHFR", "min", versus="wall_law")
+    with pytest.raises(ValueError, match="wall_law is categorical"):
+        sweep.required("CHFR", equals=1.5, solve_for="wall_law", versus="power")
+    with pytest.raises(ValueError, match="wall_law is categorical"):
+        sweep.required("CHFR", equals=1.5, solve_for="power", versus="wall_law")
+
+
+def test_cases_product():
+    out = cases(power=[2e6, 4e6], mdot=[0.2, 0.3], Tin=300.0, wall_law="regime")
+    assert out[:2] == [dict(power=2e6, mdot=0.2, Tin=300.0, wall_law="regime"), dict(power=2e6, mdot=0.3, Tin=300.0, wall_law="regime")]
+    assert len(out) == 4
+    with pytest.raises(ValueError, match="power has no levels"):
+        cases(power=[])
+    with pytest.raises(ValueError, match="cases\\(\\) needs at least one parameter"):
+        cases()

@@ -5,6 +5,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
+from itertools import product
 from numbers import Real
 from types import MappingProxyType
 
@@ -17,7 +18,7 @@ from .limits import Limit
 
 STATE_COLUMNS = ("calculation", "variable", "i", "j", "value")
 BAND_COLUMNS = ("sys", "stat")
-RESERVED_COLUMNS = ("case",) + STATE_COLUMNS + BAND_COLUMNS
+RESERVED_COLUMNS = ("case",) + STATE_COLUMNS + BAND_COLUMNS + ("filled", "safe", "binder")
 
 
 @dataclass(frozen=True)
@@ -45,8 +46,27 @@ class FrameList(list):
         self.failures = {}
 
 
-def _case_text(case: Mapping[str, float]) -> str:
-    return ", ".join(f"{k}={v:g}" for k, v in case.items())
+def _case_text(case: Mapping) -> str:
+    return ", ".join(f"{k}={v if isinstance(v, str) else format(v, 'g')}" for k, v in case.items())
+
+
+def cases(**levels) -> list[dict]:
+    """Every combination of the given levels, one dict per case.
+
+    Keys keep the given order and the last parameter varies fastest. A
+    number or a string is a parameter with one level::
+
+        run_cases(model, cases(power=[2e6, 4e6], mdot=[0.2, 0.3], wall_law="regime"))
+    """
+    if not levels:
+        raise ValueError("cases() needs at least one parameter")
+    axes = []
+    for name, values in levels.items():
+        values = [values] if isinstance(values, (str, Real)) else list(values)
+        if not values:
+            raise ValueError(f"{name} has no levels")
+        axes.append(values)
+    return [dict(zip(levels, combo)) for combo in product(*axes)]
 
 
 def run_cases(
@@ -79,7 +99,9 @@ class Sweep:
     Parameters
     ----------
     cases:
-        One dict per case, all with the same keys, float values only.
+        One dict per case, all with the same keys. A parameter holds a
+        number in every case, or a string in every case (a choice, which
+        can colour, style or panel a figure but not be an axis).
     frames:
         One ``State.to_dataframe()`` result per case, or ``None`` for a
         case whose solve failed.
@@ -90,7 +112,7 @@ class Sweep:
     """
 
     def __init__(self, cases, frames, agr, labels=None, limits=None, fill_holes=False):
-        self.cases = _check_cases(cases)
+        self.cases, self.categorical = _check_cases(cases)
         self.parameters: tuple[str, ...] = tuple(self.cases[0]) if self.cases else ()
         if len(self.cases) != len(frames):
             raise ValueError(f"{len(self.cases)} cases but {len(frames)} frames; the two lists must align")
@@ -133,10 +155,13 @@ class Sweep:
         return dict(self.cases[index])
 
     def levels(self, parameter: str) -> np.ndarray:
-        """The sorted distinct values of ``parameter`` over all cases."""
+        """The distinct values of ``parameter``: sorted when numeric, in order of first appearance when a string."""
         if parameter not in self.parameters:
             raise ValueError(f"{parameter!r} is not a sweep parameter; the parameters are {', '.join(self.parameters)}")
-        return np.unique([c[parameter] for c in self.cases])
+        values = [c[parameter] for c in self.cases]
+        if parameter in self.categorical:
+            return np.asarray(list(dict.fromkeys(values)), dtype=object)
+        return np.unique(values)
 
     def _stack(self, checked: dict[int, DataFrame]) -> DataFrame:
         pieces = []
@@ -185,6 +210,11 @@ class Sweep:
         out = {}
         for name, wanted in (where or {}).items():
             levels = self.levels(name)
+            if name in self.categorical:
+                if wanted not in levels:
+                    raise ValueError(f"{wanted!r} is not a level of {name}; the levels are {', '.join(levels)}")
+                out[name] = wanted
+                continue
             hits = np.isclose(levels, wanted, rtol=1e-9, atol=0.0)
             if hits.any():
                 out[name] = float(levels[hits][0])
@@ -202,12 +232,14 @@ class Sweep:
     def select(self, where: Mapping[str, float] | None = None, nearest: bool = False) -> np.ndarray:
         """Indices of the cases matching ``where``; every case when ``where`` is empty."""
         wanted = self.resolve(where, nearest)
-        keep = [
-            k
-            for k, case in enumerate(self.cases)
-            if all(np.isclose(case[n], v, rtol=1e-9, atol=0.0) for n, v in wanted.items())
-        ]
+        keep = [k for k, case in enumerate(self.cases) if self._matches(case, wanted)]
         return np.asarray(keep, dtype=int)
+
+    def _matches(self, case: Mapping, wanted: Mapping) -> bool:
+        return all(
+            case[n] == v if n in self.categorical else np.isclose(case[n], v, rtol=1e-9, atol=0.0)
+            for n, v in wanted.items()
+        )
 
     def rank(self, quantity: str, calculation: str) -> int:
         """0, 1 or 2 from the index layout of the quantity's rows.
@@ -329,9 +361,10 @@ def _check_limits(limits, table: DataFrame) -> dict[str, Limit]:
     return out
 
 
-def _check_cases(cases) -> list[dict[str, float]]:
+def _check_cases(cases) -> tuple[list[dict], frozenset[str]]:
     out = []
     keys = None
+    kinds: dict[str, tuple[str, int]] = {}
     for k, case in enumerate(cases):
         if not isinstance(case, Mapping):
             raise TypeError(f"case {k} must be a dict of parameter values, not {type(case).__name__}")
@@ -348,11 +381,22 @@ def _check_cases(cases) -> list[dict[str, float]]:
         clean = {}
         for name in keys:
             v = case[name]
-            if isinstance(v, bool) or not isinstance(v, Real):
-                raise TypeError(f"case {k}: parameter {name!r} must be a number, not {v!r}")
-            clean[name] = float(v)
+            if isinstance(v, str):
+                kind = "a string"
+            elif isinstance(v, bool) or not isinstance(v, Real):
+                raise TypeError(f"case {k}: parameter {name!r} must be a number or a string, not {v!r}")
+            else:
+                kind, v = "a number", float(v)
+            seen = kinds.setdefault(name, (kind, k))
+            if seen[0] != kind:
+                raise TypeError(
+                    f"parameter {name!r} is {kind} in case {k} and {seen[0]} in case {seen[1]}; "
+                    "a parameter is one or the other"
+                )
+            clean[name] = v
         out.append(clean)
-    return out
+    categorical = frozenset(name for name, (kind, _) in kinds.items() if kind == "a string")
+    return out, categorical
 
 
 def _check_frame(k: int, f: DataFrame) -> DataFrame:

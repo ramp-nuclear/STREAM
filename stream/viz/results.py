@@ -181,7 +181,8 @@ def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple
     for p in sweep.parameters:
         if p in resolved or p in exclude:
             continue
-        levels = sorted({sweep.cases[k][p] for k in indices})
+        present = {sweep.cases[k][p] for k in indices}
+        levels = [v for v in sweep.levels(p).tolist() if v in present]
         if len(levels) > 1:
             dims[p] = levels
         elif levels:
@@ -190,11 +191,11 @@ def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple
 
 
 def _numeric(sweep: Sweep, dims) -> frozenset[str]:
-    return frozenset(d for d in dims if d in sweep.parameters)
+    return frozenset(d for d in dims if d in sweep.parameters and d not in sweep.categorical)
 
 
 def _level_space(sweep: Sweep) -> dict[str, list]:
-    return {p: [float(v) for v in sweep.levels(p)] for p in sweep.parameters}
+    return {p: sweep.levels(p).tolist() for p in sweep.parameters}
 
 
 def _limits_of(sweep: Sweep, quantities) -> dict:
@@ -389,6 +390,8 @@ def reduce(
     if versus is not None:
         if versus not in sweep.parameters:
             raise ValueError(f"{versus!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
+        if versus in sweep.categorical:
+            raise ValueError(f"{versus} is categorical; it can colour, style or panel a figure, not be an axis")
         if where and versus in where:
             raise ValueError(f"{versus} is the x axis and cannot also be fixed in where=")
     resolved, indices = _selection(sweep, where, nearest)

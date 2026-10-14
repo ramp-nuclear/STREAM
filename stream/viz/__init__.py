@@ -23,4 +23,5 @@ from .limits import at_least as at_least
 from .limits import at_most as at_most
 from .style import Style as Style
 from .sweep import Sweep as Sweep
+from .sweep import cases as cases
 from .sweep import run_cases as run_cases

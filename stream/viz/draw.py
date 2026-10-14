@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import replace
 from itertools import product
-from numbers import Real
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -299,10 +298,10 @@ def finish_axes(ax, result, labels: Labels, style: Style, title: str) -> None:
 
 
 def _panel_text(labels: Labels, fixed: dict) -> str:
-    """``Display = value unit`` for a numeric panel level, the level's display name otherwise."""
+    """``Display = value unit`` for a parameter panel level, the display name for a quantity or calculation."""
     parts = []
     for name, level in fixed.items():
-        parts.append(labels.describe({name: level}) if isinstance(level, Real) else labels.display(level))
+        parts.append(labels.display(level) if name in ("quantity", "calculation") else labels.describe({name: level}))
     return ", ".join(parts)
 
 

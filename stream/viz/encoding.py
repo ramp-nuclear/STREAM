@@ -57,7 +57,7 @@ def _color_map(levels: list, numeric: bool, labels: Labels, style: Style, space:
         colors = style.ramp_colors(len(space))
         return {level: colors[k] for level, k in zip(ordered, positions)}
     registry = [k for k in labels if k in levels]
-    ordered = registry + sorted(set(levels) - set(registry), key=str)
+    ordered = registry + [v for v in dict.fromkeys(levels) if v not in registry]
     out, k = {}, 0
     for level in ordered:
         fixed = labels[level].color

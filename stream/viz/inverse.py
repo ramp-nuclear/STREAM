@@ -142,6 +142,9 @@ def required(
             raise ValueError(f"required() needs {role}=, a sweep parameter")
         if name not in sweep.parameters:
             raise ValueError(f"{role}={name!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
+    for name in (solve_for, versus, *at):
+        if name in sweep.categorical:
+            raise ValueError(f"{name} is categorical; it can colour, style or panel a figure, not be an axis")
     if solve_for == versus:
         raise ValueError(f"solve_for and versus are both {solve_for!r}; they must be different parameters")
     for name in (solve_for, versus):
@@ -284,7 +287,14 @@ def _order_envelopes(out: dict) -> None:
 def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_here: dict, solve_for: str, context: str) -> None:
     if np.isnan(crossing) or any(k not in sweep.parameters for k in fixed_here):
         return
-    on_grid = {k: v for k, v in fixed_here.items() if np.isclose(sweep.levels(k), v, rtol=1e-9, atol=0.0).any()}
+    on_grid = {}
+    for k, v in fixed_here.items():
+        levels = sweep.levels(k)
+        if k in sweep.categorical:
+            if v in levels:
+                on_grid[k] = v
+        elif np.isclose(levels, v, rtol=1e-9, atol=0.0).any():
+            on_grid[k] = v
     if len(on_grid) != len(fixed_here):
         return
     for k in sweep.select(on_grid):
