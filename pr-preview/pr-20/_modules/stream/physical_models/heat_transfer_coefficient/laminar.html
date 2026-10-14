@@ -1,0 +1,508 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.heat_transfer_coefficient.laminar &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../heat_transfer_coefficient.html">stream.physical_models.heat_transfer_coefficient</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.heat_transfer_coefficient.laminar</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.heat_transfer_coefficient.laminar</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Laminar Single Phase Heat Transfer Coefficient"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.dimensionless</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pr</span><span class="p">,</span> <span class="n">Re_mdot</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">Liquid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">Meter2</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">WPerM2K</span>
+
+<span class="c1">#: For parallel plates in laminar flow, the Nusselt number is constant,</span>
+<span class="c1">#: depending on the boundary conditions. See</span>
+<span class="c1">#: J. H. Lienhard IV, J. H. Lienhard V, "A HEAT TRANSFER TEXTBOOK",</span>
+<span class="c1">#: 3rd ed., ch. 7.5, p. 373</span>
+<span class="n">FIXED_TEMPS</span><span class="p">,</span> <span class="n">FIXED_FLUXES</span><span class="p">,</span> <span class="n">ONE_FIXED_FLUX_ONE_ADIABATIC</span> <span class="o">=</span> <span class="mf">7.541</span><span class="p">,</span> <span class="mf">8.235</span><span class="p">,</span> <span class="mf">5.385</span>
+
+
+<div class="viewcode-block" id="constant_Nusselt_h_spl">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.laminar.constant_Nusselt_h_spl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">constant_Nusselt_h_spl</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span> <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">nu</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">FIXED_FLUXES</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A :class:`~.SinglePhaseLiquidHTC` for constant :func:`~.Nu` Number: math:`h = \text{Nu}k/D_h`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Properties of the coolant.</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter.</span>
+<span class="sd">    nu: float</span>
+<span class="sd">        Nusselt Number. Default is :const:`FIXED_FLUXES`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watts per Meter squared degrees Kelvin</span>
+<span class="sd">        Heat transfer coefficient</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span> <span class="o">*</span> <span class="n">nu</span> <span class="o">/</span> <span class="n">Dh</span></div>
+
+
+
+<div class="viewcode-block" id="Marco_Han_Nusselt">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.laminar.Marco_Han_Nusselt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Marco_Han_Nusselt</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    For the case of laminar flow in rectangular ducts, an approximation to an analytical solution by Marco and Han is</span>
+<span class="sd">    provided (reported error is +-0.03%). [#kakac]_</span>
+<span class="sd">    This is useful for ducts of case 1, where the channel is heated from all sides.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aspect_ratio: float</span>
+<span class="sd">        channel_depth / channel_width (less than 1)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Nu: float</span>
+<span class="sd">        The Nusselt number (Nu)</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Marco_Han_Nusselt(0.)</span>
+<span class="sd">    8.235</span>
+<span class="sd">    &gt;&gt;&gt; Marco_Han_Nusselt(0.2)</span>
+<span class="sd">    5.991134842079999</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#kakac] S. Kakac, R. K. Shah, W. Wung,</span>
+<span class="sd">       "Handbook of Single-Phase Convective Heat-transfer" ch. 3</span>
+<span class="sd">    """</span>
+    <span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">aspect_ratio</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">aspect_ratio</span><span class="w"> </span><span class="si">= }</span><span class="s2"> must be non-negative and less than 1"</span>
+    <span class="k">return</span> <span class="n">FIXED_FLUXES</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="mf">1.0</span>
+        <span class="o">-</span> <span class="mf">2.0421</span> <span class="o">*</span> <span class="n">aspect_ratio</span>
+        <span class="o">+</span> <span class="mf">3.853</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">2</span>
+        <span class="o">-</span> <span class="mf">2.4765</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">3</span>
+        <span class="o">+</span> <span class="mf">1.0578</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">4</span>
+        <span class="o">-</span> <span class="mf">0.1861</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">5</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="two_sided_heating_nusselt">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.laminar.two_sided_heating_nusselt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">two_sided_heating_nusselt</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">nu0</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">FIXED_FLUXES</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Nusselt number for channels heated from two sides.</span>
+
+<span class="sd">    For the case of laminar flow in rectangular ducts, an approximation to an analytical solution is given</span>
+<span class="sd">    in case 3 of Kakac [#kakac_two_side]_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aspect_ratio: float</span>
+<span class="sd">        channel_depth / channel_width (0&lt;=x&lt;=1)</span>
+<span class="sd">    nu0: float</span>
+<span class="sd">        The nusselt value for an infinitely wide channel compared to its depth.</span>
+<span class="sd">        Defaults to the fully developed value.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Nu: float</span>
+<span class="sd">        The Nusselt number (Nu)</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; two_sided_heating_nusselt(0.)</span>
+<span class="sd">    8.235</span>
+
+<span class="sd">    The answer should conform with the results Shah &amp; London give from Schmidt in their table 44 [#Shah_two_side]_</span>
+
+<span class="sd">    &gt;&gt;&gt; alpha = np.array([0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.7, 1.0])</span>
+<span class="sd">    &gt;&gt;&gt; vtable44 = np.array([8.235, 7.248, 6.561, 5.997, 5.555, 5.203, 4.662, 4.094])</span>
+<span class="sd">    &gt;&gt;&gt; np.allclose(two_sided_heating_nusselt(alpha), vtable44, rtol=1.1e-2)</span>
+<span class="sd">    True</span>
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#kakac_two_side] S. Kakac, R. K. Shah, W. Wung, "Handbook of Single-Phase Convective Heat-transfer" ch. 3</span>
+<span class="sd">    .. [#Shah_two_side] R.K. Shah and A.L. London, Laminar flow forced convection in ducts,</span>
+<span class="sd">        A source book for compact heat exchanger analytical data, Academic Press 1978,</span>
+<span class="sd">        New York, San Francisco, London,</span>
+<span class="sd">        Chapter VII, Rectangular ducts, Section 3, Page 206, Table 44.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">nu0</span> <span class="o">*</span> <span class="p">(</span>
+        <span class="mf">1.0</span>
+        <span class="o">-</span> <span class="mf">1.4122</span> <span class="o">*</span> <span class="n">aspect_ratio</span>
+        <span class="o">+</span> <span class="mf">2.3473</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">2</span>
+        <span class="o">-</span> <span class="mf">2.8983</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">3</span>
+        <span class="o">+</span> <span class="mf">2.0629</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">4</span>
+        <span class="o">-</span> <span class="mf">0.6077</span> <span class="o">*</span> <span class="n">aspect_ratio</span><span class="o">**</span><span class="mi">5</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fully_developed_laminar_h_spl">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.laminar.fully_developed_laminar_h_spl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fully_developed_laminar_h_spl</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span> <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">aspect_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A :class:`~.SinglePhaseLiquidHTC` relying on :func:`Marco_Han_Nusselt`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Properties of the coolant.</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter.</span>
+<span class="sd">    aspect_ratio: float in [0,1]</span>
+<span class="sd">        The aspect ratio of the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watts per Meter squared degrees Kelvin</span>
+<span class="sd">        Heat transfer coefficient</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span> <span class="o">*</span> <span class="n">two_sided_heating_nusselt</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">)</span> <span class="o">/</span> <span class="n">Dh</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nusselt_coefficient_developing</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Developing flow nusselt number at infinitely wide rectangular channels.</span>
+<span class="sd">    Taken from Shah &amp; London [#Shah_develop]_ , who recommend them for being convenient apporixmations.</span>
+
+<span class="sd">    Also appears in TERMIC [#TERMIC_dev]_.</span>
+
+<span class="sd">    According to Shah &amp; London, the errors compared to their Table 34 of directly computed values should be</span>
+<span class="sd">    less than 0.2% for :math:`x \leq 6\cdot 10^{-5}`, 0.6% for :math:`6\cdot 10{^-5} &lt; x \leq 2\cdot 10^{-4}`,</span>
+<span class="sd">    0.8% for :math:`2\cdot 10^{-4} &lt; x \leq 10^{-3}` and 0.6% for :math:`x &gt; 10^{-3}`.</span>
+<span class="sd">    It turns out to be slightly larger than those values overall, and about 10x times higher for</span>
+<span class="sd">    :math:`2\cdot 10^{-4} &lt; x \leq 10^{-3}`</span>
+
+<span class="sd">    This is tested in the examples for this function.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; x = _xstar_table34</span>
+<span class="sd">    &gt;&gt;&gt; v = _nusselt_coefficient_developing(x)</span>
+<span class="sd">    &gt;&gt;&gt; r1 = x &lt;= 6e-5</span>
+<span class="sd">    &gt;&gt;&gt; r2 = (6e-5 &lt; x) &amp; (x &lt;= 2e-4)</span>
+<span class="sd">    &gt;&gt;&gt; r3 = (2e-4 &lt; x) &amp; (x &lt;= 1e-3)</span>
+<span class="sd">    &gt;&gt;&gt; r4 = x &gt; 1e-3</span>
+<span class="sd">    &gt;&gt;&gt; areclose = [np.allclose(v[m], _nuxh_table34[m], rtol=rtol)  # type: ignore</span>
+<span class="sd">    ...             for m, rtol in zip((r1, r2, r3, r4), (3e-3, 7e-3, 6.2e-2, 7e-3))]</span>
+<span class="sd">    &gt;&gt;&gt; all(areclose)</span>
+<span class="sd">    True</span>
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Shah_develop] R.K. Shah and A.L. London, Laminar flow forced convection in ducts,</span>
+<span class="sd">        A source book for compact heat exchanger analytical data, Academic Press 1978,</span>
+<span class="sd">        New York, San Francisco, London,</span>
+<span class="sd">        Chapter VI, Parallel plates, Section C, Page 182, Equations 317-319.</span>
+<span class="sd">    .. [#TERMIC_dev] P. Abbate, TERMIC V4.1: A Program for</span>
+<span class="sd">        the Thermal-Hydraulic Analysis of a MTR Core in Forced Convection,</span>
+<span class="sd">        Vol 1: Models and Correlations, Rev 3, Pages 14-15,</span>
+<span class="sd">        Nuclear Engineering Division, INVAP, December 2003</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="n">x</span> <span class="o">&lt;=</span> <span class="mf">2e-4</span><span class="p">,</span>
+        <span class="mf">1.49</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">x</span> <span class="o">&lt;=</span> <span class="mf">1e-3</span><span class="p">,</span>
+            <span class="p">(</span><span class="mf">1.49</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)))</span> <span class="o">-</span> <span class="mf">0.4</span><span class="p">,</span>
+            <span class="mf">8.235</span> <span class="o">+</span> <span class="mf">8.68</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mi">164</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">*</span> <span class="p">((</span><span class="mf">1e3</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.506</span><span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="n">_xstar_table34</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="nb">sum</span><span class="p">(</span>
+        <span class="p">[[</span><span class="n">j</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">]],</span>
+        <span class="n">start</span><span class="o">=</span><span class="p">[],</span>
+    <span class="p">)</span>
+    <span class="o">+</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">_nuxh_table34</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="mf">148.773</span><span class="p">,</span>
+        <span class="mf">129.944</span><span class="p">,</span>
+        <span class="mf">118.049</span><span class="p">,</span>
+        <span class="mf">103.110</span><span class="p">,</span>
+        <span class="mf">93.673</span><span class="p">,</span>
+        <span class="mf">86.954</span><span class="p">,</span>
+        <span class="mf">81.824</span><span class="p">,</span>
+        <span class="mf">77.724</span><span class="p">,</span>
+        <span class="mf">74.339</span><span class="p">,</span>
+        <span class="mf">71.477</span><span class="p">,</span>
+        <span class="mf">69.011</span><span class="p">,</span>
+        <span class="mf">60.292</span><span class="p">,</span>
+        <span class="mf">54.787</span><span class="p">,</span>
+        <span class="mf">47.880</span><span class="p">,</span>
+        <span class="mf">43.521</span><span class="p">,</span>
+        <span class="mf">40.419</span><span class="p">,</span>
+        <span class="mf">38.054</span><span class="p">,</span>
+        <span class="mf">36.165</span><span class="p">,</span>
+        <span class="mf">34.607</span><span class="p">,</span>
+        <span class="mf">33.290</span><span class="p">,</span>
+        <span class="mf">32.153</span><span class="p">,</span>
+        <span class="mf">28.154</span><span class="p">,</span>
+        <span class="mf">25.636</span><span class="p">,</span>
+        <span class="mf">22.488</span><span class="p">,</span>
+        <span class="mf">20.512</span><span class="p">,</span>
+        <span class="mf">19.133</span><span class="p">,</span>
+        <span class="mf">18.050</span><span class="p">,</span>
+        <span class="mf">17.205</span><span class="p">,</span>
+        <span class="mf">16.511</span><span class="p">,</span>
+        <span class="mf">15.928</span><span class="p">,</span>
+        <span class="mf">15.427</span><span class="p">,</span>
+        <span class="mf">13.681</span><span class="p">,</span>
+        <span class="mf">12.604</span><span class="p">,</span>
+        <span class="mf">11.299</span><span class="p">,</span>
+        <span class="mf">10.516</span><span class="p">,</span>
+        <span class="mf">9.9878</span><span class="p">,</span>
+        <span class="mf">9.6085</span><span class="p">,</span>
+        <span class="mf">9.3249</span><span class="p">,</span>
+        <span class="mf">9.1073</span><span class="p">,</span>
+        <span class="mf">8.9374</span><span class="p">,</span>
+        <span class="mf">8.8031</span><span class="p">,</span>
+        <span class="mf">8.4393</span><span class="p">,</span>
+        <span class="mf">8.3107</span><span class="p">,</span>
+        <span class="mf">8.2458</span><span class="p">,</span>
+        <span class="mf">8.2368</span><span class="p">,</span>
+        <span class="mf">8.2355</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="o">+</span> <span class="mi">7</span> <span class="o">*</span> <span class="p">[</span><span class="mf">8.2353</span><span class="p">]</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_worsoe_schmidt_leveque_type</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Worsoe-Schmidt's Leveque-type similarity solution for the Nusselt number at low xstar.</span>
+
+<span class="sd">    Shah [#Shah_worsoe]_ computed those for :math:`10^{-6} \leq x \leq 10^{-3}`,</span>
+<span class="sd">    and they should be up to 5 digits accurate with the proper solution for</span>
+<span class="sd">    :math:`5\cdot 10^{-4} \leq x \leq 5\cdot 10^{-3}` and at most 0.08% off for</span>
+<span class="sd">    :math:`5\cdot 10^{-5} \leq x \leq 10^{-2}`.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Table 34 (for :math:`x \leq 10^{-4}`) was supposed to be computed using this equation,</span>
+<span class="sd">    so it should be accurate there.</span>
+
+<span class="sd">    &gt;&gt;&gt; m = _xstar_table34 &lt;= 1e-4</span>
+<span class="sd">    &gt;&gt;&gt; np.allclose(_worsoe_schmidt_leveque_type(_xstar_table34[m]), _nuxh_table34[m], rtol=1e-4)</span>
+<span class="sd">    True</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Shah_worsoe] R.K. Shah and A.L. London, Laminar flow forced convection in ducts,</span>
+<span class="sd">        A source book for compact heat exchanger analytical data, Academic Press 1978,</span>
+<span class="sd">        New York, San Francisco, London,</span>
+<span class="sd">        Chapter VI, Parallel plates, Section C, Page 182, Equation 316</span>
+
+<span class="sd">    """</span>
+    <span class="n">xt</span> <span class="o">=</span> <span class="n">x</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="n">repv</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mf">0.670960978</span> <span class="o">*</span> <span class="n">xt</span>
+        <span class="o">+</span> <span class="mf">0.159064137</span> <span class="o">*</span> <span class="p">(</span><span class="n">xt</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.12012</span> <span class="o">*</span> <span class="n">x</span>
+        <span class="o">+</span> <span class="mf">0.12495</span> <span class="o">*</span> <span class="p">(</span><span class="n">xt</span><span class="o">**</span><span class="mi">4</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.15602</span> <span class="o">*</span> <span class="p">(</span><span class="n">xt</span><span class="o">**</span><span class="mi">5</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.22176</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="o">+</span> <span class="mf">0.34932</span> <span class="o">*</span> <span class="p">(</span><span class="n">xt</span><span class="o">**</span><span class="mi">7</span><span class="p">)</span>
+        <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">x</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">repv</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_nusselt_coefficient_interp_developing</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Nusselt coefficient for developing heated flow and fully develop hydraulics, by interpolation of data.</span>
+
+<span class="sd">    In Shah &amp; London [#Shah_interp]_, table 34 includes pre-computed data for :math:`10^{-6} \leq x \leq 0.2`.</span>
+<span class="sd">    These are supposed to be accurate representations of an analytic solution for :math:`x &gt; 10^{-4}`,</span>
+<span class="sd">    and of Equation 316 (an approximate solution, see :func:`._worsoe_schmidt_leveque_type`) otherwise.</span>
+
+<span class="sd">    This function is more exact than :func:`._nusselt_coefficient_developing` but slightly slower, and it is</span>
+<span class="sd">    continuous in :math:`x^*`, which is why :func:`developing_laminar_h_spl` uses it.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`._nusselt_coefficient_developing`</span>
+<span class="sd">        An analytic approximation to this function.</span>
+<span class="sd">    :func:`._worsoe_schmidt_leveque_type`</span>
+<span class="sd">        The underlying function for vanishingly small x.</span>
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Shah_interp] R.K. Shah and A.L. London, Laminar flow forced convection in ducts,</span>
+<span class="sd">        A source book for compact heat exchanger analytical data, Academic Press 1978,</span>
+<span class="sd">        New York, San Francisco, London,</span>
+<span class="sd">        Chapter VI, Parallel plates, Section C, Page 181, Table 34</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+        <span class="n">x</span> <span class="o">&lt;</span> <span class="n">_xstar_table34</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">_worsoe_schmidt_leveque_type</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">_xstar_table34</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">_xstar_table34</span><span class="p">,</span> <span class="n">_nuxh_table34</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="mf">8.2353</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="developing_laminar_h_spl">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.laminar.developing_laminar_h_spl">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">developing_laminar_h_spl</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">develop_length</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">aspect_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2K</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A :class:`~.SinglePhaseLiquidHTC` relying on A Nusselt number definition</span>
+<span class="sd">    for thermally developing flow. [#Shah]_</span>
+
+<span class="sd">    This includes a correction for the channel being finite in size.</span>
+<span class="sd">    These equations are valid for Reynolds&lt;2100. [#TERMIC]_</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Shah] R.K. Shah and A.L. London, Laminar flow forced convection in ducts,</span>
+<span class="sd">        A source book for compact heat exchanger analytical data, Academic Press 1978,</span>
+<span class="sd">        New York, San Francisco, London,</span>
+<span class="sd">        Chapter VI, Parallel plates, Section C, Page 181, Table 34.</span>
+<span class="sd">    .. [#TERMIC] P. Abbate, TERMIC V4.1: A Program for</span>
+<span class="sd">        the Thermal-Hydraulic Analysis of a MTR Core in Forced Convection,</span>
+<span class="sd">        Vol 1: Models and Correlations, Rev 3, Pages 14-15,</span>
+<span class="sd">        Nuclear Engineering Division, INVAP, December 2003</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Properties of the coolant.</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass flow rate.</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Flow area.</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter.</span>
+<span class="sd">    develop_length: Meter</span>
+<span class="sd">        Distance from channel entrance.</span>
+<span class="sd">    aspect_ratio: float in [0,1]</span>
+<span class="sd">        The aspect ratio of the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watts per Meter squared degrees Kelvin</span>
+<span class="sd">        Heat transfer coefficient</span>
+
+<span class="sd">    """</span>
+    <span class="n">re</span> <span class="o">=</span> <span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">viscosity</span><span class="p">)</span>
+    <span class="n">pr</span> <span class="o">=</span> <span class="n">Pr</span><span class="p">(</span><span class="n">coolant</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">,</span> <span class="n">coolant</span><span class="o">.</span><span class="n">viscosity</span><span class="p">,</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
+        <span class="n">x_star</span> <span class="o">=</span> <span class="n">develop_length</span> <span class="o">/</span> <span class="n">Dh</span> <span class="o">/</span> <span class="n">re</span> <span class="o">/</span> <span class="n">pr</span> <span class="o">/</span> <span class="p">(</span><span class="mi">6</span> <span class="o">-</span> <span class="mi">5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="mf">0.75</span> <span class="o">*</span> <span class="n">aspect_ratio</span> <span class="o">/</span> <span class="mf">0.3257</span><span class="p">))</span>
+    <span class="n">nudev</span> <span class="o">=</span> <span class="n">_nusselt_coefficient_interp_developing</span><span class="p">(</span><span class="n">x_star</span><span class="p">)</span>
+    <span class="n">nusselt</span> <span class="o">=</span> <span class="n">two_sided_heating_nusselt</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">,</span> <span class="n">nudev</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">nusselt</span> <span class="o">*</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span> <span class="o">/</span> <span class="n">Dh</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
