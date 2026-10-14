@@ -13,9 +13,12 @@ Substances
    :members:
    :undoc-members:
    :private-members:
+   :exclude-members: Liquid, LiquidFuncs
 
 .. automodule:: stream.substances.liquid
-   :members:
+   :members: Liquid, LiquidFuncs
+   :undoc-members:
+   :private-members:
 
 Heavy Water
 ~~~~~~~~~~~

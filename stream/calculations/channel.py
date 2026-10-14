@@ -142,7 +142,7 @@ class ChannelVar(StrEnum):
         ----------
         key: str
             Variable name in general
-        direction: left or right
+        direction: Direction
             The directionality, in a case where the channel has multiples of the same thing.
 
         Returns
