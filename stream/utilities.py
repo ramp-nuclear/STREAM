@@ -27,6 +27,7 @@ except ImportError:
     from numpy.lib._function_base_impl import _diff_dispatcher, array_function_dispatch
 from scipy.optimize import fsolve
 
+from stream.smoothing import DEFAULT_MDOT_EPS, smooth_pos_weight
 from stream.units import Array, Array1D, Celsius, Fahrenheit, KgPerS, Place, Value
 
 STREAM_DEBUG = 11
@@ -474,11 +475,12 @@ def if_is(x: Iterable, if_none: Any = 1.0):
     return x if x is not None else if_none
 
 
-MDOT_INTER_THRESHOLD = 1e-6
-
-
-@njit
-def directed_Tin(Tin: Celsius | None, Tin_minus: Celsius | None, mdot: KgPerS) -> Celsius:
+def directed_Tin(
+    Tin: Celsius | None,
+    Tin_minus: Celsius | None,
+    mdot: KgPerS,
+    mdot_eps: KgPerS | None = None,
+) -> Celsius:
     r"""Computes the inlet temperature for a point component based on flow
     direction.
 
@@ -488,6 +490,9 @@ def directed_Tin(Tin: Celsius | None, Tin_minus: Celsius | None, mdot: KgPerS) -
         Positive (Negative) flow associated inlet temperature
     mdot : KgPerS
         Fluid mass flow rate
+    mdot_eps : KgPerS or None
+        Half-width of the blending band around ``mdot = 0``. ``None`` uses
+        the module default ``stream.smoothing.DEFAULT_MDOT_EPS``
 
     Returns
     -------
@@ -496,10 +501,12 @@ def directed_Tin(Tin: Celsius | None, Tin_minus: Celsius | None, mdot: KgPerS) -
 
     Notes
     -----
-    For the sake of removing stiffness, for absolute flow
-    values under ``MDOT_INTER_THRESHOLD``, a linear interpolation between
-    ``Tin`` and ``Tin_minus``. This value may be changed by overriding
-    ``stream.utilities.MDOT_INTER_THRESHOLD``.
+    For ``|mdot| < mdot_eps`` the outlet-facing inlet temperature is blended
+    continuously (cubic ``smooth_pos_weight``) between ``Tin`` and
+    ``Tin_minus``; outside the band the result equals the hard
+    ``Tin if mdot >= 0 else Tin_minus`` selection exactly (compact support).
+    Widen the band per call with ``mdot_eps`` for systems whose
+    natural-circulation flows sit near the default width.
 
     Examples
     --------
@@ -528,9 +535,9 @@ def directed_Tin(Tin: Celsius | None, Tin_minus: Celsius | None, mdot: KgPerS) -
         return Tin
     elif a:
         return Tin_minus
-    if np.abs(mdot) < MDOT_INTER_THRESHOLD:
-        return lin_interp(-MDOT_INTER_THRESHOLD, MDOT_INTER_THRESHOLD, Tin_minus, Tin, mdot)
-    return Tin if mdot >= 0 else Tin_minus
+    eps = mdot_eps if mdot_eps is not None else DEFAULT_MDOT_EPS
+    w = smooth_pos_weight(mdot, eps)
+    return w * Tin + (1.0 - w) * Tin_minus
 
 
 @njit

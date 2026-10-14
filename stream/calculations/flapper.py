@@ -101,7 +101,7 @@ class Flapper(Calculation):
         self._rho = fluid.density
         self.stop_on_open = stop_on_open
         self.relaxation = relaxation
-        self._flag = False
+        self._latched = False
 
     @unpacked
     def calculate(
@@ -124,7 +124,7 @@ class Flapper(Calculation):
             relax = self.relaxation(float(t - self.t_open) * self.open_rate)
             Tin_d = directed_Tin(Tin, Tin_minus, mdot)
             mdot_calc = -mdot_by_local_pressure(dp, self._rho(Tin_d), self.f, self._A)
-            out[0] = T - Tin_d
+            out[0] = T - ((1.0 - relax) * Tin + relax * Tin_d)
             out[1] = mdot - relax * mdot_calc
         return out
 
@@ -139,23 +139,31 @@ class Flapper(Calculation):
     dp_out = LumpedComponent.dp_out
 
     @unpacked
-    def should_continue(self, variables: Sequence[float], *, ref_mdot: KgPerS, t: Second, **_) -> bool:
-        return not (self.stop_on_open and self.t_open == t and self._flag)
+    def event_margin(self, variables: Sequence[float], *, ref_mdot: KgPerS, t: Second = None, **_) -> Array1D:
+        """Signed opening margin ``ref_mdot - mdot0``, crossing zero from above at
+        the opening. Once the flapper has latched open it is a constant ``+1``, so a
+        later flow recovery cannot fire the event again."""
+        if self._latched:
+            return np.array([1.0])
+        return np.array([ref_mdot - self.mdot0])
+
+    @unpacked
+    def should_continue(self, variables: Sequence[float], *, ref_mdot: KgPerS = None, t: Second = None, **_) -> bool:
+        return not (self.stop_on_open and self._latched)
 
     @unpacked
     def change_state(self, variables: Sequence[float], *, ref_mdot: KgPerS, t: Second, **_) -> None:
-        self._flag = False
-        if ref_mdot <= self.mdot0 and np.isposinf(self.t_open):
+        if not self._latched and ref_mdot <= self.mdot0:
             self.t_open = float(t)
-            self._flag = True
+            self._latched = True
             logger.log(STREAM_DEBUG, f"{self} opened at t = {self.t_open}")
 
     def close(self):
         """Set flapper to be closed (flow is set to zero)"""
-        self._flag = False
+        self._latched = False
         self.t_open = np.inf
 
     def open(self, t: Second):
         """Set flapper to be opened starting at ``t``"""
-        self._flag = True
+        self._latched = True
         self.t_open = t
