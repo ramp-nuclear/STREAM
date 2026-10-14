@@ -30,7 +30,11 @@ Summary of Available Calculations
   RegimeDependentFriction
   Resistor
   ResistorSum
+  ResistorMul
   Bend
+  CheckValve
+  Screen
+  VolumetricFlowResistor
   :parts: 1
   :top-classes: stream.calculation.Calculation
 
@@ -55,7 +59,13 @@ Summary of Available Calculations
     RegimeDependentFriction
     Resistor
     ResistorSum
+    ResistorMul
     Bend
+    CheckValve
+    Screen
+    VolumetricFlowResistor
+    Solid
+    SaturationReachedError
 
 Heat Diffusion
 --------------
