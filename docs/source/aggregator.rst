@@ -8,11 +8,11 @@ Aggregator
 
 Example
 ~~~~~~~
-Consider the attached image. This graph describes the **dependencies** of each
-calculation: *A*, *B*, *C*. Let's consider the Calculation *A*. *A* owns a subset
-of the entire vector :math:`\vec{y}_A\in\vec{y}`, which it receives as input.
-However, *A* depends on values owned by other Calculations:
-:math:`\left(\vec{y}_i, \vec{y}_j\right)`, namely *B* and *C*.
+Consider three calculations, *A*, *B* and *C*, where *A* depends on *B* and on *C*:
+the graph of the Aggregator has an edge from *B* to *A* and an edge from *C* to *A*.
+*A* owns a subset of the entire vector :math:`\vec{y}_A\in\vec{y}`, which it
+receives as input. It also reads values owned by the other two:
+:math:`\vec{y}_i` owned by *B* and :math:`\vec{y}_j` owned by *C*.
 Thus, *B* (e.g.) must be able to show the Aggregator the **place** in which
 it stores :math:`\vec{y}_i`.
 In this manner, there exists no communication between Calculations, and *B*
