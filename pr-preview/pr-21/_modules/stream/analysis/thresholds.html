@@ -1,0 +1,584 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.analysis.thresholds &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.analysis.thresholds</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.analysis.thresholds</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Tools for post-processing analysis of the thresholds for different phenomena in channels.</span>
+
+<span class="sd">These tools are used to analyse the results in post-processing and add these thresholds to the</span>
+<span class="sd">analysed state.</span>
+<span class="sd">The pattern to use this is as follows:</span>
+
+<span class="sd">&gt;&gt;&gt; from functools import partial</span>
+<span class="sd">&gt;&gt;&gt; onb_left: ThresholdFunction = partial(Bergles_Rohsenow_T_ONB, direction=Direction.left)</span>
+<span class="sd">&gt;&gt;&gt; onb_right: ThresholdFunction = partial(Bergles_Rohsenow_T_ONB, direction=Direction.right)</span>
+<span class="sd">&gt;&gt;&gt; osv: ThresholdFunction = partial(Saha_Zuber_OSV, direction=Direction.left)</span>
+<span class="sd">&gt;&gt;&gt; post_analysis = threshold_analysis(CHF=Sudo_Kaminaga_CHF, OSV=osv, \</span>
+<span class="sd">ONB_left=onb_left, ONB_right=onb_right)</span>
+<span class="sd">&gt;&gt;&gt; # agr = Aggregator(...)</span>
+<span class="sd">&gt;&gt;&gt; # state = agr.solve_steady(...)</span>
+<span class="sd">&gt;&gt;&gt; # state = post_analysis(state, agr, "channel")  # Given that "channel" is how the Channel is</span>
+<span class="sd">&gt;&gt;&gt; #                                               # called in agr</span>
+
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">ChannelVar</span><span class="p">,</span> <span class="n">Direction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient.temperatures</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Bergles_Rohsenow_dT_ONB</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Fabrega_CHF</span> <span class="k">as</span> <span class="n">_Fabrega_CHF</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Mirshak_CHF</span> <span class="k">as</span> <span class="n">_Mirshak_CHF</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Saha_Zuber_OSV_computed_bulk</span> <span class="k">as</span> <span class="n">_Saha_Zuber_OSV</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Sudo_Kaminaga_CHF</span> <span class="k">as</span> <span class="n">_Sudo_Kaminaga_CHF</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Whittle_Forgan_OFI</span> <span class="k">as</span> <span class="n">_Whittle_Forgan_OFI</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">boiling_power</span> <span class="k">as</span> <span class="n">_boiling_power</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">State</span><span class="p">,</span> <span class="n">StateTimeseries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">MPerS2</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Watt</span><span class="p">,</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">g</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">factor</span>
+
+
+<div class="viewcode-block" id="ThresholdFunction">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.ThresholdFunction">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ThresholdFunction</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A Protocol for how we expect our input functions to look like for the</span>
+<span class="sd">    :func:`.threshold_analysis_factory`.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span>
+        <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+        <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+        <span class="n">dz</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="threshold_analysis">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.threshold_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">threshold_analysis</span><span class="p">(</span>
+    <span class="o">**</span><span class="n">funcs</span><span class="p">:</span> <span class="n">ThresholdFunction</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">State</span><span class="p">,</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">State</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""A factory to create a function that can analyze an aggregator's State</span>
+<span class="sd">    to yield a new State with threshold values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    funcs:  ThresholdFunction</span>
+<span class="sd">        Threshold value functions, named for their threshold.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Callable[[State, Aggregator, str], State]</span>
+<span class="sd">        A function that adds threshold values to a state.</span>
+
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyzer</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">agg</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">calc</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="n">substate</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="n">calc</span><span class="p">]</span>
+        <span class="n">kw</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="n">ChannelAndContacts</span> <span class="o">=</span> <span class="n">agg</span><span class="p">[</span><span class="n">calc</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+        <span class="n">protocol_params</span> <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"self"</span><span class="p">,</span> <span class="s2">"state"</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">},</span>
+            <span class="n">signature</span><span class="p">(</span><span class="n">ThresholdFunction</span><span class="o">.</span><span class="fm">__call__</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">protocol_params</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">kw</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"The aggregator's </span><span class="si">{</span><span class="n">calc</span><span class="si">}</span><span class="s2"> calculation did not have a </span><span class="si">{</span><span class="n">attr</span><span class="si">}</span><span class="s2"> "</span>
+                    <span class="s2">"attribute, and it should have because we analyze channels"</span>
+                <span class="p">)</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">func</span> <span class="ow">in</span> <span class="n">funcs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">substate</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">substate</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">s</span>
+
+    <span class="k">return</span> <span class="n">_analyzer</span></div>
+
+
+
+<span class="n">STS</span> <span class="o">=</span> <span class="n">StateTimeseries</span>
+
+
+<div class="viewcode-block" id="transient_threshold_analysis">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.transient_threshold_analysis">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">transient_threshold_analysis</span><span class="p">(</span>
+    <span class="o">**</span><span class="n">funcs</span><span class="p">:</span> <span class="n">ThresholdFunction</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">STS</span><span class="p">,</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">STS</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""A factory to create a function that can analyze an aggregator's StateTimeseries</span>
+<span class="sd">    to yield a new StateTimeseries with threshold values.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    funcs:  Callable[[State, EffectivePipe], Value]</span>
+<span class="sd">        Threshold value functions, named for their threshold.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Callable[[StateTimeseries, Aggregator, str], StateTimeseries]</span>
+<span class="sd">        A function that adds threshold values to a state.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    threshold_analysis</span>
+<span class="sd">    """</span>
+    <span class="n">ta</span> <span class="o">=</span> <span class="n">threshold_analysis</span><span class="p">(</span><span class="o">**</span><span class="n">funcs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_analyzer</span><span class="p">(</span><span class="n">state_time_series</span><span class="p">:</span> <span class="n">STS</span><span class="p">,</span> <span class="n">agg</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">calc</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">STS</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">ta</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">agg</span><span class="p">,</span> <span class="n">calc</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">state_time_series</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+    <span class="k">return</span> <span class="n">_analyzer</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_tw</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">direction</span><span class="p">:</span> <span class="n">Direction</span><span class="p">,</span> <span class="n">tbulk</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">inhomogeneity_factor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"heatflux"</span><span class="p">,</span> <span class="n">direction</span><span class="p">)</span> <span class="ow">in</span> <span class="n">state</span><span class="p">:</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"heatflux"</span><span class="p">,</span> <span class="n">direction</span><span class="p">)]</span> <span class="o">*</span> <span class="n">inhomogeneity_factor</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"h"</span><span class="p">,</span> <span class="n">direction</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">tbulk</span> <span class="o">+</span> <span class="n">q</span> <span class="o">/</span> <span class="n">h</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+
+
+<div class="viewcode-block" id="twall_limit">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.twall_limit">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">twall_limit</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">inhomogeneity_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A function that finds the limiting wall temperature.</span>
+
+<span class="sd">    We can't just take the physical twall from the calculation because of fuel inhomogeneity, which isn't taken into</span>
+<span class="sd">    account in the physical solution.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: CalcState</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    inhomogeneity_factor: float</span>
+<span class="sd">        Factor to make flux worse by locally (fuel inhomogeneity, usually).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Celsius</span>
+<span class="sd">        The maximal wall temperature for the wall temperature limit check</span>
+
+<span class="sd">    """</span>
+    <span class="n">tbulk</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tbulk</span><span class="p">]</span>
+    <span class="n">twall_right</span><span class="p">,</span> <span class="n">twall_left</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">_tw</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">direction</span><span class="p">,</span> <span class="n">tbulk</span><span class="p">,</span> <span class="n">inhomogeneity_factor</span><span class="p">)</span> <span class="k">for</span> <span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="n">Direction</span><span class="o">.</span><span class="n">right</span><span class="p">,</span> <span class="n">Direction</span><span class="o">.</span><span class="n">left</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">twall_right</span><span class="p">,</span> <span class="n">twall_left</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Saha_Zuber_OSV">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Saha_Zuber_OSV">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Saha_Zuber_OSV</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">dz</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="n">Direction</span><span class="p">,</span>
+    <span class="n">inhomogeneity_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for Saha &amp; Zuber based OSV.</span>
+
+<span class="sd">    For details, see the underlying :func:`~stream.physical_models.thresholds.Saha_Zuber_OSV`.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.Saha_Zuber_OSV`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: State</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow channel.</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+<span class="sd">    dz: Meter</span>
+<span class="sd">        Cell length for each cell in the channel.</span>
+<span class="sd">    direction: Direction</span>
+<span class="sd">        Which wall direction to take the power shape from.</span>
+<span class="sd">    inhomogeneity_factor: float</span>
+<span class="sd">        Factor to make flux worse by locally (fuel inhomogeneity, usually).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    WPerM2</span>
+<span class="sd">        The flux which for the given local physical state would have caused OSV to occur there.</span>
+
+<span class="sd">    """</span>
+    <span class="n">tb</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tbulk</span><span class="p">]</span>
+    <span class="n">tin</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tin</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"heatflux"</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">direction</span><span class="p">)]</span>
+    <span class="n">coolant</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">to_properties</span><span class="p">(</span><span class="n">tb</span><span class="p">,</span> <span class="n">pressure</span><span class="p">)</span>
+    <span class="n">mdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">mass_flow</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_Saha_Zuber_OSV</span><span class="p">(</span>
+        <span class="n">T_inlet</span><span class="o">=</span><span class="n">tin</span><span class="p">,</span>
+        <span class="n">coolant</span><span class="o">=</span><span class="n">coolant</span><span class="p">,</span>
+        <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
+        <span class="n">Dh</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span><span class="p">,</span>
+        <span class="n">area</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">area</span><span class="p">,</span>
+        <span class="n">heated_perimeter</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">heated_perimeter</span><span class="p">,</span>
+        <span class="n">flux_shape</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
+        <span class="n">dz</span><span class="o">=</span><span class="n">dz</span><span class="p">,</span>
+        <span class="n">flux_enworse</span><span class="o">=</span><span class="n">inhomogeneity_factor</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="boiling_power">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.boiling_power">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">boiling_power</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="o">**</span><span class="n">__</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Watt</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for the :func:`~stream.physical_models.thresholds.boiling_power` function.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.boiling_power`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: CalcState</span>
+<span class="sd">        The state of the channel</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watt</span>
+<span class="sd">        The power required to reach the saturation temperature.</span>
+
+<span class="sd">    """</span>
+    <span class="n">mdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">mass_flow</span><span class="p">]</span>
+    <span class="n">tin</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tin</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">cp_in</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">(</span><span class="n">tin</span><span class="p">)</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_boiling_power</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">T_sat</span><span class="o">=</span><span class="n">tsat</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">tin</span><span class="p">,</span> <span class="n">cp_in</span><span class="o">=</span><span class="n">cp_in</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Whittle_Forgan_OFI">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Whittle_Forgan_OFI">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Whittle_Forgan_OFI</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Watt</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for the :func:`~stream.physical_models.thresholds.Whittle_Forgan_OFI` function.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.Whittle_Forgan_OFI`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: State</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow channel.</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watt</span>
+<span class="sd">        The power necessary to achieve OFI conditions according to Whittle &amp; Forgan with Fabrega.</span>
+
+<span class="sd">    """</span>
+    <span class="n">mdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">mass_flow</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">tin</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tin</span><span class="p">]</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span> <span class="k">if</span> <span class="n">mdot</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">_Whittle_Forgan_OFI</span><span class="p">(</span>
+        <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
+        <span class="n">sat_temperature</span><span class="o">=</span><span class="n">tsat</span><span class="p">,</span>
+        <span class="n">inlet_temperature</span><span class="o">=</span><span class="n">tin</span><span class="p">,</span>
+        <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span>
+        <span class="n">cp</span><span class="o">=</span><span class="n">fluid</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Sudo_Kaminaga_CHF">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Sudo_Kaminaga_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Sudo_Kaminaga_CHF</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">gravity</span><span class="p">:</span> <span class="n">MPerS2</span> <span class="o">=</span> <span class="n">g</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for the :func:`~stream.physical_models.thresholds.Sudo_Kaminaga_CHF` function.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.Sudo_Kaminaga_CHF`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: State</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow channel.</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+<span class="sd">    gravity: MPerS2</span>
+<span class="sd">        Gravitational acceleration constant in the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    WPerM2</span>
+<span class="sd">        The flux necessary at each point to have achieved CHF conditions given</span>
+<span class="sd">        the rest of the channel stays as is.</span>
+
+<span class="sd">    """</span>
+    <span class="n">tb</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tbulk</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span>
+    <span class="n">sat_cool</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">to_properties</span><span class="p">(</span><span class="n">tsat</span><span class="p">,</span> <span class="n">pressure</span><span class="p">)</span>
+    <span class="n">mdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">mass_flow</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_Sudo_Kaminaga_CHF</span><span class="p">(</span><span class="n">T_bulk</span><span class="o">=</span><span class="n">tb</span><span class="p">,</span> <span class="n">sat_coolant</span><span class="o">=</span><span class="n">sat_cool</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="n">gravity</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Mirshak_CHF">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Mirshak_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Mirshak_CHF</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for the :func:`~stream.physical_models.thresholds.Mirshak_CHF` function.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.Mirshak_CHF`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: State</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow channel.</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    WPerM2</span>
+<span class="sd">        The flux necessary at each point to have achieved CHF conditions given</span>
+<span class="sd">        the rest of the channel stays as is.</span>
+
+<span class="sd">    """</span>
+    <span class="n">tb</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tbulk</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span>
+    <span class="n">mdot</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">mass_flow</span><span class="p">]</span>
+    <span class="n">v</span> <span class="o">=</span> <span class="n">mdot</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">fluid</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">tb</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_Mirshak_CHF</span><span class="p">(</span><span class="n">T_bulk</span><span class="o">=</span><span class="n">tb</span><span class="p">,</span> <span class="n">T_sat</span><span class="o">=</span><span class="n">tsat</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">v</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Fabrega_CHF">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Fabrega_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Fabrega_CHF</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A wrapper for the :func:`~stream.physical_models.thresholds.Fabrega_CHF` function.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.thresholds.Fabrega_CHF`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: State</span>
+<span class="sd">        The channel state to analyze.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow channel.</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        The functional properties of the fluid in the channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    WPerM2</span>
+<span class="sd">        The flux necessary at each point to have achieved CHF conditions given</span>
+<span class="sd">        the rest of the channel stays as is.</span>
+
+<span class="sd">    """</span>
+    <span class="n">tin</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tin</span><span class="p">]</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_Fabrega_CHF</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">tin</span><span class="p">,</span> <span class="n">T_sat</span><span class="o">=</span><span class="n">tsat</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Bergles_Rohsenow_T_ONB">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.thresholds.Bergles_Rohsenow_T_ONB">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bergles_Rohsenow_T_ONB</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">,</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="n">Direction</span><span class="p">,</span>
+    <span class="n">onb_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">inhomogeneity_factor</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Celsius</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A wrapper for :func:`~stream.physical_models.heat_transfer_coefficient.temperatures.Bergles_Rohsenow_T_ONB`</span>
+
+<span class="sd">    The wall temperature at which ONB would occur according to Bergles and Rohsenow.</span>
+
+<span class="sd">    The fluid is set to light water because that's what Bergles &amp; Rohsenow is good for.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    :func:`~stream.physical_models.heat_transfer_coefficient.temperatures.Bergles_Rohsenow_T_ONB`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    state: CalcState</span>
+<span class="sd">        The state of the channel</span>
+<span class="sd">    direction: Direction</span>
+<span class="sd">        The direction in the channel we want to analyze.</span>
+<span class="sd">    onb_factor: float</span>
+<span class="sd">        Relative uncertainty factor increase for the correlation to account for its uncertainty.</span>
+<span class="sd">    inhomogeneity_factor: float</span>
+<span class="sd">        Relative factor by which the local flux must be factored to take fuel inhomogeneity into account.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    ONB_margin: Celsius</span>
+<span class="sd">        T_wall - T_ONB</span>
+<span class="sd">    """</span>
+    <span class="n">pressure</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">static_pressure</span><span class="p">]</span>
+    <span class="n">tbulk</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">tbulk</span><span class="p">]</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"h"</span><span class="p">,</span> <span class="n">direction</span><span class="p">)]</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"heatflux"</span><span class="p">,</span> <span class="n">direction</span><span class="p">)]</span> <span class="o">*</span> <span class="n">inhomogeneity_factor</span>
+    <span class="n">twall</span> <span class="o">=</span> <span class="n">tbulk</span> <span class="o">+</span> <span class="p">(</span><span class="n">q</span> <span class="o">/</span> <span class="n">h</span><span class="p">)</span>
+    <span class="n">tsat</span> <span class="o">=</span> <span class="n">light_water</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span>
+    <span class="n">br</span> <span class="o">=</span> <span class="n">factor</span><span class="p">(</span><span class="n">Bergles_Rohsenow_dT_ONB</span><span class="p">,</span> <span class="n">by</span><span class="o">=</span><span class="n">onb_factor</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">twall</span> <span class="o">-</span> <span class="p">(</span><span class="n">tsat</span> <span class="o">+</span> <span class="n">br</span><span class="p">(</span><span class="n">pressure</span><span class="p">,</span> <span class="n">q</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

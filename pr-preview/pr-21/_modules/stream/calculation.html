@@ -1,0 +1,445 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.calculation &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.calculation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.calculation</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">A module defining what is a :class:`Calculation`, in the sense of a first order in time</span>
+<span class="sd">differential and algebraic system of equation. A :class:`Calculation` is a subset of</span>
+<span class="sd">such a system.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cytoolz.dicttoolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">valmap</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Name</span><span class="p">,</span> <span class="n">Place</span><span class="p">,</span> <span class="n">Value</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">flatten_values</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CalcState"</span><span class="p">,</span> <span class="s2">"Calculation"</span><span class="p">,</span> <span class="s2">"unpacked"</span><span class="p">]</span>
+<span class="n">CalcState</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Name</span><span class="p">,</span> <span class="n">Value</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Calculation">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Calculation</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    A calculation in the context of STREAM is derived from the following DAE,</span>
+<span class="sd">    which is a first order in time differential and algebraic equation:</span>
+<span class="sd">    :math:`M\frac{d\vec{y}}{dt} = \vec{F}\left(\vec{y}, t\right)`</span>
+
+<span class="sd">    Where :math:`M_{ii}=1,0` is the matrix defining whether</span>
+<span class="sd">    :math:`F_i(\vec{y}, t)` is the</span>
+<span class="sd">    differential or an algebraic equation :math:`F_i(\vec{y},t) = 0`.</span>
+<span class="sd">    :math:`\vec{y}` is the variable vector, from which a subset is the input</span>
+<span class="sd">    for each individual calculation. The calculation yields a subset</span>
+<span class="sd">    of :math:`F(\vec{y}, t)`, for which it is deemed the unique owner.</span>
+
+<span class="sd">    Therefore,</span>
+
+<span class="sd">    .. note::</span>
+<span class="sd">        One may say that a Calculation</span>
+<span class="sd">        **is** a subset of :math:`\vec{F} \left(\vec{y}, t\right)`</span>
+
+<span class="sd">    **Three kinds of inputs are distinguished:**</span>
+
+<span class="sd">    1. **Model Parameters**: Attributes of the calculation itself,</span>
+<span class="sd">    independent of all other inputs. Supposedly, these are component and</span>
+<span class="sd">    physical constants.</span>
+
+<span class="sd">    2. **Input Functions**: These are functions through which a user may</span>
+<span class="sd">    interfere with a system. Namely, they are only time-dependent. A</span>
+<span class="sd">    calculation should not be made aware of the separation between them and</span>
+<span class="sd">    Variables.</span>
+
+<span class="sd">    3. **Variables**: These are the main input for a calculation. Every</span>
+<span class="sd">    property having distinct time dependence which is not user defined is a</span>
+<span class="sd">    variable.</span>
+<span class="sd">    """</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="fm">__repr__</span> <span class="o">=</span> <span class="fm">__str__</span>
+
+<div class="viewcode-block" id="Calculation.calculate">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.calculate">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The main method of a calculation</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variables: Sequence[float]</span>
+<span class="sd">            the variables required for the calculation,</span>
+<span class="sd">            which the calculation handles itself.</span>
+
+
+<span class="sd">        Requested external variables can be passed via keyword arguments.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Output results: Array1D</span>
+<span class="sd">            subset of the differential/algebraic functional result.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="Calculation.indices">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.indices">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">"Calculation"</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Name</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""For a given variable name, return the appropriate positions in the vector</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variable: Name</span>
+<span class="sd">            Name of requested variable</span>
+<span class="sd">        asking: Calculation or None</span>
+<span class="sd">            What calculation is asking for the indices?</span>
+<span class="sd">            For example, this is important in</span>
+<span class="sd">            :class:`~.stream.calculations.kirchhoff.Kirchhoff`.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        indices: Place or dict[Calculation, Place]</span>
+<span class="sd">            The place in which the calculation uses the variable, or a</span>
+<span class="sd">            dictionary with variable names related to this name and</span>
+<span class="sd">            their places.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Each entry corresponds to an equation. For each entry the value is</span>
+<span class="sd">        either 0 or 1:</span>
+
+<span class="sd">        0) Algebraic equation :math:`F(\vec{y},t)=0`</span>
+
+<span class="sd">        1) Differential equation :math:`\dot{y}=F(\vec{y},t)`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        mass: Sequence[bool]</span>
+<span class="sd">         The "mass" of each variable under this calculation's control.</span>
+<span class="sd">         Values are 0 for algebraically defined terms and 1 for differentially</span>
+<span class="sd">         defined terms.</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Number of slots used by the calculation, meaning length of</span>
+<span class="sd">        calculate()'s output"""</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass_vector</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""All variables owned by calculation"""</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="Calculation.load">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Given a state of the calculation, return the untagged corresponding</span>
+<span class="sd">        array, which may be used to calculate the next step.</span>
+
+<span class="sd">        The default method implemented here assumes the state is completely</span>
+<span class="sd">        described by the variables presented in self.variables.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        state: CalcState</span>
+<span class="sd">            Tagged information regarding system state</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        y: Array1D</span>
+<span class="sd">            Calculation ready array</span>
+<span class="sd">        """</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">var</span><span class="p">,</span> <span class="n">place</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">y</span><span class="p">[</span><span class="n">place</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">var</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">y</span></div>
+
+
+<div class="viewcode-block" id="Calculation.save">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalcState</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Given input for "calculate" (which is a legal state of the system),</span>
+<span class="sd">        tag the information, i.e. create a "State" and return it.</span>
+
+<span class="sd">        The default method implemented here assumes the state is completely</span>
+<span class="sd">        described by the variables presented in self.variables.</span>
+<span class="sd">        This may not be the best descriptor of the state, as there can be more</span>
+<span class="sd">        favourable expressions. This is the separation between ``strict_save``, which</span>
+<span class="sd">        is the vanilla version described above, and ``save``, which should be free to</span>
+<span class="sd">        add other keys to the "State".</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        vector: Sequence[float]</span>
+<span class="sd">            Input</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        state: CalcState</span>
+<span class="sd">            Tagged information regarding system state</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">valmap</span><span class="p">(</span><span class="n">vector</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span></div>
+
+
+    <span class="n">strict_save</span> <span class="o">=</span> <span class="n">save</span>
+
+<div class="viewcode-block" id="Calculation.should_continue">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.should_continue">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">should_continue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">        A function to be used in transient calculations to determine stopping</span>
+<span class="sd">        conditions at physical states of a system. Returning False signals the</span>
+<span class="sd">        calculation is to be stopped. Logging the reason is encouraged.</span>
+
+<span class="sd">        This function's inputs should equal those of :meth:`save` and :meth:`calculate`.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Implementation in :class:`~stream.aggregator.Aggregator` dictates</span>
+<span class="sd">            the :meth:`change_state` method is called right before :meth:`should_continue`,</span>
+<span class="sd">            with the same input.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variables: Sequence[float]</span>
+<span class="sd">            Input</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        should_continue: bool</span>
+<span class="sd">            Should the transient simulation continue?</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="Calculation.change_state">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.change_state">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">change_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">        A function to be used in transient calculations called at physical states</span>
+<span class="sd">        of a system. If the calculation has an internal state which depends</span>
+<span class="sd">        on the physical state, this state should be changed here.</span>
+
+<span class="sd">        This function's inputs should equal those of :meth:`save` and :meth:`calculate`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variables: Sequence[float]</span>
+<span class="sd">            Input</span>
+<span class="sd">        """</span></div>
+
+
+<div class="viewcode-block" id="Calculation.event_margin">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.event_margin">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_margin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Continuous, signed event margins for this calculation.</span>
+
+<span class="sd">        Each returned value is a smooth function of the inputs that is strictly</span>
+<span class="sd">        positive while no event is pending and crosses zero (positive -&gt;</span>
+<span class="sd">        non-positive) exactly at the event. The transient drivers pass these to</span>
+<span class="sd">        the solver (IDA's rootfn / ``solve_ivp`` events) so the true event time is</span>
+<span class="sd">        localized by sign-change bisection; :meth:`change_state` /</span>
+<span class="sd">        :meth:`should_continue` are then consulted at that time to decide what the</span>
+<span class="sd">        event does.</span>
+
+<span class="sd">        Inputs match :meth:`calculate`/:meth:`should_continue`/:meth:`change_state`.</span>
+<span class="sd">        Return an empty array (the default) for calculations with no localizable</span>
+<span class="sd">        event; such calculations, if they still override</span>
+<span class="sd">        :meth:`change_state`/:meth:`should_continue`, are polled at output grid</span>
+<span class="sd">        points instead (coarser).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        margins: Array1D</span>
+<span class="sd">            Signed continuous margins (empty for no event).</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Calculation.has_event">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.Calculation.has_event">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_event</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether this calculation currently participates in transient events, that</span>
+<span class="sd">        is, whether the drivers must consult its :meth:`change_state` and</span>
+<span class="sd">        :meth:`should_continue`.</span>
+
+<span class="sd">        By default a calculation is an event node if and only if it overrides either</span>
+<span class="sd">        hook. A component whose event participation depends on a runtime flag should</span>
+<span class="sd">        override this to return that flag, so that when inactive it is classified and</span>
+<span class="sd">        integrated like a plain calculation rather than as a margin-less event node.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">change_state</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Calculation</span><span class="o">.</span><span class="n">change_state</span>
+            <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">should_continue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Calculation</span><span class="o">.</span><span class="n">should_continue</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="unpacked">
+<a class="viewcode-back" href="../../calculation.html#stream.calculation.unpacked">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unpacked</span><span class="p">(</span><span class="n">calculate</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exclude</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    This is a decorator for Calculation methods (calculate and save, mostly),</span>
+<span class="sd">    to be applied when the origin of the external variables is unimportant.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    calculate: callable</span>
+<span class="sd">        Calculation.calculate actualized method</span>
+<span class="sd">    exclude: Iterable[str]</span>
+<span class="sd">        Which variables to exclude from unpacking</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    calculate*: callable</span>
+<span class="sd">        The method which now receives its keyword arguments as</span>
+<span class="sd">        np.arrays or as floats and not a dictionary</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unpacked</span><span class="p">(</span><span class="n">_calculate</span><span class="p">):</span>
+        <span class="nd">@wraps</span><span class="p">(</span><span class="n">_calculate</span><span class="p">)</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_unpack</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">excluded_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">exclude</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">}</span>
+                <span class="k">return</span> <span class="n">_calculate</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">valmap</span><span class="p">(</span><span class="n">_concat</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">|</span> <span class="n">excluded_kwargs</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">BaseException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">e</span><span class="o">.</span><span class="n">add_note</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Error found at </span><span class="si">{</span><span class="n">_calculate</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="k">raise</span>
+
+        <span class="k">return</span> <span class="n">_unpack</span>
+
+    <span class="k">if</span> <span class="n">calculate</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Used as @unpacked</span>
+        <span class="k">return</span> <span class="n">_unpacked</span><span class="p">(</span><span class="n">calculate</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Used as @unpacked(...)</span>
+        <span class="k">return</span> <span class="n">_unpacked</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_concat</span><span class="p">(</span><span class="n">v</span><span class="p">:</span> <span class="n">Value</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Value</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">flatten_values</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">v</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

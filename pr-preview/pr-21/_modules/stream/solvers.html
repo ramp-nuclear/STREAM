@@ -1,0 +1,671 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.solvers &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.solvers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.solvers</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">The :class:`~stream.aggregator.Aggregator` defines a functional :math:`\vec{F}(\vec{y},t)` which can be</span>
+<span class="sd">utilized to solve several problems. Below are several backends used for different</span>
+<span class="sd">classes of problems.</span>
+
+<span class="sd">Backends</span>
+<span class="sd">--------</span>
+<span class="sd">Each ``eq_type`` in :meth:`~stream.aggregator.Aggregator.solve` relies on a different backend solver,</span>
+<span class="sd">for which different ``options`` are relevant. For the sake of brevity, these options are not specified here,</span>
+<span class="sd">and the user is encouraged to look at each backend, as well as the defaults set in :mod:`~stream.aggregator`</span>
+<span class="sd">to achieve a higher level of proficiency.</span>
+
+<span class="sd">.. table::</span>
+<span class="sd">   :name: Backend Solvers</span>
+
+<span class="sd">   +---------+--------------------------+-------------------------------+</span>
+<span class="sd">   |eq_type  |Solver                    |Function Name                  |</span>
+<span class="sd">   +=========+==========================+===============================+</span>
+<span class="sd">   |**ODE**  |Scipy.integrate.solve_ivp |:func:`differential`           |</span>
+<span class="sd">   +---------+--------------------------+-------------------------------+</span>
+<span class="sd">   |**DAE**  |Scikits.odes.ida          |:func:`differential_algebraic` |</span>
+<span class="sd">   +---------+--------------------------+-------------------------------+</span>
+<span class="sd">   |**ALG**  |Scipy.optimize.root       |:func:`algebraic`,             |</span>
+<span class="sd">   |         |                          |:func:`quasi_static`           |</span>
+<span class="sd">   +---------+--------------------------+-------------------------------+</span>
+
+<span class="sd">Beyond the ``eq_type`` backends above, :func:`scaled_newton` provides a</span>
+<span class="sd">globalized steady solve, an equilibrated, Armijo-damped Newton, for root finds</span>
+<span class="sd">from far guesses where :func:`algebraic`'s ``hybr`` stalls.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scikits.odes</span><span class="w"> </span><span class="kn">import</span> <span class="n">dae</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">optimize</span> <span class="k">as</span> <span class="n">opt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">solve_ivp</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array2D</span><span class="p">,</span> <span class="n">Functional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">concat</span><span class="p">,</span> <span class="n">ignore_warnings</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"stream.aggregator"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TransientRuntimeError">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.TransientRuntimeError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TransientRuntimeError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""RuntimeError which occurred during a transient simulation,</span>
+<span class="sd">    mostly because of solver convergence problems.</span>
+
+<span class="sd">    Data for debugging the error may be extracted by::</span>
+
+<span class="sd">        try:</span>
+<span class="sd">            # error raising simulation</span>
+<span class="sd">        except TransientRuntimeError as e:</span>
+<span class="sd">            t, y, ydot = e.t, e.y, e.ydot</span>
+<span class="sd">            results = Solution(t, y)</span>
+<span class="sd">            raise e</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"At t = </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">: "</span> <span class="o">+</span> <span class="n">message</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="n">t</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ydot</span> <span class="o">=</span> <span class="n">ydot</span></div>
+
+
+
+<div class="viewcode-block" id="differential_algebraic">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.differential_algebraic">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">differential_algebraic</span><span class="p">(</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span>
+    <span class="n">mass</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">yp0</span><span class="p">:</span> <span class="n">Array1D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">R</span><span class="p">:</span> <span class="n">Functional</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">on_event</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">continuous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">options</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array2D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Solving a Differential Algebraic Equation (DAE) :math:`M\dot{y}=F(y, t)`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    F: Functional</span>
+<span class="sd">        The main right-hand side function :math:`F(y,t)`.</span>
+<span class="sd">    mass: Array1D</span>
+<span class="sd">        Mass vector, determining which index is differential and which is algebraic.</span>
+<span class="sd">    y0: Array1D</span>
+<span class="sd">        Initial values.</span>
+<span class="sd">    time: Sequence[float]</span>
+<span class="sd">        Time points for which the simulation values should be returned.</span>
+<span class="sd">    yp0: Array1D | None</span>
+<span class="sd">        Initial value derivatives. If None, considered 0. However, when</span>
+<span class="sd">        ``compute_initcond = 'yp0'`` is set (as is default), this vector is deduced</span>
+<span class="sd">        from ``y0``.</span>
+<span class="sd">    R: Functional | None</span>
+<span class="sd">        The continuous event-margin function ``R(y, t) -&gt; float[]`` (IDA's rootfn).</span>
+<span class="sd">        Each component is positive while its event is not pending and sign-changes</span>
+<span class="sd">        at the event, so IDA localizes the true event time. When ``None`` there are</span>
+<span class="sd">        no events and the equation is integrated straight through.</span>
+<span class="sd">    on_event: Callable | None</span>
+<span class="sd">        ``on_event(t_root, y_root, ydot_root) -&gt; bool`` applied at each confirmed</span>
+<span class="sd">        root: it performs the state transition and returns whether to continue.</span>
+<span class="sd">        An exception it raises propagates with the trajectory up to and including</span>
+<span class="sd">        the root attached as ``t`` and ``y``.</span>
+<span class="sd">    continuous: bool</span>
+<span class="sd">        Controls what a stop request (``on_event`` returning ``False``) does. With</span>
+<span class="sd">        ``continuous=False`` (default) it stops the run; with ``True`` the run</span>
+<span class="sd">        restarts past it. In either case a *non-terminal* transition (``on_event``</span>
+<span class="sd">        returns ``True``) restarts from the root with fresh, small initial steps.</span>
+<span class="sd">    options:</span>
+<span class="sd">        Other options to be passed to the ``scikits.odes`` solver.</span>
+<span class="sd">        ``exclude_algvar_from_error=True`` (IDA's suppress-algebraic option) leaves</span>
+<span class="sd">        algebraic variables out of the local error test, which keeps the step size</span>
+<span class="sd">        from collapsing after an event restart at tight tolerance on a loop where</span>
+<span class="sd">        one edge's flow is pinned by an algebraic law while the rest carries</span>
+<span class="sd">        inertia. The price is that algebraic variables are no longer</span>
+<span class="sd">        error-controlled between steps, so an event margin that reads an algebraic</span>
+<span class="sd">        flow (an inertia-free network with a flow-based event) can be localized late.</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    solution: tuple[Array2D, Array1D]</span>
+<span class="sd">        The solution matrix: [time, variable], and the vector of times</span>
+<span class="sd">        in which it was calculated.</span>
+<span class="sd">    """</span>
+
+    <span class="n">solve</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span> <span class="o">=</span> <span class="n">_dae_setup</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">yp0</span><span class="p">,</span> <span class="n">R</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="p">(</span><span class="n">on_event</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">continuous</span><span class="p">):</span>
+        <span class="n">solution</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">solution</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">solution</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">t</span>
+    <span class="k">return</span> <span class="n">_event_loop_dae</span><span class="p">(</span><span class="n">solve</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span><span class="p">,</span> <span class="n">on_event</span><span class="p">,</span> <span class="n">continuous</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ida_post_solution</span><span class="p">(</span><span class="n">solution</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">flag</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">TransientRuntimeError</span><span class="p">(</span><span class="o">*</span><span class="n">solution</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">solution</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_dae_setup</span><span class="p">(</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span>
+    <span class="n">mass</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">yp0</span><span class="p">:</span> <span class="n">Array1D</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">R</span><span class="p">:</span> <span class="n">Functional</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">options</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Callable</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">residues</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">result</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">F</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="o">-</span> <span class="n">mass</span> <span class="o">*</span> <span class="n">ydot</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">__</span><span class="p">):</span>
+        <span class="n">g</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">R</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">yp0</span> <span class="o">=</span> <span class="n">yp0</span> <span class="k">if</span> <span class="n">yp0</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y0</span><span class="p">))</span>
+    <span class="n">root</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">root</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"compute_initcond"</span><span class="p">:</span> <span class="s2">"yp0"</span><span class="p">,</span>
+        <span class="s2">"old_api"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"algebraic_vars_idx"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mass</span><span class="p">),</span>
+        <span class="s2">"implementation"</span><span class="p">:</span> <span class="s2">"serial"</span><span class="p">,</span>
+        <span class="s2">"rootfn"</span><span class="p">:</span> <span class="n">root</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="n">defaults</span> <span class="o">|</span> <span class="n">options</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">dae</span><span class="p">(</span><span class="s2">"ida"</span><span class="p">,</span> <span class="n">residues</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">solve</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">ignore_warnings</span><span class="p">(</span><span class="ne">DeprecationWarning</span><span class="p">):</span>
+            <span class="n">sol_</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span><span class="p">)</span>
+        <span class="n">_ida_post_solution</span><span class="p">(</span><span class="n">sol_</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sol_</span>
+
+    <span class="k">return</span> <span class="n">solve</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_attach_trajectory</span><span class="p">(</span><span class="n">err</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Attach the trajectory reached so far to ``err`` as ``err.t`` and ``err.y``,</span>
+<span class="sd">    the same attributes a solver failure carries."""</span>
+    <span class="n">err</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">err</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_advance_eps</span><span class="p">(</span><span class="n">time</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A tiny floor the next event time must exceed the previous restart time by,</span>
+<span class="sd">    so a root that fails to advance raises instead of looping forever."""</span>
+    <span class="n">span</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">1e-12</span><span class="p">,</span> <span class="mf">1e-9</span> <span class="o">*</span> <span class="n">span</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_event_loop_dae</span><span class="p">(</span>
+    <span class="n">solve</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">yp0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">on_event</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">continuous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array2D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Integrate a DAE with continuous-margin events. On each ``IDA_ROOT_RETURN``</span>
+<span class="sd">    the true root is taken from ``solution.roots`` (not the last output point before</span>
+<span class="sd">    it), the transition is applied there via ``on_event``, and the run either stops</span>
+<span class="sd">    (terminal) or restarts *from the root* with fresh small steps. The pre-root</span>
+<span class="sd">    interval is never re-integrated, and a non-advancing root raises rather than</span>
+<span class="sd">    hanging. Returned times stay aligned to the requested grid; a terminal stop</span>
+<span class="sd">    additionally ends the series exactly at the event time."""</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">_advance_eps</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">t_acc</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Array1D</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">y_acc</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Array2D</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">t0</span><span class="p">,</span> <span class="n">y_cur</span><span class="p">,</span> <span class="n">yp_cur</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">y0</span><span class="p">,</span> <span class="n">yp0</span>
+    <span class="n">remaining</span> <span class="o">=</span> <span class="n">time</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">first</span><span class="p">:</span>
+            <span class="n">solution</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">remaining</span><span class="p">,</span> <span class="n">y_cur</span><span class="p">,</span> <span class="n">yp_cur</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">solution</span> <span class="o">=</span> <span class="n">solve</span><span class="p">(</span><span class="n">remaining</span><span class="p">,</span> <span class="n">y_cur</span><span class="p">,</span> <span class="n">yp_cur</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">TransientRuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">t_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                    <span class="n">y_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">if</span> <span class="n">t_acc</span><span class="p">:</span>
+                    <span class="n">_attach_trajectory</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">t_acc</span><span class="p">),</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">y_acc</span><span class="p">))</span>
+                <span class="k">raise</span>
+        <span class="n">vt</span><span class="p">,</span> <span class="n">vy</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">keep_head</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">first</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="n">t_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vt</span><span class="p">[</span><span class="n">keep_head</span><span class="p">:])</span>
+        <span class="n">y_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vy</span><span class="p">[</span><span class="n">keep_head</span><span class="p">:])</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">roots</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="n">roots</span>
+        <span class="k">if</span> <span class="n">roots</span><span class="o">.</span><span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">roots</span><span class="o">.</span><span class="n">t</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">break</span>
+
+        <span class="n">t_root</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">roots</span><span class="o">.</span><span class="n">t</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">y_root</span><span class="p">,</span> <span class="n">yp_root</span> <span class="o">=</span> <span class="n">roots</span><span class="o">.</span><span class="n">y</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">roots</span><span class="o">.</span><span class="n">ydot</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">t_root</span> <span class="o">&gt;</span> <span class="n">t0</span> <span class="o">+</span> <span class="n">eps</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">TransientRuntimeError</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t_root</span><span class="p">]),</span>
+                <span class="n">y_root</span><span class="p">,</span>
+                <span class="n">yp_root</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"Event at t=</span><span class="si">{</span><span class="n">t_root</span><span class="si">:</span><span class="s2">.6g</span><span class="si">}</span><span class="s2"> did not advance past t=</span><span class="si">{</span><span class="n">t0</span><span class="si">:</span><span class="s2">.6g</span><span class="si">}</span><span class="s2">; "</span>
+                <span class="s2">"aborting to avoid an infinite restart loop."</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">keep_going</span> <span class="o">=</span> <span class="n">on_event</span><span class="p">(</span><span class="n">t_root</span><span class="p">,</span> <span class="n">y_root</span><span class="p">,</span> <span class="n">yp_root</span><span class="p">)</span> <span class="k">if</span> <span class="n">on_event</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">t_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t_root</span><span class="p">]))</span>
+            <span class="n">y_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_root</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">_attach_trajectory</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">t_acc</span><span class="p">),</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">y_acc</span><span class="p">))</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">keep_going</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">continuous</span><span class="p">):</span>
+            <span class="n">t_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">t_root</span><span class="p">]))</span>
+            <span class="n">y_acc</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">y_root</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="k">break</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Event at t = </span><span class="si">{</span><span class="n">t_root</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">; restarting the integration from the root."</span><span class="p">)</span>
+        <span class="n">t0</span><span class="p">,</span> <span class="n">y_cur</span><span class="p">,</span> <span class="n">yp_cur</span> <span class="o">=</span> <span class="n">t_root</span><span class="p">,</span> <span class="n">y_root</span><span class="p">,</span> <span class="n">yp_root</span>
+        <span class="n">remaining</span> <span class="o">=</span> <span class="n">concat</span><span class="p">([</span><span class="n">t_root</span><span class="p">],</span> <span class="n">time</span><span class="p">[</span><span class="n">time</span> <span class="o">&gt;</span> <span class="n">t_root</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">remaining</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">y_acc</span><span class="p">),</span> <span class="n">concat</span><span class="p">(</span><span class="o">*</span><span class="n">t_acc</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AlgRuntimeError</span><span class="p">(</span><span class="ne">RuntimeError</span><span class="p">):</span>
+    <span class="k">pass</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_root</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span> <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">opt</span><span class="o">.</span><span class="n">root</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="p">(</span><span class="n">t</span><span class="p">,),</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">sol</span><span class="p">[</span><span class="s2">"success"</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">AlgRuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"At t=</span><span class="si">{</span><span class="n">t</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, Root Finding failed with the following message:</span><span class="se">\n</span><span class="s2">"</span> <span class="o">+</span> <span class="n">sol</span><span class="p">[</span><span class="s2">"message"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">sol</span><span class="o">.</span><span class="n">x</span>
+
+
+<div class="viewcode-block" id="algebraic">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.algebraic">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">algebraic</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span> <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Solving an Algebraic Equation :math:`0=F(y, 0)`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    F: Functional</span>
+<span class="sd">        The main right-hand side function :math:`F(y,t)`, evaluated at :math:`t=0`.</span>
+<span class="sd">    y0: Array1D</span>
+<span class="sd">        Initial Guess.</span>
+<span class="sd">    options:</span>
+<span class="sd">        Other options to be passed to the ``Scipy.optimize.root`` solver.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    solution: Array1D</span>
+<span class="sd">        The root of the functional. A failed root find raises :class:`AlgRuntimeError`.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_root</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="quasi_static">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.quasi_static">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">quasi_static</span><span class="p">(</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">time</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">R</span><span class="p">:</span> <span class="n">Functional</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">options</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array2D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Solving an Algebraic Equation :math:`0=F(y, t)` at each of a sequence of time points</span>
+
+<span class="sd">    The root at each time point is found from the root at the previous one, so this is a</span>
+<span class="sd">    quasi-static simulation of the algebraic system.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    F: Functional</span>
+<span class="sd">        The main right-hand side function :math:`F(y,t)`.</span>
+<span class="sd">    y0: Array1D</span>
+<span class="sd">        The state at ``time[0]``, which is taken as is.</span>
+<span class="sd">    time: Sequence[float]</span>
+<span class="sd">        Time points at which the root is found.</span>
+<span class="sd">    R: Functional | None</span>
+<span class="sd">        A function controlling stop events: the simulation stops after the first time point at</span>
+<span class="sd">        which not all of its values are truthy.</span>
+<span class="sd">    options:</span>
+<span class="sd">        Other options to be passed to the ``Scipy.optimize.root`` solver.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    solution: tuple[Array2D, Array1D]</span>
+<span class="sd">        The solution matrix ([time, variable]) and the times it spans. These are shorter than</span>
+<span class="sd">        the requested ``time`` when the stop condition ``R`` trips (the stop-triggering row</span>
+<span class="sd">        included), so callers must take their time axis from the returned times. A failed</span>
+<span class="sd">        root find raises :class:`AlgRuntimeError`.</span>
+<span class="sd">    """</span>
+    <span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">time</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">y0</span><span class="p">)))</span>
+    <span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">y0</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">_root</span><span class="p">(</span><span class="n">F</span><span class="p">,</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">R</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">R</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">t</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">y</span><span class="p">[:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">time</span><span class="p">[:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">time</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_equilibrate</span><span class="p">(</span><span class="n">J</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array2D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Row-then-column infinity-norm equilibration of a matrix (single pass).</span>
+
+<span class="sd">    Scales ``J`` by dividing each row by its infinity norm and then each of the</span>
+<span class="sd">    row-scaled columns by its infinity norm, so the returned ``J_eq`` has unit</span>
+<span class="sd">    largest row and column magnitudes. Both scale vectors are floored at</span>
+<span class="sd">    ``1e-30`` so a vanishing row/column is never divided by zero (and never</span>
+<span class="sd">    amplified).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    J : Array2D</span>
+<span class="sd">        The matrix to equilibrate (typically a Jacobian).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    J_eq : Array2D</span>
+<span class="sd">        The equilibrated matrix, ``J / (rs[:, None] * cs[None, :])``.</span>
+<span class="sd">    rs : Array1D</span>
+<span class="sd">        Row scales (row infinity norms of ``J``, floored).</span>
+<span class="sd">    cs : Array1D</span>
+<span class="sd">        Column scales (column infinity norms of the row-scaled ``J``, floored).</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Single-pass (not Ruiz-iterated). Row scaling scales the residual and column</span>
+<span class="sd">    scaling scales the variables, so a linear solve on ``J_eq`` recovers the</span>
+<span class="sd">    original solution as ``dy = dy_eq / cs`` from a right-hand side ``-(F / rs)``.</span>
+<span class="sd">    """</span>
+    <span class="n">rs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">J</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="mf">1e-30</span><span class="p">)</span>
+    <span class="n">Jr</span> <span class="o">=</span> <span class="n">J</span> <span class="o">/</span> <span class="n">rs</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">Jr</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="mf">1e-30</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Jr</span> <span class="o">/</span> <span class="n">cs</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:],</span> <span class="n">rs</span><span class="p">,</span> <span class="n">cs</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_scaled_newton_core</span><span class="p">(</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">jac</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Array1D</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Array2D</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">maxit</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">tikhonov</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array1D</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Inner loop of :func:`scaled_newton`.</span>
+
+<span class="sd">    Runs equilibrated, Tikhonov-regularized, Armijo-damped Newton iterations and</span>
+<span class="sd">    reports status flags instead of raising. See :func:`scaled_newton` for the</span>
+<span class="sd">    references.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    y : Array1D</span>
+<span class="sd">        The last iterate reached.</span>
+<span class="sd">    converged : bool</span>
+<span class="sd">        ``True`` if ``||F(y, t)|| &lt; tol`` was reached.</span>
+<span class="sd">    exhausted : bool</span>
+<span class="sd">        ``True`` if an Armijo search found no descent (``a`` fell to ``2**-30``</span>
+<span class="sd">        with no merit decrease).</span>
+<span class="sd">    nF : float</span>
+<span class="sd">        ``||F(y, t)||`` at the returned iterate.</span>
+<span class="sd">    it : int</span>
+<span class="sd">        Number of completed iterations.</span>
+<span class="sd">    """</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">it</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">maxit</span><span class="p">):</span>
+        <span class="n">Fy</span> <span class="o">=</span> <span class="n">F</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">nF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">Fy</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">nF</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">nF</span><span class="p">,</span> <span class="n">it</span>
+        <span class="n">J</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">jac</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span>  <span class="c1"># copy: ALG_jacobian returns a shared closure buffer</span>
+        <span class="n">Jeq</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">cs</span> <span class="o">=</span> <span class="n">_equilibrate</span><span class="p">(</span><span class="n">J</span><span class="p">)</span>
+        <span class="n">A</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">Jeq</span> <span class="o">+</span> <span class="n">tikhonov</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">Jeq</span><span class="p">)),</span> <span class="o">-</span><span class="p">(</span><span class="n">Fy</span> <span class="o">/</span> <span class="n">rs</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="n">cs</span>
+        <span class="k">except</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">LinAlgError</span><span class="p">:</span>
+            <span class="n">dy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">lstsq</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">b</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">cs</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="mf">1.0</span>
+        <span class="n">merit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">F</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dy</span><span class="p">,</span> <span class="n">t</span><span class="p">)))</span>
+        <span class="k">while</span> <span class="n">merit</span> <span class="o">&gt;=</span> <span class="n">nF</span> <span class="ow">and</span> <span class="n">a</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="o">**-</span><span class="mi">30</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">*=</span> <span class="mf">0.5</span>
+            <span class="n">merit</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">F</span><span class="p">(</span><span class="n">y</span> <span class="o">+</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dy</span><span class="p">,</span> <span class="n">t</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">merit</span> <span class="o">&gt;=</span> <span class="n">nF</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">nF</span><span class="p">,</span> <span class="n">it</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">a</span> <span class="o">*</span> <span class="n">dy</span>
+    <span class="n">nF</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">F</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">nF</span> <span class="o">&lt;</span> <span class="n">tol</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">nF</span><span class="p">,</span> <span class="n">maxit</span>
+
+
+<div class="viewcode-block" id="scaled_newton">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.scaled_newton">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scaled_newton</span><span class="p">(</span>
+    <span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span>
+    <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">jac</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Array1D</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Array2D</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">t</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+    <span class="n">maxit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="n">tikhonov</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-10</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Globalized damped Newton steady solve with equilibrated linear solves.</span>
+
+<span class="sd">    Each iteration equilibrates the Jacobian (row-then-column infinity norm)</span>
+<span class="sd">    [#Higham]_, solves the Tikhonov-regularized [#Tikhonov]_, equilibrated</span>
+<span class="sd">    linear system for a Newton step, and backtracks the step with a merit line</span>
+<span class="sd">    search [#NocedalWright]_ on ``||F(y + a*dy, t)||``. It is meant</span>
+<span class="sd">    for steady solves from far guesses where the globalization in</span>
+<span class="sd">    :func:`scipy.optimize.root` (``hybr``) stalls; once the damped steps bring</span>
+<span class="sd">    the iterate near a root, full Newton steps resume.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    F : Functional</span>
+<span class="sd">        Residual ``F(y, t) -&gt; Array1D`` (the aggregator ``compute`` signature).</span>
+<span class="sd">        The root ``F = 0`` is sought.</span>
+<span class="sd">    y0 : Array1D</span>
+<span class="sd">        Initial guess.</span>
+<span class="sd">    jac : Callable</span>
+<span class="sd">        Analytic/approximate Jacobian ``jac(y, t) -&gt; Array2D`` of ``F``.</span>
+<span class="sd">    t : float, optional</span>
+<span class="sd">        Time argument threaded into ``F`` and ``jac`` (default ``0.0``).</span>
+<span class="sd">    tol : float, optional</span>
+<span class="sd">        Convergence tolerance on ``||F||`` (default ``1e-6``).</span>
+<span class="sd">    maxit : int, optional</span>
+<span class="sd">        Maximum Newton iterations (default ``100``).</span>
+<span class="sd">    tikhonov : float, optional</span>
+<span class="sd">        Tikhonov regularization [#Tikhonov]_: a small multiple of the identity</span>
+<span class="sd">        added to the *equilibrated* (``O(1)``) Jacobian so a rank-deficient step</span>
+<span class="sd">        stays finite (default ``1e-10``). If the shifted matrix is still</span>
+<span class="sd">        singular, the step is the minimum-norm least-squares solution.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Array1D</span>
+<span class="sd">        The converged state ``y`` with ``||F(y, t)|| &lt; tol``.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    AlgRuntimeError</span>
+<span class="sd">        If the backtracking line search [#NocedalWright]_ finds no descent</span>
+<span class="sd">        (raised immediately, not spun out to ``maxit``) or ``maxit`` is</span>
+<span class="sd">        exhausted. The best iterate reached is attached as the ``y`` attribute</span>
+<span class="sd">        for diagnosis.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The equilibration serves conditioning diagnostics and insurance for</span>
+<span class="sd">    badly-scaled systems (making ``cond``/rank meaningful and giving Tikhonov a</span>
+<span class="sd">    sane ``O(1)`` metric); the *damping* provides the convergence. The Tikhonov</span>
+<span class="sd">    term is a defensive default with no measurable effect on well-posed systems.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#NocedalWright] J. Nocedal, S. J. Wright, "Numerical Optimization", 2nd</span>
+<span class="sd">       edition, Springer, 2006, chapter 3 (backtracking line search with the</span>
+<span class="sd">       Armijo sufficient decrease condition, Algorithm 3.1).</span>
+<span class="sd">    .. [#Tikhonov] A. N. Tikhonov, V. Y. Arsenin, "Solutions of Ill-Posed</span>
+<span class="sd">       Problems", Winston, Washington DC, 1977.</span>
+<span class="sd">    .. [#Higham] N. J. Higham, "Accuracy and Stability of Numerical Algorithms",</span>
+<span class="sd">       2nd edition, SIAM, 2002, section 7.3 (row and column scaling); LAPACK</span>
+<span class="sd">       routine ``dgeequ``.</span>
+<span class="sd">    """</span>
+    <span class="n">y</span><span class="p">,</span> <span class="n">converged</span><span class="p">,</span> <span class="n">exhausted</span><span class="p">,</span> <span class="n">nF</span><span class="p">,</span> <span class="n">it</span> <span class="o">=</span> <span class="n">_scaled_newton_core</span><span class="p">(</span>
+        <span class="n">F</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">jac</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="n">tol</span><span class="p">,</span> <span class="n">maxit</span><span class="o">=</span><span class="n">maxit</span><span class="p">,</span> <span class="n">tikhonov</span><span class="o">=</span><span class="n">tikhonov</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">converged</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">y</span>
+    <span class="n">reason</span> <span class="o">=</span> <span class="s2">"Armijo line search found no descent direction"</span> <span class="k">if</span> <span class="n">exhausted</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"exceeded maxit=</span><span class="si">{</span><span class="n">maxit</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">err</span> <span class="o">=</span> <span class="n">AlgRuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"scaled_newton failed at iteration </span><span class="si">{</span><span class="n">it</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">); ||F||=</span><span class="si">{</span><span class="n">nF</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">."</span><span class="p">)</span>
+    <span class="n">err</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">y</span>
+    <span class="k">raise</span> <span class="n">err</span></div>
+
+
+
+<div class="viewcode-block" id="differential">
+<a class="viewcode-back" href="../../aggregator.html#stream.solvers.differential">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">differential</span><span class="p">(</span><span class="n">F</span><span class="p">:</span> <span class="n">Functional</span><span class="p">,</span> <span class="n">y0</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">time</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array2D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">]:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Solving an Ordinary Differential Equation (ODE) :math:`\dot{y}=F(y, t)`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    F: Functional</span>
+<span class="sd">        The main right-hand side function :math:`F(y,t)`.</span>
+<span class="sd">    y0: Array1D</span>
+<span class="sd">        Initial values.</span>
+<span class="sd">    time: Sequence[float]</span>
+<span class="sd">        Time points for which the simulation values should be returned.</span>
+<span class="sd">    options:</span>
+<span class="sd">        Other options to be passed to the ``scipy.integrate.solve_ivp`` solver.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    solution: tuple[Array2D, Array1D]</span>
+<span class="sd">        The solution matrix ([time, variable]) and the times it spans. A solver</span>
+<span class="sd">        failure raises :class:`TransientRuntimeError` carrying the reached times and</span>
+<span class="sd">        the partial data, as the DAE path does, instead of returning a truncated</span>
+<span class="sd">        result.</span>
+<span class="sd">    """</span>
+    <span class="n">time_limits</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">solution</span> <span class="o">=</span> <span class="n">solve_ivp</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">F</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">),</span> <span class="n">time_limits</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="n">t_eval</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">solution</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+        <span class="n">reached</span> <span class="o">=</span> <span class="n">solution</span><span class="o">.</span><span class="n">t</span> <span class="k">if</span> <span class="n">solution</span><span class="o">.</span><span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">t</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">raise</span> <span class="n">TransientRuntimeError</span><span class="p">(</span><span class="n">reached</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">solution</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">solution</span><span class="o">.</span><span class="n">t</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
