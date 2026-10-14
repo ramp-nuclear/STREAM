@@ -1,0 +1,190 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.aggregator.constraints &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.aggregator.constraints</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.aggregator.constraints</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Unpack</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutually_exclusive</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CONSTRAINT"</span><span class="p">,</span> <span class="s2">"create_constraints"</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="CONSTRAINT">
+<a class="viewcode-back" href="../../../aggregator.html#stream.aggregator.constraints.CONSTRAINT">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CONSTRAINT</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Possible values for IDA for sign constraints.</span>
+<span class="sd">    See the sundials documentation for explanation of these values</span>
+<span class="sd">    """</span>
+
+    <span class="n">negative</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.0</span>
+    <span class="n">non_positive</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span>
+    <span class="n">none</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">non_negative</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">positive</span> <span class="o">=</span> <span class="mf">2.0</span></div>
+
+
+
+<span class="n">_VARTYPE</span> <span class="o">=</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_ConstraintTypes</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">negative</span><span class="p">:</span> <span class="n">_VARTYPE</span>
+    <span class="n">non_positive</span><span class="p">:</span> <span class="n">_VARTYPE</span>
+    <span class="n">none</span><span class="p">:</span> <span class="n">_VARTYPE</span>
+    <span class="n">non_negative</span><span class="p">:</span> <span class="n">_VARTYPE</span>
+    <span class="n">positive</span><span class="p">:</span> <span class="n">_VARTYPE</span>
+
+
+<div class="viewcode-block" id="create_constraints">
+<a class="viewcode-back" href="../../../aggregator.html#stream.aggregator.constraints.create_constraints">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_constraints</span><span class="p">(</span>
+    <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
+    <span class="n">default_sign</span><span class="p">:</span> <span class="n">CONSTRAINT</span> <span class="o">=</span> <span class="n">CONSTRAINT</span><span class="o">.</span><span class="n">none</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Unpack</span><span class="p">[</span><span class="n">_ConstraintTypes</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Create a constraint array, as expected by IDA</span>
+<span class="sd">    Currently, we support sign constraints in DAE mode only.</span>
+<span class="sd">    Defaults to no sign constraint for all variables.</span>
+
+<span class="sd">    Meant to be used as the `contraints_type` option for `differential_algebraic`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    agr: Aggregator</span>
+<span class="sd">        The aggregator for which to create the constraints array.</span>
+<span class="sd">    default_sign: CONSTRAINT</span>
+<span class="sd">        The default option to set all variables to, if not specified in kwargs.</span>
+<span class="sd">    kwargs: _ConstraintTypes</span>
+<span class="sd">        The variables to set to each of the possible CONSTRAINT values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        Array with the same shape as `agr.graph`, with sign contraints.</span>
+<span class="sd">    """</span>
+    <span class="k">assert</span> <span class="n">mutually_exclusive</span><span class="p">(</span><span class="o">*</span><span class="n">kwargs</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="p">(</span>
+        <span class="s2">"Keyword list must be mutually exclusive - a variable cannot be in more than one category"</span>
+    <span class="p">)</span>
+
+    <span class="n">constraint_state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">default_sign</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">sign</span><span class="p">,</span> <span class="n">variables</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">sign</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="n">item</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">CONSTRAINT</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid constraint type </span><span class="si">{</span><span class="n">sign</span><span class="si">}</span><span class="s2">. Must be one of </span><span class="si">{</span><span class="n">CONSTRAINT</span><span class="o">.</span><span class="n">__members__</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">variables</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">CONSTRAINT</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">sign</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="o">*</span><span class="n">variables</span><span class="p">)</span>
+            <span class="n">constraint_state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">constraint_state</span><span class="p">,</span> <span class="n">state</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">constraint_state</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

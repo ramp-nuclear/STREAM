@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 70 1100 745" width="1100" height="745" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="fwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/>
+    </marker>
+  </defs>
+  <rect y="70" width="1100" height="745" fill="#ffffff"/>
+
+  <g fill="#555" text-anchor="end">
+    <line x1="140" y1="90" x2="140" y2="690" stroke="#888"/>
+    <line x1="134" y1="90" x2="146" y2="90" stroke="#888"/><text x="128" y="94">0 m, surface</text>
+    <line x1="134" y1="300" x2="146" y2="300" stroke="#888"/><text x="128" y="304">−8.0 m, core top</text>
+    <line x1="134" y1="435" x2="146" y2="435" stroke="#888"/><text x="128" y="439">−8.7 m, core bottom</text>
+    <line x1="134" y1="575" x2="146" y2="575" stroke="#888"/><text x="128" y="579">−13.0 m, decay tank</text>
+    <line x1="134" y1="690" x2="146" y2="690" stroke="#888"/><text x="128" y="694">−16.0 m, pumps</text>
+    <text x="128" y="714" font-style="italic">not to scale</text>
+  </g>
+
+  <path d="M205,90 L205,520 L905,520 L905,90" fill="#e8f1fb" stroke="#333" stroke-width="2"/>
+  <line x1="205" y1="90" x2="905" y2="90" stroke="#1f5fbf" stroke-width="1.5" stroke-dasharray="6,4"/>
+  <text x="225" y="118" fill="#1f5fbf" font-weight="bold" font-size="13">POOL, water surface at 1 atm</text>
+  <text x="225" y="140" fill="#333">8 m of water above the core: not an edge,</text>
+  <text x="225" y="155" fill="#333">it fixes the pressure of the reference node</text>
+  <text x="225" y="170" fill="#333">J_pool_top at 1 atm + ρ g · 8 m</text>
+
+  <rect x="222" y="312" width="213" height="103" fill="none" stroke="#888" stroke-dasharray="4,3"/>
+  <text x="232" y="333" font-weight="bold">pool edge</text>
+  <text x="232" y="348">J_pool_bot → J_pool_top</text>
+  <text x="232" y="363">upward, 0.7 m, 300 m³</text>
+  <line x1="410" y1="300" x2="410" y2="435" stroke="#333" stroke-width="2"/>
+
+  <line x1="410" y1="300" x2="850" y2="300" stroke="#333" stroke-width="2"/>
+  <circle cx="410" cy="300" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="410" y="290" text-anchor="middle" font-weight="bold">J_pool_top</text>
+
+  <text x="550" y="222" fill="#333">four parallel core edges J_pool_top → J_plenum</text>
+  <g text-anchor="middle">
+    <text x="580" y="242" font-weight="bold">hot</text><text x="580" y="257">1 plate</text><text x="580" y="272">2.2 mm gap</text><text x="580" y="287">heated ×1.6</text>
+    <text x="660" y="242" font-weight="bold">normal</text><text x="660" y="257">300 plates</text><text x="660" y="272">2.2 mm gap</text><text x="660" y="287">heated ×1.0</text>
+    <text x="740" y="242" font-weight="bold">low</text><text x="740" y="257">90 plates</text><text x="740" y="272">2.2 mm gap</text><text x="740" y="287">heated ×0.5</text>
+    <text x="820" y="242" font-weight="bold">bypass</text><text x="820" y="257">10 plates</text><text x="820" y="272">10 mm gap</text><text x="820" y="287">unheated</text>
+  </g>
+  <g stroke="#333" stroke-width="1.5">
+    <rect x="550" y="300" width="60" height="120" fill="#fff3e0"/>
+    <rect x="630" y="300" width="60" height="120" fill="#fff3e0"/>
+    <rect x="710" y="300" width="60" height="120" fill="#fff3e0"/>
+    <rect x="790" y="300" width="60" height="120" fill="#faf6ee"/>
+  </g>
+  <g stroke="#8a6d3b" stroke-width="2.5">
+    <line x1="580" y1="304" x2="580" y2="416"/>
+    <line x1="642" y1="304" x2="642" y2="416"/><line x1="654" y1="304" x2="654" y2="416"/><line x1="666" y1="304" x2="666" y2="416"/><line x1="678" y1="304" x2="678" y2="416"/>
+    <line x1="722" y1="304" x2="722" y2="416"/><line x1="734" y1="304" x2="734" y2="416"/><line x1="746" y1="304" x2="746" y2="416"/><line x1="758" y1="304" x2="758" y2="416"/>
+  </g>
+  <g stroke="#999" stroke-width="2.5">
+    <line x1="810" y1="304" x2="810" y2="416"/><line x1="830" y1="304" x2="830" y2="416"/>
+  </g>
+  <rect x="550" y="420" width="300" height="30" fill="#f2f2f2" stroke="#333" stroke-width="1.5"/>
+  <text x="700" y="439" text-anchor="middle" font-weight="bold">J_plenum</text>
+
+  <line x1="205" y1="435" x2="410" y2="435" stroke="#333" stroke-width="2"/>
+  <line x1="410" y1="435" x2="550" y2="435" stroke="#888" stroke-width="2"/>
+  <rect x="450" y="425" width="60" height="20" fill="#fff" stroke="#888" stroke-width="1.5"/>
+  <text x="480" y="439" text-anchor="middle" fill="#555">flapper</text>
+  <circle cx="410" cy="435" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="410" y="458" text-anchor="middle" font-weight="bold">J_pool_bot</text>
+  <g fill="#555" text-anchor="middle">
+    <text x="480" y="478">flapper J_pool_bot → J_plenum</text>
+    <text x="480" y="493">shut while the pumps run,</text>
+    <text x="480" y="508">opens at 30 % of nominal flow</text>
+  </g>
+
+  <line x1="800" y1="450" x2="800" y2="575" stroke="#333" stroke-width="2"/>
+  <text x="788" y="540" text-anchor="end">primary pipe</text>
+  <text x="788" y="555" text-anchor="end">Friction, 2 Bends, 4.3 m down</text>
+  <circle cx="800" cy="575" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="788" y="590" text-anchor="end" font-weight="bold">J_tank_in</text>
+  <line x1="805" y1="575" x2="820" y2="575" stroke="#333" stroke-width="2"/>
+  <rect x="820" y="558" width="140" height="34" fill="#f2f2f2" stroke="#333" stroke-width="1.5"/>
+  <text x="890" y="579" text-anchor="middle">decay tank, horizontal</text>
+  <line x1="960" y1="575" x2="980" y2="575" stroke="#333" stroke-width="2"/>
+  <circle cx="980" cy="575" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="992" y="572" font-weight="bold">J_tank_out</text>
+
+  <line x1="980" y1="580" x2="980" y2="690" stroke="#333" stroke-width="2"/>
+  <text x="992" y="615">basement pipe</text>
+  <text x="992" y="630">Friction, Bend</text>
+  <text x="992" y="645">3.0 m down</text>
+
+  <path d="M980,690 L960,660 L680,660 L660,690" fill="none" stroke="#333" stroke-width="2"/>
+  <path d="M980,690 L960,720 L680,720 L660,690" fill="none" stroke="#333" stroke-width="2"/>
+  <rect x="690" y="648" width="260" height="24" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="820" y="664" text-anchor="middle">A: Pump · curve · flywheel · check valve</text>
+  <rect x="690" y="708" width="260" height="24" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="820" y="724" text-anchor="middle">B: Pump · curve · flywheel · check valve</text>
+  <circle cx="980" cy="690" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="992" y="694" font-weight="bold">J_split</text>
+  <circle cx="660" cy="690" r="5" fill="#fff" stroke="#333" stroke-width="2"/>
+  <text x="652" y="678" text-anchor="end" font-weight="bold">J_merge</text>
+
+  <line x1="590" y1="690" x2="655" y2="690" stroke="#333" stroke-width="2"/>
+  <rect x="470" y="675" width="120" height="30" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <text x="530" y="694" text-anchor="middle">HX, outlet 38 °C</text>
+  <path d="M470,690 L175,690 L175,435 L205,435" fill="none" stroke="#333" stroke-width="2"/>
+  <text x="190" y="722">riser J_merge → J_pool_bot: HX, HX loss, Friction, 2 Bends,</text>
+  <text x="190" y="737">Gravity climbing 7.3 m</text>
+  <text x="190" y="752" fill="#1f5fbf">the trip and the flapper read this edge's flow</text>
+
+  <g stroke="#1f5fbf" stroke-width="2.5" fill="none" marker-end="url(#fwd)">
+    <line x1="190" y1="650" x2="190" y2="470"/>
+    <line x1="222" y1="447" x2="360" y2="447"/>
+    <line x1="424" y1="405" x2="424" y2="322"/>
+    <line x1="445" y1="312" x2="535" y2="312"/>
+    <line x1="875" y1="315" x2="875" y2="410"/>
+    <line x1="812" y1="462" x2="812" y2="542"/>
+    <line x1="840" y1="548" x2="940" y2="548"/>
+    <line x1="968" y1="590" x2="968" y2="650"/>
+    <line x1="920" y1="690" x2="720" y2="690"/>
+    <line x1="440" y1="678" x2="215" y2="678"/>
+  </g>
+
+  <line x1="140" y1="782" x2="180" y2="782" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <text x="188" y="786">forced flow while the pumps run; every edge is oriented this way, so forced flow is positive on all of them</text>
+  <line x1="140" y1="800" x2="180" y2="800" stroke="#888" stroke-width="2"/>
+  <text x="188" y="804">grey: the flapper, shut</text>
+</svg>

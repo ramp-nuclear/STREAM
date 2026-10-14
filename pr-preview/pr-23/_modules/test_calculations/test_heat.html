@@ -1,0 +1,644 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>test_calculations.test_heat &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">test_calculations.test_heat</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for test_calculations.test_heat</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">hypothesis.strategies</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">st</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hypothesis</span><span class="w"> </span><span class="kn">import</span> <span class="n">given</span><span class="p">,</span> <span class="n">settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hypothesis.strategies</span><span class="w"> </span><span class="kn">import</span> <span class="n">integers</span><span class="p">,</span> <span class="n">sampled_from</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">allclose</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.heat_diffusion</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">cylindrical_areas_volumes</span><span class="p">,</span>
+    <span class="n">r_diffusion</span><span class="p">,</span>
+    <span class="n">rz_diffusion</span><span class="p">,</span>
+    <span class="n">x_diffusion</span><span class="p">,</span>
+    <span class="n">xz_diffusion</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances.mocks</span><span class="w"> </span><span class="kn">import</span> <span class="n">mock_solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">cm</span><span class="p">,</span> <span class="n">mm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">concat</span><span class="p">,</span> <span class="n">pair_mean_1d</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.conftest</span><span class="w"> </span><span class="kn">import</span> <span class="n">are_close</span><span class="p">,</span> <span class="n">pos_medium_floats</span>
+
+
+<div class="viewcode-block" id="test_Fuel_at_constant_temperature_has_derivative_0">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_Fuel_at_constant_temperature_has_derivative_0">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_Fuel_at_constant_temperature_has_derivative_0</span><span class="p">():</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">material</span> <span class="o">=</span> <span class="n">mock_solid</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dx</span><span class="p">))))</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">material</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="n">T0</span> <span class="o">=</span> <span class="mi">30</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">T0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dz</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dx</span><span class="p">)</span> <span class="o">+</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="n">T</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">T0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">T0</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">T</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="test_derivative_of_one_cell_follows_the_x_diffusion_kernel">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_derivative_of_one_cell_follows_the_x_diffusion_kernel">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">implementation</span>
+<span class="nd">@settings</span><span class="p">(</span><span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="nd">@given</span><span class="p">(</span><span class="n">pm_flt</span> <span class="o">:=</span> <span class="n">pos_medium_floats</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_derivative_of_one_cell_follows_the_x_diffusion_kernel</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">))</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="nb">input</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_left</span><span class="p">]),</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_right</span><span class="p">]),</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+    <span class="p">)</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">material</span><span class="o">.</span><span class="n">conductivity</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"T"</span><span class="p">]</span>
+
+    <span class="n">are_close</span><span class="p">(</span><span class="n">dT</span><span class="p">,</span> <span class="p">(</span><span class="n">T_left</span> <span class="o">+</span> <span class="n">T_right</span> <span class="o">-</span> <span class="n">T</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span> <span class="o">/</span> <span class="n">dx</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_not_equispaced">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_not_equispaced">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">implementation</span>
+<span class="nd">@given</span><span class="p">(</span><span class="n">pm_flt</span> <span class="o">:=</span> <span class="n">pos_medium_floats</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_not_equispaced</span><span class="p">(</span><span class="n">T0</span><span class="p">,</span> <span class="n">T_l</span><span class="p">,</span> <span class="n">T_r</span><span class="p">):</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">T_l</span><span class="p">,</span> <span class="n">T0</span><span class="p">,</span> <span class="n">T_r</span><span class="p">))</span>
+    <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T_l</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">T_r</span><span class="p">)</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">concat</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">)</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="nb">input</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">T_left</span><span class="p">,</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">T_right</span><span class="p">,</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"T"</span><span class="p">]</span>
+
+    <span class="n">are_close</span><span class="p">(</span><span class="n">dT</span><span class="p">,</span> <span class="p">[(</span><span class="n">T0</span> <span class="o">-</span> <span class="n">T_l</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">,</span> <span class="p">(</span><span class="n">T_l</span> <span class="o">+</span> <span class="n">T_r</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">T0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">3</span><span class="p">,</span> <span class="p">(</span><span class="n">T0</span> <span class="o">-</span> <span class="n">T_r</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1.5</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="multiple_regions">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.multiple_regions">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"module"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">multiple_regions</span><span class="p">():</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">meat</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">mock_solid</span><span class="p">,</span>
+        <span class="n">x_contacts</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mf">2e4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_specific_multi_cell_has_the_right_dimensions">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_specific_multi_cell_has_the_right_dimensions">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_specific_multi_cell_has_the_right_dimensions</span><span class="p">(</span><span class="n">multiple_regions</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">multiple_regions</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="o">==</span> <span class="n">f</span><span class="o">.</span><span class="n">m</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">m</span></div>
+
+
+
+<div class="viewcode-block" id="test_specific_multi_cell_has_the_right_meat">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_specific_multi_cell_has_the_right_meat">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_specific_multi_cell_has_the_right_meat</span><span class="p">(</span><span class="n">multiple_regions</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">multiple_regions</span>
+    <span class="k">assert</span> <span class="n">allclose</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">meat</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]))</span></div>
+
+
+
+<div class="viewcode-block" id="test_specific_multi_cell_has_the_right_power_shape">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_specific_multi_cell_has_the_right_power_shape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_specific_multi_cell_has_the_right_power_shape</span><span class="p">(</span><span class="n">multiple_regions</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">multiple_regions</span>
+    <span class="k">assert</span> <span class="n">allclose</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">power_shape</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]))</span></div>
+
+
+
+<div class="viewcode-block" id="test_specific_multi_cell_has_the_right_contacts">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_specific_multi_cell_has_the_right_contacts">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_specific_multi_cell_has_the_right_contacts</span><span class="p">(</span><span class="n">multiple_regions</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">multiple_regions</span>
+    <span class="k">assert</span> <span class="n">allclose</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">x_contacts</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mf">2e4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">],</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="mf">2e4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]]),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_specific_multi_cell_has_the_right_dTdt">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_specific_multi_cell_has_the_right_dTdt">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_specific_multi_cell_has_the_right_dTdt</span><span class="p">(</span><span class="n">multiple_regions</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="n">multiple_regions</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="n">T_wall</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="n">T</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">1e-9</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"T"</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">allclose</span><span class="p">(</span><span class="n">dT</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">]))</span></div>
+
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"module"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_some_config</span><span class="p">():</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="o">*</span> <span class="mi">64</span> <span class="o">*</span> <span class="n">cm</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span> <span class="o">*</span> <span class="mf">0.38</span> <span class="o">*</span> <span class="n">mm</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="mf">51.4</span> <span class="o">*</span> <span class="n">mm</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">dz</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">dx</span><span class="p">))</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">dz</span><span class="p">),</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="n">T_cool</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mi">20</span><span class="p">,</span> <span class="mi">40</span><span class="p">))</span>
+    <span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1e5</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1e5</span><span class="p">])</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">,</span>
+        <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">3000</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">700</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">240</span><span class="p">),</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="n">y</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span>
+        <span class="n">fuel</span><span class="p">,</span>
+        <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_left</span><span class="o">=</span><span class="n">T_cool</span><span class="p">,</span> <span class="n">T_right</span><span class="o">=</span><span class="n">T_cool</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h_right</span><span class="p">)},</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">agr</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_cool</span>
+
+
+<div class="viewcode-block" id="test_steady_state_with_zero_power">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_steady_state_with_zero_power">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_steady_state_with_zero_power</span><span class="p">(</span><span class="n">_some_config</span><span class="p">):</span>
+    <span class="n">agr</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_cool</span> <span class="o">=</span> <span class="n">_some_config</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">fuel</span><span class="p">][</span><span class="s2">"power"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="c1"># Zero Power Steady State. Boundary conditions rule</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sol</span><span class="p">)[</span><span class="n">fuel</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">steady</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">],</span> <span class="n">T_cool</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">steady</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">],</span> <span class="n">T_cool</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">steady</span><span class="p">[</span><span class="s2">"T"</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">T_cool</span><span class="p">,</span> <span class="n">fuel</span><span class="o">.</span><span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">fuel</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="test_steady_state_for_a_configuration_with_uniform_power">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_steady_state_for_a_configuration_with_uniform_power">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_steady_state_for_a_configuration_with_uniform_power</span><span class="p">(</span><span class="n">_some_config</span><span class="p">):</span>
+    <span class="n">agr</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">T_cool</span> <span class="o">=</span> <span class="n">_some_config</span>
+    <span class="c1"># Uniform Power. Outgoing flux must equal power at every elevation</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">fuel</span><span class="p">][</span><span class="s2">"power"</span><span class="p">]</span> <span class="o">=</span> <span class="mf">100.0</span>
+    <span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">T</span><span class="p">))[</span><span class="n">fuel</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+
+    <span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span> <span class="o">=</span> <span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">fuel</span><span class="p">][</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"h_left"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">))</span>
+
+    <span class="n">outgoing_flux</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">fuel</span><span class="o">.</span><span class="n">y_length</span>
+        <span class="o">*</span> <span class="n">fuel</span><span class="o">.</span><span class="n">dz</span>
+        <span class="o">*</span> <span class="p">(</span><span class="n">h_left</span> <span class="o">*</span> <span class="p">(</span><span class="n">steady</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">]</span> <span class="o">-</span> <span class="n">T_cool</span><span class="p">)</span> <span class="o">+</span> <span class="n">h_right</span> <span class="o">*</span> <span class="p">(</span><span class="n">steady</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">]</span> <span class="o">-</span> <span class="n">T_cool</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">power_by_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mf">100.0</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">fuel</span><span class="o">.</span><span class="n">m</span><span class="p">,</span> <span class="n">fuel</span><span class="o">.</span><span class="n">n</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">outgoing_flux</span><span class="p">,</span> <span class="n">power_by_z</span><span class="p">),</span> <span class="n">outgoing_flux</span> <span class="o">-</span> <span class="n">power_by_z</span></div>
+
+
+
+<div class="viewcode-block" id="test_initialization_of_Fuel_with_one_known_example">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_initialization_of_Fuel_with_one_known_example">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_initialization_of_Fuel_with_one_known_example</span><span class="p">():</span>
+    <span class="n">z_N</span><span class="p">,</span> <span class="n">x_N</span> <span class="o">=</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">3</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="n">z_N</span> <span class="o">*</span> <span class="n">x_N</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">z_N</span><span class="p">,</span> <span class="n">x_N</span><span class="p">))</span>
+    <span class="n">F</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">x_contacts</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">F</span><span class="o">.</span><span class="n">variables</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">cells</span><span class="p">),</span>
+        <span class="n">T_wall_left</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="n">z_N</span><span class="p">),</span>
+        <span class="n">T_wall_right</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">cells</span> <span class="o">+</span> <span class="n">z_N</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">z_N</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">mass_vector</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"T"</span><span class="p">]]</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">mass_vector</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">]]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">mass_vector</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">]]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_diffusion_gives_0_for_uniform_temperatures">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_diffusion_gives_0_for_uniform_temperatures">[docs]</a>
+<span class="nd">@settings</span><span class="p">(</span><span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="nd">@given</span><span class="p">(</span>
+    <span class="n">pos_medium_floats</span><span class="p">,</span>
+    <span class="n">integers</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="n">integers</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="n">sampled_from</span><span class="p">([</span><span class="n">x_diffusion</span><span class="p">,</span> <span class="n">xz_diffusion</span><span class="p">,</span> <span class="n">r_diffusion</span><span class="p">,</span> <span class="n">rz_diffusion</span><span class="p">]),</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_diffusion_gives_0_for_uniform_temperatures</span><span class="p">(</span><span class="n">T0</span><span class="p">,</span> <span class="n">z_N</span><span class="p">,</span> <span class="n">x_N</span><span class="p">,</span> <span class="n">func</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    If all temperatures are uniform (with zero power),</span>
+<span class="sd">    no heat flux should be generated, and the system should be at steady-state.</span>
+<span class="sd">    This property is tested over all available kernels.</span>
+<span class="sd">    """</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">x_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">z_N</span><span class="p">,</span> <span class="n">x_N</span><span class="p">),</span> <span class="n">T0</span><span class="p">)</span>
+    <span class="n">T_walls</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span>
+        <span class="n">left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">z_N</span><span class="p">,</span> <span class="n">T0</span><span class="p">),</span>
+        <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">z_N</span><span class="p">,</span> <span class="n">T0</span><span class="p">),</span>
+        <span class="n">top</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x_N</span><span class="p">,</span> <span class="n">T0</span><span class="p">),</span>
+        <span class="n">bottom</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x_N</span><span class="p">,</span> <span class="n">T0</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">x_contacts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">z_N</span><span class="p">,</span> <span class="n">x_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="n">z_contacts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">x_N</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="n">contacts</span> <span class="o">=</span> <span class="n">x_contacts</span><span class="p">,</span> <span class="n">z_contacts</span>
+
+    <span class="n">dTdt</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">mock_solid</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+        <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+        <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span>
+        <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">dTdt</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
+
+
+<span class="n">radii</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">floats</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mf">1e5</span><span class="p">)</span>
+<span class="n">small_dr_change_relative</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">floats</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_derivative_of_one_cell_follows_the_r_diffusion_kernel">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_derivative_of_one_cell_follows_the_r_diffusion_kernel">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">implementation</span>
+<span class="nd">@settings</span><span class="p">(</span><span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="nd">@given</span><span class="p">(</span><span class="n">pm_flt</span> <span class="o">:=</span> <span class="n">pos_medium_floats</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">,</span> <span class="n">pm_flt</span><span class="p">,</span> <span class="n">radii</span><span class="p">,</span> <span class="n">small_dr_change_relative</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_derivative_of_one_cell_follows_the_r_diffusion_kernel</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">,</span> <span class="n">r1</span><span class="p">,</span> <span class="n">dr_rel</span><span class="p">):</span>
+    <span class="n">r2</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">+</span> <span class="n">r1</span> <span class="o">*</span> <span class="n">dr_rel</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">])</span>
+    <span class="n">dr</span> <span class="o">=</span> <span class="n">r2</span> <span class="o">-</span> <span class="n">r1</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">))</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">heat_func</span><span class="o">=</span><span class="n">r_diffusion</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="nb">input</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_left</span><span class="p">]),</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_right</span><span class="p">]),</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+    <span class="p">)</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">material</span><span class="o">.</span><span class="n">conductivity</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"T"</span><span class="p">]</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">/</span> <span class="n">dr</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">r2</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">dT</span><span class="p">,</span> <span class="n">c</span> <span class="o">*</span> <span class="p">((</span><span class="n">T_left</span> <span class="o">-</span> <span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="n">r1</span> <span class="o">+</span> <span class="p">(</span><span class="n">T_right</span> <span class="o">-</span> <span class="n">T</span><span class="p">)</span> <span class="o">*</span> <span class="n">r2</span><span class="p">))</span></div>
+
+
+
+<span class="n">dz</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">floats</span><span class="p">(</span><span class="n">min_value</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">max_value</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_derivative_of_one_cell_follows_the_rz_diffusion_kernel">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_derivative_of_one_cell_follows_the_rz_diffusion_kernel">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">implementation</span>
+<span class="nd">@settings</span><span class="p">(</span><span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="nd">@given</span><span class="p">(</span>
+    <span class="n">pm_flt</span> <span class="o">:=</span> <span class="n">pos_medium_floats</span><span class="p">,</span>
+    <span class="n">pm_flt</span><span class="p">,</span>
+    <span class="n">pm_flt</span><span class="p">,</span>
+    <span class="n">pm_flt</span><span class="p">,</span>
+    <span class="n">pm_flt</span><span class="p">,</span>
+    <span class="n">radii</span><span class="p">,</span>
+    <span class="n">small_dr_change_relative</span><span class="p">,</span>
+    <span class="n">pm_flt</span><span class="p">,</span>
+    <span class="n">dz</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_derivative_of_one_cell_follows_the_rz_diffusion_kernel</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">,</span> <span class="n">T_top</span><span class="p">,</span> <span class="n">T_bottom</span><span class="p">,</span> <span class="n">r1</span><span class="p">,</span> <span class="n">dr_rel</span><span class="p">,</span> <span class="n">z1</span><span class="p">,</span> <span class="n">dz</span>
+<span class="p">):</span>
+    <span class="n">r2</span> <span class="o">=</span> <span class="n">r1</span> <span class="o">+</span> <span class="n">r1</span> <span class="o">*</span> <span class="n">dr_rel</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">r1</span><span class="p">,</span> <span class="n">r2</span><span class="p">])</span>
+    <span class="n">dr</span> <span class="o">=</span> <span class="n">r2</span> <span class="o">-</span> <span class="n">r1</span>
+
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">z1</span><span class="p">,</span> <span class="n">z1</span> <span class="o">+</span> <span class="n">dz</span><span class="p">])</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">z</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="nb">input</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">T</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">))</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">z</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">heat_func</span><span class="o">=</span><span class="n">rz_diffusion</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span>
+        <span class="nb">input</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_left</span><span class="p">]),</span>
+        <span class="n">T_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_right</span><span class="p">]),</span>
+        <span class="n">T_bottom</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_bottom</span><span class="p">]),</span>
+        <span class="n">T_top</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">T_top</span><span class="p">]),</span>
+        <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+        <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+        <span class="n">h_top</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+        <span class="n">h_bottom</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">]),</span>
+    <span class="p">)</span>
+
+    <span class="n">k</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">material</span><span class="o">.</span><span class="n">conductivity</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">fuel</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"T"</span><span class="p">]</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">dr</span> <span class="o">/</span> <span class="p">(</span><span class="n">r2</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">a_left</span><span class="p">,</span> <span class="n">a_right</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">c</span>
+    <span class="n">a_top</span> <span class="o">=</span> <span class="n">a_bottom</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">dz</span><span class="o">**</span><span class="mi">2</span>
+    <span class="n">a_iter</span> <span class="o">=</span> <span class="p">(</span><span class="n">a_left</span><span class="p">,</span> <span class="n">a_right</span><span class="p">,</span> <span class="n">a_top</span><span class="p">,</span> <span class="n">a_bottom</span><span class="p">)</span>
+    <span class="n">t_iter</span> <span class="o">=</span> <span class="p">(</span><span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">,</span> <span class="n">T_top</span><span class="p">,</span> <span class="n">T_bottom</span><span class="p">)</span>
+    <span class="n">expected_dT</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">k</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">T</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">a_iter</span><span class="p">,</span> <span class="n">t_iter</span><span class="p">))</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">dT</span><span class="p">,</span> <span class="n">expected_dT</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_annulus_given_wall_temperatures">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_annulus_given_wall_temperatures">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_annulus_given_wall_temperatures</span><span class="p">(</span><span class="n">temps</span><span class="o">=</span><span class="p">(</span><span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    For an axially symmetric annulus of radii :math:`r_1, r_2`, given inner and</span>
+<span class="sd">    outer boundary temperatures :math:`T_{1}, T_{2}`, the radial temperature</span>
+<span class="sd">    dependence is [#Incropera]_:</span>
+
+<span class="sd">    .. math:: T(r) = (T_{1} - T_{2})\frac{\ln(r / r_2)}{\ln(r_1 / r_2)} + T_{2}</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Incropera] Fundamentals of Heat and Mass Transfer (6th edition), Incropera, p. 116-117.</span>
+<span class="sd">    """</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="n">Ts1</span><span class="p">,</span> <span class="n">Ts2</span> <span class="o">=</span> <span class="n">temps</span>
+    <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span> <span class="o">=</span> <span class="n">edges</span>
+    <span class="n">r_boundaries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">edges</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">cells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">pair_mean_1d</span><span class="p">(</span><span class="n">r_boundaries</span><span class="p">)</span>
+    <span class="n">z_boundaries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z_boundaries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_boundaries</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">T_exp</span> <span class="o">=</span> <span class="p">(</span><span class="n">Ts1</span> <span class="o">-</span> <span class="n">Ts2</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="n">r2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">r1</span> <span class="o">/</span> <span class="n">r2</span><span class="p">)</span> <span class="o">+</span> <span class="n">Ts2</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z_boundaries</span><span class="p">,</span>
+        <span class="n">r_boundaries</span><span class="p">,</span>
+        <span class="n">mock_solid</span><span class="p">,</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">heat_func</span><span class="o">=</span><span class="n">r_diffusion</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_left</span><span class="o">=</span><span class="n">Ts1</span><span class="p">,</span> <span class="n">T_right</span><span class="o">=</span><span class="n">Ts2</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="n">d</span><span class="p">})</span>
+    <span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="p">(</span><span class="n">Ts1</span> <span class="o">+</span> <span class="n">Ts2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)))</span>
+    <span class="n">T_num</span> <span class="o">=</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Fuel"</span><span class="p">][</span><span class="s2">"T"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">T_num</span><span class="p">,</span> <span class="n">T_exp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_cylinder_given_heat_production_and_wall_temperature">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_cylinder_given_heat_production_and_wall_temperature">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_cylinder_given_heat_production_and_wall_temperature</span><span class="p">(</span><span class="n">Twall</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">r0</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Temperature distribution calculated analytically matches the numeric result,</span>
+<span class="sd">    in a polar system with heat production per volume :math:`\dot{q}`, radius :math:`r_{0}`</span>
+<span class="sd">    and fixed outer temperature :math:`T_{s}`.</span>
+<span class="sd">    The analytic solution is [#Incropera]_:</span>
+
+<span class="sd">    .. math:: T(r) = T_s + \dot{q} (r_0 ^2 - r^2)/4k</span>
+
+<span class="sd">    """</span>
+    <span class="n">total_cylinder_power</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">radii</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">r0</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">pair_mean_1d</span><span class="p">(</span><span class="n">radii</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">cylindrical_areas_volumes</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">radii</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">normalized_volumes</span> <span class="o">=</span> <span class="n">volumes</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">volumes</span><span class="p">)</span>
+
+    <span class="n">qdot</span> <span class="o">=</span> <span class="n">total_cylinder_power</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">r0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mock_solid</span><span class="o">.</span><span class="n">conductivity</span>
+    <span class="n">T_exp</span> <span class="o">=</span> <span class="n">qdot</span> <span class="o">*</span> <span class="p">(</span><span class="n">r0</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">k</span><span class="p">)</span> <span class="o">+</span> <span class="n">Twall</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z</span><span class="p">,</span>
+        <span class="n">radii</span><span class="p">,</span>
+        <span class="n">mock_solid</span><span class="p">,</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">heat_func</span><span class="o">=</span><span class="n">r_diffusion</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">normalized_volumes</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_right</span><span class="o">=</span><span class="n">Twall</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">total_cylinder_power</span><span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="n">inp</span><span class="p">})</span>
+    <span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">Twall</span><span class="p">)))</span>
+    <span class="n">T_num</span> <span class="o">=</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Fuel"</span><span class="p">][</span><span class="s2">"T"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">T_num</span><span class="p">,</span> <span class="n">T_exp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_annulus_given_heat_production_and_wall_temperatures">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_annulus_given_heat_production_and_wall_temperatures">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_annulus_given_heat_production_and_wall_temperatures</span><span class="p">(</span><span class="n">temps</span><span class="o">=</span><span class="p">(</span><span class="mi">45</span><span class="p">,</span> <span class="mi">75</span><span class="p">),</span> <span class="n">edges</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">3.123</span><span class="p">)):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""For an axially symmetric annulus of radii :math:`r_1, r_2`, given inner and</span>
+<span class="sd">    outer boundary temperatures :math:`T_{1}, T_{2}`, and heat production of</span>
+<span class="sd">    :math:`\dot{q}` the radial temperature dependence is:</span>
+
+<span class="sd">    .. math:: T(r) = \frac{\dot{q}}{4k}\left[r_1^2 - r^2</span>
+<span class="sd">        + (r_2^2 - r_1^2)\frac{\ln(r / r_1)}{\ln(r_2 / r_1)}\right]</span>
+<span class="sd">        + (T_2 - T_1)\frac{\ln(r / r_1)}{\ln(r_2 / r_1)} + T_1</span>
+<span class="sd">    """</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="mi">210</span>
+    <span class="n">total_rod_power</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="n">r1</span><span class="p">,</span> <span class="n">r2</span> <span class="o">=</span> <span class="n">edges</span>
+    <span class="n">Ts1</span><span class="p">,</span> <span class="n">Ts2</span> <span class="o">=</span> <span class="n">temps</span>
+
+    <span class="n">r_boundaries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">*</span><span class="n">edges</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">pair_mean_1d</span><span class="p">(</span><span class="n">r_boundaries</span><span class="p">)</span>
+    <span class="n">z_boundaries</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">cylindrical_areas_volumes</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">r_boundaries</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z_boundaries</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">normalized_volumes</span> <span class="o">=</span> <span class="n">volumes</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">volumes</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">mock_solid</span><span class="o">.</span><span class="n">conductivity</span>
+
+    <span class="n">qdot</span> <span class="o">=</span> <span class="n">total_rod_power</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">r2</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+
+    <span class="n">ln_ratio</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">r</span> <span class="o">/</span> <span class="n">r1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">r2</span> <span class="o">/</span> <span class="n">r1</span><span class="p">)</span>
+    <span class="n">T_exp</span> <span class="o">=</span> <span class="n">qdot</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">r1</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">ln_ratio</span> <span class="o">*</span> <span class="p">(</span><span class="n">r2</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">r1</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">+</span> <span class="p">(</span><span class="n">Ts2</span> <span class="o">-</span> <span class="n">Ts1</span><span class="p">)</span> <span class="o">*</span> <span class="n">ln_ratio</span> <span class="o">+</span> <span class="n">Ts1</span>
+
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z_boundaries</span><span class="p">,</span>
+        <span class="n">r_boundaries</span><span class="p">,</span>
+        <span class="n">mock_solid</span><span class="p">,</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">heat_func</span><span class="o">=</span><span class="n">r_diffusion</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">normalized_volumes</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_left</span><span class="o">=</span><span class="n">Ts1</span><span class="p">,</span> <span class="n">T_right</span><span class="o">=</span><span class="n">Ts2</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">total_rod_power</span><span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="n">inp</span><span class="p">})</span>
+    <span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">temps</span><span class="p">))))</span>
+    <span class="n">T_num</span> <span class="o">=</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Fuel"</span><span class="p">][</span><span class="s2">"T"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">T_num</span><span class="p">,</span> <span class="n">T_exp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_fuel_raises_when_a_wall_temperature_is_wired_without_its_conductance">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_heat.test_fuel_raises_when_a_wall_temperature_is_wired_without_its_conductance">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_fuel_raises_when_a_wall_temperature_is_wired_without_its_conductance</span><span class="p">():</span>
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="p">),</span> <span class="n">mock_solid</span><span class="p">,</span> <span class="n">y_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">power_shape</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">inp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="mf">100.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"T_left is wired but h_left is not"</span><span class="p">):</span>
+        <span class="n">fuel</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">T_left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">300.0</span><span class="p">]),</span> <span class="n">T_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">50.0</span><span class="p">]),</span> <span class="n">h_right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.0</span><span class="p">]))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 14, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
