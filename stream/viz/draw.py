@@ -334,6 +334,10 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             draw_field_limit(result, ax, sheet, merged, limit, bound)
             ax.set_title(result.subtitle_with(merged), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
             return fig, ax
+        if result.kind == "map":
+            from .maps import plot_map
+
+            return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, limit)
         enc = encode(result.dims, result.numeric, merged, sheet, color, style, marker, col, row, result.level_space)
         binding = binder_colors(result.frame, sheet) if result.binding else None
         if enc.col is None and enc.row is None:

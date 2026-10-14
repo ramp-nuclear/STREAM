@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
+from conftest import make_case_frame
 
-from stream.viz import at
+from stream.viz import Sweep, at
 from stream.viz.labels import Labels
 from stream.viz.results import Field, Result, check_units, y_axis_text
 
@@ -327,3 +328,43 @@ def test_check_units_refuses_two_scales_on_one_axis():
     labels = Labels({"a": ("A", "W", 1.0), "b": ("B", "W", 1e-6)})
     with pytest.raises(ValueError, match="'a'.*scaled by 1.*'b'.*1e-06"):
         check_units(labels, ["a", "b"])
+
+
+def test_reduce_with_two_parameters_is_a_map(sweep):
+    r = sweep.reduce("CHFR", "min", versus=("power", "mdot"))
+    assert r.kind == "map" and r.x == "power" and r.y == "mdot" and r.dims == {}
+    assert len(r.frame) == 8 and r.holes == []
+    assert r.ylabel == "min CHFR"
+
+
+def test_map_refusals(sweep, agr):
+    with pytest.raises(ValueError, match="versus= as a map takes two different parameters, like versus=\\('power', 'mdot'\\)"):
+        sweep.reduce("CHFR", "min", versus=("power", "power"))
+    with pytest.raises(ValueError, match="'Tin' is not a sweep parameter"):
+        sweep.reduce("CHFR", "min", versus=("power", "Tin"))
+    with pytest.raises(ValueError, match="mdot is a map axis and cannot also be fixed in where="):
+        sweep.reduce("CHFR", "min", versus=("power", "mdot"), where=dict(mdot=0.3))
+    cs = [dict(power=p, wall_law=w) for w in ("a", "b") for p in (2e6, 4e6)]
+    cat = Sweep(cs, [make_case_frame(c["power"], 0.3) for c in cs], agr)
+    with pytest.raises(ValueError, match="wall_law is categorical"):
+        cat.reduce("CHFR", "min", versus=("power", "wall_law"))
+
+
+def test_reduce_lists_unfilled_holes_in_the_selection(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr)
+    with pytest.warns(UserWarning, match="skipping unsolved"):
+        r = sweep.reduce("CHFR", "min", versus=("power", "mdot"))
+    assert r.holes == [grid_cases[3]]
+    with pytest.warns(UserWarning, match="skipping unsolved"):
+        assert sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).holes == [grid_cases[3]]
+    assert sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.2)).holes == []
+
+
+def test_map_axis_with_one_level_is_refused(agr):
+    cs = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
+    one = Sweep(cs, [make_case_frame(**c) for c in cs], agr)
+    with pytest.raises(ValueError, match="mdot has one level; a map needs at least two levels on each axis"):
+        one.reduce("CHFR", "min", versus=("power", "mdot"))

@@ -38,3 +38,9 @@ def test_limit_and_shade_fields():
     s = Style()
     assert (s.limit_linewidth, s.shade_alpha, s.shade_hatch) == (1.6, 0.55, "////")
     assert s.replace(shade_hatch="xx").shade_hatch == "xx"
+
+
+def test_map_fields():
+    from stream.viz import Style
+
+    assert (Style().map_levels, Style().map_cases) == (12, False)

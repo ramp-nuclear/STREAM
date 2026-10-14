@@ -171,6 +171,10 @@ def _selection(sweep: Sweep, where, nearest):
     return resolved, [k for k in indices if not sweep.is_hole(k)]
 
 
+def _unfilled_holes(sweep: Sweep, resolved) -> list[dict]:
+    return [sweep.case_of(k) for k in sweep.select(resolved) if sweep.is_hole(k) and k not in sweep.filled]
+
+
 def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple[dict, dict, str | None]:
     dims: dict[str, list] = {}
     if len(quantities) > 1:
@@ -296,6 +300,7 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
         sigma=sigma,
         level_space=_level_space(sweep),
         limits=_limits_of(sweep, quantities),
+        holes=_unfilled_holes(sweep, resolved),
     )
 
 
@@ -380,24 +385,30 @@ def reduce(
     sigma=1.0,
     uncertainty=True,
 ) -> Result:
-    """A reducer applied per case, against ``versus``; or a profile when ``axis`` is given."""
+    """A reducer applied per case, against ``versus``; a map when ``versus`` is a pair of parameters; a profile when ``axis`` is given."""
     quantities, ofs = sweep.names(quantity, of)
     check_units(sweep.labels, quantities)
     if axis is not None and versus is not None:
         raise ValueError("reduce() takes versus= or axis=, not both: axis= leaves a profile, versus= a curve")
     if axis is None and versus is None:
         raise ValueError("reduce() needs versus= (a parameter for the x axis) or axis= (a field direction to collapse)")
-    if versus is not None:
-        if versus not in sweep.parameters:
-            raise ValueError(f"{versus!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
-        if versus in sweep.categorical:
-            raise ValueError(f"{versus} is categorical; it can colour, style or panel a figure, not be an axis")
-        if where and versus in where:
-            raise ValueError(f"{versus} is the x axis and cannot also be fixed in where=")
+    pair = isinstance(versus, tuple)
+    if pair and (len(versus) != 2 or versus[0] == versus[1]):
+        raise ValueError("versus= as a map takes two different parameters, like versus=('power', 'mdot')")
+    axes_ = list(versus) if pair else ([versus] if versus is not None else [])
+    for name in axes_:
+        if name not in sweep.parameters:
+            raise ValueError(f"{name!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
+        if name in sweep.categorical:
+            raise ValueError(f"{name} is categorical; it can colour, style or panel a figure, not be an axis")
+        if where and name in where:
+            raise ValueError(f"{name} is {'a map' if pair else 'the x'} axis and cannot also be fixed in where=")
+        if pair and len(sweep.levels(name)) < 2:
+            raise ValueError(f"{name} has one level; a map needs at least two levels on each axis")
     resolved, indices = _selection(sweep, where, nearest)
     table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
     name = reducer_name(reducer)
-    pieces, xname, coordinate = [], versus or "cell", None
+    pieces, xname, coordinate = [], axes_[0] if axes_ else "cell", None
     for calc in ofs:
         coords = sweep.coords(calc)
         for q in quantities:
@@ -433,8 +444,8 @@ def reduce(
         dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices)
         kind = "profile"
     else:
-        dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices, exclude=(versus,))
-        kind = "curve"
+        dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices, exclude=tuple(axes_))
+        kind = "map" if pair else "curve"
     return Result(
         kind=kind,
         frame=pd.concat(pieces, ignore_index=True),
@@ -451,4 +462,6 @@ def reduce(
         level_space=_level_space(sweep),
         coordinate=coordinate if name.startswith("where_") else None,
         limits=_limits_of(sweep, quantities),
+        y=axes_[1] if pair else None,
+        holes=_unfilled_holes(sweep, resolved),
     )

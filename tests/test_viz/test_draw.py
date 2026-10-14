@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from conftest import make_case_frame
 from matplotlib.collections import PolyCollection
+from matplotlib.contour import QuadContourSet
 
 from stream.viz import Style, Sweep, at_least, at_most
 
@@ -318,7 +319,7 @@ def dashed_lines(ax):
 
 
 def hatched(ax):
-    collections = [c for c in ax.collections if c.get_hatch() or any(getattr(c, "hatches", ()))]
+    collections = [c for c in ax.collections if c.get_hatch()]
     return collections + [p for p in ax.patches if p.get_hatch()]
 
 
@@ -453,4 +454,76 @@ def test_field_shade_reads_the_drawn_bound_and_skips_safe_fields(agr, grid_cases
     safe = limited(agr, grid_cases, T=at_most(100.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3))
     fig, ax = safe.plot(limit="shade")
     assert hatched(ax) == []
+    plt.close(fig)
+
+
+def contour_sets(ax):
+    return [c for c in ax.collections if isinstance(c, QuadContourSet)]
+
+
+def test_map_draws_filled_contours_with_a_colour_bar(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    sweep.labels = {"power": ("Power", "MW", 1e-6), "mdot": ("Mass flow", "kg/s")}
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()
+    assert ax.get_xlabel() == "Power [MW]" and ax.get_ylabel() == "Mass flow [kg/s]"
+    assert len(fig.axes) == 2 and fig.axes[1].get_ylabel() == "min CHFR"
+    assert ax.get_title() == "CC"
+    assert contour_sets(ax)
+    assert any(t.get_text() == "CHFR = 1.5" for t in ax.texts)
+    plt.close(fig)
+
+
+def test_map_shade_and_none(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(limit="shade")
+    assert any(h for c in contour_sets(ax) for h in c.hatches)
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(limit="none")
+    assert len(contour_sets(ax)) == 1
+    plt.close(fig)
+
+
+def test_map_marks_holes_and_cases(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr)
+    with pytest.warns(UserWarning):
+        r = sweep.reduce("CHFR", "min", versus=("power", "mdot"))
+    fig, ax = r.plot()
+    crosses = [ln for ln in ax.get_lines() if ln.get_marker() == "x"]
+    assert len(crosses) == 1 and crosses[0].get_xdata()[0] == pytest.approx(grid_cases[3]["power"])
+    plt.close(fig)
+    fig, ax = r.plot(style_sheet=Style(map_cases=True))
+    dots = [ln for ln in ax.get_lines() if ln.get_marker() == "o"]
+    assert len(dots) == 1 and len(dots[0].get_xdata()) == 7
+    plt.close(fig)
+
+
+def test_map_on_a_ragged_sweep_draws_without_crosses(agr, grid_cases):
+    cs = grid_cases[:-1]
+    sweep = Sweep(cs, [make_case_frame(**c) for c in cs], agr)
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()
+    assert contour_sets(ax) and not [ln for ln in ax.get_lines() if ln.get_marker() == "x"]
+    plt.close(fig)
+
+
+def test_map_panels_share_levels_and_refuse_line_arguments(agr, grid_cases):
+    sweep = limited(agr, grid_cases)
+    r = sweep.reduce("CHFR", "min", versus=("power", "mdot"))
+    for name in ("color", "style", "marker"):
+        with pytest.raises(ValueError, match=f"{name}= does not apply to a map; the colour is the quantity; use col= or row= for a dimension"):
+            r.plot(**{name: "mdot"})
+    with pytest.raises(ValueError, match="band= does not apply to a map; use bound= to pick an envelope"):
+        r.plot(band="none")
+    with pytest.raises(ValueError, match="errorbars= does not apply to a map; use bound= to pick an envelope"):
+        r.plot(errorbars=True)
+    cs = [dict(power=p, mdot=m, Tin=t) for t in (300.0, 310.0) for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3)]
+    three = Sweep(cs, [make_case_frame(c["power"], c["mdot"]) for c in cs], agr)
+    with pytest.raises(ValueError, match="'Tin' varies; a map takes it on col= or row="):
+        three.reduce("CHFR", "min", versus=("power", "mdot")).plot()
+    fig, axes = three.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="Tin")
+    assert axes.shape == (1, 2) and len(fig.axes) == 3
+    sets = [contour_sets(ax)[0] for ax in axes.ravel()]
+    np.testing.assert_allclose(sets[0].levels, sets[1].levels)
     plt.close(fig)

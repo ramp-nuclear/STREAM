@@ -32,6 +32,9 @@ class Style:
     limit_linewidth: float = 1.6
     shade_alpha: float = 0.55
     shade_hatch: str = "////"
+    map_levels: int = 12
+    map_cases: bool = False
+    filled_marker: str = "o"
 
     def replace(self, **changes) -> Style:
         """A copy with the given fields changed."""
