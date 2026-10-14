@@ -3,6 +3,7 @@ import pytest
 from networkx import DiGraph
 from scikits.odes import dae
 
+from stream import solvers
 from stream.aggregator import Aggregator, vars_
 from stream.calculations import Gravity, Pump, Resistor
 from stream.calculations.ideal.resistors import ResistorSum
@@ -10,7 +11,7 @@ from stream.composition import Calculation_factory
 from stream.composition.cycle import flow_edge, flow_graph
 from stream.composition.cycle import flow_graph_to_agr_and_k as agr_k
 from stream.jacobians import ALG_jacobian
-from stream.solvers import TransientRuntimeError, _continuous_mode_dae
+from stream.solvers import TransientRuntimeError, _event_loop_dae
 from stream.state import State
 from stream.substances import light_water
 from stream.units import Array1D
@@ -321,14 +322,21 @@ class _FakeVals:
         return iter((self.t, self.y, self.ydot))
 
 
-class _FakeSol:
+class _FakeRoots:
     def __init__(self, t, y, ydot):
+        self.t, self.y, self.ydot = t, y, ydot
+
+
+class _FakeSol:
+    def __init__(self, t, y, ydot, roots=None):
         self.values = _FakeVals(t, y, ydot)
+        self.roots = roots if roots is not None else _FakeRoots(None, None, None)
 
 
 def _first_segment_then(raiser):
-    """A fake `solve` for _continuous_mode_dae: the first call returns a segment
-    ending at t=0.5 (so the continuous loop restarts), the restart calls `raiser`."""
+    """A fake `solve` for _event_loop_dae: the first call returns a segment ending
+    at t=0.5 with a root there (so the loop restarts from the root), and the
+    restart call raises via `raiser`."""
     calls = {"n": 0}
 
     def solve(time_, y0_, yp0_):
@@ -336,29 +344,32 @@ def _first_segment_then(raiser):
         if calls["n"] == 1:
             t_ = np.array([0.0, 0.25, 0.5])
             y_ = np.tile(np.asarray(y0_, float), (3, 1))
-            return _FakeSol(t_, y_, np.zeros_like(y_))
+            root = _FakeRoots(np.array([0.5]), y_[-1:], np.zeros((1, y_.shape[1])))
+            return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
         return raiser()
 
     return solve
 
 
-def test_continuous_mode_restart_ic_failure_keeps_the_partial_trajectory():
+def test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory():
     """When a restarted DAE solve fails in its consistent-initialization step the
-    error carries no trajectory; the segments integrated before it must still be
-    returned."""
+    error carries no trajectory of its own; the TransientRuntimeError still
+    propagates and carries the segments integrated before it on e.t/e.y."""
 
     def raise_ic_failure():
         raise TransientRuntimeError(None, None, None, "IC computation failed")
 
     solve = _first_segment_then(raise_ic_failure)
-    with ignore_warnings(UserWarning):
-        y, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
-    assert np.array_equal(t, [0.0, 0.25, 0.5])
-    assert y.shape[0] == 3
+    with ignore_warnings(UserWarning), pytest.raises(TransientRuntimeError, match="IC computation failed") as exc:
+        _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    e = exc.value
+    assert np.array_equal(e.t, [0.0, 0.25, 0.5])
+    assert e.y.shape[0] == 3
 
 
-def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
-    """A restart that fails mid-integration contributes its partial segment without
+def test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time():
+    """A restart that fails mid-integration raises with the accumulated trajectory
+    attached: earlier segments plus the failed segment's partial output, without
     repeating the restart time."""
 
     def raise_with_partial():
@@ -367,7 +378,70 @@ def test_continuous_mode_restart_failure_strips_duplicated_restart_point():
         )
 
     solve = _first_segment_then(raise_with_partial)
-    with ignore_warnings(UserWarning):
-        _, t = _continuous_mode_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    with ignore_warnings(UserWarning), pytest.raises(TransientRuntimeError, match="failed mid-restart") as exc:
+        _event_loop_dae(solve, np.linspace(0, 1, 5), np.array([0.0, 1.0]), np.zeros(2))
+    t = exc.value.t
     assert np.all(np.diff(t) > 0), f"duplicated/!monotone time: {t}"
     assert np.array_equal(t, [0.0, 0.25, 0.5, 0.55])
+
+
+def test_event_loop_raises_instead_of_hanging_on_nonadvancing_root():
+    """A root that does not advance past the restart time (a condition that
+    re-roots at the segment start) raises instead of looping forever."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)
+        y_ = np.tile(np.asarray(y0_, float), (1, 1))
+        root = _FakeRoots(np.array([t_[0]]), y_, np.zeros_like(y_))
+        return _FakeSol(t_[:1], y_, np.zeros_like(y_), roots=root)
+
+    with pytest.raises(TransientRuntimeError, match="did not advance"):
+        _event_loop_dae(
+            solve,
+            np.linspace(0, 1, 5),
+            np.array([1.0]),
+            np.zeros(1),
+            on_event=lambda t, y, yp: True,
+            continuous=False,
+        )
+
+
+class _Boom(RuntimeError):
+    pass
+
+
+def test_event_loop_dae_on_event_raise_carries_pre_event_trajectory():
+    """When an event handler raises, the exception propagates with the trajectory
+    up to and including the crossing attached as e.t and e.y."""
+
+    def solve(time_, y0_, yp0_):
+        t_ = np.asarray(time_, float)[:2]
+        y_ = np.tile(np.asarray(y0_, float), (len(t_), 1))
+        root = _FakeRoots(np.array([0.75]), y_[-1:], np.zeros((1, y_.shape[1])))
+        return _FakeSol(t_, y_, np.zeros_like(y_), roots=root)
+
+    def on_event(t, y, yp):
+        raise _Boom("guard tripped at the crossing")
+
+    with pytest.raises(_Boom) as exc:
+        _event_loop_dae(solve, np.array([0.0, 0.5, 1.0]), np.array([2.0]), np.zeros(1), on_event=on_event)
+    e = exc.value
+    assert np.array_equal(e.t, [0.0, 0.5, 0.75])
+    assert e.y.shape[0] == len(e.t)
+
+
+@pytest.mark.parametrize("passed, expected", [({}, None), ({"exclude_algvar_from_error": True}, True)])
+def test_dae_forwards_the_algebraic_error_test_option_only_when_given(monkeypatch, passed, expected):
+    seen = {}
+
+    def fake_dae(name, residues, **options):
+        seen.update(options)
+        raise RuntimeError("stop at setup")
+
+    monkeypatch.setattr(solvers, "dae", fake_dae)
+    with pytest.raises(RuntimeError, match="stop at setup"):
+        solvers.differential_algebraic(
+            F=lambda y, t: -y, mass=np.array([1.0]), y0=np.array([1.0]), time=[0.0, 1.0], **passed
+        )
+    assert seen.get("exclude_algvar_from_error") is expected
+    assert ("exclude_algvar_from_error" in seen) is bool(passed)

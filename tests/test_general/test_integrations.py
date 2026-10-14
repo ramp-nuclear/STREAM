@@ -606,6 +606,50 @@ def test_flapper_opens_with_ref_mdot():
     assert not np.allclose(mdot_F[~closed], 0)
 
 
+def _coastdown_flapper_system():
+    """A pump whose pressure decays as exp(-t) drives a resistor whose flow is the
+    flapper's ref_mdot; the flapper opens at ref_mdot = 0.1 -> analytic t_open =
+    log(10). No max_step_size crutch: the event is localized by its margin."""
+    mdot0 = 1.0
+    p = 1.0
+    F = Flapper(open_at_current=0.1 * mdot0, f=1.0, fluid=mock_liquid_funcs, area=1.0, open_rate=1e1)
+    R = Resistor(resistance=p / mdot0)
+    J0, J1 = Junction(name="J0"), Junction(name="J1")
+    fg = flow_graph(
+        flow_edge((J0, J1), P := Pump()),
+        flow_edge((J1, J0), R, ref_mdot_for=(F,)),
+        flow_edge((J1, J0), F),
+    )
+    AGR, K = agr_k(
+        fg,
+        funcs={P: {"pressure": lambda t: p * np.exp(-t), "Tin": 0.0}, R: {"Tin": 0.0}, F: {"Tin": 0.0, "t": identity}},
+        ref_mdots=(F,),
+    )
+    y0 = np.full(len(AGR), 0.0)
+    y0[AGR.var_index(K, K.component_edge(P))] = mdot0
+    y0[AGR.var_index(K, K.component_edge(R))] = mdot0
+    y0[AGR.var_index(R, "pressure")] = -p
+    y0[AGR.var_index(F, "pressure")] = -p
+    y0[AGR.var_index(P, "pressure")] = p
+    return AGR, F, K, AGR.solve_steady(y0)
+
+
+def test_flapper_opening_time_is_grid_and_tolerance_invariant():
+    """With the continuous margin ref_mdot - mdot0, IDA localizes the true
+    crossing: t_open equals the analytic log(10) and is invariant across output
+    grids and tolerances, without a max_step_size. Restarting from the root keeps
+    the requested grid intact and strictly increasing."""
+    t_opens = []
+    for n, rtol in [(100, 1e-6), (250, 1e-8), (137, 1e-7)]:
+        AGR, F, _, steady = _coastdown_flapper_system()
+        sol = AGR.solve(y0=steady, time=np.linspace(0, 5, n), eq_type="DAE", rtol=rtol)
+        t_opens.append(F.t_open)
+        assert np.all(np.diff(sol.time) > 0)
+        assert len(sol.time) == n
+    for t_open in t_opens:
+        assert np.isclose(t_open, np.log(10.0), atol=1e-3)
+
+
 def test_flapper_and_pump():
     mdot0 = 1.0
     p = 1.0
