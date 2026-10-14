@@ -2,6 +2,7 @@
 Testing the Clad-Coolant contact term functions
 """
 
+import warnings
 from functools import partial
 
 import numpy as np
@@ -20,6 +21,7 @@ from stream.physical_models.heat_transfer_coefficient import (
     film_temperature,
     regime_dependent_h_spl,
     regime_dependent_q_scb,
+    spl_htc,
     wall_heat_transfer_coeff,
     wall_temperature,
 )
@@ -162,7 +164,8 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
     """In this test, the reynolds number is set to be just mdot,
     thus it is directly compared with the re regime bounds. The laminar and turbulent
     spl values are set to be simply given values, and are compared with the
-    interpolation scheme"""
+    interpolation scheme. The natural contribution is zeroed and the stagnation
+    handover forced off, isolating the forced-convection interpolation."""
     re_bounds = (min(re), max(re))
     h = regime_dependent_h_spl(
         mock_liquid_funcs.to_properties(np.array([100.0]), 1e5),
@@ -173,9 +176,11 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         T_wall=np.array([50.0]),
         re_bounds=re_bounds,
         laminar=just(np.atleast_1d(lam)),
-        natural=just(np.atleast_1d(lam)),
+        natural=just(np.atleast_1d(0.0)),
         turbulent=just(np.atleast_1d(turb)),
         coolant_funcs=mock_liquid_funcs,
+        Lh=1.0,
+        gz_band=(1e-12, 2e-12),
     )
     if md < re_bounds[0]:
         assert np.allclose(h, lam)
@@ -229,3 +234,24 @@ def test_developing_laminar_h_is_continuous_over_the_tabulated_range():
         f"relative jump {jumps.max():.3g} between neighbouring x* exceeds {bound:.3g}, the most a "
         "continuous h with |d ln h / d ln x*| <= 1 can change over one grid step"
     )
+
+
+def test_regime_dependent_wall_htc_is_silent_and_finite_down_to_zero_flow():
+    """A stalled or reversing channel evaluates the composed wall HTC at flows down to
+    exactly zero, in both directions, without a RuntimeWarning and with a finite,
+    positive value in every cell."""
+    pipe = EffectivePipe.rectangular(length=0.7, edge1=0.07, edge2=0.0022, heated_edge=0.07)
+    h_wall = partial(
+        wall_heat_transfer_coeff,
+        h_spl=spl_htc("regime_dependent", re_bounds=(2000.0, 5000.0), aspect_ratio=0.0022 / 0.07, Lh=0.7),
+    )
+    T_cool = np.full(3, 50.0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        for mdot in (0.0, 1e-9, -1e-9, 1e-4, -1e-4, 0.5, -0.5):
+            h = h_wall(
+                T_wall=T_cool + 10.0, T_cool=T_cool, mdot=mdot, pressure=np.full(3, 2e5),
+                coolant_funcs=light_water, Dh=pipe.hydraulic_diameter, depth=pipe.depth, A=pipe.area,
+                develop_length=np.array([0.05, 0.35, 0.65]), coolant=None,
+            )
+            assert np.all(np.isfinite(h)) and np.all(h > 0.0)

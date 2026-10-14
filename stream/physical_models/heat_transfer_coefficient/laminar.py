@@ -322,7 +322,7 @@ def _nusselt_coefficient_interp_developing(x: Value) -> Value:
     """
     return np.where(
         x < _xstar_table34[0],
-        _worsoe_schmidt_leveque_type(x),
+        _worsoe_schmidt_leveque_type(np.minimum(x, _xstar_table34[0])),
         np.interp(x, _xstar_table34, _nuxh_table34, right=8.2353),
     )
 
@@ -377,7 +377,8 @@ def developing_laminar_h_spl(
     """
     re = Re_mdot(mdot=mdot, A=A, L=Dh, mu=coolant.viscosity)
     pr = Pr(coolant.specific_heat, coolant.viscosity, coolant.conductivity)
-    x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
+    with np.errstate(divide="ignore"):
+        x_star = develop_length / Dh / re / pr / (6 - 5 * np.exp(-0.75 * aspect_ratio / 0.3257))
     nudev = _nusselt_coefficient_interp_developing(x_star)
     nusselt = two_sided_heating_nusselt(aspect_ratio, nudev)
     return nusselt * coolant.conductivity / Dh
