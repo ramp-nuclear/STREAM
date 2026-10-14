@@ -213,3 +213,14 @@ def test_field_refuses_the_line_arguments(sweep):
     with pytest.raises(ValueError, match="errorbars=True.*field.*bound="):
         f.plot(errorbars=True)
 
+
+def test_required_curve_plot(sweep):
+    r = sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot")
+    fig, ax = r.plot()
+    assert ax.get_ylabel() == "Power [W]" and ax.get_xlabel() == "Mass flow [kg/s]"
+    assert len(ax.get_lines()) == 1
+    plt.close(fig)
+    fig, ax = r.plot(labels={"power": ("Power", "MW", 1e-6)})
+    assert ax.get_ylabel() == "Power [MW]"
+    np.testing.assert_allclose(ax.get_lines()[0].get_ydata(), 1e-6 * r.frame.value)
+    plt.close(fig)
