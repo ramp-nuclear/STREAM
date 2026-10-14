@@ -1,27 +1,13 @@
-"""Two calculations the loss-of-flow loop needs that the library does not ship: a smooth
-one-way check valve and a low-flow trip sensor; plus a horizontal channel pressure law."""
+"""A low-flow trip sensor the loss-of-flow loop needs that the library does not ship, and a
+horizontal channel pressure law."""
 from functools import partial
 
 import numpy as np
 
 from stream.calculation import Calculation, unpacked
-from stream.calculations.ideal.ideal import LumpedComponent
 from stream.physical_models.pressure_drop import pressure_diff
-from stream.smoothing import smooth_pos_weight, smooth_step
-from stream.units import Array1D, KgPerS, Pascal, Second
-
-
-class CheckValve(LumpedComponent):
-    """Quadratic resistance forward, ``reverse_ratio`` times stiffer backward beyond ``eps``, zero at zero flow."""
-
-    def __init__(self, k_forward: float, reverse_ratio: float = 1000.0, eps: KgPerS = 0.1, name: str = "CheckValve"):
-        self.name = name
-        self.k = k_forward
-        self.ratio = reverse_ratio
-        self.eps = eps
-
-    def dp_out(self, *, mdot: KgPerS, **_) -> Pascal:
-        return -self.k * mdot * abs(mdot) * (1 + self.ratio * smooth_pos_weight(-mdot, self.eps))
+from stream.smoothing import smooth_step
+from stream.units import Array1D, KgPerS, Second
 
 
 class LowFlowTrip(Calculation):

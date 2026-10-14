@@ -16,7 +16,7 @@ from functools import partial
 import numpy as np
 
 from stream.aggregator import Aggregator
-from stream.calculations import Bend, HeatExchanger, Inertia, Junction, KirchhoffWDerivatives, Pump
+from stream.calculations import Bend, CheckValve, HeatExchanger, Inertia, Junction, KirchhoffWDerivatives, Pump
 from stream.calculations.channel import Channel
 from stream.calculations.flapper import Flapper, continuously_differentiable_relaxation
 from stream.calculations.kirchhoff import Kirchhoff
@@ -24,7 +24,7 @@ from stream.composition import FlowGraph, check_gravity_mismatch, flow_edge, sym
 from stream.composition.constructors import ResistorFromKnownPoint
 from stream.composition.subsystems import point_kinetics_steady_state
 from stream.examples.lofa import scenarios, system
-from stream.examples.lofa.components import CheckValve, LowFlowTrip
+from stream.examples.lofa.components import LowFlowTrip
 from stream.examples.lofa.params import (
     CORE,
     HEATED,

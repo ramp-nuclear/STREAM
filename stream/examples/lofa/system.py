@@ -9,6 +9,7 @@ import numpy as np
 from stream.aggregator import Aggregator, CalculationGraph
 from stream.calculations import (
     Bend,
+    CheckValve,
     Friction,
     Fuel,
     Gravity,
@@ -33,7 +34,7 @@ from stream.composition import (
 )
 from stream.composition.constructors import ResistorFromKnownPoint
 from stream.composition.subsystems import point_kinetics_steady_state, symmetric_plate_steady_state
-from stream.examples.lofa.components import CheckValve, LowFlowTrip, horizontal_pressure
+from stream.examples.lofa.components import LowFlowTrip, horizontal_pressure
 from stream.examples.lofa.params import (
     BETA,
     CLAD_N,
