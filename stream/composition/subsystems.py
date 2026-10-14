@@ -206,7 +206,7 @@ def guess_hydraulic_steady_state(
             case DPCalculation():
                 # Safe because LumpedComponent has dp_out in its protocol.
                 # noinspection PyUnresolvedReferences
-                return x.dp_out(Tin=np.array([temperature]), mdot=m, mdot2=0.0)
+                return np.asarray(x.dp_out(Tin=np.array([temperature]), mdot=m, mdot2=0.0)).item()
             case Channel():
                 # Safe because Channel has pressure.
                 # noinspection PyUnresolvedReferences
