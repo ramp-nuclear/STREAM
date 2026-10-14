@@ -21,12 +21,12 @@ References
 .. [#Todreas] Nuclear Systems Volume I, Thermal Hydraulic Fundamentals, Todreas & Kazimi, 2nd edition.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 from stream.calculations.ideal.ideal import LumpedComponent
 from stream.units import KgPerS, KgPerS2, Pascal, PerM
 
-__all__ = ["bilinear", "Inertia"]
+__all__ = ["Inertia", "bilinear"]
 
 
 Inertia_Coefficient = PerM | Callable[[...], PerM]

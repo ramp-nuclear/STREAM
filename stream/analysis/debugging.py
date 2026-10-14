@@ -1,8 +1,8 @@
 """Tools for debugging Aggregators and States."""
 
 import operator
+from collections.abc import Container
 from functools import partial, reduce
-from typing import Container
 
 from stream.aggregator import Aggregator
 from stream.calculations import Kirchhoff

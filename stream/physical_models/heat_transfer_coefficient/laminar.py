@@ -1,5 +1,8 @@
 """Laminar Single Phase Heat Transfer Coefficient"""
 
+import functools
+import operator
+
 import numpy as np
 
 from stream.physical_models.dimensionless import Pr, Re_mdot
@@ -196,10 +199,7 @@ def _nusselt_coefficient_developing(x: Value) -> Value:
 
 
 _xstar_table34 = np.array(
-    sum(
-        [[j * 10 ** (-i) for j in (1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9)] for i in [6, 5, 4, 3, 2]],
-        start=[],
-    )
+    functools.reduce(operator.iadd, [[j * 10 ** (-i) for j in (1, 1.5, 2, 3, 4, 5, 6, 7, 8, 9)] for i in [6, 5, 4, 3, 2]], [])
     + [0.1, 0.15, 0.2]
 )
 _nuxh_table34 = np.array(

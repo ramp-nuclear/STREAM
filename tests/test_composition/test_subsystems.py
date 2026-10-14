@@ -106,11 +106,11 @@ lambdas = st.floats(1e-3, 10.0, allow_nan=False)
 betas = st.floats(700 * pcm * 10.0, 700 * pcm * 1000.0, allow_nan=False)
 lifetimes = st.floats(1e-6, 1e-4, allow_nan=False)
 specific_dicts = st.fixed_dictionaries(
-    dict(
-        generation_time=lifetimes,
-        delayed_neutron_fractions=arrays(np.float64, 6, elements=betas, unique=True),
-        delayed_groups_decay_rates=arrays(np.float64, 6, elements=lambdas, unique=True),
-    )
+    {
+        "generation_time": lifetimes,
+        "delayed_neutron_fractions": arrays(np.float64, 6, elements=betas, unique=True),
+        "delayed_groups_decay_rates": arrays(np.float64, 6, elements=lambdas, unique=True),
+    }
 )
 powers = st.floats(min_value=1.0, max_value=3e7, allow_nan=False, allow_infinity=False)
 
@@ -168,7 +168,7 @@ def test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case():
     assert np.allclose(fg.aggregator.compute(y), 0.0)
 
 
-_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], dict(Tin=0, pressure=1))
+_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], {"Tin": 0, "pressure": 1})
 _FakeC.indices = LumpedComponent.indices
 fake = _FakeC("fake")
 
@@ -264,7 +264,7 @@ def test_open_flapper_gets_a_physically_consistent_dp_guess():
         fg,
         inertial_comps=[flywheel],
         k_constructor=KirchhoffWDerivatives,
-        funcs={R: dict(Tin=T), flapper: dict(t=identity, ref_mdot=np.inf)},
+        funcs={R: {"Tin": T}, flapper: {"t": identity, "ref_mdot": np.inf}},
     )
     flows = {pump: 1.0, R: 0.5, flapper: 0.5}
 

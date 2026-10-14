@@ -1,9 +1,10 @@
 import logging
 import numbers
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from functools import partial
 from itertools import chain
-from typing import Any, Iterable, Literal, Protocol, Sequence, overload
+from typing import Any, Literal, Protocol, overload
 
 import numpy as np
 from cytoolz import unique, valmap
@@ -42,7 +43,6 @@ logger = logging.getLogger("stream.aggregator")
 class NonUniqueCalculationNameError(ValueError):
     """Error to signify that calculations in an aggregator were not uniquely named."""
 
-    pass
 
 
 class ProgressBarLike(Protocol):
@@ -338,7 +338,6 @@ class Aggregator:
         -------
         Array1D
             The state vector given to the functional in this case"""
-        ...
 
     @overload
     def load(self, s: StateTimeseries) -> Solution:
@@ -353,7 +352,6 @@ class Aggregator:
         -------
         Solution
             The 2D solution that an Aggregator would have given to create such a stateful solution."""
-        ...
 
     def load(self, s):
         """Given a description of the system state either at one time or at many,
@@ -417,7 +415,6 @@ class Aggregator:
         -------
         StateTimeseries
             The time-dependent human-readable state object"""
-        ...
 
     @overload
     def save(self, solution: Sequence[float], t: Second = 0, strict: bool = False) -> State:
@@ -437,7 +434,6 @@ class Aggregator:
         State
             The saved human-readable version of the solution
         """
-        ...
 
     def save(self, solution, t=0, strict=False):
         """Given either a vector solution of the system or a Solution object,

@@ -85,21 +85,21 @@ html_theme = "sphinx_rtd_theme"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 html_sidebars = {"**": ["localtoc.html", "sourcelink.html", "searchbox.html"]}
-html_theme_options = dict(
-    navigation_with_keys=True,
+html_theme_options = {
+    "navigation_with_keys": True,
     # canonical_url=,
     # analytics_id=,
-    collapse_navigation=True,
-    sticky_navigation=True,
-    navigation_depth=4,
-    includehidden=True,
+    "collapse_navigation": True,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    "includehidden": True,
     # titles_only=,
-    logo_only=True,
-    display_version=True,
-    prev_next_buttons_location="bottom",
-    style_external_links=False,
+    "logo_only": True,
+    "display_version": True,
+    "prev_next_buttons_location": "bottom",
+    "style_external_links": False,
     # style_nav_header_background=,
-)
+}
 modindex_common_prefix = ["stream.", "stream.calculations."]
 add_function_parentheses = False
 add_module_names = False

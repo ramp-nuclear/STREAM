@@ -3,7 +3,7 @@ import numpy as np
 from stream.physical_models.decay_heat import activation
 from stream.units import DecayHeatFunction, MeV, MeVPerFission, Second
 
-__all__ = ["U239_profile", "Np239_profile", "contribution"]
+__all__ = ["Np239_profile", "U239_profile", "contribution"]
 
 CapturesPerFission = float
 

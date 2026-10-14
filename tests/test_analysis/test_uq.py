@@ -27,14 +27,14 @@ from stream.utilities import just
 
 def _gen_records(key, value):
     yield from (
-        [dict(i=0, j=0, calculation="foo", variable=key, value=value)]
+        [{"i": 0, "j": 0, "calculation": "foo", "variable": key, "value": value}]
         if key != "v"
-        else [dict(i=0, j=j, calculation="moo", variable=key, value=v) for j, v in enumerate(value)]
+        else [{"i": 0, "j": j, "calculation": "moo", "variable": key, "value": v} for j, v in enumerate(value)]
     )
 
 
 def _simplemodel(vec: Array1D, v1: float, v2: float) -> DataFrame:
-    res = dict(a=v1 + v2, m=v1 * v2, p=v1**v2, s=vec.sum(), v=np.sin(vec))
+    res = {"a": v1 + v2, "m": v1 * v2, "p": v1**v2, "s": vec.sum(), "v": np.sin(vec)}
     records = list(chain(*(_gen_records(k, v) for k, v in res.items())))
     return DataFrame.from_records(records)
 
@@ -48,7 +48,7 @@ def _search_simple(model, vec, v1, v2):
         return foo_max - 1
 
     root = root_scalar(_f, x0=v1, x1=v2)
-    record = dict(i=0, j=0, calculation="root", variable="add", value=root.root)
+    record = {"i": 0, "j": 0, "calculation": "root", "variable": "add", "value": root.root}
     return DataFrame.from_records([record])
 
 

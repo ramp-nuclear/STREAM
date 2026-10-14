@@ -8,14 +8,15 @@ The main idea behind these implementations is that the graphical structure of an
 across :class:`.Calculation` boundaries.
 """
 
-from typing import Callable, Literal, Protocol, Sequence, TypeVar
+from collections.abc import Callable, Sequence
+from typing import Literal, Protocol, TypeVar
 
 import numpy as np
 
 from stream import Aggregator, Calculation
 from stream.units import Array1D, Array2D, Value
 
-__all__ = ["DAE_jacobian", "ALG_jacobian", "scaled_step"]
+__all__ = ["ALG_jacobian", "DAE_jacobian", "scaled_step"]
 
 StepStrategyWithydot = Callable[[Array1D, Array1D], Array1D]
 StepStrategy = Callable[[Array1D], Array1D]
@@ -57,8 +58,8 @@ def _associated_calculations(agr: Aggregator) -> dict[int, Sequence[Calculation]
     indices = np.arange(len(agr))
     a = {i: [calculation] for calculation, section in agr.sections.items() for i in indices[section]}
     for v, d in agr.external.items():
-        for name, ud in d.items():
-            for u, place in ud.items():
+        for ud in d.values():
+            for place in ud.values():
                 for i in np.atleast_1d(indices[place]):
                     a[i].append(v)
     return a

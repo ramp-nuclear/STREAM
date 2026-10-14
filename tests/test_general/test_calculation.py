@@ -1,4 +1,4 @@
-from typing import Sequence
+from collections.abc import Sequence
 
 import hypothesis.strategies as st
 import numpy as np
@@ -10,9 +10,9 @@ from stream import unpacked
 from stream.calculation import Calculation, _concat
 from stream.composition import Calculation_factory
 
-Addition = Calculation_factory(lambda y, *, x: y + x, [False], dict(y=0))
-Multiplication = Calculation_factory(lambda x, *, y: x * y, [False], dict(x=0))
-Division = Calculation_factory(lambda z, *, x: z / x, [False], dict(z=0))
+Addition = Calculation_factory(lambda y, *, x: y + x, [False], {"y": 0})
+Multiplication = Calculation_factory(lambda x, *, y: x * y, [False], {"x": 0})
+Division = Calculation_factory(lambda z, *, x: z / x, [False], {"z": 0})
 
 add = Addition(name="Add")
 multiply = Multiplication(name="Multiply")
@@ -22,10 +22,10 @@ divide = Division(name="Divide")
 @given(st.lists(st.floats(allow_nan=False)))
 def test_unpack_correctly_unpacks_data(lst):
     # noinspection PyTypeChecker
-    kwargs = dict(
-        some_input=dict(enumerate(lst)),
-        more_input=dict(enumerate(map(np.array, lst))),
-    )
+    kwargs = {
+        "some_input": dict(enumerate(lst)),
+        "more_input": dict(enumerate(map(np.array, lst))),
+    }
 
     def give_me_values(*, some_input, more_input):
         return some_input, more_input
@@ -42,7 +42,7 @@ def _give_me_values(*, some_input, more_input):
 @given(st.lists(st.floats(allow_nan=False)))
 def test_unpack_correctly_excludes_parameters(lst):
     input_dict = dict(enumerate(lst))
-    kwargs = dict(some_input=input_dict, more_input=input_dict)
+    kwargs = {"some_input": input_dict, "more_input": input_dict}
 
     output, more_output = unpacked(_give_me_values, exclude=["more_input"])(**kwargs)
     assert np.array_equal(np.atleast_1d(output), list(more_output.values()))

@@ -181,7 +181,7 @@ def _some_config():
     )
     agr = Aggregator.from_decoupled(
         fuel,
-        funcs={fuel: dict(T_left=T_cool, T_right=T_cool, h_left=h_left, h_right=h_right)},
+        funcs={fuel: {"T_left": T_cool, "T_right": T_cool, "h_left": h_left, "h_right": h_right}},
     )
     return agr, fuel, T, T_cool
 
@@ -222,11 +222,11 @@ def test_initialization_of_Fuel_with_one_known_example():
     power_shape = np.ones((z_N, x_N))
     F = Fuel(z, x, mock_solid, y_length=1, power_shape=power_shape)
     assert np.all(F.x_contacts == np.inf)
-    assert F.variables == dict(
-        T=slice(0, cells),
-        T_wall_left=slice(cells, cells + z_N),
-        T_wall_right=slice(cells + z_N, cells + 2 * z_N),
-    )
+    assert F.variables == {
+        "T": slice(0, cells),
+        "T_wall_left": slice(cells, cells + z_N),
+        "T_wall_right": slice(cells + z_N, cells + 2 * z_N),
+    }
     assert np.all(F.mass_vector[F.variables["T"]] == 1.0)
     assert np.all(F.mass_vector[F.variables["T_wall_left"]] == 0.0)
     assert np.all(F.mass_vector[F.variables["T_wall_right"]] == 0.0)
@@ -387,7 +387,7 @@ def test_annulus_given_wall_temperatures(temps=(45, 75), edges=(1, 3)):
         heat_func=r_diffusion,
         power_shape=power_shape,
     )
-    d = dict(T_left=Ts1, T_right=Ts2, h_left=np.inf, h_right=np.inf, power=0)
+    d = {"T_left": Ts1, "T_right": Ts2, "h_left": np.inf, "h_right": np.inf, "power": 0}
     agr = Aggregator.from_decoupled(fuel, funcs={fuel: d})
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, (Ts1 + Ts2) / 2)))
     T_num = steady["Fuel"]["T"][0]
@@ -424,7 +424,7 @@ def test_cylinder_given_heat_production_and_wall_temperature(Twall=45, r0=3):
         heat_func=r_diffusion,
         power_shape=normalized_volumes,
     )
-    inp = dict(T_right=Twall, h_left=np.inf, h_right=np.inf, power=total_cylinder_power)
+    inp = {"T_right": Twall, "h_left": np.inf, "h_right": np.inf, "power": total_cylinder_power}
     agr = Aggregator.from_decoupled(fuel, funcs={fuel: inp})
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, Twall)))
     T_num = steady["Fuel"]["T"][0]
@@ -465,7 +465,7 @@ def test_annulus_given_heat_production_and_wall_temperatures(temps=(45, 75), edg
         heat_func=r_diffusion,
         power_shape=normalized_volumes,
     )
-    inp = dict(T_left=Ts1, T_right=Ts2, h_left=np.inf, h_right=np.inf, power=total_rod_power)
+    inp = {"T_left": Ts1, "T_right": Ts2, "h_left": np.inf, "h_right": np.inf, "power": total_rod_power}
     agr = Aggregator.from_decoupled(fuel, funcs={fuel: inp})
     steady = agr.save(agr.solve_steady(State.uniform(agr.graph, np.mean(temps))))
     T_num = steady["Fuel"]["T"][0]

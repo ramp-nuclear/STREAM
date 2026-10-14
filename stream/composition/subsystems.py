@@ -1,8 +1,7 @@
 """Helper functions for creating steady state initial guesses for small and specific subsystems"""
 
 import logging
-from collections.abc import Mapping
-from typing import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 
 import numpy as np
 from cytoolz import keymap
@@ -27,15 +26,15 @@ from stream.units import Celsius, KgPerS, Pascal, Value, Watt
 from stream.utilities import just
 
 __all__ = [
+    "GravityMismatchError",
+    "HydraulicStrategy",
+    "HydraulicStrategyMap",
+    "MissingFlowError",
     "check_gravity_mismatch",
     "guess_hydraulic_steady_state",
     "point_kinetics_steady_state",
     "symmetric_plate_seed",
     "symmetric_plate_steady_state",
-    "HydraulicStrategy",
-    "HydraulicStrategyMap",
-    "GravityMismatchError",
-    "MissingFlowError",
 ]
 
 logger = logging.getLogger("stream.subsystems")
@@ -179,10 +178,10 @@ def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Wat
 
     if isinstance(pk, PointKineticsWInput):
         Pn = power - (power_input or 0.0)
-        d = dict(power=power, ck=Pn * (pk.betak / pk.lambdak / pk.Lambda))
+        d = {"power": power, "ck": Pn * (pk.betak / pk.lambdak / pk.Lambda)}
         d["pk_power"] = Pn
     else:
-        d = dict(power=power, ck=power * (pk.betak / pk.lambdak / pk.Lambda))
+        d = {"power": power, "ck": power * (pk.betak / pk.lambdak / pk.Lambda)}
 
     return State({pk.name: d})
 
@@ -190,7 +189,6 @@ def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Wat
 class MissingFlowError(Exception):
     """Error to signify missing :class:`.Kirchhoff` flow data."""
 
-    pass
 
 
 HydraulicStrategy = Callable[[KgPerS, Celsius], Pascal]
@@ -290,19 +288,19 @@ def guess_hydraulic_steady_state(
             case _:
                 return strategy.get(x, just(0.0))(m, _scalar(T_x))
 
-    pressures = {x.name: dict(pressure=_get_dp(x)) for x in k.components}
+    pressures = {x.name: {"pressure": _get_dp(x)} for x in k.components}
 
     def _htc_guess(c: ChannelAndContacts) -> dict[str, Value]:
         T = np.full(c.n, temps[c]) if np.ndim(temps[c]) == 0 else np.asarray(temps[c], dtype=float)
         h0 = c.h_wall(T_wall=T, T_cool=T, mdot=k_guess[k.component_edge(c)], pressure=k.ref_pressure or 1e5)
-        return dict(h_left=h0, h_right=h0)
+        return {"h_left": h0, "h_right": h0}
 
     htc = {c.name: _htc_guess(c) for c in k.components if isinstance(c, ChannelAndContacts)}
 
     T_vars = ("Tin", "T", "T_wall_left", "T_wall_right", "T_cool")
     Ts = State({c.name: {var: _copied_value(temps[c]) for var in c.variables if var in T_vars} for c in temps})
     p = np.fromiter(
-        _float_values(pressures, map(lambda x: x.name, k.components)),
+        _float_values(pressures, (x.name for x in k.components)),
         dtype=float,
         count=len(k.components),
     )
@@ -355,10 +353,10 @@ def check_gravity_mismatch(
     comps = k.components
     md = dict.fromkeys(comps, 0.0)
 
-    deal_with_pressure_pumps = {p.name: dict(pressure=0.0) for p in comps if isinstance(p, Pump)}
+    deal_with_pressure_pumps = {p.name: {"pressure": 0.0} for p in comps if isinstance(p, Pump)}
     hs = guess_hydraulic_steady_state(k, md, temperature, strategy)
     s = State.merge(hs, deal_with_pressure_pumps)
-    p = np.fromiter(_float_values(s, map(lambda x: x.name, comps)), dtype=float, count=len(comps))
+    p = np.fromiter(_float_values(s, (x.name for x in comps)), dtype=float, count=len(comps))
     p_errors = k.kvl_errors(p) / head
     almost_zeros = np.isclose(0.0, p_errors, atol=tol)
     if np.any(~almost_zeros):

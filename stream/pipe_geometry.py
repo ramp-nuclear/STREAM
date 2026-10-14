@@ -6,7 +6,7 @@ A pipe geometry interface used by different calculations, defined through
 """
 
 from dataclasses import dataclass, field
-from typing import Literal, TypeVar
+from typing import Literal
 
 import numpy as np
 
@@ -14,7 +14,6 @@ from stream.units import Meter, Meter2
 
 __all__ = ["EffectivePipe"]
 
-_T = TypeVar("_T", bound="EffectivePipe")
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,7 +93,7 @@ class EffectivePipe:
         edge1: Meter,
         edge2: Meter,
         heated_edge: Meter,
-        one_sided: Literal["left", "right", None] = None,
+        one_sided: Literal["left", "right"] | None = None,
     ) -> "EffectivePipe":
         """Create an EffectivePipe geometry for a channel with a rectangular cross-section,
         which is heated on two opposite sides.

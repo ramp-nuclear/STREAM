@@ -54,13 +54,13 @@ def test_precursor_death(p0, ck):
     """
     lambdak = U235_lambdak
     time = np.linspace(0, 8.0, 100)
-    pkm = dict(
-        generation_time=1,
-        delayed_groups_decay_rates=lambdak,
-        delayed_neutron_fractions=np.zeros(len(ck)),
-    )
+    pkm = {
+        "generation_time": 1,
+        "delayed_groups_decay_rates": lambdak,
+        "delayed_neutron_fractions": np.zeros(len(ck)),
+    }
     pk = PointKinetics(**pkm)
-    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, t=0)})
+    agr = Aggregator.from_decoupled(pk, funcs={pk: {"T": 0, "t": 0}})
 
     calculation = agr.solve(y0=np.array([p0] + ck), time=time)
     analytical = p0 - np.array(ck) @ np.expm1(-np.outer(lambdak, time))
@@ -73,12 +73,12 @@ def test_pk_save_follows_known_pattern_for_mock(p, ck, inp, T):
     mock_pk.controls.input_reactivity = just(inp)
     save = mock_pk.save([p, ck], T={mock_calc: T}, t=0)
     r = inp + mock_pk.temp_worth[mock_calc] * T
-    known = dict(
-        power=p,
-        ck=[ck],
-        reactivity=r,
-        dPdt=np.dot(mock_pk.lambdak, [ck]) + (r - mock_pk.dollar) * p / mock_pk.Lambda,
-    )
+    known = {
+        "power": p,
+        "ck": [ck],
+        "reactivity": r,
+        "dPdt": np.dot(mock_pk.lambdak, [ck]) + (r - mock_pk.dollar) * p / mock_pk.Lambda,
+    }
     for key, value in known.items():
         are_close(save[key], value, rtol=1e-5, atol=1e-8)
 
@@ -99,7 +99,7 @@ def test_feedbackless_point_kinetics_calculate_without_T():
 @given(floats(allow_nan=False), floats(allow_nan=False))
 def test_pk_load(p, ck):
     mock_pk = mock_point_kinetics()
-    load = mock_pk.load(dict(power=p, ck=[ck]))
+    load = mock_pk.load({"power": p, "ck": [ck]})
     assert np.allclose(load, [p, ck])
 
 
@@ -126,19 +126,19 @@ def test_pk_with_decay():
     time = np.linspace(0, 8.0, 100)
     p0 = 10
     ck = [1, 2, 3, 4, 5, 6]
-    pkm = dict(
-        generation_time=1,
-        delayed_groups_decay_rates=lambdak,
-        delayed_neutron_fractions=np.zeros(6),
-        temp_worth={},
-        ref_temp={},
-    )
+    pkm = {
+        "generation_time": 1,
+        "delayed_groups_decay_rates": lambdak,
+        "delayed_neutron_fractions": np.zeros(6),
+        "temp_worth": {},
+        "ref_temp": {},
+    }
     pk = PointKineticsWInput(**pkm)
 
     def power_input(t):
         return t
 
-    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, power_input=power_input, t=identity)})
+    agr = Aggregator.from_decoupled(pk, funcs={pk: {"T": 0, "power_input": power_input, "t": identity}})
 
     calculation = agr.solve(y0=np.array([p0] + ck + [p0]), time=time)
     analytical = p0 + np.array(ck) @ (-np.expm1(-np.outer(lambdak, time)))
@@ -200,7 +200,7 @@ def test_scram_abort_stops_dae_solve_at_trip_time():
     """The abort predicate in should_continue must see the plain time, so a SCRAM
     transition stops the DAE solve at the trip time instead of running to t_end."""
     pk, ctrl, y0 = _scram_pk()
-    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T={}, t=identity)})
+    agr = Aggregator.from_decoupled(pk, funcs={pk: {"T": {}, "t": identity}})
     time = np.linspace(0, 60, 601)
     sol = agr.solve(y0=y0.copy(), time=time, eq_type="DAE")
 

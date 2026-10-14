@@ -53,18 +53,18 @@ def test_channel_w_no_heat_flux_maintains_temperature_profile(T0, Tin, cells, ti
     agr = Aggregator.from_decoupled(
         C,
         funcs={
-            C: dict(
-                mdot=mdot,
-                T_left=T0,
-                T_right=T0,
-                h_left=0.0,
-                h_right=0.0,
-                p_abs=1e5,
-                Tin=lambda t: -Tin * t * velocity,
-            )
+            C: {
+                "mdot": mdot,
+                "T_left": T0,
+                "T_right": T0,
+                "h_left": 0.0,
+                "h_right": 0.0,
+                "p_abs": 1e5,
+                "Tin": lambda t: -Tin * t * velocity,
+            }
         },
     )
-    solution = agr.solve({C.name: dict(T_cool=Tin * C.bounds[:-1], pressure=7.8)}, time)
+    solution = agr.solve({C.name: {"T_cool": Tin * C.bounds[:-1], "pressure": 7.8}}, time)
     initial_state: State = agr.save(solution[0])
     state = agr.save(solution[-1], strict=True)
 
@@ -183,8 +183,8 @@ def test_channel_with_zero_flow_constant_h_reaches_wall_temperature(cells, T0, T
 
     C = ChannelAndContacts(boundaries, fluid, mock_eff_pipe, h_wall_func=just(h_wall))
 
-    agr = Aggregator.from_decoupled(C, funcs={C: dict(mdot=0.0, T_left=Tf, T_right=Tf, p_abs=1e5, Tin=T0)})
-    steady = agr.solve_steady({C.name: dict(T_cool=T0, pressure=1e5, h_left=h_wall, h_right=h_wall)})
+    agr = Aggregator.from_decoupled(C, funcs={C: {"mdot": 0.0, "T_left": Tf, "T_right": Tf, "p_abs": 1e5, "Tin": T0}})
+    steady = agr.solve_steady({C.name: {"T_cool": T0, "pressure": 1e5, "h_left": h_wall, "h_right": h_wall}})
     solution = agr.solve(steady, np.linspace(0, 10, 2))
     state = agr.save(solution.data[-1], strict=True)
     are_close(state[C.name]["T_cool"], Tf)
@@ -228,10 +228,10 @@ def test_no_exceptions_raised_through_external_flow_inversion_on_Channel():
 
     agr = Aggregator.from_decoupled(
         C,
-        funcs={C: dict(mdot=decreasing_mdot, T_left=80, T_right=80, Tin=80, p_abs=1e5)},
+        funcs={C: {"mdot": decreasing_mdot, "T_left": 80, "T_right": 80, "Tin": 80, "p_abs": 1e5}},
     )
 
-    initial = {C.name: dict(T_cool=80, h_left=5e3, h_right=5e3, pressure=-3e5)}
+    initial = {C.name: {"T_cool": 80, "h_left": 5e3, "h_right": 5e3, "pressure": -3e5}}
     agr.solve(initial, time=np.linspace(0, 6))
 
 
@@ -239,7 +239,7 @@ def test_dist_from_edge_is_nonnegative_for_descending_boundaries():
     """Descending z_boundaries must give the same non-negative developing lengths as
     the ascending channel, since the distance depends only on cell widths and flow
     direction."""
-    kw = dict(fluid=mock_liquid_funcs, pipe=mock_eff_pipe)
+    kw = {"fluid": mock_liquid_funcs, "pipe": mock_eff_pipe}
     asc = ChannelAndContacts(z_boundaries=np.linspace(0.0, 0.6, 11), **kw)
     desc = ChannelAndContacts(z_boundaries=np.linspace(0.6, 0.0, 11), **kw)
     for mdot in (1.0, -1.0):

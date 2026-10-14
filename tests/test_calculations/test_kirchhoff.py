@@ -2,6 +2,9 @@
 Oh, how the turns have tabled...
 """
 
+import functools
+import operator
+
 import hypothesis.strategies as st
 import numpy as np
 import pytest
@@ -57,7 +60,7 @@ def test_junction_mixing_a_given_set_of_currents():
     mdot = {1: 1.0, 2: 2.0, 3: -3.0, 4: -4.0}
     Tin_plus = {1: 10.0, 2: 0}
     Tin_minus = {3: 5, 4: 17.0}
-    kwargs = dict(mdot=mdot, Tin=Tin_plus, Tin_minus=Tin_minus)
+    kwargs = {"mdot": mdot, "Tin": Tin_plus, "Tin_minus": Tin_minus}
     are_close(J.calculate([0], **kwargs), (10 * 1 + 4 * 17 + 3 * 5) / 10)
 
     mdot[3] = 3
@@ -95,7 +98,7 @@ def _make_cycle(values: list[Edge]) -> MultiDiGraph:
 
 
 def _exclusive(edgelist: list[Edge]) -> bool:
-    return len(set(sum(edgelist, start=[]))) == sum(len(v) for v in edgelist)
+    return len(set(functools.reduce(operator.iadd, edgelist, []))) == sum(len(v) for v in edgelist)
 
 
 graph_sizes = st.shared(st.integers(2, 20), key="size")
@@ -105,7 +108,7 @@ edges = st.shared(
     graph_sizes.flatmap(lambda n: st.lists(complists, min_size=n + 1, max_size=n + 1)).filter(_exclusive),
     key="edges",
 )
-comps = edges.map(lambda v: sum(v, start=[]))
+comps = edges.map(lambda v: functools.reduce(operator.iadd, v, []))
 graphs = edges.map(_make_cycle)
 subsets = comps.flatmap(lambda x: st.lists(st.sampled_from(x), unique=True))
 reference_nodes = st.tuples(graphs.flatmap(lambda x: st.sampled_from(list(x.nodes))), pos_medium_floats)
@@ -120,7 +123,7 @@ k_derivs = st.builds(
 
 @given(st.one_of(kirchhoffs, k_derivs))
 def test_kirchhoff_variable_names_are_strings(k):
-    assert all(isinstance(key, str) for key in k.variables.keys())
+    assert all(isinstance(key, str) for key in k.variables)
 
 
 def test_kvl_matrix_works_on_mock_graph(K):
@@ -138,16 +141,16 @@ def test_kcl_matrix_works_on_mock_graph(K, J):
 def test_kirchhoff_indexing_works_on_mock_graph(K, J):
     J0, J1 = J
 
-    assert K.indices("mdot", J0) == dict(A=0, D=1, F=2)
-    assert K.indices("mdot", J1) == dict(C=0, E=1, F=2)
+    assert K.indices("mdot", J0) == {"A": 0, "D": 1, "F": 2}
+    assert K.indices("mdot", J1) == {"C": 0, "E": 1, "F": 2}
     assert K.component_edge("A") == to_str((J0, J1, 0))
     assert K.component_edge("E") == to_str((J0, J1, 1))
     assert K.component_edge("F") == to_str((J1, J0, 0))
-    assert K.variables_by_type == dict(mdot=slice(0, 3), abs_pressure=slice(3, 3))
+    assert K.variables_by_type == {"mdot": slice(0, 3), "abs_pressure": slice(3, 3)}
 
 
 def test_kirchhoff_calculate_works_for_mock_graph(K):
-    res = K.calculate([1, 2, 3], pressure=dict(A=-1.0, B=-1.0, C=-1.0, D=-2.0, E=-1, F=3.0))
+    res = K.calculate([1, 2, 3], pressure={"A": -1.0, "B": -1.0, "C": -1.0, "D": -2.0, "E": -1, "F": 3.0})
     are_close(res, 0.0)
 
 
@@ -168,7 +171,7 @@ def test_Kirchoff_kcl_matrix_fits_known_example_with_weights():
 
 
 def test_Kirchoff_supplies_correct_absolute_pressures_for_one_example(mock_graph, J):
-    J0, J1 = J
+    J0, _J1 = J
     p0 = 1.5
     abs_comps = ("A", "B", "F")
     K = Kirchhoff(mock_graph, *abs_comps, reference_node=(J0, p0))

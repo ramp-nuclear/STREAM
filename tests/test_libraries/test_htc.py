@@ -87,7 +87,7 @@ ar = partial(_fill, shape=1)
 )
 def test_htc_is_geq_to_Dittus_Boelter(T, p, T_clad_factor, mdot, liq):
     T, p, T_clad = ar(T), ar(p), ar(T * T_clad_factor)
-    liquid = dict(H2O=light_water, D2O=heavy_water)[liq]
+    liquid = {"H2O": light_water, "D2O": heavy_water}[liq]
 
     coolant = liquid.to_properties(film_temperature(T, T_clad), p)
     h0 = Dittus_Boelter_h_spl(coolant=coolant, mdot=mdot, A=mock_pipe.area, Dh=mock_pipe.hydraulic_diameter)
@@ -110,7 +110,7 @@ def test_htc_is_geq_to_Dittus_Boelter(T, p, T_clad_factor, mdot, liq):
 @given(*_h_inputs)
 def test_maximal_htc_is_overshadowed_by_infinity(T, p, T_clad_factor, mdot, liq):
     T, p, T_clad = ar(T), ar(p), ar(T * T_clad_factor)
-    liquid = dict(H2O=light_water, D2O=heavy_water)[liq]
+    liquid = {"H2O": light_water, "D2O": heavy_water}[liq]
 
     coolant = liquid.to_properties(film_temperature(T, T_clad), p)
     h = maximal_h_spl([Dittus_Boelter_h_spl, just(np.inf), just(-5)])(
@@ -129,13 +129,13 @@ def test_maximal_htc_is_overshadowed_by_infinity(T, p, T_clad_factor, mdot, liq)
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
-        (dict(T_cool=2, T_clad=2, h_cool=1, h_clad=1), 2),
-        (dict(T_cool=1, T_clad=2, h_cool=1, h_clad=1), 1.5),
-        (dict(T_cool=ar(1), T_clad=ar(2), h_cool=ar(1), h_clad=ar(1)), 1.5),
-        (dict(T_cool=1, T_clad=2, h_cool=np.inf, h_clad=1), 1),
-        (dict(T_cool=1, T_clad=2, h_cool=1, h_clad=np.inf), 2),
-        (dict(T_cool=1, T_clad=2, h_cool=1, h_clad=ar(0)), 1),
-        (dict(T_cool=1, T_clad=2, h_cool=ar(0), h_clad=ar(1)), 2),
+        ({"T_cool": 2, "T_clad": 2, "h_cool": 1, "h_clad": 1}, 2),
+        ({"T_cool": 1, "T_clad": 2, "h_cool": 1, "h_clad": 1}, 1.5),
+        ({"T_cool": ar(1), "T_clad": ar(2), "h_cool": ar(1), "h_clad": ar(1)}, 1.5),
+        ({"T_cool": 1, "T_clad": 2, "h_cool": np.inf, "h_clad": 1}, 1),
+        ({"T_cool": 1, "T_clad": 2, "h_cool": 1, "h_clad": np.inf}, 2),
+        ({"T_cool": 1, "T_clad": 2, "h_cool": 1, "h_clad": ar(0)}, 1),
+        ({"T_cool": 1, "T_clad": 2, "h_cool": ar(0), "h_clad": ar(1)}, 2),
     ],
 )
 def test_wall_temperature_for_precalculated_case(input, expected):
@@ -194,7 +194,7 @@ def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
     """The Elenbaas natural-convection HTC must stay finite when the wall is at or
     below the coolant temperature (negative/zero Rayleigh), not return NaN."""
     cool = light_water.to_properties(np.array([50.0, 50.0]))
-    kw = dict(coolant=cool, depth=0.003, T_cool=np.array([50.0, 50.0]), Lh=0.6)
+    kw = {"coolant": cool, "depth": 0.003, "T_cool": np.array([50.0, 50.0]), "Lh": 0.6}
 
     cooled = Elenbaas_h_spl(T_wall=np.array([60.0, 40.0]), **kw)  # +10 K and -10 K
     assert np.all(np.isfinite(cooled)) and np.all(cooled >= 0)

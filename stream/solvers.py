@@ -30,7 +30,7 @@ from far guesses where :func:`algebraic`'s ``hybr`` stalls.
 """
 
 import logging
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 from scikits.odes import dae
@@ -157,13 +157,13 @@ def _dae_setup(
     time = np.asarray(time)
     yp0 = yp0 if yp0 is not None else np.zeros(len(y0))
     root = None if R is None else root
-    defaults = dict(
-        compute_initcond="yp0",
-        old_api=False,
-        algebraic_vars_idx=np.flatnonzero(1 - mass),
-        implementation="serial",
-        rootfn=root,
-    )
+    defaults = {
+        "compute_initcond": "yp0",
+        "old_api": False,
+        "algebraic_vars_idx": np.flatnonzero(1 - mass),
+        "implementation": "serial",
+        "rootfn": root,
+    }
     options = defaults | options
     solver = dae("ida", residues, **options)
 
