@@ -1,0 +1,46 @@
+name: Build Sphinx Docs
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup micromamba
+      uses: mamba-org/setup-micromamba@v2.0.6
+      with:
+        environment-file: docs/requirements.yml
+        environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
+        post-cleanup: 'all'
+
+    - name: Install local
+      run: |
+        pip install -e .
+      shell: micromamba-shell {0}
+
+    - name: Build Sphinx documentation
+      run: |
+        cd docs
+        make html
+        cd ../
+      shell: micromamba-shell {0}
+
+    # Branch-based Pages runs Jekyll by default, which drops Sphinx's _static/ dirs
+    - name: Disable Jekyll
+      run: touch docs/build/html/.nojekyll
+
+    - name: Upload docs artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docs-html
+        path: docs/build/html
+        include-hidden-files: true
+        retention-days: 7

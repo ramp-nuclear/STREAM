@@ -1,0 +1,29 @@
+name: Remove Docs Preview
+
+on:
+  pull_request:
+    types: [ closed ]
+    branches: [ "dev" ]
+
+permissions:
+  contents: read
+
+jobs:
+  remove-preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Remove PR preview
+      uses: rossjrw/pr-preview-action@v1
+      with:
+        action: remove
+        preview-branch: gh-pages
+        umbrella-dir: pr-preview

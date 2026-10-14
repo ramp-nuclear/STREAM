@@ -8,50 +8,33 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build-docs:
+    uses: ./.github/workflows/docs-build.yml
+
+  deploy:
+    needs: build-docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages-deploy
+      cancel-in-progress: false
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup micromamba
-      uses: mamba-org/setup-micromamba@v2.0.6
+    - name: Download docs artifact
+      uses: actions/download-artifact@v4
       with:
-        environment-file: docs/requirements.yml
-        environment-name: stream-${{ github.run_id }}-${{ github.run_attempt }}
-        post-cleanup: 'all'
-
-    - name: Install local
-      run: |
-        pip install -e .
-      shell: micromamba-shell {0}
-    
-    - name: Build Sphinx documentation
-      run: |
-        cd docs
-        make html
-        cd ../
-      shell: micromamba-shell {0}
-
-    - name: Upload Pages artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
+        name: docs-html
         path: docs/build/html
 
-  deploy:
-    needs: build-docs
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-
+    - name: Deploy to gh-pages
+      uses: JamesIves/github-pages-deploy-action@v4
+      with:
+        branch: gh-pages
+        folder: docs/build/html
+        clean-exclude: pr-preview/
