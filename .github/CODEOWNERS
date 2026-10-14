@@ -1,0 +1,12 @@
+# CI security, left to Eshed
+/.github/workflows/ @esheder
+/.github/CODEOWNERS @esheder
+# Legal license, left to Eshed
+/LICENSE @esheder
+# Dependencies, need careful attention
+/pyproject.toml @esheder @AvivBarnea @itaybnv
+/requirements.yml @esheder @AvivBarnea @itaybnv
+/tests/requirements.yml @esheder @AvivBarnea @itaybnv
+/docs/requirements.yml @esheder @AvivBarnea @itaybnv
+/allreq.yml @esheder @AvivBarnea @itaybnv
+
