@@ -272,3 +272,11 @@ def test_zero_bend_angle_returns_zero_pressure_drop(mdot):
         friction_func=just(1.0),
     )
     assert np.equal(bend.dp_out(mdot=mdot, Tin=25.0), 0.0)
+
+
+def test_bend_has_zero_pressure_drop_at_zero_flow():
+    bend = Bend(light_water, hydraulic_diameter=0.4, area=np.pi * 0.04, bend_radius=0.6, bend_angle=np.pi / 2)
+    assert bend.dp_out(mdot=0.0, Tin=25.0) == 0.0
+    assert np.array_equal(bend.dp_out(mdot=0.0, Tin=np.array([25.0])), [0.0])
+    assert np.all(np.isfinite(bend.dp_out(mdot=1e-9, Tin=25.0)))
+    assert np.all(np.isfinite(bend.dp_out(mdot=-1e-9, Tin=25.0)))

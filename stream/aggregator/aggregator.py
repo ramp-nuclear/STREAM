@@ -310,13 +310,9 @@ class Aggregator:
         return bool(sc.all())
 
     def _has_event_overrides(self) -> bool:
-        """Whether any node overrides the default event hooks (so its events must
-        not be silently dropped even when it exposes no localizable margin)."""
-        return any(
-            type(node).change_state is not Calculation.change_state
-            or type(node).should_continue is not Calculation.should_continue
-            for node in self.graph
-        )
+        """Whether any node is an active event node (so its events must not be
+        silently dropped even when it exposes no localizable margin)."""
+        return any(node.has_event() for node in self.graph)
 
     def _truncate_to_event(self, data: Array2D, time: Array1D, continuous: bool) -> tuple[Array2D, Array1D]:
         """Apply transitions at every accepted output point and cut the series at
