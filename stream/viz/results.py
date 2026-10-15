@@ -169,11 +169,11 @@ class Result:
         return f"{labels.value(q, target)}" + (f" {unit}" if unit else "")
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
-             band="total", errorbars=False, limit="line", style_sheet=None, labels=None):
+             band="total", errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
         """Draw this result; see :func:`stream.viz.draw.plot`."""
         from .draw import plot
 
-        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, style_sheet, labels)
+        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, crossing, style_sheet, labels)
 
 
 @dataclass

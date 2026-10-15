@@ -18,7 +18,8 @@ class Style:
     systematic band. Every field can be changed with :meth:`replace`.
 
     ``limit_linewidth``, ``shade_alpha`` and ``shade_hatch`` draw a declared
-    limit; ``map_levels`` is the number of filled contour bands of a map and
+    limit and ``crossing_linewidth`` the drop line where a curve meets it;
+    ``map_levels`` is the number of filled contour bands of a map and
     ``map_cases`` adds a dot at every solved case; ``filled_marker`` marks a
     case filled by interpolation.
 
@@ -38,6 +39,7 @@ class Style:
     grid_alpha: float = 0.25
     subtitle_size: float = 9.5
     limit_linewidth: float = 1.6
+    crossing_linewidth: float = 1.2
     shade_alpha: float = 0.55
     shade_hatch: str = "////"
     map_levels: int = 12

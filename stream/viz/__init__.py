@@ -14,6 +14,7 @@ and plot the answer::
     print(sweep)
     sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3, wall_law="regime")).plot()
     sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", style="wall_law")
+    sweep.reduce("CHFR", "min", versus="power", where=dict(wall_law="regime")).plot(crossing="mark")
     sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="wall_law", limit="shade")
     sweep.required(["CHFR", "T_clad"], solve_for="power", versus="mdot", limiting=True).plot()
 

@@ -2,10 +2,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from conftest import make_case_frame
-from matplotlib.collections import PolyCollection
+from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.contour import QuadContourSet
 
-from stream.viz import Style, Sweep, at, at_least, at_most
+from stream.viz import Labels, Style, Sweep, at, at_least, at_most
+from stream.viz.inverse import crossings
 
 
 def legend_texts(ax):
@@ -681,4 +682,224 @@ def test_levels_printing_alike_warn_at_a_direct_plot_call(agr):
     with pytest.warns(UserWarning, match="both print as") as record:
         fig, ax = plot(sweep.reduce("CHFR", "min", versus="mdot"), labels={"power": ("Power", "MW", 1e-6, ".1f")})
     assert record[0].filename == __file__
+    plt.close(fig)
+
+
+def drop_lines(ax):
+    return [c for c in ax.collections if isinstance(c, LineCollection)]
+
+
+def crossing_markers(ax):
+    return [ln for ln in ax.get_lines() if ln.get_linestyle() == "None" and ln.get_markeredgecolor() == "white"]
+
+
+def foot_texts(ax):
+    return [t.get_text() for t in ax.texts if t.get_rotation() == 90]
+
+
+def test_crossing_mark_draws_a_drop_line_a_marker_and_the_value(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    (xc,) = crossings(r.frame.power, r.frame.value, 1.3)
+    assert xc == pytest.approx(4.8e6)
+    fig, ax = r.plot(crossing="mark")
+    (drop,) = drop_lines(ax)
+    (segment,) = drop.get_segments()
+    assert segment[0][0] == pytest.approx(xc) and segment[1][0] == pytest.approx(xc)
+    assert segment[1][1] == pytest.approx(1.3) and segment[0][1] == pytest.approx(ax.get_ylim()[0])
+    (marker,) = crossing_markers(ax)
+    assert marker.get_xdata()[0] == pytest.approx(xc) and marker.get_ydata()[0] == pytest.approx(1.3)
+    assert foot_texts(ax) == ["4.8e+06 W"]
+    assert len(dashed_lines(ax)) == 1
+    plt.close(fig)
+
+
+def test_crossing_none_draws_nothing_new(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot()
+    assert drop_lines(ax) == [] and crossing_markers(ax) == [] and foot_texts(ax) == []
+    plt.close(fig)
+
+
+def test_crossing_legend_appends_the_value_to_the_one_encoded_dimension(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="legend")
+    assert legend_texts(ax) == ["0.2 (3.4e+06 W)", "0.3 (4.8e+06 W)"]
+    assert ax.get_legend().get_title().get_text() == "mdot; Power at CHFR = 1.3"
+    assert [d.get_segments()[0][0][0] for d in drop_lines(ax)] == pytest.approx([3.4e6, 4.8e6])
+    assert foot_texts(ax) == []
+    plt.close(fig)
+
+
+def test_crossing_legend_with_two_encoded_dimensions_adds_a_block(agr):
+    cases = [dict(power=p, mdot=m, wall_law=w) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for w in ("Dittus", "regime")]
+    sweep = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr, limits={"CHFR": at_least(1.3)})
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", style="wall_law", crossing="legend")
+    texts = legend_texts(ax)
+    block = texts[texts.index("Power at CHFR = 1.3") + 1:]
+    assert block == ["  0.2, Dittus: 3.4e+06 W", "  0.2, regime: 3.4e+06 W", "  0.3, Dittus: 4.8e+06 W", "  0.3, regime: 4.8e+06 W"]
+    assert "  0.2" in texts and "  Dittus" in texts
+    plt.close(fig)
+
+
+def test_crossing_legend_on_a_single_curve_titles_one_entry(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(crossing="legend")
+    assert ax.get_legend().get_title().get_text() == "Power at CHFR = 1.3"
+    assert legend_texts(ax) == ["4.8e+06 W"]
+    assert foot_texts(ax) == []
+    plt.close(fig)
+
+
+def test_crossing_skips_a_curve_that_never_reaches_the_limit(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(0.1))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="mark")
+    assert drop_lines(ax) == [] and crossing_markers(ax) == [] and foot_texts(ax) == []
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="legend")
+    assert legend_texts(ax) == ["0.2", "0.3"]
+    plt.close(fig)
+
+
+def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.7))
+    r = sweep.profile("CHFR", of="CC", where=dict(power=4e6, mdot=0.3))
+    found = crossings(r.frame.z, r.frame.value, 1.7)
+    assert len(found) == 2
+    fig, ax = r.plot(crossing="mark")
+    (drop,) = drop_lines(ax)
+    (segment,) = drop.get_segments()
+    assert segment[0][0] == pytest.approx(found[0])
+    assert foot_texts(ax) == ["0.21 m"]
+    plt.close(fig)
+
+
+def test_crossing_follows_the_drawn_bound(agr, grid_cases):
+    sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"CHFR": at_least(1.3)})
+    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    (lower,) = crossings(r.frame.power, r.frame.lower, 1.3)
+    (nominal,) = crossings(r.frame.power, r.frame.value, 1.3)
+    assert lower != pytest.approx(nominal)
+    fig, ax = r.plot(bound="lower", crossing="mark")
+    (marker,) = crossing_markers(ax)
+    assert marker.get_xdata()[0] == pytest.approx(lower)
+    plt.close(fig)
+
+
+def test_crossing_without_the_limit_line(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(limit="none", crossing="mark")
+    assert len(drop_lines(ax)) == 1 and dashed_lines(ax) == []
+    assert [t.get_text() for t in ax.texts] == ["4.8e+06 W"]
+    plt.close(fig)
+
+
+def test_crossing_refusals(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    with pytest.raises(ValueError, match="crossing= needs a horizontal limit; a required result has none, its y axis is the crossing"):
+        sweep.required("CHFR", solve_for="power", versus="mdot").plot(crossing="mark")
+    with pytest.raises(ValueError, match="crossing= does not apply to a map"):
+        sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(crossing="mark")
+    with pytest.raises(ValueError, match="crossing= does not apply to a field"):
+        limited(agr, grid_cases, T=at_most(60.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(crossing="mark")
+    with pytest.raises(ValueError, match="where_min gives a location, not a value of CHFR"):
+        sweep.reduce("CHFR", "where_min", versus="power").plot(crossing="legend")
+    with pytest.raises(ValueError, match="no limit declared for 'T_cool'; declare it in limits= to mark its crossing"):
+        sweep.reduce("T_cool", "max", versus="power").plot(crossing="mark")
+    with pytest.raises(ValueError, match="crossing='both'; use one of none, mark, legend"):
+        sweep.reduce("CHFR", "min", versus="power").plot(crossing="both")
+
+
+def test_crossing_legend_on_panels_prints_at_the_foot(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot", crossing="legend")
+    assert [foot_texts(ax) for ax in axes.ravel()] == [["3.4e+06 W"], ["4.8e+06 W"]]
+    assert all(ax.get_legend() is None for ax in axes.ravel())
+    plt.close(fig)
+
+
+def test_crossing_value_prints_with_the_label_format(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    fig, ax = r.plot(crossing="mark", labels={"power": ("Power", "MW", 1e-6, ".1f")})
+    assert foot_texts(ax) == ["4.8 MW"]
+    (marker,) = crossing_markers(ax)
+    assert marker.get_xdata()[0] == pytest.approx(4.8)
+    plt.close(fig)
+
+
+def test_crossing_legend_names_each_limit_when_quantities_differ(agr):
+    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
+    sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr, limits={"CHFR": at_least(1.7), "T_cool": at_most(48.0)})
+    r = sweep.profile(["CHFR", "T_cool"], of="CC", where=dict(mdot=0.3))
+    fig, ax = r.plot(color="quantity", style="power", crossing="legend")
+    texts = legend_texts(ax)
+    assert texts[texts.index("z at the limit") + 1:] == [
+        "  CHFR, 4e+06, CHFR = 1.7: 0.21 m",
+        "  Coolant temperature, 2e+06, Coolant temperature = 48 °C: 0.17 m",
+        "  Coolant temperature, 4e+06, Coolant temperature = 48 °C: 0.13 m",
+    ]
+    plt.close(fig)
+
+
+def test_crossing_legend_keeps_the_order_of_a_categorical_dimension(agr):
+    cases = [dict(power=p, mdot=0.3, wall_law=w) for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6, 8e6)]
+    sweep = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr, limits={"CHFR": at_least(1.3)})
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="legend")
+    assert legend_texts(ax) == ["regime (4.8e+06 W)", "Dittus (4.8e+06 W)"]
+    assert ax.get_legend().get_title().get_text() == "wall_law; Power at CHFR = 1.3"
+    plt.close(fig)
+
+
+def test_crossing_legend_leaves_curves_that_never_cross_unchanged(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(2.5))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="legend")
+    assert legend_texts(ax) == ["0.2", "0.3 (2.667e+06 W)"]
+    assert ax.get_legend().get_title().get_text() == "mdot; Power at CHFR = 2.5"
+    assert len(drop_lines(ax)) == 1
+    plt.close(fig)
+
+
+def test_crossing_mark_on_a_binding_result(agr):
+    from conftest import FakeChannel, channel_rows, frame
+
+    def make(power, mdot):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("hot", "CHFR", 0, j, chfr[j] * (1.2 if power < 5e6 else 0.8)) for j in range(4)]
+        return frame(rows)
+
+    agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
+    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6, 6e6, 8e6)]
+    sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.3)})
+    r = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"], limiting=True)
+    (xc,) = crossings(r.frame.power, r.frame.value, 1.3)
+    fig, ax = r.plot(crossing="mark")
+    (drop,) = drop_lines(ax)
+    assert drop.get_segments()[0][0][0] == pytest.approx(xc)
+    assert foot_texts(ax) == [f"{xc:.4g} W"]
+    plt.close(fig)
+
+
+def test_crossing_mark_under_a_shaded_limit_keeps_the_axes(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    fig, ax = r.plot(limit="shade")
+    shaded = ax.get_ylim()
+    plt.close(fig)
+    fig, ax = r.plot(limit="shade", crossing="mark")
+    assert ax.get_ylim() == pytest.approx(shaded)
+    (drop,) = drop_lines(ax)
+    assert drop.get_segments()[0][0][1] == pytest.approx(shaded[0])
+    plt.close(fig)
+
+
+def test_a_sweep_keeps_the_default_format_of_its_labels(agr, grid_cases):
+    labels = Labels({"mdot": ("Mass flow", "kg/s")}, default_format=".2f")
+    sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, labels=labels)
+    r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    assert r.subtitle == "Power = 4000000.00 W, Mass flow = 0.30 kg/s, CC"
+    fig, ax = r.plot()
+    assert ax.get_title() == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
     plt.close(fig)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from itertools import product
 
 import matplotlib.pyplot as plt
@@ -11,7 +11,8 @@ from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
-from .encoding import Encoding, encode
+from .encoding import Encoding, LegendBlock, encode
+from .inverse import crossings
 from .labels import Labels
 from .results import y_axis
 from .style import DEFAULT_STYLE, Style
@@ -19,6 +20,7 @@ from .style import DEFAULT_STYLE, Style
 BOUNDS = ("nominal", "lower", "upper")
 BANDS = ("total", "split", "none")
 LIMITS = ("line", "shade", "none")
+CROSSINGS = ("none", "mark", "legend")
 BOUND_COLUMNS = {"nominal": "value", "lower": "lower", "upper": "upper"}
 FIELD_ARGUMENTS = ("color", "style", "marker", "col", "row")
 
@@ -41,6 +43,16 @@ def _subset(frame, dims, levels):
     return frame[keep]
 
 
+@dataclass(frozen=True)
+class Crossing:
+    """Where one drawn curve first meets the limit of its quantity, in frame units."""
+
+    levels: dict
+    props: dict
+    quantity: str
+    x: float
+
+
 def binder_colors(frame, style: Style) -> dict[str, str]:
     """A palette colour per binder, in order of first appearance."""
     names = list(dict.fromkeys(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "binder"].astype(str)))
@@ -48,11 +60,14 @@ def binder_colors(frame, style: Style) -> dict[str, str]:
 
 
 def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, errorbars: bool, labels: Labels,
-               binding: dict[str, str] | None = None) -> tuple[bool, bool, bool]:
-    """Draw one line per level combination; return whether the total band, the inner band and an interpolated point were drawn.
+               binding: dict[str, str] | None = None, crossing: str = "none") -> tuple[bool, bool, bool, list[Crossing]]:
+    """Draw one line per level combination.
 
-    ``binding`` maps each binder to its colour; the points of each binder get a marker in it.
-    Interpolated points get an open marker.
+    Return whether the total band, the inner band and an interpolated point
+    were drawn, and the first crossing of the limit by each curve when
+    ``crossing`` is not ``"none"``. ``binding`` maps each binder to its
+    colour; the points of each binder get a marker in it. Interpolated
+    points get an open marker.
     """
     dims, combos = _levels_of(result, enc)
     xs = labels.scale(result.x)
@@ -60,6 +75,7 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
     line_column = BOUND_COLUMNS[bound]
     show_band = result.banded and bound == "nominal" and band != "none"
     drawn = inner_drawn = filled_drawn = False
+    found = []
     for levels in combos:
         sub = _subset(result.frame, dims, levels).sort_values(result.x)
         if sub.empty:
@@ -68,6 +84,10 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
         props.setdefault("color", style.palette[0])
         if result.kind == "profile" and not combos[1:]:
             props.setdefault("marker", "o")
+        if crossing != "none":
+            hit = _first_crossing(result, sub, line_column)
+            if hit is not None:
+                found.append(Crossing(dict(zip(dims, levels)), dict(props), *hit))
         x, y = sub[result.x].to_numpy() * xs, sub[line_column].to_numpy() * ys
         if show_band and errorbars:
             lo, hi = sub["lower"].to_numpy() * ys, sub["upper"].to_numpy() * ys
@@ -90,7 +110,13 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
                     if np.any(ihi > ilo):
                         ax.fill_between(x, ilo, ihi, color=props["color"], alpha=style.band_alpha_inner, linewidth=0)
                         inner_drawn = True
-    return drawn, inner_drawn, filled_drawn
+    return drawn, inner_drawn, filled_drawn, found
+
+
+def _first_crossing(result, sub, column: str) -> tuple[str, float] | None:
+    q = _quantities_on(result)[0] if result.binding or "quantity" not in sub.columns else str(sub["quantity"].iloc[0])
+    found = crossings(sub[result.x].to_numpy(float), sub[column].to_numpy(float), result.limits[q].value, "linear")
+    return (q, found[0]) if found else None
 
 
 def _draw_filled(ax, sub, x, y, color: str, style: Style) -> bool:
@@ -266,6 +292,77 @@ def draw_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: 
         shade_limits(result, ax, enc, style, labels, limit)
 
 
+def _check_crossing(result, crossing: str) -> None:
+    if crossing == "none":
+        return
+    if _is_required(result):
+        raise ValueError("crossing= needs a horizontal limit; a required result has none, its y axis is the crossing")
+    if result.kind in ("map", "field"):
+        raise ValueError(f"crossing= does not apply to a {result.kind}")
+    if result.limit_note is not None:
+        raise ValueError(result.limit_note)
+    drawn = _quantities_on(result)
+    for q in drawn[:1] if result.binding else drawn:
+        if q not in result.limits:
+            raise ValueError(f"no limit declared for {q!r}; declare it in limits= to mark its crossing")
+
+
+def _crossing_text(labels: Labels, result, xc: float) -> str:
+    unit = labels[result.x].unit
+    return labels.value(result.x, xc) + (f" {unit}" if unit else "")
+
+
+def draw_crossings(result, ax, found: list[Crossing], style: Style, labels: Labels, foot: bool) -> None:
+    """A dashed drop line and a marker where each curve meets its limit, the value at the foot on request.
+
+    The axes limits are kept as they are.
+    """
+    if not found:
+        return
+    lo, hi = ax.get_ylim()
+    xs = labels.scale(result.x)
+    ys = labels.scale(y_axis(result, labels)[1])
+    for c in found:
+        color = c.props["color"]
+        x, y = c.x * xs, result.limits[c.quantity].value * ys
+        ax.vlines(x, lo, y, linestyles="--", linewidth=style.crossing_linewidth, colors=color, zorder=2)
+        ax.plot(x, y, linestyle="none", marker="o", markersize=style.markersize, color=color,
+                markeredgecolor="white", markeredgewidth=0.8, zorder=5)
+        if foot:
+            ax.annotate(_crossing_text(labels, result, c.x), xy=(x, lo), xycoords="data", xytext=(3, 3),
+                        textcoords="offset points", rotation=90, ha="left", va="bottom", fontsize=9, color=color)
+    ax.set_ylim(lo, hi)
+
+
+def _level_text(result, labels: Labels, dim: str, level) -> str:
+    return labels.value(dim, level) if dim in result.numeric else labels.display(level)
+
+
+def crossing_legend(result, enc: Encoding, found: list[Crossing], labels: Labels) -> Encoding:
+    """The encoding with each crossing value added to the legend."""
+    if not found:
+        return enc
+    shared = len({c.quantity for c in found}) == 1
+    q = found[0].quantity
+    title = f"{labels.display(result.x)} at {_limit_text(labels, q, result.limits[q]) if shared else 'the limit'}"
+    encoded = list(dict.fromkeys(enc.channels.values()))
+    if len(encoded) == 1:
+        (dim,) = encoded
+        order = sorted(result.dims[dim]) if dim in result.numeric else list(result.dims[dim])
+        extra = {order.index(c.levels[dim]): f" ({_crossing_text(labels, result, c.x)})" for c in found}
+        (block,) = enc.legend
+        entries = [(text + extra.get(k, ""), props) for k, (text, props) in enumerate(block.entries)]
+        return replace(enc, legend=[LegendBlock(f"{block.title}; {title}", entries)])
+    entries = []
+    for c in found:
+        text = _crossing_text(labels, result, c.x)
+        head = [_level_text(result, labels, d, v) for d, v in c.levels.items()]
+        if not shared:
+            head.append(_limit_text(labels, c.quantity, result.limits[c.quantity]))
+        entries.append((f"{', '.join(head)}: {text}" if head else text, c.props))
+    return replace(enc, legend=[*enc.legend, LegendBlock(title, entries)])
+
+
 def draw_field_limit(field, ax, style: Style, labels: Labels, limit: str, bound: str = "nominal") -> None:
     """The limit contour over a field image, and the cells beyond it hatched on request."""
     lim = field.limits.get(field.quantity)
@@ -365,7 +462,7 @@ def _check_field_arguments(values: dict, band: str, errorbars: bool) -> None:
 
 
 def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal", band="total",
-         errorbars=False, limit="line", style_sheet=None, labels=None):
+         errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
     """Draw ``result`` and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
 
     Parameters
@@ -407,6 +504,24 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
           quantities share the axes, or on a ``required`` result whose side is
           unknown;
         * ``"none"``: neither.
+    crossing:
+        Where each curve meets the declared limit of its quantity, at its
+        first linear crossing in ``x`` on the drawn ``bound``:
+
+        * ``"none"``: nothing (the default);
+        * ``"mark"``: for every drawn curve, a dashed drop line in the
+          curve's colour from the x axis up to the limit, a marker where the
+          curve meets the limit, and the x value printed along the foot of
+          the line;
+        * ``"legend"``: the drop line and marker, with the x value in the
+          legend instead of at the foot; on a panel grid the value is printed
+          at the foot inside each panel, as ``"mark"`` does, because the
+          legend is shared.
+
+        A curve that never meets its limit gets no mark. For a ``profile`` or
+        a ``reduce`` curve only. Raises on a ``required`` result, a map or a
+        field, and when a drawn quantity carries no limit (none declared, or
+        a ``where_*`` or custom reducer).
     style_sheet:
         A :class:`Style` for the look (sizes, colours, the map's levels, the
         markers of filled cases).
@@ -421,6 +536,8 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
     _check("bound", bound, BOUNDS)
     _check("band", band, BANDS)
     _check("limit", limit, LIMITS)
+    _check("crossing", crossing, CROSSINGS)
+    _check_crossing(result, crossing)
     sheet = style_sheet or DEFAULT_STYLE
     merged = result.labels.merged(labels).with_default_format(sheet.number_format)
     if ax is not None and (col or row):
@@ -442,8 +559,14 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         binding = binder_colors(result.frame, sheet) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
-            drawn, inner_drawn, filled_drawn = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged, binding)
+            drawn, inner_drawn, filled_drawn, found = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged,
+                                                                 binding, crossing)
             draw_limits(result, ax, enc, sheet, merged, limit)
+            if found:
+                ax.autoscale_view()
+                draw_crossings(result, ax, found, sheet, merged, foot=crossing == "mark")
+            if crossing == "legend":
+                enc = crossing_legend(result, enc, found, merged)
             finish_axes(ax, result, merged, sheet, result.subtitle_with(merged))
             build_legend(ax, enc, drawn, inner_drawn, band, sigma_text, merged, sheet, binding=binding,
                          filled_drawn=filled_drawn)
@@ -459,20 +582,22 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             fixed = {k: v for k, v in ((enc.row, rv), (enc.col, cv)) if k is not None}
             sub = _subset(result.frame, list(fixed), list(fixed.values()))
             panel = _with_frame(result, sub, fixed)
-            drawn, inner_drawn, filled_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged, binding)
-            panels.append((panel, panel_ax))
+            drawn, inner_drawn, filled_drawn, found = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged,
+                                                                 binding, crossing)
+            panels.append((panel, panel_ax, found))
             drawn_any, inner_any, filled_any = drawn_any or drawn, inner_any or inner_drawn, filled_any or filled_drawn
             finish_axes(panel_ax, panel, merged, sheet, _panel_text(merged, fixed))
             if ci:
                 panel_ax.set_ylabel("")
             if ri != len(rows) - 1:
                 panel_ax.set_xlabel("")
-        for panel, panel_ax in panels:
+        for panel, panel_ax, _ in panels:
             draw_limit_lines(panel, panel_ax, enc, sheet, merged, limit)
-        if limit == "shade":
+        if limit == "shade" or any(hits for _, _, hits in panels):
             axes[0, 0].autoscale_view()
-            for panel, panel_ax in panels:
-                shade_limits(panel, panel_ax, enc, sheet, merged, limit)
+        for panel, panel_ax, found in panels:
+            shade_limits(panel, panel_ax, enc, sheet, merged, limit)
+            draw_crossings(panel, panel_ax, found, sheet, merged, foot=True)
         build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding,
                      filled_drawn=filled_any)
         subtitle = result.subtitle_with(merged)
