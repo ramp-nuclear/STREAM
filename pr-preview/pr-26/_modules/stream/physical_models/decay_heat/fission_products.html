@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.decay_heat.fission_products &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.decay_heat.fission_products</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.decay_heat.fission_products</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecayHeatFunction</span><span class="p">,</span> <span class="n">MeVPerFission</span><span class="p">,</span> <span class="n">MeVPerS</span><span class="p">,</span> <span class="n">PerS</span><span class="p">,</span> <span class="n">Second</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"Standard"</span><span class="p">,</span> <span class="s2">"Source"</span><span class="p">,</span> <span class="s2">"contribution"</span><span class="p">,</span> <span class="s2">"fp_inner_"</span><span class="p">]</span>
+
+<span class="n">STANDARDS</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">"standards"</span>
+
+
+<div class="viewcode-block" id="Standard">
+<a class="viewcode-back" href="../../../../decay_heat.html#stream.physical_models.decay_heat.fission_products.Standard">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Standard</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">ANS14</span> <span class="o">=</span> <span class="s2">"ans14"</span>
+    <span class="n">ANS73</span> <span class="o">=</span> <span class="s2">"ans73"</span>
+    <span class="n">JAERI91</span> <span class="o">=</span> <span class="s2">"jaeri91"</span></div>
+
+
+
+<div class="viewcode-block" id="Source">
+<a class="viewcode-back" href="../../../../decay_heat.html#stream.physical_models.decay_heat.fission_products.Source">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Source</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">U235</span> <span class="o">=</span> <span class="s2">"U235"</span>
+    <span class="n">U235_beta</span> <span class="o">=</span> <span class="s2">"U235_beta"</span>
+    <span class="n">U235_gamma</span> <span class="o">=</span> <span class="s2">"U235_gamma"</span>
+    <span class="n">U238</span> <span class="o">=</span> <span class="s2">"U238"</span>
+    <span class="n">U238_gamma</span> <span class="o">=</span> <span class="s2">"U238_gamma"</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_to_filepath</span><span class="p">(</span><span class="n">standard</span><span class="p">:</span> <span class="n">Standard</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">STANDARDS</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">standard</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">.csv"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="n">standard</span><span class="p">:</span> <span class="n">Standard</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+    <span class="n">filepath</span> <span class="o">=</span> <span class="n">_to_filepath</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">EmptyDataError</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Does not vendor </span><span class="si">{</span><span class="n">source</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> from </span><span class="si">{</span><span class="n">standard</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="n">standard</span><span class="p">:</span> <span class="n">Standard</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">_to_filepath</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">source</span><span class="p">),</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_process_standard</span><span class="p">(</span><span class="n">standard</span><span class="p">:</span> <span class="n">Standard</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PerS</span><span class="p">,</span> <span class="n">MeVPerS</span><span class="p">]:</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">MeVPerS</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">alpha</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="n">lamda</span><span class="p">:</span> <span class="n">PerS</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">lamda</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">lamda</span>
+
+
+<div class="viewcode-block" id="contribution">
+<a class="viewcode-back" href="../../../../decay_heat.html#stream.physical_models.decay_heat.fission_products.contribution">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">contribution</span><span class="p">(</span><span class="n">standard</span><span class="p">:</span> <span class="n">Standard</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Source</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecayHeatFunction</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A DecayHeatFunction for fission products` decay, given a :class:`~Standard`, :class:`~Source`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    standard : Standard</span>
+<span class="sd">        The decay heat standard from which the data should be taken.</span>
+<span class="sd">    source : Source</span>
+<span class="sd">        Chosen source.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DecayHeatFunction</span>
+<span class="sd">        Whose return value has units of MeV / fission event</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import pytest</span>
+<span class="sd">    &gt;&gt;&gt; try:</span>
+<span class="sd">    ...     fp = contribution(Standard.ANS14, Source.U235)</span>
+<span class="sd">    ... except FileNotFoundError:</span>
+<span class="sd">    ...     pytest.skip("This doctest requires the standards which are not there")</span>
+<span class="sd">    &gt;&gt;&gt; Q: MeV = 200 # Approx. total recoverable energy associated with one fission</span>
+<span class="sd">    &gt;&gt;&gt; fp(t=0., T=np.inf) / Q</span>
+<span class="sd">    array([0.06728006])</span>
+<span class="sd">    &gt;&gt;&gt; fp(t=1., T=0.)</span>
+<span class="sd">    array([0.])</span>
+<span class="sd">    """</span>
+    <span class="n">alpha</span><span class="p">,</span> <span class="n">lamda</span> <span class="o">=</span> <span class="n">_process_standard</span><span class="p">(</span><span class="n">standard</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_contribution</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MeVPerFission</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">fp_inner_</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">lamda</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_contribution</span></div>
+
+
+
+<div class="viewcode-block" id="fp_inner_">
+<a class="viewcode-back" href="../../../../decay_heat.html#stream.physical_models.decay_heat.fission_products.fp_inner_">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fp_inner_</span><span class="p">(</span>
+    <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span>
+    <span class="n">lamda</span><span class="p">:</span> <span class="n">PerS</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">MeVPerS</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MeVPerFission</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Implements :eq:`FP`, the decay heat stemming from fission products decays.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    t: Second</span>
+<span class="sd">        Times after shutdown</span>
+<span class="sd">    T: Second</span>
+<span class="sd">        Operation time</span>
+<span class="sd">    lamda: PerS</span>
+<span class="sd">        Decay rates</span>
+<span class="sd">    alpha: MeVPerS</span>
+<span class="sd">        Fractional fission power contributions</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    MeVPerFission</span>
+<span class="sd">        At times `t` after shutdown, :math:`F(t,T)`</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; fp_inner_(</span>
+<span class="sd">    ... t=0., T=np.inf, lamda=np.ones(1), alpha=np.ones(1))</span>
+<span class="sd">    array([1.])</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">alpha</span> <span class="o">/</span> <span class="n">lamda</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">expm1</span><span class="p">(</span><span class="o">-</span><span class="n">lamda</span> <span class="o">*</span> <span class="n">T</span><span class="p">))</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">lamda</span><span class="p">,</span> <span class="n">t</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 15, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,445 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>test_calculations.test_kirchhoff &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">test_calculations.test_kirchhoff</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for test_calculations.test_kirchhoff</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Oh, how the turns have tabled...</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">hypothesis.strategies</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">st</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">hypothesis</span><span class="w"> </span><span class="kn">import</span> <span class="n">given</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiDiGraph</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.kirchhoff</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Junction</span><span class="p">,</span>
+    <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+    <span class="n">build_kvl_matrix</span><span class="p">,</span>
+    <span class="n">to_graph_for_cycles</span><span class="p">,</span>
+    <span class="n">to_str</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.conftest</span><span class="w"> </span><span class="kn">import</span> <span class="n">are_close</span><span class="p">,</span> <span class="n">pos_medium_floats</span>
+
+
+<div class="viewcode-block" id="test_a_multigraph_to_graph_for_cycles">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_a_multigraph_to_graph_for_cycles">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_a_multigraph_to_graph_for_cycles</span><span class="p">():</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"hi"</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"hello"</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"greetings"</span><span class="p">)</span>
+
+    <span class="n">h</span> <span class="o">=</span> <span class="n">to_graph_for_cycles</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="p">[</span><span class="n">data</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">h</span><span class="o">.</span><span class="n">adj</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span> <span class="o">==</span> <span class="p">[</span>
+        <span class="s2">"hi"</span><span class="p">,</span>
+        <span class="s2">"hello"</span><span class="p">,</span>
+        <span class="s2">"greetings"</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">h</span><span class="o">.</span><span class="n">adj</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="o">==</span> <span class="p">[{},</span> <span class="p">{},</span> <span class="p">{}]</span></div>
+
+
+
+<div class="viewcode-block" id="test_build_kvl_matrix_from_a_multigraph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_build_kvl_matrix_from_a_multigraph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_build_kvl_matrix_from_a_multigraph</span><span class="p">():</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">4</span><span class="p">,))</span>
+
+    <span class="n">kvl</span> <span class="o">=</span> <span class="n">build_kvl_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="p">{</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">)})</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">kvl</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">8.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mf">11.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">8.0</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="test_junction_mixing_a_given_set_of_currents">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_junction_mixing_a_given_set_of_currents">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_junction_mixing_a_given_set_of_currents</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    The temperature a Junction defines is just the weighted sum of all incoming</span>
+<span class="sd">    temperatures with the corresponding mass current.</span>
+<span class="sd">    """</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">()</span>
+
+    <span class="n">mdot</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="o">-</span><span class="mf">3.0</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="o">-</span><span class="mf">4.0</span><span class="p">}</span>
+    <span class="n">Tin_plus</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">Tin_minus</span> <span class="o">=</span> <span class="p">{</span><span class="mi">3</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="mf">17.0</span><span class="p">}</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">Tin_plus</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="o">=</span><span class="n">Tin_minus</span><span class="p">)</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">calculate</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">17</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">*</span> <span class="mi">5</span><span class="p">)</span> <span class="o">/</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">mdot</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">J</span><span class="o">.</span><span class="n">calculate</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span> <span class="p">(</span><span class="mi">10</span> <span class="o">*</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">17</span><span class="p">)</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mock_graph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.mock_graph">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"module"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mock_graph</span><span class="p">(</span><span class="n">J</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MultiDiGraph</span><span class="p">:</span>
+    <span class="n">J0</span><span class="p">,</span> <span class="n">J1</span> <span class="o">=</span> <span class="n">J</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">J0</span><span class="p">,</span> <span class="n">J1</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"C"</span><span class="p">))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">J0</span><span class="p">,</span> <span class="n">J1</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"D"</span><span class="p">,</span> <span class="s2">"E"</span><span class="p">))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">J1</span><span class="p">,</span> <span class="n">J0</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"F"</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">g</span></div>
+
+
+
+<div class="viewcode-block" id="J">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.J">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"module"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">J</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J0"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J1"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="K">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.K">[docs]</a>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"module"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">K</span><span class="p">(</span><span class="n">mock_graph</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">mock_graph</span><span class="p">)</span></div>
+
+
+
+<span class="n">Edge</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_make_cycle</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Edge</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MultiDiGraph</span><span class="p">:</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">values</span><span class="p">):</span>
+        <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="nb">str</span><span class="p">((</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="n">val</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">g</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_exclusive</span><span class="p">(</span><span class="n">edgelist</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Edge</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">edgelist</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="p">[])))</span> <span class="o">==</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">edgelist</span><span class="p">)</span>
+
+
+<span class="n">graph_sizes</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="s2">"size"</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">alphabet</span><span class="o">=</span><span class="s2">"abcdefghijklmnopqrstuvwxyz"</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="n">complists</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">lists</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">edges</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">shared</span><span class="p">(</span>
+    <span class="n">graph_sizes</span><span class="o">.</span><span class="n">flatmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">n</span><span class="p">:</span> <span class="n">st</span><span class="o">.</span><span class="n">lists</span><span class="p">(</span><span class="n">complists</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">_exclusive</span><span class="p">),</span>
+    <span class="n">key</span><span class="o">=</span><span class="s2">"edges"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">comps</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">v</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="p">[]))</span>
+<span class="n">graphs</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">_make_cycle</span><span class="p">)</span>
+<span class="n">subsets</span> <span class="o">=</span> <span class="n">comps</span><span class="o">.</span><span class="n">flatmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">st</span><span class="o">.</span><span class="n">lists</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">sampled_from</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">unique</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<span class="n">reference_nodes</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">tuples</span><span class="p">(</span><span class="n">graphs</span><span class="o">.</span><span class="n">flatmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">st</span><span class="o">.</span><span class="n">sampled_from</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">nodes</span><span class="p">))),</span> <span class="n">pos_medium_floats</span><span class="p">)</span>
+<span class="n">kirchhoffs</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">builds</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">reference_node</span><span class="o">=</span><span class="n">z</span><span class="p">),</span> <span class="n">graphs</span><span class="p">,</span> <span class="n">subsets</span><span class="p">,</span> <span class="n">reference_nodes</span><span class="p">)</span>
+<span class="n">k_derivs</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">builds</span><span class="p">(</span>
+    <span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">KirchhoffWDerivatives</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">y</span><span class="p">,</span> <span class="n">reference_node</span><span class="o">=</span><span class="n">z</span><span class="p">),</span>
+    <span class="n">graphs</span><span class="p">,</span>
+    <span class="n">subsets</span><span class="p">,</span>
+    <span class="n">reference_nodes</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_kirchhoff_variable_names_are_strings">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_variable_names_are_strings">[docs]</a>
+<span class="nd">@given</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">one_of</span><span class="p">(</span><span class="n">kirchhoffs</span><span class="p">,</span> <span class="n">k_derivs</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_variable_names_are_strings</span><span class="p">(</span><span class="n">k</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="test_kvl_matrix_works_on_mock_graph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kvl_matrix_works_on_mock_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kvl_matrix_works_on_mock_graph</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+    <span class="n">expected_kvl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]])</span>
+    <span class="n">test_dp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="mf">1.5</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">_kvl</span> <span class="o">@</span> <span class="n">test_dp</span><span class="p">,</span> <span class="n">expected_kvl</span> <span class="o">@</span> <span class="n">test_dp</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kcl_matrix_works_on_mock_graph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kcl_matrix_works_on_mock_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kcl_matrix_works_on_mock_graph</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">J</span><span class="p">):</span>
+    <span class="n">expected_kcl</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]])</span>
+    <span class="n">test_mdot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">_kcl</span> <span class="o">@</span> <span class="n">test_mdot</span><span class="p">,</span> <span class="n">expected_kcl</span> <span class="o">@</span> <span class="n">test_mdot</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_indexing_works_on_mock_graph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_indexing_works_on_mock_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_indexing_works_on_mock_graph</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">J</span><span class="p">):</span>
+    <span class="n">J0</span><span class="p">,</span> <span class="n">J1</span> <span class="o">=</span> <span class="n">J</span>
+
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">J0</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">D</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">J1</span><span class="p">)</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">(</span><span class="n">C</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">E</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">)</span> <span class="o">==</span> <span class="n">to_str</span><span class="p">((</span><span class="n">J0</span><span class="p">,</span> <span class="n">J1</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="s2">"E"</span><span class="p">)</span> <span class="o">==</span> <span class="n">to_str</span><span class="p">((</span><span class="n">J0</span><span class="p">,</span> <span class="n">J1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="s2">"F"</span><span class="p">)</span> <span class="o">==</span> <span class="n">to_str</span><span class="p">((</span><span class="n">J1</span><span class="p">,</span> <span class="n">J0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">variables_by_type</span> <span class="o">==</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">abs_pressure</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_calculate_works_for_mock_graph">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_calculate_works_for_mock_graph">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_calculate_works_for_mock_graph</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">calculate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">pressure</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">A</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">B</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">C</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">D</span><span class="o">=-</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">E</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">F</span><span class="o">=</span><span class="mf">3.0</span><span class="p">))</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchoff_w_mdot2_accepts_a_graph_and_has_correct_length">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchoff_w_mdot2_accepts_a_graph_and_has_correct_length">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchoff_w_mdot2_accepts_a_graph_and_has_correct_length</span><span class="p">():</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">123</span><span class="p">,))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">345</span><span class="p">,))</span>
+    <span class="n">KD</span> <span class="o">=</span> <span class="n">KirchhoffWDerivatives</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">KD</span><span class="p">)</span> <span class="o">==</span> <span class="mi">4</span></div>
+
+
+
+<div class="viewcode-block" id="test_Kirchoff_kcl_matrix_fits_known_example_with_weights">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_Kirchoff_kcl_matrix_fits_known_example_with_weights">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_Kirchoff_kcl_matrix_fits_known_example_with_weights</span><span class="p">():</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">123</span><span class="p">,),</span> <span class="n">signify</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="mi">345</span><span class="p">,))</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">_kcl</span><span class="o">.</span><span class="n">toarray</span><span class="p">()</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="o">-</span><span class="mf">50.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">50.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">]]))</span></div>
+
+
+
+<div class="viewcode-block" id="test_Kirchoff_supplies_correct_absolute_pressures_for_one_example">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_Kirchoff_supplies_correct_absolute_pressures_for_one_example">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_Kirchoff_supplies_correct_absolute_pressures_for_one_example</span><span class="p">(</span><span class="n">mock_graph</span><span class="p">,</span> <span class="n">J</span><span class="p">):</span>
+    <span class="n">J0</span><span class="p">,</span> <span class="n">J1</span> <span class="o">=</span> <span class="n">J</span>
+    <span class="n">p0</span> <span class="o">=</span> <span class="mf">1.5</span>
+    <span class="n">abs_comps</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="s2">"F"</span><span class="p">)</span>
+    <span class="n">K</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">mock_graph</span><span class="p">,</span> <span class="o">*</span><span class="n">abs_comps</span><span class="p">,</span> <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">J0</span><span class="p">,</span> <span class="n">p0</span><span class="p">))</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">ref_node</span> <span class="ow">is</span> <span class="n">J0</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">ref_pressure</span> <span class="o">==</span> <span class="n">p0</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">)</span> <span class="o">==</span> <span class="mi">6</span>
+
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">abs_comps</span><span class="p">:</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"p_abs"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">c</span><span class="p">)</span> <span class="o">==</span> <span class="n">K</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="n">to_str</span><span class="p">((</span><span class="s2">"p_abs"</span><span class="p">,</span> <span class="n">c</span><span class="p">))]</span>
+
+    <span class="n">are_close</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">_abs_matrix</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">6</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]))</span>
+
+    <span class="c1"># noinspection SpellCheckingInspection</span>
+    <span class="n">comps</span> <span class="o">=</span> <span class="s2">"ABCDEF"</span>
+    <span class="n">dps</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">p0</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">dps</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">sum</span><span class="p">(</span><span class="n">dps</span><span class="p">[:</span><span class="mi">3</span><span class="p">])])</span>
+    <span class="n">res</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">calculate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">pressure</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">comps</span><span class="p">,</span> <span class="n">dps</span><span class="p">)))</span>
+    <span class="n">abs_pressures</span> <span class="o">=</span> <span class="n">res</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">edges_count</span> <span class="p">:]</span>
+    <span class="n">are_close</span><span class="p">(</span><span class="n">abs_pressures</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchoff_save_fits_known_value_for_one_example">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchoff_save_fits_known_value_for_one_example">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchoff_save_fits_known_value_for_one_example</span><span class="p">(</span><span class="n">K</span><span class="p">):</span>
+    <span class="k">assert</span> <span class="n">K</span><span class="o">.</span><span class="n">save</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span> <span class="o">==</span> <span class="p">{</span>
+        <span class="s2">"(J0 -&gt; J1, 0)"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">"(J0 -&gt; J1, 1)"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"(J1 -&gt; J0, 0)"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="n">triplets</span> <span class="o">=</span> <span class="n">st</span><span class="o">.</span><span class="n">tuples</span><span class="p">(</span><span class="n">pos_medium_floats</span><span class="p">,</span> <span class="n">pos_medium_floats</span><span class="p">,</span> <span class="n">pos_medium_floats</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_agr_of_kirchhoff_load_reverses_save_by_example">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_agr_of_kirchhoff_load_reverses_save_by_example">[docs]</a>
+<span class="nd">@given</span><span class="p">(</span><span class="n">triplets</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_agr_of_kirchhoff_load_reverses_save_by_example</span><span class="p">(</span><span class="n">K</span><span class="p">,</span> <span class="n">tpl</span><span class="p">):</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">tpl</span><span class="p">)),</span> <span class="n">tpl</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_inertia_loop_kirchhoff</span><span class="p">(</span><span class="n">constructor</span><span class="p">):</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.ideal.inertia</span><span class="w"> </span><span class="kn">import</span> <span class="n">Inertia</span>
+
+    <span class="n">inertia</span> <span class="o">=</span> <span class="n">Inertia</span><span class="p">(</span><span class="n">inertia</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Inertia"</span><span class="p">)</span>
+    <span class="n">J0</span><span class="p">,</span> <span class="n">J1</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J0"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J1"</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">J0</span><span class="p">,</span> <span class="n">J1</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="n">inertia</span><span class="p">,))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">J1</span><span class="p">,</span> <span class="n">J0</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"pump"</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="n">constructor</span><span class="p">(</span><span class="n">g</span><span class="p">),</span> <span class="n">inertia</span>
+
+
+<div class="viewcode-block" id="test_plain_kirchhoff_indices_rejects_unknown_variable_names">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_plain_kirchhoff_indices_rejects_unknown_variable_names">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_plain_kirchhoff_indices_rejects_unknown_variable_names</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A plain Kirchhoff serves only 'mdot'; a misrouted 'mdot2' or a typo must raise</span>
+<span class="sd">    KeyError instead of resolving to the mdot place."""</span>
+    <span class="n">k</span><span class="p">,</span> <span class="n">inertia</span> <span class="o">=</span> <span class="n">_inertia_loop_kirchhoff</span><span class="p">(</span><span class="n">Kirchhoff</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">),</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+        <span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot2"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+        <span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"typo"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_w_derivatives_serves_mdot2_and_rejects_unknown_names">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_w_derivatives_serves_mdot2_and_rejects_unknown_names">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_w_derivatives_serves_mdot2_and_rejects_unknown_names</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""KirchhoffWDerivatives serves 'mdot2' and rejects unknown names."""</span>
+    <span class="n">k</span><span class="p">,</span> <span class="n">inertia</span> <span class="o">=</span> <span class="n">_inertia_loop_kirchhoff</span><span class="p">(</span><span class="n">KirchhoffWDerivatives</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot2"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">)</span> <span class="o">!=</span> <span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">):</span>
+        <span class="n">k</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"typo"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">inertia</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_rejects_a_flow_graph_that_is_not_strongly_connected">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_rejects_a_flow_graph_that_is_not_strongly_connected">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_rejects_a_flow_graph_that_is_not_strongly_connected</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A flow graph must be a closed loop network: a node that cannot be reached from</span>
+<span class="sd">    every other node along the edge orientations is rejected at construction."""</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"P1"</span><span class="p">,))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"strongly connected"</span><span class="p">):</span>
+        <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_rejects_a_self_loop_edge">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_rejects_a_self_loop_edge">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_rejects_a_self_loop_edge</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A single edge closed on one junction generates no KVL row and a broken junction</span>
+<span class="sd">    mdot map; Kirchhoff must reject it with a clear message rather than crash later."""</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"J"</span><span class="p">,</span> <span class="s2">"J"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"pump"</span><span class="p">,</span> <span class="s2">"res"</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"[Ss]elf-loop"</span><span class="p">):</span>
+        <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoff_rejects_a_reused_component">
+<a class="viewcode-back" href="../../tests.test_calculations.html#test_calculations.test_kirchhoff.test_kirchhoff_rejects_a_reused_component">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoff_rejects_a_reused_component</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Reusing one component object on two edges collapses the component index map,</span>
+<span class="sd">    causing a bare IndexError or silent mdot aliasing; reject it clearly."""</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"XYZW"</span><span class="p">,))</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"XYZW"</span><span class="p">,</span> <span class="s2">"C2"</span><span class="p">))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"XYZW"</span><span class="p">):</span>
+        <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+
+    <span class="n">g2</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g2</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"XYZW"</span><span class="p">,</span> <span class="s2">"XYZW"</span><span class="p">))</span>
+    <span class="n">g2</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">"B"</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">comps</span><span class="o">=</span><span class="p">(</span><span class="s2">"C2"</span><span class="p">,))</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"XYZW"</span><span class="p">):</span>
+        <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g2</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 15, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,344 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "3331195c",
+   "metadata": {},
+   "source": [
+    "# One Pump, a Stuck Flapper, and How Far to Trust the Numbers\n",
+    "\n",
+    "The previous example tripped both pumps of the pool reactor and followed it into natural circulation through the flapper. This page asks three further questions of the same loop:\n",
+    "\n",
+    "1. What happens when only one pump trips?\n",
+    "2. What happens when both trip and the flapper fails to open?\n",
+    "3. Of the times and temperatures these runs report, which converge with the solver tolerance, the output grid and the number of axial cells, and to how many digits can they be quoted?"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bfd90085",
+   "metadata": {},
+   "source": [
+    "![The two variations: one pump lost with leg B shut by its check valve, and the flapper stuck shut](_static/lofa/lofa-variants.svg)\n",
+    "\n",
+    "*The two variations: one leg shut by its check valve; the flapper that cannot open.*"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "dac35b73",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import time\n",
+    "\n",
+    "import matplotlib.pyplot as plt\n",
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "from matplotlib import rc\n",
+    "\n",
+    "rc(\"font\", family=\"serif\", size=15)\n",
+    "\n",
+    "from stream.examples.lofa import CORE, Params, both_pumps, one_pump, operating_point, stuck_flapper\n",
+    "from stream.examples.lofa.scenarios import flows\n",
+    "from stream.substances import light_water"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "196c285e",
+   "metadata": {},
+   "source": [
+    "## One pump trips\n",
+    "\n",
+    "`one_pump` starts from the same operating point, ramps the head of pump B to zero at 10 s over half a second, and keeps pump A at its solved head for half an hour, at 901 output times, one every 2 s. Its `Record` has the fields of the previous page."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a37f07c6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "p = Params()\n",
+    "sol, rec = one_pump(p)\n",
+    "leg = rec.mdot_total / 2\n",
+    "print(f\"status:                           {rec.status}\")\n",
+    "print(f\"reactor trip:                     {rec.t_trip:.2f} s\")\n",
+    "print(f\"check valve B shut:               {rec.t_valve_B:.0f} s\")\n",
+    "print(f\"flapper opens:                    {rec.t_open}\")\n",
+    "print(f\"leg A at the end, over its nominal: {rec.final_leg_A / leg:.3f}\")\n",
+    "print(f\"riser at the end, over nominal:   {(rec.final_leg_A + rec.final_leg_B) / rec.mdot_total:.3f}\")\n",
+    "print(f\"leg B at the end:                 {rec.final_leg_B:.2f} kg/s, {100 * rec.final_leg_B / leg:.2f} % of its nominal\")\n",
+    "print(f\"peak coolant temperature:         {rec.peak_max:.2f} °C\")\n",
+    "print(f\"margin to saturation:             {rec.margin:.2f} K\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "98eb37ab",
+   "metadata": {},
+   "source": [
+    "Pump A keeps its head, but the parts of the loop the two legs share, the core, the pool and the heat exchanger, now carry less flow and lose less pressure, so more of that head is left for leg A, which speeds up: at the end it carries about 1.34 times its nominal flow. The loop as a whole settles at about two thirds of its nominal flow. That is below the low-flow setpoint of 85 %, so the reactor trips, at about 15.7 s, some three seconds later than when both pumps trip. It is far above the 30 % at which the flapper opens, and the flapper never does.\n",
+    "\n",
+    "Leg B's flow runs down and turns backward: pump A pushes water back through it, and its check valve holds that back to a leak. The valve counts as shut, its leg below 1 % of the nominal leg flow, at the 40 s sample, and the leak at the end is about 1.17 kg/s, about 0.97 % of the leg's nominal flow, flowing backward. With two thirds of the flow and the power down to decay heat, the coolant is never in danger: its hottest cell peaks at about 64 °C, about 53 K below saturation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "90c419fb",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "agr, K, refs, _ = operating_point(p)\n",
+    "df = flows(agr, K, refs, sol)\n",
+    "df[\"core\"] = sum(CORE[k].plates * df[k] for k in CORE)\n",
+    "\n",
+    "\n",
+    "def mark(ax, events):\n",
+    "    for (label, t), style in zip(events.items(), [\"-\", \"--\", \":\", \"-.\"]):\n",
+    "        ax.axvline(t, color=\"gray\", linewidth=1, linestyle=style, label=label)\n",
+    "\n",
+    "\n",
+    "fig, ax = plt.subplots(figsize=(9, 6))\n",
+    "ax.plot(df.t, df.core, label=\"core, all plates\")\n",
+    "ax.plot(df.t, df.A, label=\"pump leg A, running\")\n",
+    "ax.plot(df.t, df.B, label=\"pump leg B, tripped\")\n",
+    "mark(ax, {\"pump B trips\": p.t_pumps, \"reactor trip\": rec.t_trip})\n",
+    "ax.set_xscale(\"symlog\", linthresh=10)\n",
+    "ax.set_xlim(0, sol.time[-1])\n",
+    "ax.set_xlabel(\"Time [s]\")\n",
+    "ax.set_ylabel(\"Mass flow [kg/s]\\npositive is the forced direction\")\n",
+    "ax.legend(fontsize=11)\n",
+    "ax.grid()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "59a41a18",
+   "metadata": {},
+   "source": [
+    "The thin vertical lines mark the events named in the legend, here and on the next figure; the time axis is linear over the first 10 s and logarithmic after. While leg B coasts down, the core flow falls with it and leg A slowly gains. When leg B's flow reaches zero and its check valve shuts, near 40 s, the core flow stops falling and recovers a little, and from then on the core and leg A carry the same water, less the leak. Within about a minute the loop has found its new state, and it holds it for the rest of the half hour.\n",
+    "\n",
+    "## A stuck flapper\n",
+    "\n",
+    "`stuck_flapper` trips both pumps as on the previous page, with the flapper held shut. Without it there is no path for natural circulation through the pool: the core can only push water around among its own channels and backward through the check valves' leak. The decay heat then warms the hot channel's water until it reaches saturation. Past that point the water boils in bulk and the flow is two-phase, which this model does not represent, so the channel is built to stop the run there, with a named error, rather than integrate a state it cannot describe. `stuck_flapper` catches that error and returns the trajectory up to the stop, with the status `saturation` and the error's message in the record."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "79481476",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "sol_s, rec_s = stuck_flapper(p)\n",
+    "print(f\"status:       {rec_s.status}\")\n",
+    "print(f\"stopped at:   {rec_s.t_last:.1f} s\")\n",
+    "print(f\"reactor trip: {rec_s.t_trip:.2f} s\")\n",
+    "print(f\"flapper opens: {rec_s.t_open}\")\n",
+    "print(f\"hot group reverses: {rec_s.t_rev_hot:.0f} s, normal group: {rec_s.t_rev_normal:.0f} s, low group: {rec_s.t_rev_low}\")\n",
+    "print(f\"output times kept: {len(sol_s.time)}, last {sol_s.time[-1]:.1f} s\")\n",
+    "at_stop = flows(agr, K, refs, sol_s).iloc[-1]\n",
+    "print(\"flows at the stop [kg/s]:\", \", \".join(f\"{k} {at_stop[k]:.4f}\" for k in [\"hot\", \"normal\", \"low\", \"bypass\", \"A\", \"B\"]))\n",
+    "print()\n",
+    "print(rec_s.error)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f72a08f8",
+   "metadata": {},
+   "source": [
+    "This is the outcome the case is meant to produce. The run stops at about 409 s, and the message says where: the channel `HotChannel`, cell 1 of its ten, counted from 0 at the core top, at about 117.07 °C, the saturation temperature at that cell's pressure. The reactor tripped at about 12.49 s, as with the flapper free, since the two runs are the same until the flapper would have opened. The hot group then reverses at about 292 s and the normal group at about 342 s, while the low group never does: with no path to the pool but the check valves' leak, the core recirculates within itself, and that internal loop does not carry the decay heat away. The flows at the stop show it, in the sign of the flow figures, positive downward: the hot and normal plates carry water up, the low plates and the bypass carry it down, and both pump legs leak backward through their check valves. The water leaving the hot channel upward is the hottest, which is why the cell that saturates is near the core top. `sol_s` holds the trajectory up to the stop, 2 s apart, with the stop time added as its last point."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f28bcd64",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "T_sat = float(light_water.sat_temperature(refs[\"p_ref\"]))\n",
+    "T_hot = agr.at_times(sol_s, refs[\"channels\"][\"hot\"], \"T_cool\").max(axis=1)\n",
+    "print(f\"saturation temperature at the core top: {T_sat:.2f} °C\")\n",
+    "print(f\"hottest coolant at the stop:              {T_hot[-1]:.2f} °C\")\n",
+    "print(f\"margin in the record:                     {rec_s.margin:.2f} K\")\n",
+    "fig, ax = plt.subplots(figsize=(9, 6))\n",
+    "ax.plot(sol_s.time, T_hot, label=\"hot channel, hottest cell\")\n",
+    "ax.axhline(T_sat, color=\"black\", linewidth=1, label=\"saturation at the core top\")\n",
+    "mark(ax, {\"pumps trip\": p.t_pumps, \"reactor trip\": rec_s.t_trip, \"hot group reverses\": rec_s.t_rev_hot, \"normal group reverses\": rec_s.t_rev_normal})\n",
+    "ax.set_xlabel(\"Time [s]\")\n",
+    "ax.set_ylabel(\"Coolant temperature [°C]\")\n",
+    "ax.legend(fontsize=11)\n",
+    "ax.grid()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "ce2b41bb",
+   "metadata": {},
+   "source": [
+    "The hot channel's coolant warms briefly as the flow falls at full power, drops sharply when the rods go in, and then warms steadily: the decay heat is no longer carried away. Each reversal adds a step. When the hot group reverses, its water stands still for a moment while the plates keep heating it, and the hottest cell jumps; it climbs again after the normal group reverses, dips once more, and from there it climbs to saturation. The curve ends about 0.2 K above the horizontal line, as the record's margin of about -0.23 K says: the line is the saturation temperature at the pressure at the core top, the stop uses the pressure at the cell, which is a little higher."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b1c470d9",
+   "metadata": {},
+   "source": [
+    "## How many cells along the plate\n",
+    "\n",
+    "Each channel and each plate is cut into cells along its 0.7 m, ten by default; `Params(axial_cells=...)` sets the count for the whole core. The peak coolant temperature the record reports is the hottest cell's temperature, and a cell's temperature is an average over its length. At the reversal the hot channel's water nearly stops while the plates keep heating it, and a hot front builds along the channel; ten cells of 7 cm average that front over a long stretch, and finer cells resolve more of it. The cell below runs the first five minutes of the both-pumps case at 5, 10, 20 and 40 cells, at the default tolerance and on the 2 s grid, and times each run. At forty cells NumPy warns during the solve of a division by zero in the friction law's viscosity ratio and of an invalid value in a division of the laminar heat-transfer law; the run completes, and the cell silences both warnings."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "cb955f7e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rows = []\n",
+    "for cells in (5, 10, 20, 40):\n",
+    "    start = time.perf_counter()\n",
+    "    with np.errstate(divide=\"ignore\", invalid=\"ignore\"):\n",
+    "        _, r = both_pumps(Params(axial_cells=cells), t_end=300.0, n=151)\n",
+    "    rows.append({\"cells\": cells, \"status\": r.status, \"peak_max\": r.peak_max, \"margin\": r.margin, \"t_rev_hot\": r.t_rev_hot, \"wall s\": time.perf_counter() - start})\n",
+    "by_cells = pd.DataFrame(rows).set_index(\"cells\")\n",
+    "print(by_cells.round({\"peak_max\": 2, \"margin\": 2, \"t_rev_hot\": 0, \"wall s\": 0}).to_string())\n",
+    "print()\n",
+    "drops = -by_cells.margin.diff().dropna()\n",
+    "ratios = (drops / drops.shift()).dropna()\n",
+    "print(\"margin lost per doubling [K]: \", \", \".join(f\"{d:.2f}\" for d in drops))\n",
+    "print(\"ratio of successive losses:   \", \", \".join(f\"{q:.2f}\" for q in ratios))\n",
+    "q = ratios.iloc[-1]\n",
+    "print(f\"margin if the losses keep shrinking by {q:.2f}: {by_cells.margin.iloc[-1] - drops.iloc[-1] * q / (1 - q):.1f} K\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5aac3c76",
+   "metadata": {},
+   "source": [
+    "Every run completes, the forty-cell one included. The margin falls with each refinement, from about 19.8 K at five cells to about 15.7 K at ten, 13.5 K at twenty and 12.3 K at forty, as the peak climbs from about 97.1 °C to about 104.5 °C. Each doubling of the cell count costs less margin than the one before, about 4.1, 2.3 and 1.2 K, each loss about 0.55 and then about 0.51 of the previous one. If the losses kept shrinking by that ratio, the margin would settle at roughly 11 K; three doublings are too few to pin that limit any closer. The hot group's reversal moves too, from about 190 s at five cells to about 192 s at ten, 194 s at twenty and 196 s at forty, each read off the 2 s grid. The ten-cell numbers the other pages quote, a peak of about 101.1 °C and a margin of about 16 K, are therefore on the optimistic side by a few kelvin. Ten cells stay the default because finer grids cost time: the forty-cell run takes nearly three minutes, against about twenty seconds at ten.\n",
+    "\n",
+    "## How far to trust the event times\n",
+    "\n",
+    "Every number on these pages comes from one solver tolerance, a relative `1e-4`, and one output grid. The cell below reruns the first five minutes of the both-pumps case at two tolerances, `1e-4` and `1e-5`, and two output grids, 151 and 601 times, a step of 2 s and 0.5 s. Two kinds of number should behave differently. The reactor trip and the flapper opening are events the solver locates in time, so they should not depend on the output grid, and should move with the tolerance only by the size of the solver's error. A reversal time is the first output time past the crossing and the peak coolant temperature is the largest sampled value, so both are read off the grid."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "215391c5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "rows = []\n",
+    "sols = {}\n",
+    "for a, n in ((1e-4, 151), (1e-4, 601), (1e-5, 151), (1e-5, 601)):\n",
+    "    sol, r = both_pumps(Params(), t_end=300.0, n=n, atol_rel=a, rtol=a)\n",
+    "    sols[(a, n)] = sol\n",
+    "    rows.append({\"tolerance\": a, \"outputs\": n, \"status\": r.status, \"t_trip\": r.t_trip, \"t_open\": r.t_open, \"t_rev_hot\": r.t_rev_hot, \"peak_max\": r.peak_max})\n",
+    "table = pd.DataFrame(rows).set_index([\"tolerance\", \"outputs\"])\n",
+    "print(table.round({\"t_trip\": 4, \"t_open\": 4, \"t_rev_hot\": 1, \"peak_max\": 3}).to_string())\n",
+    "print()\n",
+    "cols = [\"t_trip\", \"t_open\", \"t_rev_hot\", \"peak_max\"]\n",
+    "grid = table[cols].groupby(level=\"tolerance\").agg(lambda s: s.max() - s.min()).max()\n",
+    "tol = table[cols].groupby(level=\"outputs\").agg(lambda s: s.max() - s.min()).max()\n",
+    "print(pd.DataFrame({\"between grids\": grid, \"between tolerances\": tol}).map(lambda v: f\"{v:.2g}\").to_string())\n",
+    "print()\n",
+    "print(f\"margin to saturation, smallest: {T_sat - table.peak_max.max():.2f} K\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8a2460d3",
+   "metadata": {},
+   "source": [
+    "The second table gives the largest difference in each column, between the two grids at one tolerance and between the two tolerances on one grid; times are in seconds and the peak in °C.\n",
+    "\n",
+    "The trip time is the same on both grids, to well under a nanosecond, and moves by about 2.5 ms when the tolerance is tightened tenfold. The opening time agrees between grids to well under a millisecond, about 0.3 ms at most, and also moves by about 2.5 ms with the tolerance. Both are what a located event should be: insensitive to where the output is sampled, and moving with the tolerance by an amount that is the solver's error at the looser one.\n",
+    "\n",
+    "The hot group's reversal time is read off the grid and ignores the tolerance. Here both grids give 192 s, a time that lies on both: the 2 s grid places the crossing in the 2 s before it, and the 0.5 s grid narrows that to the last half second. A finer grid only narrows the interval in which the flow crosses. The peak coolant temperature moves by less than a hundredth of a degree, about 0.009 °C between grids and about 0.006 °C between tolerances, both negligible against a margin to saturation of about 16 K. The sampling is not all that moves it: every time of the 151-point grid is also on the 601-point grid, so on one trajectory the finer grid could only find a higher maximum, yet at `1e-4` it finds a lower one. At this level the two grids' runs are not quite the same trajectory, and their differences are of the size of the solver's tolerance."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "83009235",
+   "metadata": {},
+   "source": [
+    "## When a result looks wrong\n",
+    "\n",
+    "On the both-pumps page the bypass group's flow swings hard for about half a minute as the heated groups finish reversing, and the first reaction to a curve like that is to suspect the model. Three questions settle it, in this order.\n",
+    "\n",
+    "1. **Is it the solver?** Run the same case at another tolerance and on another output grid and overlay the curves: if the swing moves or shrinks, it is numerical; if it is the same curve, it is in the equations. The four runs of the previous section are exactly that, and the plot below overlays their bypass flow from 258 s to the end of the runs at 300 s. The 151-point grid samples every 2 s and the 601-point grid every 0.5 s, so the coarse runs draw the swing as a sparse polyline; the finer grid is in the picture to show the shape between their points. The plot shows the four runs tracing the same swing: the same period, amplitude and decay at both tolerances and on both grids. Where the curves part at all it is at the turning points: the coarse runs cut the corners between their samples, and the two fine-grid runs, one at each tolerance, lie almost on top of each other and separate only slightly at the crests. That is the signature to look for: the swing itself does not change, so it is in the equations, and what differs between the runs is the sampling and the solver's error at the looser tolerance. [The both-pumps page](LOFABothPumpsTrip.ipynb) shows the other half of the same test, running tighter and watching what disappears: there the swing's tail past about 300 s and a slow wobble near 1100 s vanish at a tenfold tighter tolerance while the swing itself does not, so the tail was the solver's error and the swing is in the equations.\n",
+    "2. **What is the mechanism?** Find the physical mode that would produce the shape and check it against a hand estimate. [The both-pumps page](LOFABothPumpsTrip.ipynb) does this for the swing: it is the U-tube mode of the bypass column, with the spring set by the density difference between hot water above and cold below and the mass by the channel's inertance, and the estimate gets the period, about 11 s against about 10 s observed, to within a second.\n",
+    "3. **Does it matter?** Ask what the feature can do to the quantities you quote. Here the swing is a few hundredths of a kilogram per second per plate in a group that carries no power, the both-pumps page puts its effect on the hot coolant's peak at about 0.2 K, and the cell-count study above moves the margin by kelvins, which is where the attention belongs."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "228627ab",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots(figsize=(9, 6))\n",
+    "for (a, n), s in sols.items():\n",
+    "    df_s = flows(agr, K, refs, s)\n",
+    "    w = df_s.t >= 258.0\n",
+    "    ax.plot(df_s.t[w], df_s.bypass[w], linestyle=\"-\" if a == 1e-4 else \"--\", label=f\"tol 1e{round(np.log10(a))}, {n} points\")\n",
+    "ax.set_xlabel(\"Time [s]\")\n",
+    "ax.set_ylabel(\"Bypass flow per plate [kg/s]\")\n",
+    "ax.legend(fontsize=11)\n",
+    "ax.grid()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e221e1da",
+   "metadata": {},
+   "source": [
+    "## What to quote\n",
+    "\n",
+    "- **Trip and flapper opening:** to the hundredth of a second, about 12.49 s and about 38.89 s. The third decimal moves with the tolerance.\n",
+    "- **Reversal and valve times:** to the output step, as the first output time past the crossing; on the 2 s grid the hot group reverses within the 2 s before about 192 s.\n",
+    "- **Peak coolant temperature:** to a tenth of a degree on a given axial grid, about 101.1 °C over these five minutes at ten cells. A peak that is sharp against the output step needs a finer output grid before even that digit holds.\n",
+    "- **Margin to saturation:** to a few kelvin, and always with its cell count: about 16 K at ten axial cells, which is on the optimistic side of the refined values above.\n",
+    "- **The stuck-flapper stop:** an event the solver locates, like the trip, but this page has not repeated it at a second tolerance, so quote it to the second, about 409 s.\n",
+    "\n",
+    "What the variations add to the previous page is qualitative and does not hang on any digit: with one pump lost the loop keeps two thirds of its flow, the reactor trips and the flapper stays shut; with the flapper stuck, the core has no path to the pool but the check valves' leak, and the hot channel reaches bulk saturation within about seven minutes."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "name": "python3",
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.14.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

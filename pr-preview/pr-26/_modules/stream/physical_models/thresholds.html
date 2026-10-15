@@ -1,0 +1,648 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.thresholds &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.thresholds</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.thresholds</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">Reactor Safety Thermohydraulic Thresholds</span>
+<span class="sd">=========================================</span>
+<span class="sd">Ensuring the reactor's safety is top priority.</span>
+<span class="sd">Thus, certain situations are to be avoided during normal operation and accidents.</span>
+<span class="sd">In the case of thermohydraulics, several conditions are telltale signs of incoming doom.</span>
+<span class="sd">Within this module different TH thresholds are contained, allowing for post-run analysis of their appearance:</span>
+
+<span class="sd">.. list-table::</span>
+<span class="sd">    :name: TH limits</span>
+<span class="sd">    :header-rows: 1</span>
+<span class="sd">    :widths: 30, 50</span>
+
+<span class="sd">    * - Condition / Threshold</span>
+<span class="sd">      - Implemented Correlations</span>
+<span class="sd">    * - **ONB** - Onset of Nucleate Boiling</span>
+<span class="sd">      - :func:`Bergles Rosenhow &lt;~stream.physical_models.Bergles_Rohsenow_T_ONB&gt;` [#BR]_</span>
+<span class="sd">    * - **OFI** - Onset of Flow Instability</span>
+<span class="sd">      - :func:`Whittle Forgan &lt;Whittle_Forgan_OFI&gt;` [#WF]_</span>
+<span class="sd">    * - **OSV** - Onset of Significant Void</span>
+<span class="sd">      - :func:`Saha Zuber &lt;Saha_Zuber_OSV_computed_bulk&gt;` [#SahaZuber]_,</span>
+<span class="sd">        :func:`Saha Zuber (Deprecated) &lt;Saha_Zuber_OSV&gt;` [#SahaZuber]_,</span>
+<span class="sd">    * - **CHF** - Critical Heat Flux</span>
+<span class="sd">      - :func:`Sudo Kaminaga &lt;Sudo_Kaminaga_CHF&gt;` [#Sudo]_,</span>
+<span class="sd">        :func:`Mirshak &lt;Mirshak_CHF&gt;` [#Mirshak]_,</span>
+<span class="sd">        :func:`Fabrega &lt;Fabrega_CHF&gt;` [#Fabrega]_,</span>
+<span class="sd">    * - **BP** - Boiling Power</span>
+<span class="sd">      - :func:`Boiling Power &lt;boiling_power&gt;` [#BPR]_</span>
+
+<span class="sd">References</span>
+<span class="sd">----------</span>
+<span class="sd">.. [#SahaZuber] Convective Boiling and Condensation (3rd edition),</span>
+<span class="sd">    Collier and Thome, p. 226-227.</span>
+<span class="sd">.. [#BR] A. E. Rohsenow, W. M. Bergles, "The Determination of Forced Convection</span>
+<span class="sd">    Surface Boiling Heat Transfer", Journal of Heat Transfer, vol. C86, p. 385,</span>
+<span class="sd">    1964.</span>
+<span class="sd">.. [#WF] R. H. Whittle and R. Forgan, "A correlation for the minima in the</span>
+<span class="sd">    pressure drop versus flow-rate curves for sub-cooled water flowing in the</span>
+<span class="sd">    narrow heated channels," Nuclear Engineering and Design, vol. 6, pp. 89-99,</span>
+<span class="sd">    1967.</span>
+<span class="sd">.. [#Mirshak] S. Mirshak, W. S. Durant and R. H. Towell,</span>
+<span class="sd">    "Heat Flux at Burnout". E. I. du Pont de Nemours &amp; Co., Aiken,</span>
+<span class="sd">    South Carolina, 1959.</span>
+<span class="sd">.. [#Fabrega] S. Fabréga, "Thermal Calculations for Water Cooled Research</span>
+<span class="sd">    Reactors", (translated from French by J. Rodd), AAEC, Orig, Grenoble,</span>
+<span class="sd">    France, 1971.</span>
+<span class="sd">.. [#FabregaFrench] S. Fabréga, "Le Calcul Thermique Des Reacteurs De Recherche</span>
+<span class="sd">    Refroidis Par Eau", Centre d'Estudes Nucléaires de Grenoble, CEA-R-4114, 1971.</span>
+<span class="sd">.. [#Sudo] M. Kaminaga, K. Yamamoto, Y. Sudo, "Improvement of Critical Heat</span>
+<span class="sd">    Flux Correlation for Research Reactors using Plate-Type Fuel", Journal of</span>
+<span class="sd">    Nuclear Science and technology, vol. 35, no. 12, pp. 943-951, 1998.</span>
+<span class="sd">.. [#BPR] CONVEC v 3.40, section 7.2.4, page 20, Revision II</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.integrate</span><span class="w"> </span><span class="kn">import</span> <span class="n">quad</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.dimensionless</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">Liquid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">JPerKgK</span><span class="p">,</span>
+    <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">MPerS</span><span class="p">,</span>
+    <span class="n">MPerS2</span><span class="p">,</span>
+    <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">Value</span><span class="p">,</span>
+    <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">WPerM2</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">g</span> <span class="k">as</span> <span class="n">gravity</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">directed</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Saha_Zuber_OSV"</span><span class="p">,</span>
+    <span class="s2">"Saha_Zuber_OSV_computed_bulk"</span><span class="p">,</span>
+    <span class="s2">"Fabrega_CHF"</span><span class="p">,</span>
+    <span class="s2">"Mirshak_CHF"</span><span class="p">,</span>
+    <span class="s2">"Sudo_Kaminaga_CHF"</span><span class="p">,</span>
+    <span class="s2">"Whittle_Forgan_OFI"</span><span class="p">,</span>
+    <span class="s2">"boiling_power"</span><span class="p">,</span>
+    <span class="s2">"saturation_margin"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="saturation_margin">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.saturation_margin">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">saturation_margin</span><span class="p">(</span><span class="n">T_bulk</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_sat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Per-cell subcooling margin :math:`T_\text{sat} - T_\text{bulk}`.</span>
+
+<span class="sd">    Strictly positive while the bulk coolant is subcooled, zero at bulk saturation.</span>
+<span class="sd">    Bulk saturation is the validity boundary of STREAM's single-phase (with</span>
+<span class="sd">    subcooled boiling) channel model: beyond it the flow is two-phase, which STREAM</span>
+<span class="sd">    does not model.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; float(saturation_margin(T_bulk=90.0, T_sat=100.0))</span>
+<span class="sd">    10.0</span>
+<span class="sd">    &gt;&gt;&gt; float(saturation_margin(T_bulk=105.0, T_sat=100.0))</span>
+<span class="sd">    -5.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T_sat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T_bulk</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Saha_Zuber_OSV">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Saha_Zuber_OSV">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Saha_Zuber_OSV</span><span class="p">(</span><span class="n">T_bulk</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span> <span class="n">u</span><span class="p">:</span> <span class="n">MPerS</span><span class="p">,</span> <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Calculates the minimal q'' heat flux at which OSV occurs, according to Saha &amp; Zuber (1974) [#SahaZuber]_:</span>
+
+<span class="sd">    for :math:`\text{Pe} &lt; 70,000`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        T_\text{sat} - T_\text{bulk}</span>
+<span class="sd">        = 0.0022\frac{q''_\text{OSV}D_h}{k_\text{bulk}}</span>
+
+<span class="sd">    for :math:`\text{Pe} &gt; 70,000`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        T_\text{sat} - T_\text{bulk}</span>
+<span class="sd">        = 153.8 \frac{q''_\text{OSV}}{c_{p, \text{bulk}}G}</span>
+
+<span class="sd">    .. danger::</span>
+<span class="sd">        This method assumes that the coolant temperature does not change when the flux changes.</span>
+<span class="sd">        This is not what people usually mean when they use OSV.</span>
+<span class="sd">        See :func:`Saha_Zuber_OSV_computed_bulk` for what you should probably use.</span>
+<span class="sd">        This function is deprecated as the main usage and may change its name to reflect that in the future.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_bulk: Celsius</span>
+<span class="sd">        Coolant bulk temperature.</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Coolant properties at T_bulk and appropriate pressure.</span>
+<span class="sd">    u: MPerS</span>
+<span class="sd">        Coolant flow velocity.</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q'': WPerM2</span>
+<span class="sd">        OSV (Onset of Significant Void) heat flux.</span>
+
+<span class="sd">    """</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">sat_temperature</span> <span class="o">-</span> <span class="n">T_bulk</span>
+    <span class="n">pe</span> <span class="o">=</span> <span class="n">Pe</span><span class="p">(</span>
+        <span class="n">rho</span><span class="o">=</span><span class="p">(</span><span class="n">rho</span> <span class="o">:=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">density</span><span class="p">),</span>
+        <span class="n">v</span><span class="o">=</span><span class="n">u</span><span class="p">,</span>
+        <span class="n">L</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span>
+        <span class="n">cp</span><span class="o">=</span><span class="p">(</span><span class="n">cp</span> <span class="o">:=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">),</span>
+        <span class="n">k</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">:=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+    <span class="n">Nu_c</span> <span class="o">=</span> <span class="mi">455</span>
+    <span class="n">St_c</span> <span class="o">=</span> <span class="mf">0.0065</span>
+    <span class="k">return</span> <span class="n">dT</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">/</span> <span class="n">Dh</span> <span class="o">*</span> <span class="n">Nu_c</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&lt;</span> <span class="mf">7e4</span><span class="p">)</span> <span class="o">+</span> <span class="n">cp</span> <span class="o">*</span> <span class="n">G</span> <span class="o">*</span> <span class="n">St_c</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&gt;</span> <span class="mf">7e4</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="Saha_Zuber_OSV_computed_bulk">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Saha_Zuber_OSV_computed_bulk">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Saha_Zuber_OSV_computed_bulk</span><span class="p">(</span>
+    <span class="n">T_inlet</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">area</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">heated_perimeter</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">flux_shape</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span>
+    <span class="n">dz</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">flux_enworse</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Calculates the minimal q'' heat flux at which OSV occurs, according to</span>
+<span class="sd">    Saha &amp; Zuber (1974) [#SahaZuber]_ (see :func:`Saha_Zuber_OSV`), but the bulk temperature is</span>
+<span class="sd">    computed as though the flux through the channel is indeed :math:`q''_{OSV}`.</span>
+
+<span class="sd">    Saha &amp; Zuber's correlation may be written as:</span>
+
+<span class="sd">    .. math:: T_\text{sat} - T_\text{bulk} =  \frac{q''_{OSV}}{X}</span>
+
+<span class="sd">    Where :math:`X` is, for :math:`\text{Pe} &lt; 70,000`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        X = \frac{\text{Nu}_c}{\text{Pe}}Gc_p = \frac{k}{D_h}\text{Nu}_c</span>
+
+<span class="sd">    for :math:`\text{Pe} &gt; 70,000`:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        X = \text{St}_c G c_p</span>
+
+<span class="sd">    and :math:`\text{St}_c = 0.0065, \text{Nu}_c = 455`.</span>
+
+<span class="sd">    Assuming :math:`q''(z)_{OSV} = \alpha q''(z)`, and the flux is given for the</span>
+<span class="sd">    entire ``heated_perimeter`` (:math:`H_p`):</span>
+
+<span class="sd">    .. math:: T_\text{bulk} = T_{in} + \frac{H_p}{\dot{m}c_p}\alpha \int^z q'' dz'</span>
+
+<span class="sd">    meaning:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">     \alpha = \frac{q''_{OSV}}{q''}</span>
+<span class="sd">     = \frac{T_\text{sat} - T_{in}}{\frac{q''}{X} + \frac{H_p}{\dot{m}c_p}\int^z q'' dz'}</span>
+
+<span class="sd">    and finally, :math:`q''_{OSV}` is independent of the normalization of :math:`q''`:</span>
+
+<span class="sd">    .. math:: q''_{OSV}</span>
+<span class="sd">     = \frac{X(T_\text{sat} - T_{in})}{1 +</span>
+<span class="sd">     \frac{XH_p}{\dot{m}c_p}\frac{\int^z q'' dz'}{q''(z)}}</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_inlet: Celsius</span>
+<span class="sd">        Coolant bulk temperature.</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Coolant properties at T_bulk and appropriate pressure.</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass flow rate</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter</span>
+<span class="sd">    area: Meter2</span>
+<span class="sd">        Flow area</span>
+<span class="sd">    heated_perimeter: Meter</span>
+<span class="sd">        Heated perimeter</span>
+<span class="sd">    flux_shape: Value</span>
+<span class="sd">        A one dimensional heat flux distribution, which can be freely normalized.</span>
+<span class="sd">    dz: Meter</span>
+<span class="sd">        Axial cell lengths</span>
+<span class="sd">    flux_enworse: float</span>
+<span class="sd">        Factor to make the flux worse by. This is for local flux disturbance effects like fuel homogeneity.</span>
+
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q'': WPerM2</span>
+<span class="sd">        OSV (Onset of Significant Void) heat flux.</span>
+
+<span class="sd">    """</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">directed</span><span class="p">(</span><span class="n">coolant</span><span class="o">.</span><span class="n">sat_temperature</span> <span class="o">-</span> <span class="n">T_inlet</span><span class="p">,</span> <span class="n">mdot</span><span class="p">)</span>
+    <span class="n">rho</span> <span class="o">=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">density</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span> <span class="o">/</span> <span class="n">area</span><span class="p">)</span>
+    <span class="n">u</span> <span class="o">=</span> <span class="n">G</span> <span class="o">/</span> <span class="n">rho</span>
+    <span class="n">pe</span> <span class="o">=</span> <span class="n">Pe</span><span class="p">(</span>
+        <span class="n">rho</span><span class="o">=</span><span class="n">rho</span><span class="p">,</span>
+        <span class="n">v</span><span class="o">=</span><span class="n">u</span><span class="p">,</span>
+        <span class="n">L</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span>
+        <span class="n">cp</span><span class="o">=</span><span class="p">(</span><span class="n">cp</span> <span class="o">:=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">),</span>
+        <span class="n">k</span><span class="o">=</span><span class="p">(</span><span class="n">k</span> <span class="o">:=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="n">Nu_c</span> <span class="o">=</span> <span class="mi">455</span>
+    <span class="n">St_c</span> <span class="o">=</span> <span class="mf">0.0065</span>
+
+    <span class="n">coefficient</span> <span class="o">=</span> <span class="n">directed</span><span class="p">(</span><span class="n">k</span> <span class="o">/</span> <span class="n">Dh</span> <span class="o">*</span> <span class="n">Nu_c</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&lt;=</span> <span class="mf">7e4</span><span class="p">)</span> <span class="o">+</span> <span class="n">cp</span> <span class="o">*</span> <span class="n">G</span> <span class="o">*</span> <span class="n">St_c</span> <span class="o">*</span> <span class="p">(</span><span class="n">pe</span> <span class="o">&gt;</span> <span class="mf">7e4</span><span class="p">),</span> <span class="n">mdot</span><span class="p">)</span>
+    <span class="n">cumulative</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">directed</span><span class="p">(</span><span class="n">flux_shape</span> <span class="o">*</span> <span class="n">dz</span><span class="p">,</span> <span class="n">mdot</span><span class="p">))</span>
+    <span class="n">power_factor</span> <span class="o">=</span> <span class="n">directed</span><span class="p">(</span><span class="n">heated_perimeter</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp</span><span class="p">),</span> <span class="n">mdot</span><span class="p">)</span>
+    <span class="n">shape_factor</span> <span class="o">=</span> <span class="n">cumulative</span> <span class="o">/</span> <span class="n">directed</span><span class="p">(</span><span class="n">flux_shape</span> <span class="o">*</span> <span class="n">flux_enworse</span><span class="p">,</span> <span class="n">mdot</span><span class="p">)</span>
+    <span class="n">denominator</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="n">coefficient</span> <span class="o">*</span> <span class="n">power_factor</span> <span class="o">*</span> <span class="n">shape_factor</span>
+    <span class="k">return</span> <span class="n">directed</span><span class="p">(</span><span class="n">coefficient</span> <span class="o">*</span> <span class="n">dT</span> <span class="o">/</span> <span class="n">denominator</span><span class="p">,</span> <span class="n">mdot</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="boiling_power">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.boiling_power">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">boiling_power</span><span class="p">(</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">T_sat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">Tin</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">cp_in</span><span class="p">:</span> <span class="n">JPerKgK</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Watt</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The limit for "Boiling power ratio" as per TERMIC(CONVEC) [#BPR]_ - ratio of the channel power leading to</span>
+<span class="sd">    saturated water temperature at the channel outlet to the current channel power:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        BP = \dot{m} c_\text{p}(T_\text{sat} - T_\text{inlet})</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass flow rate</span>
+<span class="sd">    Tin: Celsius</span>
+<span class="sd">        Bulk coolant temperature @ inlet</span>
+<span class="sd">    cp_in: JPerKgK</span>
+<span class="sd">        Specific heat of the coolant at Tin</span>
+<span class="sd">    T_sat: Celsius</span>
+<span class="sd">        Saturation temperature</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Watt</span>
+<span class="sd">        Power required to reach the saturation temperature in the channel.</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp_in</span> <span class="o">*</span> <span class="p">(</span><span class="n">T_sat</span> <span class="o">-</span> <span class="n">Tin</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Whittle_Forgan_OFI">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Whittle_Forgan_OFI">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Whittle_Forgan_OFI</span><span class="p">(</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">sat_temperature</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">inlet_temperature</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">cp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">JPerKgK</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Watt</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The limit for "Onset of Flow Instability" as per Whittle and Forgan [#WF]_,</span>
+<span class="sd">    but with a correction by Fabréga [#FabregaFrench]_.</span>
+<span class="sd">    In essence, power for OFI is given by:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        P_\text{RD} = \frac{\dot{m} c_\text{p}(T_\text{sat} - T_\text{inlet})}</span>
+<span class="sd">        {1 + 3.15 (D_\text{h} / L_\text{h}) (1.08G)^{0.29}}</span>
+
+<span class="sd">    Where :math:`G= \rho u = \dot{m}/A` is the mass flow flux, given in CGS.</span>
+<span class="sd">    The reference says so: "G: vitesse massique à l'entrée et évaluée en CGS"</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass flow rate</span>
+<span class="sd">    sat_temperature: Celsius</span>
+<span class="sd">        Saturation temperature at the outlet.</span>
+<span class="sd">    inlet_temperature: Celsius</span>
+<span class="sd">        Bulk temperature at the fuel inlet.</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        The geometry of the flow region.</span>
+<span class="sd">    cp: Callable[[Celsius], JPerKgK]</span>
+<span class="sd">        Strategy for computing the specific heat of the coolant.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    PRD_OFI: Watt</span>
+<span class="sd">        OFI limit power</span>
+
+<span class="sd">    """</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">G</span> <span class="o">/=</span> <span class="mi">10</span>  <span class="c1"># G must be in CGS, sadly.</span>
+    <span class="n">cp_int</span> <span class="o">=</span> <span class="n">quad</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span> <span class="n">inlet_temperature</span><span class="p">,</span> <span class="n">sat_temperature</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp_int</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">3.15</span> <span class="o">*</span> <span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">length</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.08</span> <span class="o">*</span> <span class="n">G</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.29</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Sudo_Kaminaga_CHF">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Sudo_Kaminaga_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Sudo_Kaminaga_CHF</span><span class="p">(</span>
+    <span class="n">T_bulk</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">sat_coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">g</span><span class="p">:</span> <span class="n">MPerS2</span> <span class="o">=</span> <span class="n">gravity</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The limit heat flux for CHF according to Kaminaga et al. [#Sudo]_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_bulk: Celsius</span>
+<span class="sd">        Bulk coolant temperature</span>
+<span class="sd">    sat_coolant: Liquid</span>
+<span class="sd">        Coolant properties at saturation temperature</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Coolant mass flow rate</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        Channel Geometry</span>
+<span class="sd">    g: MPerS2</span>
+<span class="sd">        Gravitational acceleration constant</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The width of the channel is taken from the pipe from an attribute called `width`.</span>
+<span class="sd">    This attribute is only ever really used here, and it is geometrically set for most channels,</span>
+<span class="sd">    and can be manually set for custom pipes, or left as None.</span>
+
+<span class="sd">    This width should not be taken as the heated width, according to Mishima's experiments.</span>
+<span class="sd">    In the original works by Mishima [#Mishima]_, which Sudo &amp; Kaminage cite [#Sudo]_,</span>
+<span class="sd">    they use the hydraulic diameter for annular channels, and the channel</span>
+<span class="sd">    width for their rectangular case, where the heated region was 30mm out of 40mm.</span>
+<span class="sd">    Thus, heated width would be the wrong quantity to use here.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Mishima] K. Mishima, H. Nishihara, T. Shibata, "CHF Correlations Related</span>
+<span class="sd">       to the Core Cooling of a Research Reactor", JAERI-M 84-073, International</span>
+<span class="sd">       Meeting on Reduced Enrichment for Research and Test Reactors, Tokai, Japan, 1983.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q'': WPerM2</span>
+<span class="sd">        CHF (Critical Heat Flux)</span>
+<span class="sd">    """</span>
+    <span class="n">drho</span> <span class="o">=</span> <span class="p">(</span><span class="n">rho_l</span> <span class="o">:=</span> <span class="n">sat_coolant</span><span class="o">.</span><span class="n">density</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">rho_v</span> <span class="o">:=</span> <span class="n">sat_coolant</span><span class="o">.</span><span class="n">vapor_density</span><span class="p">)</span>
+    <span class="n">hfg</span> <span class="o">=</span> <span class="n">sat_coolant</span><span class="o">.</span><span class="n">latent_heat</span>
+    <span class="n">cp</span> <span class="o">=</span> <span class="n">sat_coolant</span><span class="o">.</span><span class="n">specific_heat</span>
+    <span class="n">Tsat</span> <span class="o">=</span> <span class="n">sat_coolant</span><span class="o">.</span><span class="n">sat_temperature</span>
+    <span class="n">Aht</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">heated_parts</span><span class="p">)</span> <span class="o">*</span> <span class="n">pipe</span><span class="o">.</span><span class="n">length</span>
+    <span class="n">lamda</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sat_coolant</span><span class="o">.</span><span class="n">surface_tension</span> <span class="o">/</span> <span class="n">drho</span> <span class="o">/</span> <span class="n">g</span><span class="p">)</span>
+
+    <span class="n">q1</span> <span class="o">=</span> <span class="n">_SKq1</span><span class="p">(</span><span class="n">G_star</span><span class="o">=</span><span class="p">(</span><span class="n">G_star</span> <span class="o">:=</span> <span class="n">mdot</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">lamda</span> <span class="o">*</span> <span class="n">drho</span> <span class="o">*</span> <span class="n">rho_v</span> <span class="o">*</span> <span class="n">g</span><span class="p">)))</span>
+
+    <span class="n">q2</span> <span class="o">=</span> <span class="n">_SKq2</span><span class="p">(</span>
+        <span class="n">A_ratio</span><span class="o">=</span><span class="p">(</span><span class="n">A_ratio</span> <span class="o">:=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="n">Aht</span><span class="p">),</span>
+        <span class="n">dT_inlet</span><span class="o">=</span><span class="p">(</span><span class="n">dT_inlet</span> <span class="o">:=</span> <span class="p">(</span><span class="n">cp</span> <span class="o">/</span> <span class="n">hfg</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Tsat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="n">T_bulk</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+        <span class="n">G_star</span><span class="o">=</span><span class="n">G_star</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">q3</span> <span class="o">=</span> <span class="n">_SKq3</span><span class="p">(</span>
+        <span class="n">A_ratio</span><span class="o">=</span><span class="n">A_ratio</span><span class="p">,</span>
+        <span class="n">w</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+        <span class="n">lamda</span><span class="o">=</span><span class="n">lamda</span><span class="p">,</span>
+        <span class="n">dT_inlet</span><span class="o">=</span><span class="n">dT_inlet</span><span class="p">,</span>
+        <span class="n">rho_v</span><span class="o">=</span><span class="n">rho_v</span><span class="p">,</span>
+        <span class="n">rho_l</span><span class="o">=</span><span class="n">rho_l</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">q4</span> <span class="o">=</span> <span class="n">_SKq4</span><span class="p">(</span><span class="n">G_star</span><span class="o">=</span><span class="n">G_star</span><span class="p">,</span> <span class="n">dT_outlet</span><span class="o">=</span><span class="p">(</span><span class="n">cp</span> <span class="o">/</span> <span class="n">hfg</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">Tsat</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">T_bulk</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="n">q_star</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">G_star</span><span class="p">)</span>
+    <span class="c1"># Downward</span>
+    <span class="n">q_star</span><span class="p">[</span><span class="n">G_star</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">q2</span><span class="p">,</span> <span class="n">q4</span><span class="p">),</span> <span class="n">q3</span><span class="p">)[</span><span class="n">G_star</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># Upward</span>
+    <span class="n">q_star</span><span class="p">[</span><span class="n">G_star</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">q2</span><span class="p">,</span> <span class="n">q4</span><span class="p">),</span> <span class="n">q1</span><span class="p">),</span> <span class="n">q3</span><span class="p">)[</span><span class="n">G_star</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">q_star</span> <span class="o">*</span> <span class="n">hfg</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">lamda</span> <span class="o">*</span> <span class="n">drho</span> <span class="o">*</span> <span class="n">rho_v</span> <span class="o">*</span> <span class="n">g</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_SKq1</span><span class="p">(</span><span class="n">G_star</span><span class="p">):</span>
+    <span class="k">return</span> <span class="mf">0.005</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">G_star</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.611</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_SKq2</span><span class="p">(</span><span class="n">A_ratio</span><span class="p">,</span> <span class="n">G_star</span><span class="p">,</span> <span class="n">dT_inlet</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">A_ratio</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">G_star</span><span class="p">)</span> <span class="o">*</span> <span class="n">dT_inlet</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_SKq3</span><span class="p">(</span><span class="n">A_ratio</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">lamda</span><span class="p">,</span> <span class="n">dT_inlet</span><span class="p">,</span> <span class="n">rho_v</span><span class="p">,</span> <span class="n">rho_l</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""One of the form functions for the Sudo Kaminaga CHF correlation.</span>
+
+<span class="sd">    The term is of the form:</span>
+<span class="sd">    .. math::</span>
+<span class="sd">       0.7 \frac{A_{flow}}{A_{heated}}</span>
+<span class="sd">       \frac{\sqrt{\frac{W}{\lambda}}}{\left(1+\left(\frac{\rho_v}{\rho_l}\right^{0.25}\right)^2}</span>
+<span class="sd">       (1+CdT)</span>
+
+<span class="sd">    The :math:`1+CdT` term appears as both :math:`1+dT` and :math:`1+3dT`,</span>
+<span class="sd">    but :math:`1+3dT` is more lenient so without clear evidence we would have to take the other.</span>
+<span class="sd">    Thus, it could be unclear in which cases one should use :math:`1+dT` vs :math:`1+3dT`.</span>
+
+<span class="sd">    The :math:`1+dT` term is found in Sudo and Kaminaga's IGORR presentation [SKIGORR]_.</span>
+<span class="sd">    The :math:`1+3dT` term is found in Sudo and Kaminaga's 1998 paper in JNST [#SudoJNST]_.</span>
+<span class="sd">    Because the :math:`1+3dT` term is newer and used for counter current in vertical rectangular</span>
+<span class="sd">    channels at subcooled conditions, it seems that it should fit, and it specifically mentions</span>
+<span class="sd">    that the authors propose it for the use in flow reversal of downward flow reactors in LOFA,</span>
+<span class="sd">    for channels of our width and our conditions.</span>
+
+<span class="sd">    Even so, someone claimed that they know of newer materials where the authors said that they</span>
+<span class="sd">    were not allowed to use the :math:`1+3dT` in practice with their regulator.</span>
+<span class="sd">    Why :math:`1+dT` is used rather than no subcooling at all is still a mystery to this author.</span>
+<span class="sd">    The reference for the counter-example is still pending. TODO: Get the reference and clear this.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [#SKIGORR] M. Kaminaga, Y. Sudo, T. Kodaira, N. Ohnishi, "CHF Correlation</span>
+<span class="sd">    Scheme Proposed for Research Reactors Using Plate-Type Fuel - New CHF</span>
+<span class="sd">    Correlation Under CCFL Condition", IGORR-IV, Garlinburg, Tennessee USA, 25.5.1995.</span>
+<span class="sd">    [#SudoJNST] M. Kaminaga, K. Yamamoto, Y. Sudo, "Improvement of Critical Heat</span>
+<span class="sd">    Flux Correlation for Research Reactors using Plate-Type Fuel", Journal of</span>
+<span class="sd">    Nuclear Science and Technology, Vol. 35, No. 12, pages 943-951, 1998.</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">0.7</span> <span class="o">*</span> <span class="n">A_ratio</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">w</span> <span class="o">/</span> <span class="n">lamda</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">dT_inlet</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">rho_v</span> <span class="o">/</span> <span class="n">rho_l</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.25</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_SKq4</span><span class="p">(</span><span class="n">G_star</span><span class="p">,</span> <span class="n">dT_outlet</span><span class="p">):</span>
+    <span class="n">q4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">G_star</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+    <span class="n">_Gs</span> <span class="o">=</span> <span class="n">G_star</span><span class="p">[</span><span class="n">G_star</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">_dT</span> <span class="o">=</span> <span class="n">dT_outlet</span><span class="p">[</span><span class="n">G_star</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">q4</span><span class="p">[</span><span class="n">G_star</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">_SKq1</span><span class="p">(</span><span class="n">_Gs</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">5000</span> <span class="o">*</span> <span class="n">_dT</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">_Gs</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">q4</span>
+
+
+<div class="viewcode-block" id="Mirshak_CHF">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Mirshak_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Mirshak_CHF</span><span class="p">(</span><span class="n">T_bulk</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_sat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">pressure</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">MPerS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The limit for CHF as measured and calculated by Mirshak [#Mirshak]_ for rapid flows (v &gt; 1.5 m/s)</span>
+
+<span class="sd">    .. math:: 1.51\cdot 10^6 (1 + 0.1198v)(1 + 0.00914</span>
+<span class="sd">        (T_\text{sat} - T_\text{bulk}))(1+1.9\cdot 10^{-6} p)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_bulk: Celsius</span>
+<span class="sd">        Bulk coolant temperature</span>
+<span class="sd">    T_sat: Celsius</span>
+<span class="sd">        Saturation temperature</span>
+<span class="sd">    pressure: Pa</span>
+<span class="sd">        pressure in channel</span>
+<span class="sd">    v: MPerS</span>
+<span class="sd">        Coolant flow velocity.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q'': WPerM2</span>
+<span class="sd">        Heat flux where Critical Heat Flux (CHF) begins</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">1.51e6</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.1198</span> <span class="o">*</span> <span class="n">v</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.00914</span> <span class="o">*</span> <span class="p">(</span><span class="n">T_sat</span> <span class="o">-</span> <span class="n">T_bulk</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">0.19e-5</span> <span class="o">*</span> <span class="n">pressure</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Fabrega_CHF">
+<a class="viewcode-back" href="../../../thresholds.html#stream.physical_models.thresholds.Fabrega_CHF">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Fabrega_CHF</span><span class="p">(</span><span class="n">Tin</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_sat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The limit for CHF as measured and calculated by Fabrega [#Fabrega]_ for slow flows (v &lt; 0.5 m/s)</span>
+
+<span class="sd">    .. math:: 10^7 D_\text{h}(0.023(T_\text{sat} - T_\text{bulk in}) + 4.56)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Tin: Celsius</span>
+<span class="sd">        Bulk coolant temperature at inlet</span>
+<span class="sd">    T_sat: Celsius</span>
+<span class="sd">        Saturation temperature</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Channel hydraulic diameter</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q'': WPerM2</span>
+<span class="sd">        Heat flux where Critical Heat Flux (CHF) begins</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">1e7</span> <span class="o">*</span> <span class="n">Dh</span> <span class="o">*</span> <span class="p">(</span><span class="mf">0.023</span> <span class="o">*</span> <span class="p">(</span><span class="n">T_sat</span> <span class="o">-</span> <span class="n">Tin</span><span class="p">)</span> <span class="o">+</span> <span class="mf">4.56</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 15, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
