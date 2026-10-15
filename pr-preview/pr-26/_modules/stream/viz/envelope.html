@@ -86,6 +86,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">.labels</span><span class="w"> </span><span class="kn">import</span> <span class="n">Labels</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">.sweep</span><span class="w"> </span><span class="kn">import</span> <span class="n">Coords</span>
 
 <span class="n">REDUCERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"min"</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">,</span> <span class="s2">"mean"</span><span class="p">,</span> <span class="s2">"where_min"</span><span class="p">,</span> <span class="s2">"where_max"</span><span class="p">)</span>
@@ -139,15 +140,19 @@
 
 <div class="viewcode-block" id="reducer_name">
 <a class="viewcode-back" href="../../../viz.html#stream.viz.envelope.reducer_name">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">reducer_name</span><span class="p">(</span><span class="n">reducer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""A short name for axis labels: ``min``, ``at z=0.35``, a callable's name."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reducer_name</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Labels</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A short name for axis labels: ``min``, ``at z=0.35``, a callable's name.</span>
+
+<span class="sd">    With ``labels``, the position of an :func:`at` reducer prints with the</span>
+<span class="sd">    scale and format of ``z`` or ``x`` there.</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">reducer</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="n">At</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">reducer</span><span class="o">.</span><span class="n">cell</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="sa">f</span><span class="s2">"at cell </span><span class="si">{</span><span class="n">reducer</span><span class="o">.</span><span class="n">cell</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">axis</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="n">reducer</span><span class="o">.</span><span class="n">z</span><span class="p">)</span> <span class="k">if</span> <span class="n">reducer</span><span class="o">.</span><span class="n">z</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="n">reducer</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">axis</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">axis</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">axis</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">labels</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">reducer</span><span class="p">,</span> <span class="s2">"__name__"</span><span class="p">,</span> <span class="s2">"custom"</span><span class="p">)</span></div>
 
 

@@ -81,7 +81,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
 
@@ -101,6 +101,11 @@
 <span class="sd">        text. An empty string means dimensionless and prints no bracket.</span>
 <span class="sd">    scale:</span>
 <span class="sd">        Factor applied to the stored numbers before drawing or printing.</span>
+<span class="sd">    fmt:</span>
+<span class="sd">        How a number of this name prints: a Python format spec applied after</span>
+<span class="sd">        ``scale`` (``".1f"``, ``".3g"``, ``",.0f"``, ``".2e"``) or a callable</span>
+<span class="sd">        taking the scaled number and returning text. ``None`` uses the</span>
+<span class="sd">        registry's default.</span>
 <span class="sd">    color:</span>
 <span class="sd">        Optional fixed colour for this name when it is a legend level.</span>
 <span class="sd">    """</span>
@@ -108,6 +113,7 @@
     <span class="n">display</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
     <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
@@ -118,7 +124,8 @@
 <span class="w">    </span><span class="sd">"""Turn a registry entry into a :class:`Label`.</span>
 
 <span class="sd">    Accepted forms: a ``Label``; ``None`` (hidden); a string (display only);</span>
-<span class="sd">    a 2-tuple ``(display, unit)``; a 3-tuple ``(display, unit, scale)``.</span>
+<span class="sd">    a 2-tuple ``(display, unit)``; a 3-tuple ``(display, unit, scale)``;</span>
+<span class="sd">    a 4-tuple ``(display, unit, scale, fmt)`` with ``fmt`` a format spec or a callable.</span>
 <span class="sd">    """</span>
     <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
@@ -126,11 +133,13 @@
         <span class="k">return</span> <span class="n">spec</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">[:</span><span class="mi">2</span><span class="p">]):</span>
-        <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="o">*</span><span class="n">spec</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">and</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">4</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">[:</span><span class="mi">2</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">callable</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="mi">3</span><span class="p">]):</span>
+            <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="o">*</span><span class="n">spec</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"label for </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> must be a string, a (display, unit) tuple, a (display, unit, scale) "</span>
-        <span class="sa">f</span><span class="s2">"tuple, a Label or None, not </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="sa">f</span><span class="s2">"tuple, a (display, unit, scale, fmt) tuple with fmt a format spec or a callable, a Label "</span>
+        <span class="sa">f</span><span class="s2">"or None, not </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="p">)</span></div>
 
 
@@ -141,11 +150,19 @@
 <span class="w">    </span><span class="sd">"""A registry from internal names to :class:`Label` records.</span>
 
 <span class="sd">    Lookups never fail: a name with no entry displays as itself with no unit.</span>
-<span class="sd">    Later registries win in :meth:`merged`.</span>
+<span class="sd">    Later registries win in :meth:`merged`, their ``default_format`` too.</span>
+
+<span class="sd">    A number prints with its label's ``fmt`` when it declares one, else with</span>
+<span class="sd">    ``default_format``, a Python format spec (``".4g"`` unless given). A</span>
+<span class="sd">    registry's own ``default_format`` reaches ``Result.subtitle``,</span>
+<span class="sd">    ``Result.ylabel`` and direct :meth:`value` and :meth:`describe` calls;</span>
+<span class="sd">    in figures :func:`~stream.viz.draw.plot` replaces it with the style</span>
+<span class="sd">    sheet's ``number_format``.</span>
 <span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".4g"</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">as_label</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">entries</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">default_format</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">Label</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
@@ -169,12 +186,24 @@
 <div class="viewcode-block" id="Labels.merged">
 <a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.merged">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Labels</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""A new registry with ``other``'s entries overriding this one's."""</span>
-        <span class="n">merged</span> <span class="o">=</span> <span class="n">Labels</span><span class="p">()</span>
+<span class="w">        </span><span class="sd">"""A new registry with ``other``'s entries overriding this one's.</span>
+
+<span class="sd">        When ``other`` is a :class:`Labels`, its ``default_format`` wins too.</span>
+<span class="sd">        """</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="n">Labels</span><span class="p">(</span><span class="n">default_format</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">default_format</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Labels</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span><span class="p">)</span>
         <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">Labels</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Labels</span><span class="p">)</span> <span class="k">else</span> <span class="n">other</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">merged</span></div>
+
+
+<div class="viewcode-block" id="Labels.with_default_format">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.with_default_format">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_default_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A copy whose numbers without a format of their own print with ``fmt``."""</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">fmt</span>
+        <span class="k">return</span> <span class="n">copy</span></div>
 
 
 <div class="viewcode-block" id="Labels.unit">
@@ -206,8 +235,16 @@
 <div class="viewcode-block" id="Labels.value">
 <a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.value">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""``x`` scaled and formatted for a legend entry; a string is returned as it is."""</span>
-        <span class="k">return</span> <span class="n">x</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="s2">".4g"</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""``x`` scaled and formatted for printing; a string is returned as it is.</span>
+
+<span class="sd">        The format is the label's ``fmt`` when it has one, else ``default_format``.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">label</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">fmt</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span>
+        <span class="k">return</span> <span class="n">fmt</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Labels.describe">
@@ -245,8 +282,8 @@
         <span class="s2">"static_pressure_drop"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Static pressure drop"</span><span class="p">,</span> <span class="s2">"Pa"</span><span class="p">),</span>
         <span class="s2">"mass_flow"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mass flow"</span><span class="p">,</span> <span class="s2">"kg/s"</span><span class="p">),</span>
         <span class="s2">"velocity"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Velocity"</span><span class="p">,</span> <span class="s2">"m/s"</span><span class="p">),</span>
-        <span class="s2">"Re"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Reynolds number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
-        <span class="s2">"Pe"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Péclet number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"Re"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Reynolds number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">".0f"</span><span class="p">),</span>
+        <span class="s2">"Pe"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Péclet number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">".0f"</span><span class="p">),</span>
         <span class="s2">"Gr, left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Grashof number, left"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
         <span class="s2">"Gr, right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Grashof number, right"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
         <span class="s2">"power"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Power"</span><span class="p">,</span> <span class="s2">"W"</span><span class="p">),</span>

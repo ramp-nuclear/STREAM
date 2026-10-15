@@ -99,9 +99,13 @@
 <span class="sd">    systematic band. Every field can be changed with :meth:`replace`.</span>
 
 <span class="sd">    ``limit_linewidth``, ``shade_alpha`` and ``shade_hatch`` draw a declared</span>
-<span class="sd">    limit; ``map_levels`` is the number of filled contour bands of a map and</span>
+<span class="sd">    limit and ``crossing_linewidth`` the drop line where a curve meets it;</span>
+<span class="sd">    ``map_levels`` is the number of filled contour bands of a map and</span>
 <span class="sd">    ``map_cases`` adds a dot at every solved case; ``filled_marker`` marks a</span>
 <span class="sd">    case filled by interpolation.</span>
+
+<span class="sd">    ``number_format`` is the Python format spec of every printed number whose</span>
+<span class="sd">    label declares no format of its own.</span>
 <span class="sd">    """</span>
 
     <span class="n">palette</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"#2980b9"</span><span class="p">,</span> <span class="s2">"#1abc9c"</span><span class="p">,</span> <span class="s2">"#e67e22"</span><span class="p">,</span> <span class="s2">"#8e44ad"</span><span class="p">,</span> <span class="s2">"#7f8c8d"</span><span class="p">,</span> <span class="s2">"#2c3e50"</span><span class="p">)</span>
@@ -116,11 +120,13 @@
     <span class="n">grid_alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span>
     <span class="n">subtitle_size</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">9.5</span>
     <span class="n">limit_linewidth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.6</span>
+    <span class="n">crossing_linewidth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.2</span>
     <span class="n">shade_alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.55</span>
     <span class="n">shade_hatch</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"////"</span>
     <span class="n">map_levels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span>
     <span class="n">map_cases</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">filled_marker</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"o"</span>
+    <span class="n">number_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".4g"</span>
 
 <div class="viewcode-block" id="Style.replace">
 <a class="viewcode-back" href="../../../viz.html#stream.viz.style.Style.replace">[docs]</a>
