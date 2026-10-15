@@ -48,17 +48,18 @@ def binder_colors(frame, style: Style) -> dict[str, str]:
 
 
 def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, errorbars: bool, labels: Labels,
-               binding: dict[str, str] | None = None) -> tuple[bool, bool]:
-    """Draw one line per level combination; return whether the total and the inner band were drawn.
+               binding: dict[str, str] | None = None) -> tuple[bool, bool, bool]:
+    """Draw one line per level combination; return whether the total band, the inner band and an interpolated point were drawn.
 
     ``binding`` maps each binder to its colour; the points of each binder get a marker in it.
+    Interpolated points get an open marker.
     """
     dims, combos = _levels_of(result, enc)
     xs = labels.scale(result.x)
     ys = labels.scale(y_axis(result, labels)[1])
     line_column = BOUND_COLUMNS[bound]
     show_band = result.banded and bound == "nominal" and band != "none"
-    drawn = inner_drawn = False
+    drawn = inner_drawn = filled_drawn = False
     for levels in combos:
         sub = _subset(result.frame, dims, levels).sort_values(result.x)
         if sub.empty:
@@ -73,10 +74,12 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
             if np.any(hi > lo):
                 ax.errorbar(x, y, yerr=[y - lo, hi - y], capsize=3, **props)
                 _draw_binders(ax, sub, x, y, binding)
+                filled_drawn = _draw_filled(ax, sub, x, y, props["color"], style) or filled_drawn
                 drawn = True
                 continue
         ax.plot(x, y, **props)
         _draw_binders(ax, sub, x, y, binding)
+        filled_drawn = _draw_filled(ax, sub, x, y, props["color"], style) or filled_drawn
         if show_band:
             lo, hi = sub["lower"].to_numpy() * ys, sub["upper"].to_numpy() * ys
             if np.any(hi > lo):
@@ -87,7 +90,18 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
                     if np.any(ihi > ilo):
                         ax.fill_between(x, ilo, ihi, color=props["color"], alpha=style.band_alpha_inner, linewidth=0)
                         inner_drawn = True
-    return drawn, inner_drawn
+    return drawn, inner_drawn, filled_drawn
+
+
+def _draw_filled(ax, sub, x, y, color: str, style: Style) -> bool:
+    if "filled" not in sub.columns:
+        return False
+    f = sub["filled"].to_numpy(bool)
+    if not f.any():
+        return False
+    ax.plot(x[f], y[f], linestyle="none", marker=style.filled_marker, markerfacecolor="white",
+            markeredgecolor=color, markeredgewidth=1.4, zorder=4)
+    return True
 
 
 def _draw_binders(ax, sub, x, y, binding: dict[str, str] | None) -> None:
@@ -255,8 +269,8 @@ def _band_texts(band: str, inner_drawn: bool, sigma_text: str, labels: Labels) -
 
 
 def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: str, sigma_text: str, labels: Labels, style: Style,
-                 binding: dict[str, str] | None = None) -> None:
-    """Put a legend on ``ax`` when there is a block or a band entry to show."""
+                 binding: dict[str, str] | None = None, filled_drawn: bool = False) -> None:
+    """Put a legend on ``ax`` when there is a block, a band or an interpolated entry to show."""
     handles, texts = [], []
     for block in enc.legend:
         handles.append(Line2D([], [], color="none", label=block.title))
@@ -272,6 +286,10 @@ def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: s
             alpha = style.band_alpha_inner if is_inner else style.band_alpha
             handles.append(Patch(facecolor=style.palette[-1], alpha=alpha))
             texts.append(text)
+    if filled_drawn:
+        handles.append(Line2D([], [], linestyle="none", marker=style.filled_marker, markerfacecolor="white",
+                              markeredgecolor=style.palette[-1]))
+        texts.append(labels["filled"].display)
     if binding:
         handles.append(Line2D([], [], color="none", label=labels["binding"].display))
         texts.append(labels["binding"].display)
@@ -280,11 +298,11 @@ def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: s
             texts.append(f"  {name}")
     if not texts:
         return
-    if len(enc.legend) == 1 and not band_drawn and not binding:
+    if len(enc.legend) == 1 and not band_drawn and not binding and not filled_drawn:
         block = enc.legend[0]
         ax.legend(handles[1:], [t.strip() for t in texts[1:]], title=block.title)
         return
-    if not enc.legend and not band_drawn and binding:
+    if not enc.legend and not band_drawn and binding and not filled_drawn:
         ax.legend(handles[1:], [t.strip() for t in texts[1:]], title=labels["binding"].display)
         return
     ax.legend(handles, texts)
@@ -342,25 +360,26 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         binding = binder_colors(result.frame, sheet) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
-            drawn, inner_drawn = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged, binding)
+            drawn, inner_drawn, filled_drawn = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged, binding)
             draw_limits(result, ax, enc, sheet, merged, limit)
             finish_axes(ax, result, merged, sheet, result.subtitle_with(merged))
-            build_legend(ax, enc, drawn, inner_drawn, band, sigma_text, merged, sheet, binding=binding)
+            build_legend(ax, enc, drawn, inner_drawn, band, sigma_text, merged, sheet, binding=binding,
+                         filled_drawn=filled_drawn)
             return fig, ax
         cols = result.dims.get(enc.col, [None]) if enc.col else [None]
         rows = result.dims.get(enc.row, [None]) if enc.row else [None]
         w, h = sheet.panel_size
         fig, axes = plt.subplots(len(rows), len(cols), figsize=(w * len(cols), h * len(rows)), sharex=True, sharey=True, squeeze=False)
-        drawn_any = inner_any = False
+        drawn_any = inner_any = filled_any = False
         panels = []
         for (ri, rv), (ci, cv) in product(enumerate(rows), enumerate(cols)):
             panel_ax = axes[ri, ci]
             fixed = {k: v for k, v in ((enc.row, rv), (enc.col, cv)) if k is not None}
             sub = _subset(result.frame, list(fixed), list(fixed.values()))
             panel = _with_frame(result, sub, fixed)
-            drawn, inner_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged, binding)
+            drawn, inner_drawn, filled_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged, binding)
             panels.append((panel, panel_ax))
-            drawn_any, inner_any = drawn_any or drawn, inner_any or inner_drawn
+            drawn_any, inner_any, filled_any = drawn_any or drawn, inner_any or inner_drawn, filled_any or filled_drawn
             title = ", ".join(p for p in (_panel_text(merged, fixed), result.subtitle_with(merged)) if p)
             finish_axes(panel_ax, panel, merged, sheet, title)
             if ci:
@@ -373,7 +392,8 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             axes[0, 0].autoscale_view()
             for panel, panel_ax in panels:
                 shade_limits(panel, panel_ax, enc, sheet, merged, limit)
-        build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding)
+        build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding,
+                     filled_drawn=filled_any)
         fig.tight_layout()
         return fig, axes
 

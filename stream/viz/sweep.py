@@ -130,6 +130,8 @@ class Sweep:
         self.table = self._stack(checked)
         self.fill_holes = bool(fill_holes)
         self.filled: dict[int, dict[str, tuple[int, int]]] = {}
+        if self.fill_holes:
+            self.table = self._fill(self.table)
         self.limits = MappingProxyType(_check_limits(limits, self.table))
         self._coords_cache: dict[str, object] = {}
 
@@ -189,18 +191,72 @@ class Sweep:
                 )
                 f = f[~bad]
             front = {"case": k, **self.cases[k]}
-            pieces.append(f.assign(**front)[list(front) + [c for c in f.columns if c not in front]])
+            f = f.assign(**front, filled=False)
+            pieces.append(f[list(front) + [c for c in f.columns if c not in front and c != "filled"] + ["filled"]])
         if zero_band_lines:
             warnings.warn("cases with no nonzero uncertainty get a zero band:\n  " + "\n  ".join(zero_band_lines), stacklevel=3)
         if non_finite_lines:
             warnings.warn("non-finite values treated as missing:\n  " + "\n  ".join(non_finite_lines), stacklevel=3)
         if not pieces:
-            columns = ["case", *self.parameters, *STATE_COLUMNS] + (list(BAND_COLUMNS) if self.banded else [])
+            columns = ["case", *self.parameters, *STATE_COLUMNS] + (list(BAND_COLUMNS) if self.banded else []) + ["filled"]
             return DataFrame(columns=columns)
         table = pd.concat(pieces, ignore_index=True)
         for column in ("calculation", "variable"):
             table[column] = table[column].astype("category")
         return table
+
+    def _fill(self, table: DataFrame) -> DataFrame:
+        numeric = [p for p in self.parameters if p not in self.categorical]
+        keys = ["calculation", "variable", "i", "j"]
+        columns = ["value"] + (list(BAND_COLUMNS) if self.banded else [])
+        pieces, lines = [], []
+        for k in self.holes:
+            case = self.cases[k]
+            parts, brackets = [], {}
+            for p in numeric:
+                same = [
+                    m for m in range(self.n_cases)
+                    if all(self._equal(q, self.cases[m][q], case[q]) for q in self.parameters if q != p)
+                ]
+                below = [m for m in same if self.cases[m][p] < case[p]]
+                above = [m for m in same if self.cases[m][p] > case[p]]
+                if not below or not above:
+                    continue
+                lo = max(below, key=lambda m: self.cases[m][p])
+                hi = min(above, key=lambda m: self.cases[m][p])
+                if lo in self.holes or hi in self.holes:
+                    continue
+                a = table[table.case == lo].set_index(keys).sort_index()
+                b = table[table.case == hi].set_index(keys).sort_index()
+                if not a.index.equals(b.index):
+                    warnings.warn(
+                        f"case {k}: cases {lo} and {hi} do not share one frame layout along {p}; not used", stacklevel=3
+                    )
+                    continue
+                t = (case[p] - self.cases[lo][p]) / (self.cases[hi][p] - self.cases[lo][p])
+                parts.append(a[columns] + t * (b[columns] - a[columns]))
+                brackets[p] = (lo, hi)
+            if not parts:
+                continue
+            mean = sum(parts[1:], parts[0]) / len(parts)
+            rows = mean.reset_index().assign(case=k, **case, filled=True)[list(table.columns)]
+            pieces.append(rows)
+            self.filled[k] = brackets
+            lines.append(
+                f"case {k} ({_case_text(case)}): "
+                + "; ".join(f"along {p} between case {lo} and case {hi}" for p, (lo, hi) in brackets.items())
+            )
+        if lines:
+            warnings.warn("filled unsolved case(s) by interpolation:\n  " + "\n  ".join(lines), stacklevel=3)
+        if not pieces:
+            return table
+        out = pd.concat([table, *pieces], ignore_index=True)
+        for column in ("calculation", "variable"):
+            out[column] = out[column].astype("category")
+        return out
+
+    def _equal(self, name: str, a, b) -> bool:
+        return a == b if name in self.categorical else bool(np.isclose(a, b, rtol=1e-9, atol=0.0))
 
     def is_hole(self, index: int) -> bool:
         return index in self.holes
@@ -236,10 +292,7 @@ class Sweep:
         return np.asarray(keep, dtype=int)
 
     def _matches(self, case: Mapping, wanted: Mapping) -> bool:
-        return all(
-            case[n] == v if n in self.categorical else np.isclose(case[n], v, rtol=1e-9, atol=0.0)
-            for n, v in wanted.items()
-        )
+        return all(self._equal(n, case[n], v) for n, v in wanted.items())
 
     def rank(self, quantity: str, calculation: str) -> int:
         """0, 1 or 2 from the index layout of the quantity's rows.

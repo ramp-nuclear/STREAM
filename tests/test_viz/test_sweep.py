@@ -34,7 +34,7 @@ def test_run_cases_only_catches_listed_exceptions():
 def test_table_has_case_and_parameter_columns(sweep):
     assert sweep.parameters == ("power", "mdot")
     assert list(sweep.table.columns[:3]) == ["case", "power", "mdot"]
-    assert set(sweep.table.columns[3:]) == {"calculation", "variable", "i", "j", "value"}
+    assert set(sweep.table.columns[3:]) == {"calculation", "variable", "i", "j", "value", "filled"}
     assert sweep.table.case.nunique() == 8
     assert sweep.n_cases == 8
     assert str(sweep.table.calculation.dtype) == "category"
@@ -352,3 +352,55 @@ def test_cases_product():
         cases(power=[])
     with pytest.raises(ValueError, match="cases\\(\\) needs at least one parameter"):
         cases()
+
+
+def holed(agr, grid_cases, *holes, fill=True, cases_=None):
+    cs = cases_ or grid_cases
+    frames = [make_case_frame(**c) for c in cs]
+    for k in holes:
+        frames[k] = None
+    with pytest.warns(UserWarning):
+        return Sweep(cs, frames, agr, fill_holes=fill)
+
+
+def test_fill_holes_interpolates_a_bracketed_hole(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning) as record:
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    assert "filled unsolved case(s) by interpolation:\n  case 3 (power=4e+06, mdot=0.3): along power between case 1 and case 5" in [
+        str(w.message) for w in record
+    ]
+    assert sweep.filled == {3: {"power": (1, 5)}} and sweep.is_hole(3)
+    t = sweep.table
+    assert "filled" in t.columns and t.filled.sum() == len(t[t.case == 3])
+    lo = t[(t.case == 1) & (t.variable == "CHFR")].sort_values("j").value.to_numpy()
+    hi = t[(t.case == 5) & (t.variable == "CHFR")].sort_values("j").value.to_numpy()
+    got = t[(t.case == 3) & (t.variable == "CHFR")].sort_values("j").value.to_numpy()
+    np.testing.assert_allclose(got, 0.5 * (lo + hi))
+
+
+def test_fill_holes_averages_two_bracketing_parameters(agr):
+    cs = [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3, 0.4)]
+    sweep = holed(agr, None, 4, cases_=cs)
+    assert sweep.filled == {4: {"power": (1, 7), "mdot": (3, 5)}}
+    t = sweep.table
+
+    def val(k):
+        return t[(t.case == k) & (t.variable == "CHFR")].sort_values("j").value.to_numpy()
+
+    np.testing.assert_allclose(val(4), 0.5 * (0.5 * (val(1) + val(7)) + 0.5 * (val(3) + val(5))))
+
+
+def test_fill_holes_leaves_edge_and_adjacent_holes(agr, grid_cases):
+    sweep = holed(agr, grid_cases, 0)
+    assert sweep.filled == {} and sweep.is_hole(0)
+    sweep = holed(agr, grid_cases, 3, 5)
+    assert sweep.filled == {}
+    assert not sweep.table.filled.any()
+
+
+def test_fill_holes_off_by_default_keeps_the_column(agr, grid_cases):
+    sweep = holed(agr, grid_cases, 3, fill=False)
+    assert sweep.filled == {} and "filled" in sweep.table.columns and not sweep.table.filled.any()
+    assert "filled" in Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr).table.columns

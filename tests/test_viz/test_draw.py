@@ -527,3 +527,18 @@ def test_map_panels_share_levels_and_refuse_line_arguments(agr, grid_cases):
     sets = [contour_sets(ax)[0] for ax in axes.ravel()]
     np.testing.assert_allclose(sets[0].levels, sets[1].levels)
     plt.close(fig)
+
+
+def test_filled_points_draw_open_markers_with_a_legend_entry(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot()
+    open_ = [ln for ln in ax.get_lines() if ln.get_linestyle() == "None" and ln.get_markerfacecolor() == "white"]
+    assert len(open_) == 1 and open_[0].get_xdata()[0] == pytest.approx(4e6)
+    assert "interpolated" in legend_texts(ax)
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()
+    assert [ln for ln in ax.get_lines() if ln.get_markerfacecolor() == "white"]
+    plt.close(fig)

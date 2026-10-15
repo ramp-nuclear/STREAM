@@ -111,6 +111,8 @@ class Result:
         parts = [self._target_text(labels), labels.describe(self.fixed)]
         if self.calculation is not None:
             parts.append(labels.display(self.calculation))
+        if self.kind == "field" and "filled" in self.frame.columns and bool(self.frame["filled"].any()):
+            parts.append("interpolated")
         return ", ".join(p for p in parts if p)
 
     def _target_text(self, labels: Labels) -> str:
@@ -161,14 +163,14 @@ class Field(Result):
 def _selection(sweep: Sweep, where, nearest):
     resolved = sweep.resolve(where, nearest)
     indices = sweep.select(resolved)
-    holes = [k for k in indices if sweep.is_hole(k)]
+    holes = [k for k in indices if sweep.is_hole(k) and k not in sweep.filled]
     if holes:
         lines = [
             f"case {k} ({_case_text(sweep.case_of(k))})" + (f": {sweep.holes[k]}" if sweep.holes[k] else "")
             for k in holes
         ]
         warnings.warn("skipping unsolved case(s):\n  " + "\n  ".join(lines), stacklevel=4)
-    return resolved, [k for k in indices if not sweep.is_hole(k)]
+    return resolved, [k for k in indices if not sweep.is_hole(k) or k in sweep.filled]
 
 
 def _unfilled_holes(sweep: Sweep, resolved) -> list[dict]:
@@ -278,6 +280,7 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
                             "case": k,
                             xname: x,
                             **{c: _dense(rows, c) for c in COLUMNS},
+                            "filled": rows.sort_values("j")["filled"].to_numpy(dtype=bool),
                         }
                     )
                 )
@@ -346,6 +349,7 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
             "z": zz.ravel(),
             "x": xx.ravel(),
             **{c: arrays[c].ravel() for c in COLUMNS},
+            "filled": bool(rows["filled"].any()),
         }
     )
     dims, fixed, single = _dims(sweep, [q], [calc], resolved, indices)
@@ -416,6 +420,7 @@ def reduce(
             for k in indices:
                 rows = _rows(sweep, table, k, calc, q)
                 base = {"quantity": q, "calculation": calc, **{p: sweep.cases[k][p] for p in sweep.parameters}, "case": k}
+                filled = bool(rows["filled"].any())
                 if axis is not None:
                     if rank != 2:
                         raise ValueError(f"axis= applies to a field and {q!r} of {calc} has rank {rank}")
@@ -424,7 +429,7 @@ def reduce(
                     xname = coords.names[keep] if coords is not None else "cell"
                     x = coords.centers[keep] if coords is not None else np.arange(len(out["value"]), dtype=float)
                     coordinate = axis
-                    pieces.append(DataFrame({**base, xname: x, **out}))
+                    pieces.append(DataFrame({**base, xname: x, **out, "filled": filled}))
                 else:
                     if rank:
                         out = reduce_rows(rows, rank, coords, reducer)
@@ -436,7 +441,7 @@ def reduce(
                         coordinate = coords.names[0] if coords is not None else "cell"
                     else:
                         out = {c: to_array(rows, 0, c) for c in COLUMNS}
-                    pieces.append(DataFrame({**base, **out}, index=[0]))
+                    pieces.append(DataFrame({**base, **out, "filled": filled}, index=[0]))
     if not pieces:
         raise _nothing_selected(resolved, quantities)
     scalar = all(sweep.rank(q, c) == 0 for c in ofs for q in quantities)

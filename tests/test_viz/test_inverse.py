@@ -57,7 +57,7 @@ def test_slice_at_outside_grid_raises(sweep):
 def test_required_power_for_min_chfr(sweep):
     r = sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot")
     assert r.kind == "curve" and r.x == "mdot"
-    assert list(r.frame.columns) == ["quantity", "calculation", "mdot", "lower", "value", "upper", "inner_lower", "inner_upper", "safe"]
+    assert list(r.frame.columns) == ["quantity", "calculation", "mdot", "lower", "value", "upper", "inner_lower", "inner_upper", "safe", "filled"]
     np.testing.assert_allclose(r.frame.mdot, [0.2, 0.3])
     np.testing.assert_allclose(r.frame.value, [3e6, 4e6], rtol=1e-6)
     assert r.ylabel == "Power [W]"
@@ -337,3 +337,13 @@ def test_safe_side_from_the_first_point_after_a_crossing_on_the_grid_start(agr, 
     r = sweep.required("T_cool", solve_for="power", versus="mdot")
     np.testing.assert_allclose(r.frame.value, [2e6, 2e6])
     assert list(r.frame.safe) == ["below", "below"]
+
+
+def test_required_crossing_on_a_filled_case(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    with pytest.warns(UserWarning, match="rests on interpolated case 3"):
+        r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
+    assert list(r.frame.sort_values("mdot").filled) == [False, True]

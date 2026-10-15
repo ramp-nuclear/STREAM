@@ -11,7 +11,7 @@ def test_profile_single_case(sweep):
     r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
     assert isinstance(r, Result) and r.kind == "profile"
     assert r.x == "z"
-    assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "z", "lower", "value", "upper", "inner_lower", "inner_upper"]
+    assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "z", "lower", "value", "upper", "inner_lower", "inner_upper", "filled"]
     assert len(r.frame) == 4
     np.testing.assert_allclose(r.frame.z, [0.05, 0.15, 0.25, 0.35])
     np.testing.assert_allclose(r.frame.value, [44.0, 49.0, 54.0, 59.0])
@@ -114,7 +114,7 @@ def test_field_single_case(sweep):
     np.testing.assert_allclose(f.z_bounds, [0.0, 0.5, 1.0])
     assert f.mask.shape == (2, 3)
     assert f.quantity == "T" and f.calculation == "plate"
-    assert list(f.frame.columns[-7:]) == ["z", "x", "lower", "value", "upper", "inner_lower", "inner_upper"]
+    assert list(f.frame.columns[-8:]) == ["z", "x", "lower", "value", "upper", "inner_lower", "inner_upper", "filled"]
     assert len(f.frame) == 6
 
 
@@ -168,7 +168,7 @@ def test_mesh_shorter_than_the_frame_is_named(agr):
 def test_reduce_min_versus_power(sweep):
     r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
     assert r.kind == "curve" and r.x == "power"
-    assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "lower", "value", "upper", "inner_lower", "inner_upper"]
+    assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "lower", "value", "upper", "inner_lower", "inner_upper", "filled"]
     np.testing.assert_allclose(r.frame.power, [2e6, 4e6, 6e6, 8e6])
     np.testing.assert_allclose(r.frame.value, 1.5 * 4e6 / np.array([2e6, 4e6, 6e6, 8e6]))
     assert r.dims == {} and r.fixed == dict(mdot=0.3)
@@ -368,3 +368,17 @@ def test_map_axis_with_one_level_is_refused(agr):
     one = Sweep(cs, [make_case_frame(**c) for c in cs], agr)
     with pytest.raises(ValueError, match="mdot has one level; a map needs at least two levels on each axis"):
         one.reduce("CHFR", "min", versus=("power", "mdot"))
+
+
+def test_filled_cases_are_selected_and_flagged(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    assert len(r.frame) == 4 and list(r.frame.sort_values("power").filled) == [False, True, False, False]
+    assert r.holes == []
+    p = sweep.profile("CHFR", where=dict(power=4e6, mdot=0.3))
+    assert p.frame.filled.all()
+    f = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    assert f.frame.filled.all() and f.subtitle.endswith(", interpolated")

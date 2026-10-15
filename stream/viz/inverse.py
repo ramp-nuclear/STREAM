@@ -70,12 +70,14 @@ def slice_at(curve: DataFrame, parameter: str, value: float, sweep: Sweep) -> Da
         )
     lo, hi = levels[levels < value].max(), levels[levels > value].min()
     warnings.warn(f"{parameter}={value:g} is not on the grid; interpolating between {lo:g} and {hi:g}", stacklevel=4)
-    keys = [c for c in curve.columns if c not in (parameter, "case", *COLUMNS)]
+    keys = [c for c in curve.columns if c not in (parameter, "case", "filled", "safe", *COLUMNS)]
     a = curve[np.isclose(curve[parameter], lo)].drop(columns=["case"], errors="ignore").set_index(keys)
     b = curve[np.isclose(curve[parameter], hi)].drop(columns=["case"], errors="ignore").set_index(keys)
     w = (value - lo) / (hi - lo)
     joined = a.join(b, lsuffix="_a", rsuffix="_b", how="inner")
     out = DataFrame({c: (1 - w) * joined[f"{c}_a"] + w * joined[f"{c}_b"] for c in COLUMNS}, index=joined.index)
+    if "filled" in curve.columns:
+        out["filled"] = (joined["filled_a"] | joined["filled_b"]).to_numpy(dtype=bool)
     out[parameter] = value
     return out.reset_index()
 
@@ -200,6 +202,7 @@ def required(
                 out[c] = first_crossing(g[solve_for], g[c], level, method, context)
             _order_envelopes(out)
             out["safe"] = _safe_side(sweep, q, g, solve_for, out["value"], target)
+            out["filled"] = _rests_on_filled(g, solve_for, out["value"])
             _warn_hole_in_bracket(sweep, g[solve_for].to_numpy(), out["value"], fixed_here, solve_for, context)
             rows.append(out)
     if not rows:
@@ -209,8 +212,8 @@ def required(
             + (f" at {picked}" if picked else "")
             + f"; nothing to walk along {solve_for}"
         )
-    frame = DataFrame(rows)[["quantity", "calculation", *free, *COLUMNS, "safe"]]
-    indices = [k for k in sweep.select(resolved) if not sweep.is_hole(k)]
+    frame = DataFrame(rows)[["quantity", "calculation", *free, *COLUMNS, "safe", "filled"]]
+    indices = [k for k in sweep.select(resolved) if not sweep.is_hole(k) or k in sweep.filled]
     at_values = {k: float(v) for k, v in at.items()}
     dims, fixed, single = _dims(sweep, quantities, ofs, {**resolved, **at_values}, indices, exclude=(solve_for, versus))
     sides = set(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "safe"])
@@ -284,6 +287,15 @@ def _order_envelopes(out: dict) -> None:
             out[low], out[high] = min(a, b), max(a, b)
 
 
+def _rests_on_filled(g: DataFrame, solve_for: str, crossing: float) -> bool:
+    if np.isnan(crossing) or "filled" not in g.columns:
+        return False
+    xs = g[solve_for].to_numpy(float)
+    before, after = np.flatnonzero(xs <= crossing), np.flatnonzero(xs >= crossing)
+    picks = [i for i in (before[-1] if before.size else None, after[0] if after.size else None) if i is not None]
+    return bool(g["filled"].to_numpy()[picks].any())
+
+
 def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_here: dict, solve_for: str, context: str) -> None:
     if np.isnan(crossing) or any(k not in sweep.parameters for k in fixed_here):
         return
@@ -301,6 +313,13 @@ def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_h
         if not sweep.is_hole(k):
             continue
         v = sweep.cases[k][solve_for]
+        if k in sweep.filled:
+            if (xs < v).any() and (xs > v).any() and xs[xs < v].max() <= crossing <= xs[xs > v].min():
+                warnings.warn(
+                    f"{context}: the crossing at {crossing:g} rests on interpolated case {k} ({_case_text(sweep.case_of(k))})",
+                    stacklevel=4,
+                )
+            continue
         if (xs < v).any() and (xs > v).any() and xs[xs < v].max() <= crossing <= xs[xs > v].min():
             warnings.warn(
                 f"{context}: the crossing is interpolated across missing case {k} ({_case_text(sweep.case_of(k))})",

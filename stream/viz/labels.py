@@ -154,5 +154,6 @@ STREAM_LABELS = Labels(
         "band_sys": "systematic",
         "band_total": "systematic + statistical",
         "binding": "binding",
+        "filled": "interpolated",
     }
 )
