@@ -5,7 +5,7 @@ from conftest import make_case_frame
 from matplotlib.collections import PolyCollection
 from matplotlib.contour import QuadContourSet
 
-from stream.viz import Style, Sweep, at_least, at_most
+from stream.viz import Style, Sweep, at, at_least, at_most
 
 
 def legend_texts(ax):
@@ -609,4 +609,76 @@ def test_map_cases_dots_skip_filled_cases(agr, grid_cases):
     opens = [ln for ln in ax.get_lines() if ln.get_markerfacecolor() == "white"]
     assert len(dots) == 1 and len(dots[0].get_xdata()) == 7
     assert len(opens) == 1 and opens[0].get_xdata()[0] == pytest.approx(grid_cases[3]["power"])
+    plt.close(fig)
+
+
+def formatted_sweep(agr):
+    cases = [dict(power=p, mdot=m) for p in (4.21e6, 6e6) for m in (0.2, 0.3)]
+    return Sweep(cases, [make_case_frame(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
+
+
+def test_a_label_format_reaches_legend_subtitle_and_limit(agr):
+    sweep = formatted_sweep(agr)
+    labels = {"power": ("Power", "MW", 1e-6, ".1f"), "CHFR": ("CHFR", "", 1.0, ".2f")}
+    fig, ax = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3)).plot(labels=labels)
+    assert legend_texts(ax) == ["4.2", "6.0"]
+    plt.close(fig)
+    fig, ax = sweep.profile("CHFR", of="CC", where=dict(power=4.21e6, mdot=0.3)).plot(labels=labels)
+    assert ax.get_title() == "Power = 4.2 MW, mdot = 0.3, CC"
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus="mdot").plot(labels=labels)
+    assert legend_texts(ax) == ["4.2", "6.0"]
+    assert any(t.get_text() == "CHFR = 1.50" for t in ax.texts)
+    plt.close(fig)
+
+
+def test_style_number_format_sets_the_default_of_a_figure(sweep):
+    r = sweep.reduce("CHFR", "min", versus="power")
+    fig, ax = r.plot()
+    assert legend_texts(ax) == ["0.2", "0.3"]
+    plt.close(fig)
+    fig, ax = r.plot(style_sheet=Style(number_format=".2f"))
+    assert legend_texts(ax) == ["0.20", "0.30"]
+    plt.close(fig)
+    single = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    fig, ax = single.plot(style_sheet=Style(number_format=".2f"))
+    assert ax.get_title() == "Power = 4000000.00 W, Mass flow = 0.30 kg/s, CC"
+    plt.close(fig)
+    assert single.subtitle == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
+
+
+def test_style_number_format_reaches_sigma_and_the_reducer_position(sweep, banded_sweep):
+    r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0)
+    fig, ax = r.plot(style_sheet=Style(number_format=".1f"))
+    assert any("(2.0σ)" in t for t in legend_texts(ax))
+    plt.close(fig)
+    r = sweep.reduce("T_cool", at(z=0.35), versus="power", where=dict(mdot=0.3))
+    fig, ax = r.plot(labels={"z": ("z", "m", 1.0, ".3f")})
+    assert ax.get_ylabel() == "at z=0.350 Coolant temperature [°C]"
+    plt.close(fig)
+    fig, ax = r.plot(style_sheet=Style(number_format=".2f"))
+    assert ax.get_ylabel() == "at z=0.35 Coolant temperature [°C]"
+    plt.close(fig)
+    assert r.ylabel == "at z=0.35 Coolant temperature [°C]"
+
+
+def test_levels_printing_alike_warn_at_the_plot_call(agr):
+    cases = [dict(power=p, mdot=0.3) for p in (1.0e6, 1.04e6)]
+    sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr)
+    r = sweep.reduce("CHFR", "min", versus="mdot")
+    with pytest.warns(UserWarning, match=r"power levels 1e\+06 and 1\.04e\+06 both print as '1\.0'") as record:
+        fig, ax = r.plot(labels={"power": ("Power", "MW", 1e-6, ".1f")})
+    assert record[0].filename == __file__
+    assert legend_texts(ax) == ["1.0", "1.0"]
+    plt.close(fig)
+
+
+def test_levels_printing_alike_warn_at_a_direct_plot_call(agr):
+    from stream.viz.draw import plot
+
+    cases = [dict(power=p, mdot=0.3) for p in (1.0e6, 1.04e6)]
+    sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr)
+    with pytest.warns(UserWarning, match="both print as") as record:
+        fig, ax = plot(sweep.reduce("CHFR", "min", versus="mdot"), labels={"power": ("Power", "MW", 1e-6, ".1f")})
+    assert record[0].filename == __file__
     plt.close(fig)

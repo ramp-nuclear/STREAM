@@ -167,3 +167,14 @@ def test_reducer_name():
         return 0.0
 
     assert reducer_name(span) == "span"
+
+
+def test_reducer_name_formats_the_coordinate_with_its_label():
+    from stream.viz.labels import Labels
+
+    labels = Labels({"z": ("z", "m", 1.0, ".3f"), "x": ("x", "mm", 1e3, ".0f")})
+    assert reducer_name(at(z=0.35), labels) == "at z=0.350"
+    assert reducer_name(at(x=0.0123), labels) == "at x=12"
+    assert reducer_name(at(cell=2), labels) == "at cell 2"
+    assert reducer_name("min", labels) == "min"
+    assert reducer_name(at(z=0.35), Labels()) == "at z=0.35"

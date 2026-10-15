@@ -56,7 +56,8 @@ def y_axis(result, labels: Labels) -> tuple[str, str]:
         coordinate = result.coordinate or "z"
         unit = f" [{labels.unit(coordinate)}]" if labels.unit(coordinate) else ""
         return f"{result.reducer} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
-    return y_axis_text(labels, names, result.reducer or ""), (names[0] if names else "")
+    prefix = (result.reducer or "") if result.reducer_at is None else reducer_name(result.reducer_at, labels)
+    return y_axis_text(labels, names, prefix), (names[0] if names else "")
 
 
 @dataclass
@@ -85,7 +86,10 @@ class Result:
     * ``targets``: for ``required``, the target walked for each quantity;
     * ``walk_reducers``: for ``required``, the mesh reducer of each quantity;
     * ``holes``: the unsolved cases of the selection left unfilled;
-    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``.
+    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``;
+    * ``reducer_at``: the :func:`at` reducer of a ``reduce`` result, so a figure prints its position with the
+      labels it is drawn under, else ``None``;
+    * ``walk_reducers_at``: for ``required``, the :func:`at` reducer of each quantity walked with one.
 
     A binding frame carries a ``binder`` column naming the quantity (and
     ``quantity of calculation`` when calculations varied) that binds at each
@@ -117,6 +121,8 @@ class Result:
     y: str | None = None
     holes: list = dc_field(default_factory=list)
     limit_note: str | None = None
+    reducer_at: At | None = None
+    walk_reducers_at: dict = dc_field(default_factory=dict)
 
     @property
     def ylabel(self) -> str:
@@ -145,12 +151,16 @@ class Result:
             return f"limiting of {', '.join(labels.display(q) for q in self.targets)}"
         if len(self.targets) > 1:
             return ", ".join(self._one_target(labels, q, t) for q, t in self.targets.items())
-        head = " ".join(p for p in (self.walk_reducer, labels.display(self.walk_quantity)) if p)
+        head = " ".join(p for p in (self._walk_name(labels, self.walk_quantity, self.walk_reducer), labels.display(self.walk_quantity)) if p)
         return f"{head} = {self._value_text(labels, self.walk_quantity, self.target)}"
 
     def _one_target(self, labels: Labels, q: str, target) -> str:
-        head = " ".join(p for p in (self.walk_reducers.get(q), labels.display(q)) if p)
+        head = " ".join(p for p in (self._walk_name(labels, q, self.walk_reducers.get(q)), labels.display(q)) if p)
         return f"{head} = {self._value_text(labels, q, target)}"
+
+    def _walk_name(self, labels: Labels, q: str, name: str | None) -> str | None:
+        at_ = self.walk_reducers_at.get(q)
+        return name if at_ is None else reducer_name(at_, labels)
 
     def _value_text(self, labels: Labels, q: str, target) -> str:
         if isinstance(target, str):
@@ -560,4 +570,5 @@ def reduce(
         y=axes_[1] if pair else None,
         holes=_unfilled_holes(sweep, resolved),
         binding=limiting,
+        reducer_at=reducer if isinstance(reducer, At) and not scalar else None,
     )

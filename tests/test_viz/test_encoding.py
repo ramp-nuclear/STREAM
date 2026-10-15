@@ -98,3 +98,21 @@ def test_categorical_palette_order_is_registry_then_alphabetical():
     labels = Labels({"OSVR": "OSV ratio", "CHFR": "CHF ratio"})
     e = encode({"quantity": ["OFIR", "CHFR", "OSVR"]}, NUM, labels, DEFAULT_STYLE)
     assert e.maps["color"] == {"OSVR": DEFAULT_STYLE.palette[0], "CHFR": DEFAULT_STYLE.palette[1], "OFIR": DEFAULT_STYLE.palette[2]}
+
+
+def test_numeric_levels_printing_alike_warn_and_keep_the_legend():
+    labels = Labels({"power": ("Power", "MW", 1.0, ".1f")})
+    with pytest.warns(UserWarning, match=r"power levels 1 and 1\.04 both print as '1\.0'; declare a finer format for power in labels="):
+        e = encode({"power": [1.0, 1.04, 2.0]}, NUM, labels, DEFAULT_STYLE)
+    assert [t for t, _ in e.legend[0].entries] == ["1.0", "1.0", "2.0"]
+
+
+def test_numeric_levels_printing_apart_do_not_warn():
+    labels = Labels({"power": ("Power", "MW")})
+    e = encode({"power": [1.0, 1.04, 2.0]}, NUM, labels, DEFAULT_STYLE)
+    assert [t for t, _ in e.legend[0].entries] == ["1", "1.04", "2"]
+
+
+def test_legend_entries_follow_the_registry_default_format():
+    e = encode({"mdot": [0.2, 0.3]}, NUM, LABELS.with_default_format(".2f"), DEFAULT_STYLE)
+    assert [t for t, _ in e.legend[0].entries] == ["0.20", "0.30"]

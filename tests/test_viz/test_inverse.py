@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 from conftest import make_case_frame
 
-from stream.viz import Sweep, at_least, at_most
+from stream.viz import Sweep, at, at_least, at_most
 from stream.viz.inverse import crossings, first_crossing, slice_at
 
 
@@ -348,3 +348,11 @@ def test_required_crossing_on_a_filled_case(agr, grid_cases):
     with pytest.warns(UserWarning, match="rests on interpolated case 3"):
         r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
     assert list(r.frame.sort_values("mdot").filled) == [False, True]
+
+
+def test_required_subtitle_prints_the_reducer_position_with_its_label(sweep):
+    r = sweep.required("T_cool", equals=60.0, reduce=at(z=0.35), solve_for="power", versus="mdot")
+    assert r.subtitle == "at z=0.35 Coolant temperature = 60 °C, CC"
+    fig, ax = r.plot(labels={"z": ("z", "mm", 1e3, ".0f")})
+    assert ax.get_title() == "at z=350 Coolant temperature = 60 °C, CC"
+    plt.close(fig)

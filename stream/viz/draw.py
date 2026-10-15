@@ -411,16 +411,21 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         A :class:`Style` for the look (sizes, colours, the map's levels, the
         markers of filled cases).
     labels:
-        Display names merged over the result's own for this figure.
+        Display names merged over the result's own for this figure. An
+        entry is a ``Label`` or a shorthand tuple; the 4-tuple
+        ``(display, unit, scale, fmt)`` also sets how that name's numbers
+        print, with ``fmt`` a format spec like ``".1f"`` or a callable on the
+        scaled number. A name without a format prints with the style
+        sheet's ``number_format``.
     """
     _check("bound", bound, BOUNDS)
     _check("band", band, BANDS)
     _check("limit", limit, LIMITS)
     sheet = style_sheet or DEFAULT_STYLE
-    merged = result.labels.merged(labels)
+    merged = result.labels.merged(labels).with_default_format(sheet.number_format)
     if ax is not None and (col or row):
         raise ValueError("ax= draws into one axes and cannot be combined with col= or row=")
-    sigma_text = f" ({result.sigma:g}σ)" if result.sigma != 1.0 else ""
+    sigma_text = f" ({format(result.sigma, merged.default_format)}σ)" if result.sigma != 1.0 else ""
     with sheet.context():
         if result.kind == "field":
             _check_field_arguments(dict(zip(FIELD_ARGUMENTS, (color, style, marker, col, row))), band, errorbars)

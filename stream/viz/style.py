@@ -21,6 +21,9 @@ class Style:
     limit; ``map_levels`` is the number of filled contour bands of a map and
     ``map_cases`` adds a dot at every solved case; ``filled_marker`` marks a
     case filled by interpolation.
+
+    ``number_format`` is the Python format spec of every printed number whose
+    label declares no format of its own.
     """
 
     palette: tuple[str, ...] = ("#2980b9", "#1abc9c", "#e67e22", "#8e44ad", "#7f8c8d", "#2c3e50")
@@ -40,6 +43,7 @@ class Style:
     map_levels: int = 12
     map_cases: bool = False
     filled_marker: str = "o"
+    number_format: str = ".4g"
 
     def replace(self, **changes) -> Style:
         """A copy with the given fields changed."""

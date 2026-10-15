@@ -44,3 +44,8 @@ def test_map_fields():
     from stream.viz import Style
 
     assert (Style().map_levels, Style().map_cases) == (12, False)
+
+
+def test_number_format_defaults_to_four_significant_digits():
+    assert DEFAULT_STYLE.number_format == ".4g"
+    assert DEFAULT_STYLE.replace(number_format=".2f").number_format == ".2f"

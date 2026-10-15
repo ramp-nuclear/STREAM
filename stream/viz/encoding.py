@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import os
+import sys
+import warnings
 from dataclasses import dataclass, field
 from math import isclose
+from pathlib import Path
 
 from .labels import STREAM_LABELS, Labels
 from .style import Style
@@ -12,6 +16,7 @@ CAPACITY = {"color": 6, "style": 4, "marker": 6}
 LINESTYLES = ("-", "--", ":", "-.")
 MARKERS = ("o", "s", "^", "D", "v", "P")
 PROPERTY = {"color": "color", "style": "linestyle", "marker": "marker"}
+PACKAGE = str(Path(__file__).parent) + os.sep
 
 
 @dataclass
@@ -69,10 +74,28 @@ def _color_map(levels: list, numeric: bool, labels: Labels, style: Style, space:
     return out
 
 
+def _caller_level() -> int:
+    frame, level = sys._getframe(2), 2
+    while frame is not None and frame.f_code.co_filename.startswith(PACKAGE):
+        frame, level = frame.f_back, level + 1
+    return level
+
+
 def _entries(dim: str, levels: list, numeric: bool, labels: Labels) -> list[str]:
-    if numeric:
-        return [labels.value(dim, v) for v in levels]
-    return [labels.display(v) for v in levels]
+    if not numeric:
+        return [labels.display(v) for v in levels]
+    texts = [labels.value(dim, v) for v in levels]
+    first: dict[str, float] = {}
+    for v, text in zip(levels, texts):
+        if text in first and first[text] != v:
+            warnings.warn(
+                f"{dim} levels {first[text]:g} and {v:g} both print as {text!r}; "
+                f"declare a finer format for {dim} in labels=",
+                stacklevel=_caller_level(),
+            )
+            break
+        first.setdefault(text, v)
+    return texts
 
 
 def encode(dims: dict, numeric: frozenset, labels: Labels, style: Style, color=None, style_=None, marker=None,
@@ -86,7 +109,7 @@ def encode(dims: dict, numeric: frozenset, labels: Labels, style: Style, color=N
     a numeric level takes its ramp position there, so it keeps its colour
     when another figure shows fewer levels.
     """
-    labels = STREAM_LABELS.merged(labels)
+    labels = STREAM_LABELS.merged(labels).with_default_format(getattr(labels, "default_format", STREAM_LABELS.default_format))
     requested = {"color": color, "style": style_, "marker": marker, "col": col, "row": row}
     seen: dict[str, str] = {}
     for channel, dim in requested.items():

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import numpy as np
 from pandas import DataFrame
 
+from .labels import Labels
 from .sweep import Coords
 
 REDUCERS = ("min", "max", "mean", "where_min", "where_max")
@@ -49,15 +50,19 @@ def at(*, z: float | None = None, x: float | None = None, cell: int | None = Non
     return At(z, x, cell)
 
 
-def reducer_name(reducer) -> str:
-    """A short name for axis labels: ``min``, ``at z=0.35``, a callable's name."""
+def reducer_name(reducer, labels: Labels | None = None) -> str:
+    """A short name for axis labels: ``min``, ``at z=0.35``, a callable's name.
+
+    With ``labels``, the position of an :func:`at` reducer prints with the
+    scale and format of ``z`` or ``x`` there.
+    """
     if isinstance(reducer, str):
         return reducer
     if isinstance(reducer, At):
         if reducer.cell is not None:
             return f"at cell {reducer.cell}"
         axis, value = ("z", reducer.z) if reducer.z is not None else ("x", reducer.x)
-        return f"at {axis}={value:g}"
+        return f"at {axis}={value:g}" if labels is None else f"at {axis}={labels.value(axis, value)}"
     return getattr(reducer, "__name__", "custom")
 
 
