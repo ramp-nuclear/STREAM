@@ -71,7 +71,8 @@ def test_subtitle_follows_the_labels_given_to_plot(sweep):
     assert ax.get_title() == "Power = 4 MW, Mass flow = 0.3 kg/s, CC"
     plt.close(fig)
     fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot", labels={"mdot": ("Flow", "g/s", 1e3)})
-    assert [a.get_title() for a in axes.ravel()] == ["Flow = 200 g/s, CC", "Flow = 300 g/s, CC"]
+    assert [a.get_title() for a in axes.ravel()] == ["Flow = 200 g/s", "Flow = 300 g/s"]
+    assert fig._suptitle.get_text() == "CC"
     plt.close(fig)
 
 
@@ -166,14 +167,16 @@ def test_panel_titles_take_categorical_level_names(sweep):
     r = sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
     fig, axes = r.plot(col="quantity")
     assert axes.shape == (1, 2)
-    assert [a.get_title() for a in axes.ravel()] == [f"Coolant temperature, {r.subtitle}", f"CHFR, {r.subtitle}"]
+    assert [a.get_title() for a in axes.ravel()] == ["Coolant temperature", "CHFR"]
+    assert fig._suptitle.get_text() == r.subtitle
     plt.close(fig)
 
 
 def test_grid_panels(sweep):
     fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot")
     assert axes.shape == (1, 2)
-    assert [a.get_title() for a in axes.ravel()] == ["Mass flow = 0.2 kg/s, CC", "Mass flow = 0.3 kg/s, CC"]
+    assert [a.get_title() for a in axes.ravel()] == ["Mass flow = 0.2 kg/s", "Mass flow = 0.3 kg/s"]
+    assert fig._suptitle.get_text() == "CC"
     assert axes[0, 1].get_ylabel() == ""
     plt.close(fig)
     fig, ax = plt.subplots()
@@ -440,7 +443,7 @@ def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
     assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
     r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"])
-    with pytest.raises(ValueError, match="shade needs one quantity per axes; put quantity on col= or row="):
+    with pytest.raises(ValueError, match="shade needs one curve per axes; put calculation on col= or row="):
         r.plot(limit="shade")
 
 
@@ -541,4 +544,69 @@ def test_filled_points_draw_open_markers_with_a_legend_entry(agr, grid_cases):
     plt.close(fig)
     fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()
     assert [ln for ln in ax.get_lines() if ln.get_markerfacecolor() == "white"]
+    plt.close(fig)
+
+
+def test_where_reducer_carries_no_limit(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(0.2))
+    r = sweep.reduce("CHFR", "where_min", versus="power")
+    assert r.limits == {}
+    fig, ax = r.plot()
+    assert dashed_lines(ax) == [] and len(ax.texts) == 0
+    plt.close(fig)
+    with pytest.raises(ValueError, match=r"where_min gives a location, not a value of CHFR; use min, max, mean or at\(\) to shade"):
+        r.plot(limit="shade")
+    m = sweep.reduce("CHFR", "where_min", versus=("power", "mdot"))
+    fig, ax = m.plot()
+    assert len(contour_sets(ax)) == 1 and len(ax.texts) == 0
+    plt.close(fig)
+    with pytest.raises(ValueError, match="where_min gives a location, not a value of CHFR"):
+        m.plot(limit="shade")
+
+
+def test_custom_reducer_carries_no_limit(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
+
+    def lowest(values, coords):
+        return float(np.nanmin(values))
+
+    r = sweep.reduce("CHFR", lowest, versus="power")
+    fig, ax = r.plot()
+    assert dashed_lines(ax) == []
+    plt.close(fig)
+    with pytest.raises(
+        ValueError, match=r"a custom reducer gives no value of CHFR to compare with its limit; use min, max, mean or at\(\)"
+    ):
+        r.plot(limit="shade")
+
+
+def test_required_shade_reads_each_panel_side(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_least(45.0))
+    r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot")
+    assert set(r.frame.safe) == {"below", "above"} and r.safe_side is None
+    fig, axes = r.plot(col="quantity", limit="shade")
+    assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
+    plt.close(fig)
+    with pytest.raises(ValueError, match="CHFR is safe below the required power and T_cool above it; shade one quantity per axes"):
+        r.plot(limit="shade")
+
+
+def test_map_shade_at_most_hatches_above_the_limit(agr, grid_cases):
+    sweep = limited(agr, grid_cases, T_cool=at_most(60.0))
+    fig, ax = sweep.reduce("T_cool", "max", versus=("power", "mdot")).plot(limit="shade")
+    (shade,) = [c for c in contour_sets(ax) if any(c.hatches)]
+    assert shade.levels[0] == pytest.approx(60.0) and shade.levels[1] > 60.0
+    plt.close(fig)
+
+
+def test_map_cases_dots_skip_filled_cases(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(style_sheet=Style(map_cases=True))
+    dots = [ln for ln in ax.get_lines() if ln.get_marker() == "o" and ln.get_markerfacecolor() != "white"]
+    opens = [ln for ln in ax.get_lines() if ln.get_markerfacecolor() == "white"]
+    assert len(dots) == 1 and len(dots[0].get_xdata()) == 7
+    assert len(opens) == 1 and opens[0].get_xdata()[0] == pytest.approx(grid_cases[3]["power"])
     plt.close(fig)

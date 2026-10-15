@@ -21,8 +21,13 @@ class Limit:
     value: float
     side: str
 
+    def __post_init__(self):
+        if self.side not in ("above", "below"):
+            raise ValueError(f"side must be 'above' or 'below', not {self.side!r}")
+
     @property
     def reducer(self) -> str:
+        """The mesh reducer that finds the worst value: ``min`` for ``at_least``, ``max`` for ``at_most``."""
         return "min" if self.side == "above" else "max"
 
     def unsafe(self, values) -> np.ndarray:

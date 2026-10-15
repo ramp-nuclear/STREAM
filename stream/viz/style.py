@@ -16,6 +16,11 @@ class Style:
     ``palette`` colours categorical levels, ``ramp`` names the colormap used
     for numeric levels, and the two alphas shade the total and the inner
     systematic band. Every field can be changed with :meth:`replace`.
+
+    ``limit_linewidth``, ``shade_alpha`` and ``shade_hatch`` draw a declared
+    limit; ``map_levels`` is the number of filled contour bands of a map and
+    ``map_cases`` adds a dot at every solved case; ``filled_marker`` marks a
+    case filled by interpolation.
     """
 
     palette: tuple[str, ...] = ("#2980b9", "#1abc9c", "#e67e22", "#8e44ad", "#7f8c8d", "#2c3e50")

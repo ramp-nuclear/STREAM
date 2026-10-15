@@ -175,6 +175,11 @@ def test_select_off_grid_raises_and_lists_levels(sweep):
         sweep.select(dict(mdot=0.35))
 
 
+def test_select_a_string_for_a_numeric_parameter_raises(sweep):
+    with pytest.raises(ValueError, match="power is a number; got 'x'"):
+        sweep.select(dict(power="x"))
+
+
 def test_select_nearest_warns_with_the_case_used(sweep):
     with pytest.warns(UserWarning, match="mdot=0.35.*mdot=0.3"):
         idx = sweep.select(dict(power=4e6, mdot=0.35), nearest=True)
@@ -404,3 +409,50 @@ def test_fill_holes_off_by_default_keeps_the_column(agr, grid_cases):
     sweep = holed(agr, grid_cases, 3, fill=False)
     assert sweep.filled == {} and "filled" in sweep.table.columns and not sweep.table.filled.any()
     assert "filled" in Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr).table.columns
+
+
+def test_repr_lists_what_can_be_asked(agr, grid_cases):
+    from stream.viz import at_least
+
+    frames = [make_case_frame(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, limits={"CHFR": at_least(1.3)}, fill_holes=True)
+    text = repr(sweep)
+    assert text.splitlines() == [
+        "Sweep: 8 cases, 1 hole (1 filled), no uncertainty",
+        "  parameters: power [2e+06, 4e+06, 6e+06, 8e+06], mdot [0.2, 0.3]",
+        "  CC: CHFR (profile), T_cool (profile), power (scalar)",
+        "  plate: T (field)",
+        "  limits: CHFR at least 1.3",
+        "  holes: case 3 (power=4e+06, mdot=0.3), filled along power",
+    ]
+
+
+def test_fill_holes_interpolates_the_bands(agr, grid_cases):
+    from conftest import channel_rows
+
+    def make(power, mdot):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        return frame(rows, sys=np.full(len(rows), power / 1e7), stat=np.full(len(rows), mdot / 10))
+
+    frames = [make(**c) for c in grid_cases]
+    frames[3] = None
+    with pytest.warns(UserWarning):
+        sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
+    assert sweep.banded and sweep.filled == {3: {"power": (1, 5)}}
+    rows = sweep.table[sweep.table.case == 3]
+    np.testing.assert_allclose(rows.sys, 0.4)
+    np.testing.assert_allclose(rows.stat, 0.03)
+
+
+def test_repr_counts_filled_holes_only_when_filling(agr, grid_cases):
+    sweep = holed(agr, grid_cases, 3, fill=False)
+    assert repr(sweep).splitlines()[0] == "Sweep: 8 cases, 1 hole, no uncertainty"
+
+
+def test_cases_refuses_none_levels():
+    with pytest.raises(ValueError, match="x has no levels"):
+        cases(x=None)

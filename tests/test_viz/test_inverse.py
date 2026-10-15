@@ -200,6 +200,7 @@ def test_required_without_equals_and_without_limit_raises(sweep):
 def test_required_explicit_equals_has_no_side(sweep):
     r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
     assert r.frame.safe.isna().all() and r.safe_side is None
+    assert r.subtitle == "min CHFR = 1.5, CC"
 
 
 def test_required_dict_targets_and_reducers(agr, grid_cases):

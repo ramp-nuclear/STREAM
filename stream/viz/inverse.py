@@ -6,12 +6,11 @@ import warnings
 from collections.abc import Mapping
 
 import numpy as np
-import pandas as pd
 from pandas import DataFrame
 from scipy.interpolate import PchipInterpolator
 
 from .envelope import ENVELOPES, INNER, reducer_name
-from .results import Result, _dims, _level_space, _limits_of, _numeric, binder_column, check_units, reduce
+from .results import Result, _dims, _level_space, _limits_of, _numeric, check_units, keep_binding, reduce
 from .sweep import Sweep, _case_text
 
 COLUMNS = ENVELOPES + INNER
@@ -130,7 +129,7 @@ def required(
     sweep: Sweep, quantity, equals=None, solve_for=None, versus=None, reducer=None, of=None, at=None, where=None,
     method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False,
 ) -> Result:
-    """The value of ``solve_for`` at which the reduced quantity equals ``equals``, against ``versus``.
+    """The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``; see :meth:`Sweep.required`.
 
     Every envelope column is walked on its own; ``lower`` and ``upper`` hold the smaller and the
     larger of the two walked bounds, so they bracket ``value`` whether the quantity rises or falls
@@ -233,7 +232,7 @@ def required(
         reducer=None,
         ylabel_source=(solve_for,),
         sigma=sigma,
-        walk_reducer=reducer_names[quantities[0]] if reducer is not None or quantities[0] in sweep.limits else None,
+        walk_reducer=reducer_names[quantities[0]],
         walk_reducers=reducer_names,
         level_space=_level_space(sweep),
         target=targets[quantities[0]],
@@ -251,10 +250,8 @@ def _collapse_required(frame: DataFrame, dims: dict, quantities, ofs, free, solv
     missing = sorted(set(frame.loc[frame["safe"].isna(), "quantity"]))
     if missing:
         raise ValueError(f"limiting needs the side of every limit; declare {', '.join(missing)} in limits=")
-    frame = frame.assign(binder=binder_column(frame, "calculation" in dims))
-    kept = []
-    groups = frame.groupby(free, sort=True, observed=True) if free else [((), frame)]
-    for _, g in groups:
+    candidates = []
+    for _, g in frame.groupby(free, sort=True, observed=True) if free else [((), frame)]:
         live = g[g["safe"] != "everywhere"]
         finite = live[np.isfinite(live["value"])]
         if finite["safe"].nunique() > 1:
@@ -265,17 +262,8 @@ def _collapse_required(frame: DataFrame, dims: dict, quantities, ofs, free, solv
                 "the feasible region is an interval, not one curve"
             )
         blocked = live[live["safe"] == "nowhere"]
-        if not blocked.empty:
-            kept.append(blocked.iloc[[0]])
-            continue
-        if finite.empty:
-            kept.append(g.iloc[[0]])
-            continue
-        pick = finite["value"].idxmin() if finite["safe"].iloc[0] == "below" else finite["value"].idxmax()
-        kept.append(g.loc[[pick]])
-    out = pd.concat(kept, ignore_index=True)
-    dims = {k: v for k, v in dims.items() if k not in ("quantity", "calculation")}
-    return out, dims
+        candidates.extend(blocked.index[:1] if not blocked.empty else (live.index if not live.empty else g.index))
+    return keep_binding(frame.loc[sorted(candidates)], dims, list(free), lambda rows: rows["safe"].iloc[0] == "below")
 
 
 def _order_envelopes(out: dict) -> None:
@@ -287,13 +275,15 @@ def _order_envelopes(out: dict) -> None:
             out[low], out[high] = min(a, b), max(a, b)
 
 
+def _bracket(xs: np.ndarray, crossing: float) -> list[int]:
+    before, after = np.flatnonzero(xs <= crossing), np.flatnonzero(xs >= crossing)
+    return [i for i in (before[-1] if before.size else None, after[0] if after.size else None) if i is not None]
+
+
 def _rests_on_filled(g: DataFrame, solve_for: str, crossing: float) -> bool:
     if np.isnan(crossing) or "filled" not in g.columns:
         return False
-    xs = g[solve_for].to_numpy(float)
-    before, after = np.flatnonzero(xs <= crossing), np.flatnonzero(xs >= crossing)
-    picks = [i for i in (before[-1] if before.size else None, after[0] if after.size else None) if i is not None]
-    return bool(g["filled"].to_numpy()[picks].any())
+    return bool(g["filled"].to_numpy()[_bracket(g[solve_for].to_numpy(float), crossing)].any())
 
 
 def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_here: dict, solve_for: str, context: str) -> None:
@@ -314,7 +304,7 @@ def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_h
             continue
         v = sweep.cases[k][solve_for]
         if k in sweep.filled:
-            if (xs < v).any() and (xs > v).any() and xs[xs < v].max() <= crossing <= xs[xs > v].min():
+            if np.isclose(np.asarray(xs, float)[_bracket(np.asarray(xs, float), crossing)], v, rtol=1e-9, atol=0.0).any():
                 warnings.warn(
                     f"{context}: the crossing at {crossing:g} rests on interpolated case {k} ({_case_text(sweep.case_of(k))})",
                     stacklevel=4,

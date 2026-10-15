@@ -105,7 +105,7 @@ class Labels(Mapping[str, Label]):
         """``x`` scaled and formatted for a legend entry; a string is returned as it is."""
         return x if isinstance(x, str) else format(x * self[name].scale, ".4g")
 
-    def describe(self, fixed: Mapping[str, float]) -> str:
+    def describe(self, fixed: Mapping[str, float | str]) -> str:
         """``Display = value unit`` for each fixed parameter, comma separated."""
         parts = []
         for name, x in fixed.items():

@@ -48,3 +48,14 @@ def test_results_carry_the_limits_of_their_quantities(agr, grid_cases):
     assert sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).limits == {}
     r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
     assert r.limits == {"CHFR": at_least(1.3)} and r.safe_side == "below" and r.binding is False and r.y is None
+
+
+def test_limit_refuses_an_unknown_side():
+    with pytest.raises(ValueError, match="side must be 'above' or 'below', not 'abov'"):
+        Limit(1.3, "abov")
+
+
+def test_limits_must_be_a_mapping(agr, grid_cases):
+    frames = [make_case_frame(**c) for c in grid_cases]
+    with pytest.raises(TypeError, match=r"limits= must be a mapping from quantity to a limit from at_least\(\) or at_most\(\), not"):
+        Sweep(grid_cases, frames, agr, limits=[at_least(1.3)])

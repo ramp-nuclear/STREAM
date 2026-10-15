@@ -43,7 +43,7 @@ def _subset(frame, dims, levels):
 
 def binder_colors(frame, style: Style) -> dict[str, str]:
     """A palette colour per binder, in order of first appearance."""
-    names = list(dict.fromkeys(frame["binder"].astype(str)))
+    names = list(dict.fromkeys(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "binder"].astype(str)))
     return {name: style.palette[k % len(style.palette)] for k, name in enumerate(names)}
 
 
@@ -169,22 +169,49 @@ def _limit_color(enc: Encoding, style: Style, q: str) -> str:
 
 
 def _one_curve_error(result) -> ValueError:
-    if not result.dims or "quantity" in result.dims or "calculation" in result.dims:
+    if "quantity" in result.dims:
         return ValueError("shade needs one quantity per axes; put quantity on col= or row=")
-    dim = next(iter(result.dims))
-    return ValueError(f"shade needs one curve per axes; put {dim} on col= or row=")
+    if "calculation" in result.dims:
+        return ValueError("shade needs one curve per axes; put calculation on col= or row=")
+    if result.dims:
+        return ValueError(f"shade needs one curve per axes; put {next(iter(result.dims))} on col= or row=")
+    return ValueError("shade needs one curve per axes")
+
+
+def required_side(result) -> str | None:
+    """The side of the crossing where the quantities drawn on these axes are safe, read from the frame.
+
+    ``None`` when no drawn crossing has a side; raises when the drawn crossings disagree.
+    """
+    frame = result.frame
+    finite = frame[np.isfinite(frame["value"].to_numpy(float)) & frame["safe"].isin(["below", "above"]).to_numpy()]
+    sides = dict.fromkeys(finite["safe"])
+    if len(sides) > 1:
+        below = finite.loc[finite["safe"] == "below", "quantity"].iloc[0]
+        above = finite.loc[finite["safe"] == "above", "quantity"].iloc[0]
+        raise ValueError(
+            f"{below} is safe below the required {result.ylabel_source[0]} and {above} above it; "
+            "shade one quantity per axes"
+        )
+    return next(iter(sides), None)
 
 
 def _check_shade(result, enc: Encoding) -> None:
     if _is_required(result):
-        if result.safe_side is None:
-            raise ValueError(f"shading needs the side of the limit; declare {result.walk_quantity} in limits=")
+        unknown = list(dict.fromkeys(result.frame.loc[result.frame["safe"].isna(), "quantity"].astype(str)))
+        if unknown:
+            raise ValueError(f"shading needs the side of the limit; declare {', '.join(unknown)} in limits=")
+        required_side(result)
         if len(result.frame) != len(result.frame.drop_duplicates(result.x)):
             raise _one_curve_error(result)
         return
+    if result.limit_note is not None:
+        raise ValueError(result.limit_note)
     drawn = _quantities_on(result)
-    if len(drawn) > 1 or "calculation" in enc.channels.values():
+    if len(drawn) > 1 and not result.binding:
         raise ValueError("shade needs one quantity per axes; put quantity on col= or row=")
+    if "calculation" in enc.channels.values():
+        raise _one_curve_error(result)
     if drawn[0] not in result.limits:
         raise ValueError(f"no limit declared for {drawn[0]!r}; declare it in limits= to shade")
 
@@ -196,7 +223,8 @@ def draw_limit_lines(result, ax, enc: Encoding, style: Style, labels: Labels, li
     if limit == "none" or _is_required(result):
         return
     ys = labels.scale(y_axis(result, labels)[1])
-    for q in _quantities_on(result):
+    drawn = _quantities_on(result)
+    for q in drawn[:1] if result.binding else drawn:
         lim = result.limits.get(q)
         if lim is None:
             continue
@@ -215,9 +243,12 @@ def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit:
     ys = labels.scale(y_axis(result, labels)[1])
     if _is_required(result):
         xs = labels.scale(result.x)
+        side = required_side(result)
+        if side is None:
+            return
         sub = result.frame.sort_values(result.x)
         x, y = sub[result.x].to_numpy(float) * xs, sub["value"].to_numpy(float) * ys
-        edge = hi if result.safe_side == "below" else lo
+        edge = hi if side == "below" else lo
         _shade(ax, style, style.palette[2], (lo, edge), x=x, y=y)
     else:
         q = _quantities_on(result)[0]
@@ -335,7 +366,53 @@ def _check_field_arguments(values: dict, band: str, errorbars: bool) -> None:
 
 def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal", band="total",
          errorbars=False, limit="line", style_sheet=None, labels=None):
-    """Draw ``result`` and return ``(figure, axes)``; ``axes`` is an array for a panel grid."""
+    """Draw ``result`` and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
+
+    Parameters
+    ----------
+    result:
+        The answer to draw, from profile, field, reduce or required.
+    ax:
+        Draw into this axes instead of a new figure. Not with ``col`` or ``row``.
+    color, style, marker:
+        Dimensions on colour, line style and marker. Unassigned dimensions
+        take them in that order, ``quantity`` first. Not for a map, whose
+        colour is the quantity, nor for a field.
+    col, row:
+        Dimensions on a grid of panels. Not for a field.
+    bound:
+        Which envelope column is drawn:
+
+        * ``"nominal"``: ``value`` (the default);
+        * ``"lower"``: the lower envelope;
+        * ``"upper"``: the upper envelope.
+    band:
+        The uncertainty band around a nominal line. Not for a map or a field.
+
+        * ``"total"``: one band from ``lower`` to ``upper`` (the default);
+        * ``"split"``: the total band with the systematic part shaded darker inside it;
+        * ``"none"``: no band.
+    errorbars:
+        Draw the band as error bars instead of a fill. Not for a map or a field.
+    limit:
+        The declared limit of each drawn quantity:
+
+        * ``"line"``: a dashed line at the limit, a contour on a map or a field,
+          nothing extra on a ``required`` result (the default);
+        * ``"shade"``: the line and the unsafe side hatched; on a ``required``
+          result, the side of the curve where the limit is not met. Needs one
+          quantity (or one curve) per axes; each panel counts on its own.
+          Raises when the result carries no limit for the drawn quantity (none
+          declared, or a ``where_*`` or custom reducer), when several
+          quantities share the axes, or on a ``required`` result whose side is
+          unknown;
+        * ``"none"``: neither.
+    style_sheet:
+        A :class:`Style` for the look (sizes, colours, the map's levels, the
+        markers of filled cases).
+    labels:
+        Display names merged over the result's own for this figure.
+    """
     _check("bound", bound, BOUNDS)
     _check("band", band, BANDS)
     _check("limit", limit, LIMITS)
@@ -380,8 +457,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             drawn, inner_drawn, filled_drawn = draw_lines(panel, enc, panel_ax, sheet, bound, band, errorbars, merged, binding)
             panels.append((panel, panel_ax))
             drawn_any, inner_any, filled_any = drawn_any or drawn, inner_any or inner_drawn, filled_any or filled_drawn
-            title = ", ".join(p for p in (_panel_text(merged, fixed), result.subtitle_with(merged)) if p)
-            finish_axes(panel_ax, panel, merged, sheet, title)
+            finish_axes(panel_ax, panel, merged, sheet, _panel_text(merged, fixed))
             if ci:
                 panel_ax.set_ylabel("")
             if ri != len(rows) - 1:
@@ -394,6 +470,9 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
                 shade_limits(panel, panel_ax, enc, sheet, merged, limit)
         build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding,
                      filled_drawn=filled_any)
+        subtitle = result.subtitle_with(merged)
+        if subtitle:
+            fig.suptitle(subtitle, fontsize=sheet.subtitle_size, color=sheet.palette[-1])
         fig.tight_layout()
         return fig, axes
 

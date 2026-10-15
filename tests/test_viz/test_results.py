@@ -382,3 +382,125 @@ def test_filled_cases_are_selected_and_flagged(agr, grid_cases):
     assert p.frame.filled.all()
     f = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
     assert f.frame.filled.all() and f.subtitle.endswith(", interpolated")
+
+
+def two_channel_sweep(agr, grid_cases, **limits):
+    from conftest import FakeChannel, channel_rows, frame
+
+    def make(power, mdot):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("hot", "CHFR", 0, j, chfr[j] * 0.8) for j in range(4)]
+        rows += [("hot", "T_cool", 0, j, T[j] + 5.0) for j in range(4)]
+        return frame(rows)
+
+    agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
+    return Sweep(grid_cases, [make(**c) for c in grid_cases], agr, limits=limits)
+
+
+def test_reduce_limiting_keeps_the_binding_calculation(agr, grid_cases):
+    from stream.viz import at_least
+
+    sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
+    both = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"])
+    r = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"], limiting=True)
+    assert r.binding and "calculation" not in r.dims and len(r.frame) == 8
+    assert set(r.frame.calculation) == {"hot"} and set(r.frame.binder) == {"CHFR of hot"}
+    hot = both.frame[both.frame.calculation == "hot"].sort_values(["mdot", "power"])
+    np.testing.assert_allclose(r.frame.sort_values(["mdot", "power"]).value, hot.value)
+
+
+def test_reduce_limiting_refusals(agr, grid_cases):
+    from stream.viz import at_least, at_most
+
+    sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
+    with pytest.raises(ValueError, match="limiting needs a limit for 'T_cool'; declare it in limits="):
+        sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"], limiting=True)
+    with pytest.raises(ValueError, match="limiting=True but only CHFR of CC is reduced; nothing to collapse"):
+        sweep.reduce("CHFR", "min", versus="power", of="CC", limiting=True)
+    with pytest.raises(ValueError, match="limiting applies to versus=, not axis="):
+        sweep.reduce("T", "max", of="plate", axis="x", limiting=True)
+    mixed = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3), power=at_most(5e6))
+    with pytest.raises(
+        ValueError,
+        match=r"limiting across quantities needs them on the same side of their limits; "
+        r"CHFR is at least 1\.3 and power is at most 5e\+06",
+    ):
+        mixed.reduce(["CHFR", "power"], "min", versus="power", of="CC", limiting=True)
+
+
+def test_reduce_limiting_on_a_map(agr, grid_cases):
+    import matplotlib.pyplot as plt
+
+    from stream.viz import at_least
+
+    sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
+    r = sweep.reduce("CHFR", "min", versus=("power", "mdot"), of=["CC", "hot"], limiting=True)
+    assert r.kind == "map" and len(r.frame) == 8 and set(r.frame.calculation) == {"hot"}
+    fig, ax = r.plot()
+    plt.close(fig)
+
+
+def test_reduce_limiting_refuses_a_where_reducer(agr, grid_cases):
+    from stream.viz import at_least
+
+    sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
+    with pytest.raises(
+        ValueError, match=r"where_min gives a location, not a value of CHFR; use min, max, mean or at\(\) with limiting=True"
+    ):
+        sweep.reduce("CHFR", "where_min", versus="power", of=["CC", "hot"], limiting=True)
+
+
+def test_reduce_limiting_at_most_keeps_the_largest(agr, grid_cases):
+    from stream.viz import at_most
+
+    sweep = two_channel_sweep(agr, grid_cases, T_cool=at_most(100.0))
+    both = sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"])
+    r = sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"], limiting=True)
+    assert set(r.frame.binder) == {"T_cool of hot"}
+    hot = both.frame[both.frame.calculation == "hot"].sort_values(["mdot", "power"])
+    np.testing.assert_allclose(r.frame.sort_values(["mdot", "power"]).value, hot.value)
+
+
+def osvr_sweep(agr, grid_cases, **limits):
+    from conftest import channel_rows, frame
+
+    def make(power, mdot):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("CC", "OSVR", 0, j, chfr[j] * (power / 4e6) ** 0.5) for j in range(4)]
+        return frame(rows)
+
+    return Sweep(grid_cases, [make(**c) for c in grid_cases], agr, limits=limits)
+
+
+def test_reduce_limiting_across_quantities_needs_one_limit_value(agr, grid_cases):
+    import matplotlib.pyplot as plt
+
+    from stream.viz import at_least
+
+    sweep = osvr_sweep(agr, grid_cases, CHFR=at_least(1.3), OSVR=at_least(1.1))
+    with pytest.raises(
+        ValueError,
+        match=r"limiting across quantities needs one limit value; CHFR is at least 1\.3 and OSVR is at least 1\.1; "
+        r"required\(\.\.\., limiting=True\) compares them in the walked parameter instead",
+    ):
+        sweep.reduce(["CHFR", "OSVR"], "min", versus="power", limiting=True)
+    same = osvr_sweep(agr, grid_cases, CHFR=at_least(1.3), OSVR=at_least(1.3))
+    r = same.reduce(["CHFR", "OSVR"], "min", versus="power", limiting=True)
+    assert set(r.frame.binder) == {"CHFR", "OSVR"}
+    fig, ax = r.plot(color="mdot", limit="shade")
+    assert len([p for p in ax.patches if p.get_hatch()]) == 1
+    assert len([ln for ln in ax.get_lines() if ln.get_linestyle() == "--"]) == 1
+    plt.close(fig)
+
+
+def test_map_accepts_a_list_pair(sweep):
+    r = sweep.reduce("CHFR", "min", versus=["power", "mdot"])
+    assert r.kind == "map" and r.x == "power" and r.y == "mdot"
+    with pytest.raises(ValueError, match="versus= as a map takes two different parameters"):
+        sweep.reduce("CHFR", "min", versus=["power"])
+    with pytest.raises(ValueError, match="5 is not a sweep parameter; the parameters are power, mdot"):
+        sweep.reduce("CHFR", "min", versus=5)

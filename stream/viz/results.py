@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from .envelope import ENVELOPES, INNER, mesh_shape, reduce_rows, reducer_name, to_array, with_envelopes
+from .envelope import ENVELOPES, INNER, At, mesh_shape, reduce_rows, reducer_name, to_array, with_envelopes
 from .labels import Labels
 from .sweep import Coords, Sweep, _case_text
 
@@ -61,14 +61,35 @@ def y_axis(result, labels: Labels) -> tuple[str, str]:
 
 @dataclass
 class Result:
-    """A tidy frame plus what a figure needs to know about it.
+    """The answer to a question asked of a :class:`Sweep`, ready to plot.
 
-    ``frame`` holds one row per drawn point with the dimension columns,
-    the x column, and ``lower``, ``value``, ``upper``. ``dims`` lists the
-    dimensions that vary and their levels; ``fixed`` the parameters that do
-    not; ``level_space`` every parameter's full list of levels in the sweep,
-    so a level keeps its colour across figures. ``coordinate`` names the mesh
-    axis a ``where_*`` reducer read its values off. ``plot`` draws it.
+    ``kind`` is one of:
+
+    * ``"profile"``: a quantity along a mesh coordinate, from ``profile`` or ``reduce(axis=...)``;
+    * ``"curve"``: a value against a parameter, from ``reduce`` or ``required``;
+    * ``"map"``: a value over two parameters, from ``reduce`` with a pair ``versus``;
+    * ``"field"``: a quantity over a two axis mesh, from ``field``.
+
+    The fields a user reads:
+
+    * ``frame``: the tidy DataFrame, one row per drawn point, with the dimension
+      columns, the x column, ``lower``, ``value``, ``upper`` and ``filled``;
+    * ``x``: the column on the x axis;
+    * ``y``: the parameter on the y axis of a map, else ``None``;
+    * ``dims``: the dimensions that vary, with their levels;
+    * ``fixed``: the parameters that do not vary, with their values;
+    * ``calculation``: the calculation drawn, when there is one;
+    * ``limits``: the declared limits of the quantities drawn, when the values are the quantity's own;
+    * ``safe_side``: for ``required``, the side of the crossing where every quantity is safe, when it is one;
+    * ``binding``: whether ``limiting=True`` collapsed the result;
+    * ``targets``: for ``required``, the target walked for each quantity;
+    * ``walk_reducers``: for ``required``, the mesh reducer of each quantity;
+    * ``holes``: the unsolved cases of the selection left unfilled;
+    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``.
+
+    A binding frame carries a ``binder`` column naming the quantity (and
+    ``quantity of calculation`` when calculations varied) that binds at each
+    point. ``plot`` draws the result.
     """
 
     kind: str
@@ -76,7 +97,7 @@ class Result:
     x: str
     dims: dict[str, list]
     numeric: frozenset[str]
-    fixed: dict[str, float]
+    fixed: dict[str, float | str]
     calculation: str | None
     labels: Labels
     banded: bool
@@ -95,6 +116,7 @@ class Result:
     binding: bool = False
     y: str | None = None
     holes: list = dc_field(default_factory=list)
+    limit_note: str | None = None
 
     @property
     def ylabel(self) -> str:
@@ -111,8 +133,9 @@ class Result:
         parts = [self._target_text(labels), labels.describe(self.fixed)]
         if self.calculation is not None:
             parts.append(labels.display(self.calculation))
-        if self.kind == "field" and "filled" in self.frame.columns and bool(self.frame["filled"].any()):
-            parts.append("interpolated")
+        filled = labels["filled"].display
+        if self.kind == "field" and filled and "filled" in self.frame.columns and bool(self.frame["filled"].any()):
+            parts.append(filled)
         return ", ".join(p for p in parts if p)
 
     def _target_text(self, labels: Labels) -> str:
@@ -213,6 +236,24 @@ def binder_column(frame: DataFrame, with_calculation: bool) -> pd.Series:
     if with_calculation:
         return frame["quantity"].astype(str) + " of " + frame["calculation"].astype(str)
     return frame["quantity"].astype(str)
+
+
+def keep_binding(frame: DataFrame, dims: dict, groups: list[str], smallest) -> tuple[DataFrame, dict]:
+    """One row per group of ``frame``, named in ``binder``, and ``dims`` without ``quantity`` and ``calculation``.
+
+    The kept row has the smallest finite ``value`` of its group when ``smallest(finite_rows)`` is true,
+    the largest otherwise, and is the group's first row when no value is finite.
+    """
+    frame = frame.assign(binder=binder_column(frame, "calculation" in dims))
+    kept = []
+    for _, g in frame.groupby(groups, sort=True, observed=True) if groups else [((), frame)]:
+        finite = g[np.isfinite(g["value"])]
+        if finite.empty:
+            kept.append(g.iloc[[0]])
+            continue
+        kept.append(g.loc[[finite["value"].idxmin() if smallest(finite) else finite["value"].idxmax()]])
+    out = pd.concat(kept, ignore_index=True)
+    return out, {k: v for k, v in dims.items() if k not in ("quantity", "calculation")}
 
 
 def _rows(sweep: Sweep, table: DataFrame, k: int, calc: str, q: str) -> DataFrame:
@@ -377,6 +418,44 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
     )
 
 
+def no_value_note(reducer, quantities, purpose: str) -> str | None:
+    """Why ``reducer`` gives no value of ``quantities`` to hold against a limit, or ``None`` when it does."""
+    names = ", ".join(quantities)
+    if isinstance(reducer, str) and reducer.startswith("where_"):
+        return f"{reducer} gives a location, not a value of {names}; use min, max, mean or at() {purpose}"
+    if callable(reducer) and not isinstance(reducer, At):
+        return f"a custom reducer gives no value of {names} to compare with its limit; use min, max, mean or at()"
+    return None
+
+
+def _collapse_reduced(sweep: Sweep, frame: DataFrame, dims: dict, quantities, ofs, note: str | None) -> tuple[DataFrame, dict]:
+    if note is not None:
+        raise ValueError(note)
+    missing = [q for q in quantities if q not in sweep.limits]
+    if missing:
+        raise ValueError(f"limiting needs a limit for {missing[0]!r}; declare it in limits=")
+    if "quantity" not in dims and "calculation" not in dims:
+        raise ValueError(f"limiting=True but only {quantities[0]} of {ofs[0]} is reduced; nothing to collapse")
+    sides = {q: sweep.limits[q].side for q in quantities}
+    if len(set(sides.values())) > 1:
+        a = next(q for q in quantities if sides[q] == "above")
+        b = next(q for q in quantities if sides[q] == "below")
+        raise ValueError(
+            "limiting across quantities needs them on the same side of their limits; "
+            f"{a} is {sweep.limits[a].text()} and {b} is {sweep.limits[b].text()}"
+        )
+    values = {q: sweep.limits[q].value for q in quantities}
+    if len(set(values.values())) > 1:
+        a = quantities[0]
+        b = next(q for q in quantities if values[q] != values[a])
+        raise ValueError(
+            f"limiting across quantities needs one limit value; {a} is {sweep.limits[a].text()} and "
+            f"{b} is {sweep.limits[b].text()}; required(..., limiting=True) compares them in the walked parameter instead"
+        )
+    smallest = sides[quantities[0]] == "above"
+    return keep_binding(frame, dims, ["case"], lambda rows: smallest)
+
+
 def reduce(
     sweep: Sweep,
     quantity,
@@ -388,15 +467,20 @@ def reduce(
     nearest=False,
     sigma=1.0,
     uncertainty=True,
+    limiting=False,
 ) -> Result:
-    """A reducer applied per case, against ``versus``; a map when ``versus`` is a pair of parameters; a profile when ``axis`` is given."""
+    """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis; see :meth:`Sweep.reduce`."""
     quantities, ofs = sweep.names(quantity, of)
     check_units(sweep.labels, quantities)
     if axis is not None and versus is not None:
         raise ValueError("reduce() takes versus= or axis=, not both: axis= leaves a profile, versus= a curve")
     if axis is None and versus is None:
         raise ValueError("reduce() needs versus= (a parameter for the x axis) or axis= (a field direction to collapse)")
-    pair = isinstance(versus, tuple)
+    if limiting and axis is not None:
+        raise ValueError("limiting applies to versus=, not axis=")
+    pair = isinstance(versus, (list, tuple))
+    if pair:
+        versus = tuple(versus)
     if pair and (len(versus) != 2 or versus[0] == versus[1]):
         raise ValueError("versus= as a map takes two different parameters, like versus=('power', 'mdot')")
     axes_ = list(versus) if pair else ([versus] if versus is not None else [])
@@ -451,9 +535,14 @@ def reduce(
     else:
         dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices, exclude=tuple(axes_))
         kind = "map" if pair else "curve"
+    frame = pd.concat(pieces, ignore_index=True)
+    value_free = not scalar and no_value_note(reducer, quantities, "") is not None
+    if limiting:
+        note = no_value_note(reducer, quantities, "with limiting=True") if value_free else None
+        frame, dims = _collapse_reduced(sweep, frame, dims, quantities, ofs, note)
     return Result(
         kind=kind,
-        frame=pd.concat(pieces, ignore_index=True),
+        frame=frame,
         x=xname,
         dims=dims,
         numeric=_numeric(sweep, dims),
@@ -466,7 +555,9 @@ def reduce(
         sigma=sigma,
         level_space=_level_space(sweep),
         coordinate=coordinate if name.startswith("where_") else None,
-        limits=_limits_of(sweep, quantities),
+        limits={} if value_free else _limits_of(sweep, quantities),
+        limit_note=no_value_note(reducer, quantities, "to shade") if value_free else None,
         y=axes_[1] if pair else None,
         holes=_unfilled_holes(sweep, resolved),
+        binding=limiting,
     )

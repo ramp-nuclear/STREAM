@@ -19,6 +19,7 @@ from .limits import Limit
 STATE_COLUMNS = ("calculation", "variable", "i", "j", "value")
 BAND_COLUMNS = ("sys", "stat")
 RESERVED_COLUMNS = ("case",) + STATE_COLUMNS + BAND_COLUMNS + ("filled", "safe", "binder")
+RANKS = ("scalar", "profile", "field")
 
 
 @dataclass(frozen=True)
@@ -46,23 +47,30 @@ class FrameList(list):
         self.failures = {}
 
 
-def _case_text(case: Mapping) -> str:
+def _level_text(v: float | str) -> str:
+    return v if isinstance(v, str) else format(v, "g")
+
+
+def _case_text(case: Mapping[str, float | str]) -> str:
     return ", ".join(f"{k}={v if isinstance(v, str) else format(v, 'g')}" for k, v in case.items())
 
 
 def cases(**levels) -> list[dict]:
-    """Every combination of the given levels, one dict per case.
+    """The product of the given levels, one dict per case.
 
-    Keys keep the given order and the last parameter varies fastest. A
-    number or a string is a parameter with one level::
+    Each keyword is a parameter and its levels; a single number or string is a
+    parameter with one level. The last parameter varies fastest::
 
-        run_cases(model, cases(power=[2e6, 4e6], mdot=[0.2, 0.3], wall_law="regime"))
+        cases(power=[2e6, 4e6], mdot=[0.2, 0.3], Tin=300.0)
+
+    gives four cases, ``power=2e6, mdot=0.2`` first. Pass the list to
+    :func:`run_cases` and the result to :class:`Sweep`.
     """
     if not levels:
         raise ValueError("cases() needs at least one parameter")
     axes = []
     for name, values in levels.items():
-        values = [values] if isinstance(values, (str, Real)) else list(values)
+        values = [] if values is None else [values] if isinstance(values, (str, Real)) else list(values)
         if not values:
             raise ValueError(f"{name} has no levels")
         axes.append(values)
@@ -71,9 +79,9 @@ def cases(**levels) -> list[dict]:
 
 def run_cases(
     model: Callable[..., DataFrame],
-    cases: list[dict[str, float]],
+    cases: list[dict[str, float | str]],
     catch: tuple[type[BaseException], ...] = (Exception,),
-) -> tuple[list[dict[str, float]], FrameList]:
+) -> tuple[list[dict[str, float | str]], FrameList]:
     """Call ``model(**case)`` for every case and collect the frames.
 
     A call raising one of ``catch`` leaves ``None`` in its slot; the
@@ -96,19 +104,40 @@ def run_cases(
 class Sweep:
     """Cases, result frames and the aggregator they came from.
 
+    Ask ``print(sweep)`` for the parameters and their levels, the quantities of
+    each calculation, the holes and the limits.
+
     Parameters
     ----------
     cases:
-        One dict per case, all with the same keys. A parameter holds a
-        number in every case, or a string in every case (a choice, which
-        can colour, style or panel a figure but not be an axis).
+        One dict per case, all with the same keys. A value is a number, or a
+        string for a parameter that is a choice (a wall law, a correlation);
+        each parameter is one or the other in every case. A choice can colour,
+        style or panel a figure, never be an axis.
     frames:
-        One ``State.to_dataframe()`` result per case, or ``None`` for a
-        case whose solve failed.
+        One ``State.to_dataframe()`` result per case, or ``None`` for a case
+        whose solve failed (a hole).
     agr:
         The aggregator, static across the sweep, used for coordinates.
     labels:
-        Display names and units, merged over the module defaults.
+        Display names, units and scales, merged over the module defaults.
+    limits:
+        The limits the design must respect, one per quantity::
+
+            limits={"CHFR": at_least(1.3), "T_clad": at_most(900.0)}
+
+        A declared limit is drawn on every figure that shows the quantity,
+        gives ``required`` its target and ``limiting=True`` its meaning.
+    fill_holes:
+        ``True`` fills a hole when, along a numeric parameter and with every
+        other parameter equal, the grid levels immediately below and above it
+        are solved cases; the fill interpolates linearly between the two (the
+        mean over the parameters that bracket it). A hole that no numeric
+        parameter brackets this way (at the edge of the sweep, or next to
+        another hole, along every one of them) stays a hole. Filled rows carry
+        ``filled=True`` in every frame, draw with an open marker (a field
+        ends its subtitle with ``, interpolated``) and are listed in
+        ``filled``. Off by default because an interpolated case is a guess.
     """
 
     def __init__(self, cases, frames, agr, labels=None, limits=None, fill_holes=False):
@@ -135,6 +164,28 @@ class Sweep:
         self.limits = MappingProxyType(_check_limits(limits, self.table))
         self._coords_cache: dict[str, object] = {}
 
+    def __repr__(self) -> str:
+        n_holes, n_filled = len(self.holes), len(self.filled)
+        head = f"Sweep: {self.n_cases} case{'s' if self.n_cases != 1 else ''}, {n_holes} hole{'s' if n_holes != 1 else ''}"
+        head += f" ({n_filled} filled)" if n_holes and self.fill_holes else ""
+        head += ", uncertainty bands" if self.banded else ", no uncertainty"
+        lines = [head]
+        if self.parameters:
+            params = ", ".join(f"{p} [{', '.join(_level_text(v) for v in self.levels(p))}]" for p in self.parameters)
+            lines.append(f"  parameters: {params}")
+        for calc in sorted(self.table.calculation.unique().tolist()) if len(self.table) else []:
+            names = sorted(self.table.variable[self.table.calculation == calc].unique().tolist())
+            lines.append(f"  {calc}: " + ", ".join(f"{q} ({RANKS[self.rank(q, calc)]})" for q in names))
+        if self.limits:
+            lines.append("  limits: " + ", ".join(f"{q} {lim.text()}" for q, lim in self.limits.items()))
+        for k, message in self.holes.items():
+            text = "  holes: " if k == next(iter(self.holes)) else "         "
+            text += f"case {k} ({_case_text(self.cases[k])})" + (f": {message}" if message else "")
+            if k in self.filled:
+                text += ", filled along " + ", ".join(self.filled[k])
+            lines.append(text)
+        return "\n".join(lines)
+
     @classmethod
     def single(cls, frame: DataFrame, agr, labels=None, limits=None) -> Sweep:
         """A sweep of one case and no parameters."""
@@ -152,7 +203,7 @@ class Sweep:
     def n_cases(self) -> int:
         return len(self.cases)
 
-    def case_of(self, index: int) -> dict[str, float]:
+    def case_of(self, index: int) -> dict[str, float | str]:
         """The parameter values of case ``index``."""
         return dict(self.cases[index])
 
@@ -261,7 +312,7 @@ class Sweep:
     def is_hole(self, index: int) -> bool:
         return index in self.holes
 
-    def resolve(self, where: Mapping[str, float] | None, nearest: bool = False) -> dict[str, float]:
+    def resolve(self, where: Mapping[str, float | str] | None, nearest: bool = False) -> dict[str, float | str]:
         """``where`` with each value snapped to the grid, or raised on."""
         out = {}
         for name, wanted in (where or {}).items():
@@ -271,6 +322,8 @@ class Sweep:
                     raise ValueError(f"{wanted!r} is not a level of {name}; the levels are {', '.join(levels)}")
                 out[name] = wanted
                 continue
+            if isinstance(wanted, str):
+                raise ValueError(f"{name} is a number; got {wanted!r}")
             hits = np.isclose(levels, wanted, rtol=1e-9, atol=0.0)
             if hits.any():
                 out[name] = float(levels[hits][0])
@@ -285,7 +338,7 @@ class Sweep:
             out[name] = used
         return out
 
-    def select(self, where: Mapping[str, float] | None = None, nearest: bool = False) -> np.ndarray:
+    def select(self, where: Mapping[str, float | str] | None = None, nearest: bool = False) -> np.ndarray:
         """Indices of the cases matching ``where``; every case when ``where`` is empty."""
         wanted = self.resolve(where, nearest)
         keep = [k for k, case in enumerate(self.cases) if self._matches(case, wanted)]
@@ -344,26 +397,210 @@ class Sweep:
         return self._coords_cache[calculation]
 
     def profile(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
-        """A rank-1 quantity against its coordinate for every selected case."""
+        """A profile quantity against its mesh coordinate, one line per selected case.
+
+        ::
+
+            sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+            sweep.profile("T_cool", where=dict(mdot=0.3)).plot(color="power")
+            sweep.profile(["CHFR", "OSVR"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity")
+
+        Parameters
+        ----------
+        quantity:
+            One name or a list of names, all of one unit, each a profile (one
+            value per cell along one axis).
+        of:
+            The calculation(s) that own the quantity, when ambiguous.
+        where:
+            Parameters fixed at a grid level, as a dict; a choice parameter takes
+            one of its strings (``where=dict(power=4e6, wall_law="regime")``).
+        nearest:
+            Snap ``where`` values to the nearest grid level instead of raising.
+        sigma:
+            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
+        uncertainty:
+            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
+        """
         from .results import profile
 
         return profile(self, quantity, of, where, nearest, sigma, uncertainty)
 
     def field(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
-        """A rank-2 quantity of exactly one case, ready to map."""
+        """A field quantity of exactly one case, drawn as a colour mesh over its two axes.
+
+        ::
+
+            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()
+            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(bound="upper", limit="shade")
+
+        Parameters
+        ----------
+        quantity:
+            One name, a field (one value per cell over two axes).
+        of:
+            The calculation(s) that own the quantity, when ambiguous.
+        where:
+            Parameters fixed at a grid level, as a dict, enough to pick one case; a choice parameter takes
+            one of its strings (``where=dict(power=4e6, wall_law="regime")``).
+        nearest:
+            Snap ``where`` values to the nearest grid level instead of raising.
+        sigma:
+            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
+        uncertainty:
+            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
+        """
         from .results import field
 
         return field(self, quantity, of, where, nearest, sigma, uncertainty)
 
-    def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0, uncertainty=True):
-        """Collapse a quantity per case and plot it against a parameter, or along one field axis."""
+    def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0,
+               uncertainty=True, limiting=False):
+        """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis.
+
+        ::
+
+            sweep.reduce("CHFR", "min", versus="power")
+            sweep.reduce("CHFR", "min", versus="power").plot(color="mdot")
+            sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()
+            sweep.reduce("T", "max", axis="x")
+            sweep.reduce("CHFR", "min", versus="power", of=channels, limiting=True)
+
+        Parameters
+        ----------
+        quantity:
+            One name or a list of names, all of one unit.
+        reducer:
+            How the cells of each case are collapsed:
+
+            * ``"min"``: the smallest cell value;
+            * ``"max"``: the largest cell value;
+            * ``"mean"``: the mean weighted by cell size;
+            * ``"where_min"``: the coordinate of the smallest value;
+            * ``"where_max"``: the coordinate of the largest value;
+            * ``at(z=...)``, ``at(x=...)`` or ``at(cell=...)``: the value of one cell;
+            * a callable ``f(values, coords)``: whatever it returns.
+
+            A scalar quantity is taken as it is. A ``where_*`` reducer gives a
+            location and a callable an unknown value, so their results carry no
+            limit: ``limit="line"`` draws nothing, and ``limit="shade"`` or
+            ``limiting=True`` raises.
+        versus:
+            A numeric parameter for the x axis, or a pair of two numeric
+            parameters (a tuple or a list) for a map (filled contours, the limit
+            as a contour). When
+            the map's reducer is the limit's own (``min`` for ``at_least``,
+            ``max`` for ``at_most``), its limit contour is the curve
+            ``required(solve_for=versus[0], versus=versus[1])`` draws.
+        of:
+            The calculation(s) that own the quantity, when ambiguous.
+        where:
+            Parameters fixed at a grid level.
+        axis:
+            Collapse a field along one axis and keep a profile along the other,
+            instead of ``versus``:
+
+            * ``"z"``: collapse along z, a profile along x;
+            * ``"x"``: collapse along x, a profile along z.
+        nearest:
+            Snap ``where`` values to the nearest grid level instead of raising.
+        sigma:
+            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
+        uncertainty:
+            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
+        limiting:
+            ``True`` keeps, per case, only the calculation (and quantity) that
+            binds: the smallest reduced value for a limit that is ``at_least``, the
+            largest for ``at_most``. The frame names it in ``calculation`` and
+            ``quantity``. Needs every quantity's limit declared, all with one
+            side and one value: values are compared as they are, so across
+            quantities it is meaningful only when they share a limit value; use
+            ``required(..., limiting=True)`` for quantities with different limits.
+        """
         from .results import reduce
 
-        return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty)
+        return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty, limiting)
 
     def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
                  method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False):
-        """The value of ``solve_for`` at which the reduced quantity equals ``equals``, against ``versus``."""
+        """The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``.
+
+        Each quantity is reduced over the mesh per case, the curve along
+        ``solve_for`` is walked at every level of ``versus`` (and of every other
+        free parameter), and the crossing is interpolated::
+
+            sweep.required("CHFR", solve_for="power", versus="mdot")
+            sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
+            sweep.required(["CHFR", "OSVR"], solve_for="power", versus="mdot")
+            sweep.required(["CHFR", "OSVR"], equals={"CHFR": 1.3, "OSVR": 1.1}, solve_for="power", versus="mdot")
+            sweep.required(["CHFR", "OSVR"], of=channels, solve_for="power", versus="mdot", limiting=True)
+
+        Parameters
+        ----------
+        quantity:
+            One name or a list of names. Each is walked on its own, so their
+            units may differ.
+        equals:
+            The target. ``None`` (the default) uses each quantity's declared limit;
+            a number applies to every quantity; a quantity name walks the
+            difference to that quantity (``equals="q_CHF"``); a dict gives each
+            quantity its own.
+        solve_for:
+            Required. The parameter to walk along. Numeric.
+        versus:
+            Required. The parameter on the x axis. Numeric.
+        reduce:
+            The mesh reducer, any value ``reduce()`` takes. ``None`` uses ``min``
+            for a limit that is ``at_least`` and ``max`` for one that is
+            ``at_most`` (``min`` without a declared limit); one reducer applies to
+            every quantity; a dict gives each its own.
+        of:
+            The calculation(s) that own the quantity, when ambiguous.
+        at:
+            Parameters fixed at a value, on or off the grid; off the grid, the
+            walk is interpolated between the two neighbouring levels.
+        where:
+            Parameters fixed at a grid level.
+        method:
+            How the crossing is interpolated between grid points:
+
+            * ``"linear"``: straight lines between them (the default);
+            * ``"pchip"``: a monotone cubic through them.
+        nearest:
+            Snap ``where`` values to the nearest grid level instead of raising.
+        sigma:
+            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
+        uncertainty:
+            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
+        limiting:
+            ``True`` keeps, at each level of ``versus`` (and of every other free
+            parameter), only the quantity and the calculation that bind, the
+            smallest required value when the safe side lies below it and the
+            largest when above. A quantity safe everywhere at that level does not
+            bind there; one safe nowhere makes the level infeasible (its value
+            is NaN). The frame names the binder in ``quantity`` and
+            ``calculation``, and the plot colours the markers by it. Needs every
+            quantity's limit declared, and the quantities that cross at one level
+            safe on the same side of their crossings.
+            What is compared is the required value of ``solve_for``, so
+            quantities of different units and limits combine.
+
+        Returns
+        -------
+        Result
+            A curve whose ``frame`` has one row per crossing with ``lower``,
+            ``value``, ``upper`` (the walked envelopes), ``filled`` (whether the
+            crossing rests on an interpolated case) and ``safe``, where the
+            quantity is safe:
+
+            * ``"below"``: below the crossing, in ``solve_for``;
+            * ``"above"``: above it;
+            * ``"everywhere"``: the walk never reaches the target and every
+              solved point is safe;
+            * ``"nowhere"``: the walk never reaches the target and every solved
+              point is unsafe;
+            * ``None``: no limit is declared for the quantity.
+        """
         from .inverse import required
 
         return required(self, quantity, equals, solve_for, versus, reducer=reduce, of=of, at=at, where=where,
@@ -401,6 +638,10 @@ def _coords_of(calc) -> Coords | None:
 
 
 def _check_limits(limits, table: DataFrame) -> dict[str, Limit]:
+    if limits is not None and not isinstance(limits, Mapping):
+        raise TypeError(
+            f"limits= must be a mapping from quantity to a limit from at_least() or at_most(), not {limits!r}"
+        )
     out = {}
     variables = sorted(table["variable"].unique().tolist()) if len(table) else []
     for name, limit in (limits or {}).items():

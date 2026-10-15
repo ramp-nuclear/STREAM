@@ -67,3 +67,57 @@ def test_profile_reduce_and_required_run_on_a_real_channel(real_sweep):
     fig, ax = req.plot()
     assert ax.get_ylabel() == "Wall temperature [°C]"
     plt.close(fig)
+
+
+def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
+    from conftest import make_case_frame
+
+    from stream.viz import at_least, cases
+
+    def model(power, mdot, wall_law):
+        if power == 6e6 and mdot == 0.3 and wall_law == "regime":
+            raise RuntimeError("no convergence")
+        return make_case_frame(power, mdot * (1.1 if wall_law == "regime" else 1.0))
+
+    with pytest.warns(UserWarning):
+        cs, frames = run_cases(model, cases(power=[2e6, 4e6, 6e6, 8e6], mdot=[0.2, 0.3], wall_law=["Dittus", "regime"]))
+    with pytest.warns(UserWarning) as record:
+        sweep = Sweep(cs, frames, agr, limits={"CHFR": at_least(1.5)}, fill_holes=True)
+    assert any("filled unsolved" in str(w.message) for w in record)
+    assert "wall_law [Dittus, regime]" in repr(sweep)
+    with pytest.warns(UserWarning, match="rests on interpolated case 11"):
+        r = sweep.required("CHFR", solve_for="power", versus="mdot")
+    assert r.dims == {"wall_law": ["Dittus", "regime"]} and r.safe_side == "below"
+    fig, axes = r.plot(col="wall_law", limit="shade")
+    assert axes.shape == (1, 2)
+    plt.close(fig)
+    fig, axes = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="wall_law", limit="shade")
+    assert axes.shape == (1, 2)
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(wall_law="regime")).plot(color="mdot")
+    assert any(ln.get_linestyle() == "--" for ln in ax.get_lines())
+    plt.close(fig)
+
+
+def test_the_module_example_runs(agr):
+    import textwrap
+
+    from conftest import channel_rows, frame
+
+    import stream.viz as viz
+
+    def model(power, mdot, wall_law):
+        m = mdot * (1.1 if wall_law == "regime" else 1.0)
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * m / 0.3 * (4e6 / power)
+        rows = channel_rows(T, chfr, power)
+        rows += [("CC", "T_clad", 0, j, t + 15.0 * power / 1e6 / m) for j, t in enumerate((400.0, 500.0, 600.0, 700.0))]
+        return frame(rows)
+
+    lines = viz.__doc__.split("::\n\n", 1)[1].splitlines()
+    code = []
+    for line in lines:
+        if line and not line.startswith("    "):
+            break
+        code.append(line)
+    exec(textwrap.dedent("\n".join(code)), {**vars(viz), "model": model, "agr": agr})

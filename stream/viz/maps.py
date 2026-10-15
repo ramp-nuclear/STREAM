@@ -68,6 +68,8 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
     cf = ax.contourf(X, Y, masked, levels=levels, cmap=style.ramp)
     lim = result.limits.get(q)
     if limit == "shade" and lim is None:
+        if result.limit_note is not None:
+            raise ValueError(result.limit_note)
         raise ValueError(f"no limit declared for {q!r}; declare it in limits= to shade")
     if limit != "none" and lim is not None:
         level = lim.value * vs
@@ -92,7 +94,8 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
         ax.plot(fx, fy, linestyle="none", marker=style.filled_marker, markerfacecolor="white",
                 markeredgecolor=style.palette[-1], zorder=5)
     if style.map_cases:
-        ax.plot(result.frame[result.x].to_numpy(float) * xs, result.frame[result.y].to_numpy(float) * ys,
+        solved = result.frame[~result.frame["filled"].to_numpy(bool)] if "filled" in result.frame.columns else result.frame
+        ax.plot(solved[result.x].to_numpy(float) * xs, solved[result.y].to_numpy(float) * ys,
                 linestyle="none", marker="o", color=style.palette[-1], markersize=3, alpha=0.6, zorder=4)
     ax.set_xlabel(labels.axis(result.x))
     ax.set_ylabel(labels.axis(result.y))
@@ -133,11 +136,13 @@ def plot_map(result, ax, sheet: Style, labels: Labels, color, style, marker, col
         panel = _with_frame(result, _subset(result.frame, list(fixed), list(fixed.values())), fixed)
         panel = replace(panel, fixed={**result.fixed, **fixed})
         cf = draw_map(panel, panel_ax, sheet, bound, limit, labels, levels, grid)
-        title = ", ".join(p for p in (_panel_text(labels, fixed), result.subtitle_with(labels)) if p)
-        panel_ax.set_title(title, fontsize=sheet.subtitle_size, color=sheet.palette[-1])
+        panel_ax.set_title(_panel_text(labels, fixed), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
         if ci:
             panel_ax.set_ylabel("")
         if ri != len(rows) - 1:
             panel_ax.set_xlabel("")
+    subtitle = result.subtitle_with(labels)
+    if subtitle:
+        fig.suptitle(subtitle, fontsize=sheet.subtitle_size, color=sheet.palette[-1])
     fig.colorbar(cf, ax=axes.ravel().tolist()).set_label(bar_text)
     return fig, axes
