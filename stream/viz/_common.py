@@ -71,17 +71,18 @@ def y_axis_text(labels: Labels, quantities: list[str], prefix: str = "") -> str:
 
 def y_axis(result, labels: Labels) -> tuple[str, str]:
     """The y axis text of ``result`` under ``labels``, and the name whose scale its values carry."""
-    names = list(result._spec.ylabel_source)
     if result.kind == "field":
         return labels.axis("z"), "z"
-    drawn = set(result.frame["quantity"]) if "quantity" in result.frame.columns else set()
-    if result.kind == "curve" and result._spec.reducer is None and len(names) == 1 and names[0] not in drawn:
+    names = list(result._y_names)
+    if result.question.solve_for is not None:
         return labels.axis(names[0]), names[0]
-    if result._spec.reducer is not None and result._spec.reducer.startswith("where_"):
-        coordinate = result._spec.coordinate or "z"
+    shown = result._shown_reducer
+    name = None if shown is None else reducer_name(shown)
+    if name is not None and name.startswith("where_"):
+        coordinate = result._coordinate or "z"
         unit = f" [{labels.unit(coordinate)}]" if labels.unit(coordinate) else ""
-        return f"{result._spec.reducer} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
-    prefix = (result._spec.reducer or "") if result._spec.reducer_at is None else reducer_name(result._spec.reducer_at, labels)
+        return f"{name} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
+    prefix = "" if shown is None else reducer_name(shown, labels)
     return y_axis_text(labels, names, prefix), (names[0] if names else "")
 
 

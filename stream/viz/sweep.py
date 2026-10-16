@@ -19,7 +19,7 @@ from stream.solvers import AlgRuntimeError, TransientRuntimeError
 
 from ._common import _case_text, _Coords, _level_text
 from ._inverse import required
-from ._results import field, profile, reduce
+from ._results import _Question, field, profile, reduce
 from .labels import STREAM_LABELS, Labels
 from .limits import Limit
 
@@ -484,7 +484,7 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        return profile(self, quantity, of, where, nearest, sigma, uncertainty)
+        return profile(self, _Question("profile", quantity, of, where or {}, nearest, sigma, uncertainty))
 
     def field(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
         """A field quantity of exactly one case, drawn as a colour mesh over its two axes.
@@ -513,7 +513,7 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        return field(self, quantity, of, where, nearest, sigma, uncertainty)
+        return field(self, _Question("field", quantity, of, where or {}, nearest, sigma, uncertainty))
 
     def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0,
                uncertainty=True, limiting=False):
@@ -581,7 +581,9 @@ class Sweep:
             quantities it is meaningful only when they share a limit value; use
             ``required(..., limiting=True)`` for quantities with different limits.
         """
-        return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty, limiting)
+        kind = "profile" if axis is not None else "map" if isinstance(versus, (list, tuple)) else "curve"
+        return reduce(self, _Question(kind, quantity, of, where or {}, nearest, sigma, uncertainty, reducer=reducer,
+                                      versus=versus, axis=axis, limiting=limiting))
 
     def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
                  method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False):
@@ -671,8 +673,9 @@ class Sweep:
               point is unsafe;
             * ``None``: no limit is declared for the quantity.
         """
-        return required(self, quantity, equals, solve_for, versus, reducer=reduce, of=of, at=at, where=where,
-                        method=method, nearest=nearest, sigma=sigma, uncertainty=uncertainty, limiting=limiting)
+        return required(self, _Question("curve", quantity, of, where or {}, nearest, sigma, uncertainty, reducer=reduce,
+                                        versus=versus, limiting=limiting, solve_for=solve_for, targets=equals,
+                                        method=method, at=at or {}))
 
 
 def _calculation_names(agr) -> list[str]:

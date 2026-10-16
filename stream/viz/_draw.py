@@ -69,7 +69,7 @@ def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, e
     xs = labels.scale(result.x)
     ys = labels.scale(y_axis(result, labels)[1])
     line_column = BOUND_COLUMNS[bound]
-    show_band = result._spec.banded and bound == "nominal" and band != "none"
+    show_band = result._banded and bound == "nominal" and band != "none"
     drawn = inner_drawn = filled_drawn = False
     found = []
     for levels in combos:
@@ -182,7 +182,7 @@ def _merged_text(labels: Labels, drawn: list[str], limit) -> str:
 def _quantities_on(result) -> list[str]:
     if "quantity" in result.frame.columns:
         return list(dict.fromkeys(result.frame["quantity"].astype(str)))
-    return list(result._spec.ylabel_source)
+    return list(result._y_names)
 
 
 def _shade(ax, style: Style, color: str, span: tuple[float, float], x=None, y=None) -> None:
@@ -194,7 +194,7 @@ def _shade(ax, style: Style, color: str, span: tuple[float, float], x=None, y=No
 
 
 def _is_required(result) -> bool:
-    return result.kind == "curve" and result._spec.reducer is None and bool(result._spec.targets)
+    return result.question.solve_for is not None
 
 
 def _limit_color(enc: Encoding, style: Style, q: str) -> str:
@@ -223,7 +223,7 @@ def required_side(result) -> str | None:
         below = finite.loc[finite["safe"] == "below", "quantity"].iloc[0]
         above = finite.loc[finite["safe"] == "above", "quantity"].iloc[0]
         raise ValueError(
-            f"{below} is safe below the required {result._spec.ylabel_source[0]} and {above} above it; "
+            f"{below} is safe below the required {result.question.solve_for} and {above} above it; "
             "shade one quantity per axes"
         )
     return next(iter(sides), None)
@@ -388,7 +388,7 @@ def draw_crossings(result, ax, found: list[Crossing], style: Style, labels: Labe
 
 
 def _level_text(result, labels: Labels, dim: str, level) -> str:
-    return labels.value(dim, level) if dim in result._spec.numeric else labels.display(level)
+    return labels.value(dim, level) if dim in result._numeric else labels.display(level)
 
 
 def crossing_legend(result, enc: Encoding, found: list[Crossing], labels: Labels) -> Encoding:
@@ -401,7 +401,7 @@ def crossing_legend(result, enc: Encoding, found: list[Crossing], labels: Labels
     encoded = list(dict.fromkeys(enc.channels.values()))
     if len(encoded) == 1:
         (dim,) = encoded
-        order = sorted(result.dims[dim]) if dim in result._spec.numeric else list(result.dims[dim])
+        order = sorted(result.dims[dim]) if dim in result._numeric else list(result.dims[dim])
         extra = {order.index(c.levels[dim]): f" ({_crossing_text(labels, result, c.x)})" for c in found}
         (block,) = enc.legend
         entries = [(text + extra.get(k, ""), props) for k, (text, props) in enumerate(block.entries)]
@@ -515,10 +515,11 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
     _check("crossing", crossing, CROSSINGS)
     _check_crossing(result, crossing)
     sheet = style_sheet or DEFAULT_STYLE
-    merged = result._spec.labels.merged(labels).with_default_format(sheet.number_format)
+    merged = result.sweep.labels.merged(labels).with_default_format(sheet.number_format)
     if ax is not None and (col or row):
         raise ValueError("ax= draws into one axes and cannot be combined with col= or row=")
-    sigma_text = f" ({format(result._spec.sigma, merged.default_format)}σ)" if result._spec.sigma != 1.0 else ""
+    sigma = result.question.sigma
+    sigma_text = f" ({format(sigma, merged.default_format)}σ)" if sigma != 1.0 else ""
     with sheet.context():
         if result.kind == "field":
             _check_field_arguments(dict(zip(FIELD_ARGUMENTS, (color, style, marker, col, row))), band, errorbars)
@@ -529,7 +530,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             return fig, ax
         if result.kind == "map":
             return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, show_limit)
-        enc = encode(result.dims, result._spec.numeric, merged, sheet, color, style, marker, col, row, result._spec.level_space)
+        enc = encode(result.dims, result._numeric, merged, sheet, color, style, marker, col, row, result._level_space)
         binding = binder_colors(result.frame, sheet, enc) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()

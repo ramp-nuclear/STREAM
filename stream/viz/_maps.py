@@ -52,7 +52,7 @@ def draw_map(result, ax, style: Style, bound: str, show_limit: str, labels: Labe
     """
     column = BOUND_COLUMNS[bound]
     single = "quantity" in result.frame.columns and len(result.frame)
-    q = str(result.frame["quantity"].iloc[0]) if single else result._spec.ylabel_source[0]
+    q = str(result.frame["quantity"].iloc[0]) if single else result._y_names[0]
     xs, ys, vs = labels.scale(result.x), labels.scale(result.y), labels.scale(y_axis(result, labels)[1])
     gx, gy = grid
     X, Y = np.meshgrid(gx * xs, gy * ys, indexing="ij")
@@ -116,7 +116,8 @@ def plot_map(result, ax, sheet: Style, labels: Labels, color, style, marker, col
             )
     bar_text, bar_name = y_axis(result, labels)
     levels = map_levels(result, BOUND_COLUMNS[bound], labels.scale(bar_name), sheet.map_levels)
-    grid = (np.asarray(result._spec.level_space[result.x], float), np.asarray(result._spec.level_space[result.y], float))
+    space = result._level_space
+    grid = (np.asarray(space[result.x], float), np.asarray(space[result.y], float))
     if col is None and row is None:
         fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
         cf = draw_map(result, ax, sheet, bound, show_limit, labels, levels, grid)

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, replace
 from dataclasses import field as dc_field
 from typing import TYPE_CHECKING
 
@@ -42,25 +43,35 @@ def check_units(labels: Labels, quantities: list[str]) -> None:
             )
 
 
-@dataclass
-class _Spec:
-    """What drawing a result reads besides its public fields."""
+@dataclass(frozen=True)
+class _Question:
+    """A question asked of a sweep, with its arguments as given and then resolved.
 
-    numeric: frozenset[str]
-    labels: Labels
-    banded: bool
-    reducer: str | None = None
-    ylabel_source: tuple[str, ...] = ()
+    ``quantities`` and ``of`` resolve to tuples of names, ``where`` to grid
+    levels, ``at`` to numbers; for ``required``, ``targets`` and ``reducer``
+    resolve to one entry per quantity, ``reducer`` to a single value when the
+    quantities share it.
+    """
+
+    kind: str
+    quantities: tuple[str, ...]
+    of: tuple[str, ...] | None = None
+    where: Mapping[str, float | str] = dc_field(default_factory=dict)
+    nearest: bool = False
     sigma: float = 1.0
-    walk_reducer: str | None = None
-    walk_reducers: dict = dc_field(default_factory=dict)
-    level_space: dict[str, list] = dc_field(default_factory=dict)
-    coordinate: str | None = None
-    target: float | str | None = None
-    targets: dict = dc_field(default_factory=dict)
-    walk_quantity: str | None = None
-    reducer_at: At | None = None
-    walk_reducers_at: dict = dc_field(default_factory=dict)
+    uncertainty: bool = True
+    reducer: object = None
+    versus: str | tuple[str, str] | None = None
+    axis: str | None = None
+    limiting: bool = False
+    solve_for: str | None = None
+    targets: Mapping[str, float | str] | float | str | None = None
+    method: str = "linear"
+    at: Mapping[str, float] = dc_field(default_factory=dict)
+
+    def reducer_of(self, quantity: str):
+        """The reducer applied to ``quantity``."""
+        return self.reducer.get(quantity) if isinstance(self.reducer, Mapping) else self.reducer
 
 
 @dataclass
@@ -87,36 +98,47 @@ class Result:
     * ``binding``: whether ``limiting=True`` collapsed the result;
     * ``y``: the parameter on the y axis of a map, else ``None``;
     * ``holes``: the unsolved cases of the selection left unfilled;
-    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``.
+    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``;
+    * ``question``: the question asked, its arguments resolved;
+    * ``sweep``: the sweep it was asked of.
 
     A binding frame carries a ``binder`` column naming the quantity (and
     ``quantity of calculation`` when calculations varied) that binds at each
     point. ``plot`` draws the result.
     """
 
-    kind: str
     frame: DataFrame
     x: str
     dims: dict[str, list]
     fixed: dict[str, float | str]
     calculation: str | None
+    question: _Question
+    sweep: Sweep = dc_field(repr=False)
     limits: dict = dc_field(default_factory=dict)
     safe_side: str | None = None
-    binding: bool = False
     y: str | None = None
     holes: list = dc_field(default_factory=list)
     limit_note: str | None = None
-    _spec: _Spec = dc_field(kw_only=True, repr=False)
+
+    @property
+    def kind(self) -> str:
+        """``profile``, ``curve``, ``map`` or ``field``."""
+        return self.question.kind
+
+    @property
+    def binding(self) -> bool:
+        """Whether ``limiting=True`` collapsed the result."""
+        return self.question.limiting
 
     @property
     def ylabel(self) -> str:
         """The y axis text under this result's own labels."""
-        return y_axis(self, self._spec.labels)[0]
+        return y_axis(self, self.sweep.labels)[0]
 
     @property
     def subtitle(self) -> str:
         """The line above the axes under this result's own labels."""
-        return self.subtitle_with(self._spec.labels)
+        return self.subtitle_with(self.sweep.labels)
 
     def subtitle_with(self, labels: Labels) -> str:
         """The line above the axes under ``labels``: the target, the fixed parameters, the calculation."""
@@ -128,23 +150,55 @@ class Result:
             parts.append(filled)
         return ", ".join(p for p in parts if p)
 
+    @property
+    def _numeric(self) -> frozenset[str]:
+        return frozenset(d for d in self.dims if d in self.sweep.parameters and d not in self.sweep._categorical)
+
+    @property
+    def _banded(self) -> bool:
+        return self.sweep.banded and self.question.uncertainty
+
+    @property
+    def _level_space(self) -> dict[str, list]:
+        return {p: self.sweep.levels(p).tolist() for p in self.sweep.parameters}
+
+    @property
+    def _y_names(self) -> tuple[str, ...]:
+        """The names the y axis is labelled by: the walked parameter of ``required``, else the quantities."""
+        solve_for = self.question.solve_for
+        return (solve_for,) if solve_for is not None else self.question.quantities
+
+    @property
+    def _shown_reducer(self):
+        """The reducer named on the y axis: ``None`` unless ``reduce`` collapsed a profile or a field."""
+        question = self.question
+        if question.kind == "field" or question.solve_for is not None or question.reducer is None:
+            return None
+        ranked = any(self.sweep._rank(q, c) for c in question.of for q in question.quantities)
+        return question.reducer if ranked else None
+
+    @property
+    def _coordinate(self) -> str | None:
+        """The mesh coordinate a ``where_*`` reducer reports."""
+        if self.question.axis is not None:
+            return self.question.axis
+        for calc in reversed(self.question.of):
+            if any(self.sweep._rank(q, calc) for q in self.question.quantities):
+                coords = self.sweep._coords(calc)
+                return coords.names[0] if coords is not None else "cell"
+        return None
+
     def _target_text(self, labels: Labels) -> str:
-        if self._spec.target is None or self._spec.walk_quantity is None:
+        targets = self.question.targets
+        if self.question.solve_for is None:
             return ""
         if self.binding:
-            return f"limiting of {', '.join(labels.display(q) for q in self._spec.targets)}"
-        if len(self._spec.targets) > 1:
-            return ", ".join(self._one_target(labels, q, t) for q, t in self._spec.targets.items())
-        head = " ".join(p for p in (self._walk_name(labels, self._spec.walk_quantity, self._spec.walk_reducer), labels.display(self._spec.walk_quantity)) if p)
-        return f"{head} = {self._value_text(labels, self._spec.walk_quantity, self._spec.target)}"
+            return f"limiting of {', '.join(labels.display(q) for q in targets)}"
+        return ", ".join(self._one_target(labels, q, t) for q, t in targets.items())
 
     def _one_target(self, labels: Labels, q: str, target) -> str:
-        head = " ".join(p for p in (self._walk_name(labels, q, self._spec.walk_reducers.get(q)), labels.display(q)) if p)
+        head = " ".join(p for p in (reducer_name(self.question.reducer_of(q), labels), labels.display(q)) if p)
         return f"{head} = {self._value_text(labels, q, target)}"
-
-    def _walk_name(self, labels: Labels, q: str, name: str | None) -> str | None:
-        at_ = self._spec.walk_reducers_at.get(q)
-        return name if at_ is None else reducer_name(at_, labels)
 
     def _value_text(self, labels: Labels, q: str, target) -> str:
         if isinstance(target, str):
@@ -287,14 +341,6 @@ def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple
     return dims, fixed, ofs[0] if len(ofs) == 1 else None
 
 
-def _numeric(sweep: Sweep, dims) -> frozenset[str]:
-    return frozenset(d for d in dims if d in sweep.parameters and d not in sweep._categorical)
-
-
-def _level_space(sweep: Sweep) -> dict[str, list]:
-    return {p: sweep.levels(p).tolist() for p in sweep.parameters}
-
-
 def _limits_of(sweep: Sweep, quantities) -> dict:
     return {q: sweep.limits[q] for q in quantities if q in sweep.limits}
 
@@ -361,12 +407,12 @@ def _x_clash(xnames: dict[str, str]) -> ValueError:
     )
 
 
-def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Result:
+def profile(sweep: Sweep, question: _Question) -> Result:
     """The implementation of :meth:`Sweep.profile`."""
-    quantities, ofs = sweep._names(quantity, of)
+    quantities, ofs = sweep._names(question.quantities, question.of)
     check_units(sweep.labels, quantities)
-    resolved, indices = _selection(sweep, where, nearest)
-    table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
+    resolved, indices = _selection(sweep, question.where, question.nearest)
+    table = with_envelopes(sweep.table, sweep.banded, question.sigma, question.uncertainty)
     pieces, xnames = [], {}
     for calc in ofs:
         coords = sweep._coords(calc)
@@ -398,36 +444,21 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
     if len(set(xnames.values())) > 1:
         raise _x_clash(xnames)
     dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices)
-    return Result(
-        kind="profile",
-        frame=pd.concat(pieces, ignore_index=True),
-        x=xnames[ofs[0]],
-        dims=dims,
-        fixed=fixed,
-        calculation=single,
-        limits=_limits_of(sweep, quantities),
-        holes=_unfilled_holes(sweep, resolved),
-        _spec=_Spec(
-            numeric=_numeric(sweep, dims),
-            labels=sweep.labels,
-            banded=sweep.banded and uncertainty,
-            ylabel_source=tuple(quantities),
-            sigma=sigma,
-            level_space=_level_space(sweep),
-        ),
-    )
+    question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved)
+    return Result(pd.concat(pieces, ignore_index=True), xnames[ofs[0]], dims, fixed, single, question, sweep,
+                  limits=_limits_of(sweep, quantities), holes=_unfilled_holes(sweep, resolved))
 
 
-def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Field:
+def field(sweep: Sweep, question: _Question) -> Field:
     """The implementation of :meth:`Sweep.field`."""
-    quantities, ofs = sweep._names(quantity, of)
+    quantities, ofs = sweep._names(question.quantities, question.of)
     if len(quantities) != 1 or len(ofs) != 1:
         raise ValueError(
             "field() takes one quantity of one calculation; got "
             f"{', '.join(map(repr, quantities)) or 'no quantity'} of {', '.join(map(repr, ofs)) or 'no calculation'}"
         )
     q, calc = quantities[0], ofs[0]
-    resolved, indices = _selection(sweep, where, nearest)
+    resolved, indices = _selection(sweep, question.where, question.nearest)
     if len(indices) != 1:
         raise ValueError(
             f"field() draws one case and the selection holds {len(indices)} cases of {q!r}; "
@@ -436,7 +467,7 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
     if sweep._rank(q, calc) != 2:
         raise ValueError(f"{q!r} of {calc} is not a field; use profile() or reduce()")
     k = indices[0]
-    table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
+    table = with_envelopes(sweep.table, sweep.banded, question.sigma, question.uncertainty)
     rows = _rows(sweep, table, k, calc, q)
     coords = sweep._coords(calc)
     m, n = mesh_shape(rows, 2, coords)
@@ -464,30 +495,9 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
         }
     )
     dims, fixed, single = _dims(sweep, [q], [calc], resolved, indices)
-    return Field(
-        kind="field",
-        frame=frame,
-        x="x",
-        dims=dims,
-        fixed=fixed,
-        calculation=single,
-        limits=_limits_of(sweep, [q]),
-        quantity=q,
-        z=np.asarray(z, float),
-        xs=np.asarray(xs, float),
-        z_bounds=zb,
-        x_bounds=xb,
-        arrays=arrays,
-        mask=mask,
-        _spec=_Spec(
-            numeric=_numeric(sweep, dims),
-            labels=sweep.labels,
-            banded=sweep.banded and uncertainty,
-            ylabel_source=(q,),
-            sigma=sigma,
-            level_space=_level_space(sweep),
-        ),
-    )
+    question = replace(question, quantities=(q,), of=(calc,), where=resolved)
+    return Field(frame, "x", dims, fixed, single, question, sweep, limits=_limits_of(sweep, [q]), quantity=q,
+                 z=np.asarray(z, float), xs=np.asarray(xs, float), z_bounds=zb, x_bounds=xb, arrays=arrays, mask=mask)
 
 
 def no_value_note(reducer, quantities, purpose: str) -> str | None:
@@ -528,21 +538,11 @@ def _collapse_reduced(sweep: Sweep, frame: DataFrame, dims: dict, quantities, of
     return keep_binding(frame, dims, ["case"], lambda rows: smallest)
 
 
-def reduce(
-    sweep: Sweep,
-    quantity,
-    reducer,
-    versus=None,
-    of=None,
-    where=None,
-    axis=None,
-    nearest=False,
-    sigma=1.0,
-    uncertainty=True,
-    limiting=False,
-) -> Result:
+def reduce(sweep: Sweep, question: _Question) -> Result:
     """The implementation of :meth:`Sweep.reduce`."""
-    quantities, ofs = sweep._names(quantity, of)
+    reducer, versus, where, axis, limiting = (question.reducer, question.versus, question.where, question.axis,
+                                              question.limiting)
+    quantities, ofs = sweep._names(question.quantities, question.of)
     check_units(sweep.labels, quantities)
     if axis is not None and versus is not None:
         raise ValueError("reduce() takes versus= or axis=, not both: axis= leaves a profile, versus= a curve")
@@ -565,10 +565,10 @@ def reduce(
             raise ValueError(f"{name} is {'a map' if pair else 'the x'} axis and cannot also be fixed in where=")
         if pair and len(sweep.levels(name)) < 2:
             raise ValueError(f"{name} has one level; a map needs at least two levels on each axis")
-    resolved, indices = _selection(sweep, where, nearest)
-    table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
+    resolved, indices = _selection(sweep, where, question.nearest)
+    table = with_envelopes(sweep.table, sweep.banded, question.sigma, question.uncertainty)
     name = reducer_name(reducer)
-    pieces, xname, coordinate = [], axes_[0] if axes_ else "cell", None
+    pieces, xname = [], axes_[0] if axes_ else "cell"
     for calc in ofs:
         coords = sweep._coords(calc)
         for q in quantities:
@@ -584,7 +584,6 @@ def reduce(
                     keep = 1 - coords.names.index(axis) if coords is not None else (1 if axis == "z" else 0)
                     xname = coords.names[keep] if coords is not None else "cell"
                     x = coords.centers[keep] if coords is not None else np.arange(len(out["value"]), dtype=float)
-                    coordinate = axis
                     pieces.append(DataFrame({**base, xname: x, **out, "filled": filled}))
                 else:
                     if rank:
@@ -594,45 +593,24 @@ def reduce(
                                 f"{name} of {q!r} of {calc} leaves a profile, not one number per case; "
                                 "pass axis='z' or axis='x' instead of versus= to draw it"
                             )
-                        coordinate = coords.names[0] if coords is not None else "cell"
                     else:
                         out = {c: to_array(rows, 0, c) for c in COLUMNS}
                     pieces.append(DataFrame({**base, **out, "filled": filled}, index=[0]))
     if not pieces:
         raise _nothing_selected(resolved, quantities)
     scalar = all(sweep._rank(q, c) == 0 for c in ofs for q in quantities)
-    if axis is not None:
-        dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices)
-        kind = "profile"
-    else:
-        dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices, exclude=tuple(axes_))
-        kind = "map" if pair else "curve"
+    exclude = () if axis is not None else tuple(axes_)
+    dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices, exclude=exclude)
     frame = pd.concat(pieces, ignore_index=True)
     value_free = not scalar and no_value_note(reducer, quantities, "") is not None
     if limiting:
         note = no_value_note(reducer, quantities, "with limiting=True") if value_free else None
         frame, dims = _collapse_reduced(sweep, frame, dims, quantities, ofs, note)
+    question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved, versus=versus)
     return Result(
-        kind=kind,
-        frame=frame,
-        x=xname,
-        dims=dims,
-        fixed=fixed,
-        calculation=single,
+        frame, xname, dims, fixed, single, question, sweep,
         limits={} if value_free else _limits_of(sweep, quantities),
         limit_note=no_value_note(reducer, quantities, "to shade") if value_free else None,
         y=axes_[1] if pair else None,
         holes=_unfilled_holes(sweep, resolved),
-        binding=limiting,
-        _spec=_Spec(
-            numeric=_numeric(sweep, dims),
-            labels=sweep.labels,
-            banded=sweep.banded and uncertainty,
-            reducer=None if scalar else name,
-            ylabel_source=tuple(quantities),
-            sigma=sigma,
-            level_space=_level_space(sweep),
-            coordinate=coordinate if name.startswith("where_") else None,
-            reducer_at=reducer if isinstance(reducer, At) and not scalar else None,
-        ),
     )

@@ -46,8 +46,8 @@ def test_a_level_keeps_its_colour_when_a_case_is_missing(holed_sweep):
     with pytest.warns(UserWarning, match="skipping unsolved"):
         gapped = holed_sweep.profile("CHFR", of="CC", where=dict(mdot=0.3))
     assert whole.dims["power"] == [2e6, 4e6, 6e6, 8e6] and gapped.dims["power"] == [2e6, 4e6, 6e6]
-    a = encode(whole.dims, whole._spec.numeric, whole._spec.labels, DEFAULT_STYLE, level_space=whole._spec.level_space)
-    b = encode(gapped.dims, gapped._spec.numeric, gapped._spec.labels, DEFAULT_STYLE, level_space=gapped._spec.level_space)
+    a = encode(whole.dims, whole._numeric, whole.sweep.labels, DEFAULT_STYLE, level_space=whole._level_space)
+    b = encode(gapped.dims, gapped._numeric, gapped.sweep.labels, DEFAULT_STYLE, level_space=gapped._level_space)
     assert b.maps["color"][6e6] == a.maps["color"][6e6]
 
 

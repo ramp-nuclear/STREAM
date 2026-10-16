@@ -4,14 +4,15 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import numpy as np
 from pandas import DataFrame
 
 from ._common import _case_text, crossings
-from ._envelope import ENVELOPES, INNER, At, reducer_name
-from ._results import Result, _dims, _level_space, _limits_of, _numeric, _Spec, check_units, keep_binding, reduce
+from ._envelope import ENVELOPES, INNER
+from ._results import Result, _dims, _limits_of, _Question, check_units, keep_binding, reduce
 
 if TYPE_CHECKING:
     from .sweep import Sweep
@@ -104,12 +105,10 @@ def _safe_side(sweep: Sweep, q: str, g: DataFrame, solve_for: str, crossing: flo
     return "above" if ok(ys[after[0]]) else "below"
 
 
-def required(
-    sweep: Sweep, quantity, equals=None, solve_for=None, versus=None, reducer=None, of=None, at=None, where=None,
-    method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False,
-) -> Result:
+def required(sweep: Sweep, question: _Question) -> Result:
     """The implementation of :meth:`Sweep.required`."""
-    at = dict(at or {})
+    solve_for, versus, where, method = question.solve_for, question.versus, question.where, question.method
+    at = dict(question.at)
     if method not in METHODS:
         raise ValueError(f"unknown method {method!r}; use {' or '.join(map(repr, METHODS))}")
     for role, name in (("solve_for", solve_for), ("versus", versus)):
@@ -130,10 +129,10 @@ def required(
     twice = [name for name in at if where and name in where]
     if twice:
         raise ValueError(f"{', '.join(twice)} is fixed in both where= and at=; pass it in one of them")
-    quantities, ofs = sweep._names(quantity, of)
-    targets = _per_quantity(equals, quantities, "equals", _default_target(sweep))
-    reducers = _per_quantity(reducer, quantities, "reduce", _default_reducer(sweep))
-    resolved = sweep._resolve(where, nearest)
+    quantities, ofs = sweep._names(question.quantities, question.of)
+    targets = _per_quantity(question.targets, quantities, "equals", _default_target(sweep))
+    reducers = _per_quantity(question.reducer, quantities, "reduce", _default_reducer(sweep))
+    resolved = sweep._resolve(where, question.nearest)
     free = [p for p in sweep.parameters if p != solve_for]
     group_cols = ["quantity", "calculation", *free]
     rows = []
@@ -143,10 +142,10 @@ def required(
         if target_name is not None:
             sweep._names(target_name, ofs)
             check_units(sweep.labels, [q, target_name])
-        reduced = reduce(
-            sweep, [q] + ([target_name] if target_name else []), reducers[q], versus=solve_for, of=ofs,
-            where=resolved, sigma=sigma, uncertainty=uncertainty,
-        )
+        reduced = reduce(sweep, _Question(
+            "curve", (q, target_name) if target_name else (q,), tuple(ofs), resolved, sigma=question.sigma,
+            uncertainty=question.uncertainty, reducer=reducers[q], versus=solve_for,
+        ))
         curve = reduced.frame
         for p, v in at.items():
             curve = slice_at(curve, p, float(v), sweep)
@@ -190,35 +189,13 @@ def required(
     at_values = {k: float(v) for k, v in at.items()}
     dims, fixed, single = _dims(sweep, quantities, ofs, {**resolved, **at_values}, indices, exclude=(solve_for, versus))
     sides = set(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "safe"])
-    reducer_names = {q: reducer_name(reducers[q]) for q in quantities}
-    if limiting:
+    if question.limiting:
         frame, dims = _collapse_required(frame, dims, quantities, ofs, free, solve_for)
-    return Result(
-        kind="curve",
-        frame=frame,
-        x=versus,
-        dims=dims,
-        fixed=fixed,
-        calculation=single,
-        limits=_limits_of(sweep, quantities),
-        safe_side=sides.pop() if len(sides) == 1 and sides <= {"below", "above"} else None,
-        binding=limiting,
-        _spec=_Spec(
-            numeric=_numeric(sweep, dims),
-            labels=sweep.labels,
-            banded=sweep.banded and uncertainty,
-            reducer=None,
-            ylabel_source=(solve_for,),
-            sigma=sigma,
-            walk_reducer=reducer_names[quantities[0]],
-            walk_reducers=reducer_names,
-            walk_reducers_at={q: r for q, r in reducers.items() if isinstance(r, At)},
-            level_space=_level_space(sweep),
-            target=targets[quantities[0]],
-            targets=dict(targets),
-            walk_quantity=", ".join(quantities),
-        ),
-    )
+    shared = all(reducers[q] == reducers[quantities[0]] for q in quantities)
+    question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved, at=at_values,
+                       targets=targets, reducer=reducers[quantities[0]] if shared else reducers)
+    return Result(frame, versus, dims, fixed, single, question, sweep, limits=_limits_of(sweep, quantities),
+                  safe_side=sides.pop() if len(sides) == 1 and sides <= {"below", "above"} else None)
 
 
 def _collapse_required(frame: DataFrame, dims: dict, quantities, ofs, free, solve_for: str) -> tuple[DataFrame, dict]:
