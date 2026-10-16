@@ -20,7 +20,7 @@ workflow has three steps:
 ::
 
     cases_ = cases(power=[20e3, 40e3, 60e3, 80e3], mdot=[0.2, 0.3], shape=["cosine", "flat"])
-    cases_, frames = run_cases(model, cases_)
+    frames = run_cases(model, cases_)
     sweep = Sweep(cases_, frames, agr,
                   labels={"power": ("Power per plate", "kW", 1e-3),
                           "mdot": ("Mass flow", "kg/s"),

@@ -1,34 +1,67 @@
+from concurrent.futures import ThreadPoolExecutor
+
 import numpy as np
 import pandas as pd
 import pytest
 from conftest import frame, make_case_frame
 
+from stream.solvers import AlgRuntimeError
 from stream.viz import cases
 from stream.viz.labels import Label
 from stream.viz.sweep import Sweep, _Coords, _FrameList, run_cases
 
 
-def test_run_cases_keeps_alignment_and_messages():
+def test_run_cases_returns_the_frames_in_case_order():
+    cases = [{"power": 4e6, "mdot": 0.3}, {"power": 8e6, "mdot": 0.2}]
+    frames = run_cases(make_case_frame, cases)
+    assert isinstance(frames, _FrameList) and len(frames) == 2 and frames.failures == {}
+    for f, c in zip(frames, cases):
+        pd.testing.assert_frame_equal(f, make_case_frame(**c))
+
+
+def test_run_cases_turns_a_solver_failure_into_a_hole_with_its_message():
     def model(power, mdot):
         if power > 5e6:
-            raise RuntimeError(f"no convergence at {power}")
+            raise AlgRuntimeError(f"no convergence at {power}")
         return make_case_frame(power, mdot)
 
-    cases = [dict(power=4e6, mdot=0.3), dict(power=8e6, mdot=0.3)]
+    cases = [{"power": 4e6, "mdot": 0.3}, {"power": 8e6, "mdot": 0.3}]
     with pytest.warns(UserWarning, match="case 1 .*power=8e\\+06.*no convergence"):
-        out_cases, frames = run_cases(model, cases)
-    assert out_cases == cases
-    assert isinstance(frames, _FrameList)
+        frames = run_cases(model, cases)
     assert frames[1] is None and frames[0] is not None
     assert frames.failures == {1: "no convergence at 8000000.0"}
 
 
-def test_run_cases_only_catches_listed_exceptions():
-    def model(power):
-        raise KeyError("boom")
+def test_run_cases_lets_other_exceptions_propagate():
+    def buggy(power):
+        raise RuntimeError("a bug in the model")
 
-    with pytest.raises(KeyError):
-        run_cases(model, [dict(power=1.0)], catch=(ValueError,))
+    def diverging(power):
+        raise AlgRuntimeError("diverged")
+
+    with pytest.raises(RuntimeError, match="a bug in the model"):
+        run_cases(buggy, [{"power": 1.0}])
+    with pytest.raises(AlgRuntimeError):
+        run_cases(diverging, [{"power": 1.0}], catch=(ValueError,))
+
+
+def test_run_cases_with_a_thread_pool_matches_the_serial_run():
+    def model(power, mdot):
+        if power == 6e6:
+            raise AlgRuntimeError("diverged")
+        return make_case_frame(power, mdot)
+
+    cases = [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
+    with pytest.warns(UserWarning, match="2 of 8 cases failed"):
+        serial = run_cases(model, cases)
+    with ThreadPoolExecutor(max_workers=4) as pool, pytest.warns(UserWarning, match="2 of 8 cases failed"):
+        threaded = run_cases(model, cases, mapper=pool.map)
+    assert threaded.failures == serial.failures == {4: "diverged", 5: "diverged"}
+    for a, b in zip(serial, threaded):
+        if a is None:
+            assert b is None
+        else:
+            pd.testing.assert_frame_equal(a, b)
 
 
 def test_table_has_case_and_parameter_columns(sweep):

@@ -19,7 +19,7 @@ import numpy as np
 from stream import EffectivePipe, Solid, light_water
 from stream.analysis.thresholds import Saha_Zuber_OSV, Sudo_Kaminaga_CHF, threshold_analysis
 from stream.calculations import ChannelAndContacts, Fuel
-from stream.calculations.channel import Direction
+from stream.calculations.channel import Direction, SaturationReachedError
 from stream.composition import symmetric_plate, uniform_x_power_shape, x_boundaries
 from stream.composition.subsystems import symmetric_plate_steady_state
 from stream.physical_models.heat_transfer_coefficient import spl_htc, wall_heat_transfer_coeff
@@ -93,8 +93,10 @@ def model(power, mdot, shape):
     ch = state[c.name]
     q = np.maximum(np.asarray(ch["q, left"]), np.asarray(ch["q, right"]))
     tsat = light_water.sat_temperature(np.asarray(ch["static_pressure"]))
-    if np.any(np.asarray(ch["T_cool"]) >= tsat):
-        raise RuntimeError("bulk coolant reached saturation")
+    t_cool = np.asarray(ch["T_cool"])
+    crossed = np.flatnonzero(t_cool >= tsat)
+    if crossed.size:
+        raise SaturationReachedError(c.name, crossed, t_cool[crossed], tsat[crossed])
     ch["CHFR"] = np.asarray(ch["CHF"]) / q
     ch["OSVR"] = np.asarray(ch["OSV"]) / q
     return state.to_dataframe()
@@ -103,7 +105,8 @@ def model(power, mdot, shape):
 def sweep():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        cs, frames = run_cases(model, cases(power=POWERS, mdot=MDOTS, shape=list(SHAPES)))
+        cs = cases(power=POWERS, mdot=MDOTS, shape=list(SHAPES))
+        frames = run_cases(model, cs)
         return Sweep(cs, frames, PLATES["cosine"][2], labels=LABELS, limits=LIMITS)
 
 

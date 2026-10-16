@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
+from functools import partial
 from itertools import product
 from numbers import Real
 from types import MappingProxyType
@@ -12,6 +13,9 @@ from types import MappingProxyType
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
+
+from stream.calculations.channel import SaturationReachedError
+from stream.solvers import AlgRuntimeError, TransientRuntimeError
 
 from .labels import STREAM_LABELS, Labels
 from .limits import Limit
@@ -67,7 +71,7 @@ def cases(**levels) -> list[dict]:
         cases(power=[2e6, 4e6], mdot=[0.2, 0.3], Tin=300.0)
 
     gives four cases, ``power=2e6, mdot=0.2`` first. Pass the list to
-    :func:`run_cases` and the result to :class:`Sweep`.
+    :func:`run_cases`, then the list and the frames to :class:`Sweep`.
     """
     if not levels:
         raise ValueError("cases() needs at least one parameter")
@@ -80,28 +84,87 @@ def cases(**levels) -> list[dict]:
     return [dict(zip(levels, combo)) for combo in product(*axes)]
 
 
+@dataclass(frozen=True)
+class _Failure:
+    """The message of a case whose solve raised one of the caught exceptions."""
+
+    message: str
+
+
+def _attempt(model: Callable[..., DataFrame], catch: tuple[type[BaseException], ...], case: Mapping[str, float | str]):
+    try:
+        return model(**case)
+    except catch as error:
+        return _Failure(str(error))
+
+
 def run_cases(
     model: Callable[..., DataFrame],
-    cases: list[dict[str, float | str]],
-    catch: tuple[type[BaseException], ...] = (Exception,),
-) -> tuple[list[dict[str, float | str]], _FrameList]:
-    """Call ``model(**case)`` for every case and collect the frames.
+    cases: Sequence[Mapping[str, float | str]],
+    catch: tuple[type[BaseException], ...] = (AlgRuntimeError, TransientRuntimeError, SaturationReachedError),
+    mapper: Callable = map,
+) -> _FrameList:
+    """Solve every case with ``model(**case)`` and collect the frames for :class:`Sweep`.
 
-    A call raising one of ``catch`` leaves ``None`` in its slot; the
-    exception text is kept in the returned list's ``failures`` and one
-    warning lists every failed case. Other exceptions propagate.
+    ::
+
+        frames = run_cases(model, cases_)
+        sweep = Sweep(cases_, frames, agr)
+
+    Parameters
+    ----------
+    model:
+        Called as ``model(**case)`` for every case; returns that case's
+        ``State.to_dataframe()``.
+    cases:
+        One dict per case, as :func:`cases` makes them.
+    catch:
+        The exceptions that make a case a hole. The default holds the three
+        ways a STREAM solve reports that it did not finish: ``AlgRuntimeError``
+        and ``TransientRuntimeError`` from :mod:`stream.solvers` and
+        ``SaturationReachedError`` from :mod:`stream.calculations.channel`.
+        Only these become holes; any other exception, a bug in the model
+        among them, propagates.
+    mapper:
+        How the cases are run: any map that keeps the order of the cases,
+        called as ``mapper(f, cases)``. The model is called in the mapper's
+        workers. The builtin ``map`` (the default) runs the cases one after
+        the other. A process pool (``ProcessPoolExecutor().map`` or
+        ``multiprocessing.Pool.map``) pickles the model, so it must be a
+        module-level function; threads and dask take any callable::
+
+            from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+
+            with ThreadPoolExecutor() as pool:
+                frames = run_cases(model, cases_, mapper=pool.map)
+            with ProcessPoolExecutor() as pool:
+                frames = run_cases(model, cases_, mapper=pool.map)
+            frames = run_cases(model, cases_, mapper=lambda f, xs: dask.compute(*(dask.delayed(f)(x) for x in xs)))
+
+    Returns
+    -------
+    list
+        One frame per case, in the order of ``cases``, with ``None`` in the
+        slot of a hole. Its ``failures`` maps the index of each hole to the
+        exception text, and one warning lists every failed case.
+
+    Notes
+    -----
+    Uncertainty enters through the model: a model that returns its state's
+    frame with ``uq_attach`` bands (``sys`` and ``stat`` columns) gives a
+    banded sweep.
     """
     frames = _FrameList()
-    for index, case in enumerate(cases):
-        try:
-            frames.append(model(**case))
-        except catch as error:
+    for index, out in enumerate(mapper(partial(_attempt, model, catch), cases)):
+        if isinstance(out, _Failure):
             frames.append(None)
-            frames.failures[index] = str(error)
+            frames.failures[index] = out.message
+        else:
+            frames.append(out)
     if frames.failures:
         lines = [f"case {k} ({_case_text(cases[k])}): {msg}" for k, msg in frames.failures.items()]
         warnings.warn(f"{len(lines)} of {len(cases)} cases failed:\n  " + "\n  ".join(lines), stacklevel=2)
-    return list(cases), frames
+    return frames
 
 
 class Sweep:
@@ -111,7 +174,11 @@ class Sweep:
     then ask it a question, :meth:`profile`, :meth:`field`, :meth:`reduce`
     (two parameters on ``versus`` make a map) or :meth:`required`, and call
     ``.plot()`` on the answer or read its ``frame``. What is true of the whole
-    sweep is set here: labels, limits and whether holes are filled.
+    sweep is set here: labels, limits and whether holes are filled::
+
+        cases_ = cases(power=[2e6, 4e6, 6e6], mdot=[0.2, 0.3])
+        frames = run_cases(model, cases_)
+        sweep = Sweep(cases_, frames, agr, limits={"CHFR": at_least(1.3)})
 
     Ask ``print(sweep)`` for the parameters and their levels, the quantities of
     each calculation, the holes and the limits. The sweep keeps its data
