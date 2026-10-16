@@ -22,8 +22,8 @@ In the example, ``model(**case)`` solves one case and returns its ``State.to_dat
     print(sweep)
     sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()
     sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")
-    sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", limit="shade")
-    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(limit="shade")
+    sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")
+    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")
     sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")
 
 .. figure:: _static/viz/profile.png
@@ -39,12 +39,12 @@ In the example, ``model(**case)`` solves one case and returns its ``State.to_dat
 .. figure:: _static/viz/panels.png
    :width: 100%
 
-   ``sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", limit="shade")``
+   ``sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")``
 
 .. figure:: _static/viz/map.png
    :width: 100%
 
-   ``sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(limit="shade")``
+   ``sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")``
 
 .. figure:: _static/viz/required.png
    :width: 100%

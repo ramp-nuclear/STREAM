@@ -19,7 +19,7 @@ from .style import DEFAULT_STYLE, Style
 
 BOUNDS = ("nominal", "lower", "upper")
 BANDS = ("total", "split", "none")
-LIMITS = ("line", "shade", "none")
+SHOW_LIMITS = ("line", "shade", "none")
 CROSSINGS = ("none", "mark", "legend")
 BOUND_COLUMNS = {"nominal": "value", "lower": "lower", "upper": "upper"}
 FIELD_ARGUMENTS = ("color", "style", "marker", "col", "row")
@@ -263,34 +263,34 @@ def _check_shade(result, enc: Encoding) -> None:
         raise ValueError(f"no limit declared for {drawn[0]!r}; declare it in limits= to shade")
 
 
-def draw_limit_lines(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+def _draw_limit_lines(result, ax, enc: Encoding, style: Style, labels: Labels, show_limit: str) -> None:
     """Dashed lines at the declared limits of the drawn quantities; checks a shade request first."""
-    if limit == "shade":
+    if show_limit == "shade":
         _check_shade(result, enc)
-    if limit == "none" or _is_required(result):
+    if show_limit == "none" or _is_required(result):
         return
     ys = labels.scale(y_axis(result, labels)[1])
     drawn = _quantities_on(result)
     merged = None if result.binding else _merged_limit(result, drawn)
     if merged is not None:
-        _draw_limit_line(ax, style, merged.value * ys, _merged_text(labels, drawn, merged), style.limit_color)
+        _draw_limit_line_at(ax, style, merged.value * ys, _merged_text(labels, drawn, merged), style.limit_color)
         return
     for q in drawn[:1] if result.binding else drawn:
         lim = result.limits.get(q)
         if lim is None:
             continue
-        _draw_limit_line(ax, style, lim.value * ys, _limit_text(labels, q, lim), _limit_color(enc, style, q))
+        _draw_limit_line_at(ax, style, lim.value * ys, _limit_text(labels, q, lim), _limit_color(enc, style, q))
 
 
-def _draw_limit_line(ax, style: Style, y: float, text: str, color: str) -> None:
+def _draw_limit_line_at(ax, style: Style, y: float, text: str, color: str) -> None:
     ax.axhline(y, linestyle="--", linewidth=style.limit_linewidth, color=color, zorder=2)
     ax.annotate(text, xy=(1.0, y), xycoords=("axes fraction", "data"),
                 xytext=(-2, 3), textcoords="offset points", ha="right", va="bottom", fontsize=9, color=color)
 
 
-def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+def _shade_unsafe(result, ax, enc: Encoding, style: Style, labels: Labels, show_limit: str) -> None:
     """Hatch the unsafe side up to the current axes edge; the axes limits are kept as they are."""
-    if limit != "shade":
+    if show_limit != "shade":
         return
     lo, hi = ax.get_ylim()
     ys = labels.scale(y_axis(result, labels)[1])
@@ -313,12 +313,12 @@ def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit:
     ax.set_ylim(lo, hi)
 
 
-def draw_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
+def _show_limits(result, ax, enc: Encoding, style: Style, labels: Labels, show_limit: str) -> None:
     """Dashed lines at the declared limits of the drawn quantities, and the unsafe side shaded on request."""
-    draw_limit_lines(result, ax, enc, style, labels, limit)
-    if limit == "shade":
+    _draw_limit_lines(result, ax, enc, style, labels, show_limit)
+    if show_limit == "shade":
         ax.autoscale_view()
-        shade_limits(result, ax, enc, style, labels, limit)
+        _shade_unsafe(result, ax, enc, style, labels, show_limit)
 
 
 def _check_crossing(result, crossing: str) -> None:
@@ -430,11 +430,11 @@ def crossing_legend(result, enc: Encoding, found: list[Crossing], labels: Labels
     return replace(enc, legend=[*enc.legend, LegendBlock(title, entries)])
 
 
-def draw_field_limit(field, ax, style: Style, labels: Labels, limit: str, bound: str = "nominal") -> None:
+def _show_field_limit(field, ax, style: Style, labels: Labels, show_limit: str, bound: str = "nominal") -> None:
     """The limit contour over a field image, and the cells beyond it hatched on request."""
     lim = field.limits.get(field.quantity)
-    if limit == "none" or lim is None:
-        if limit == "shade" and lim is None:
+    if show_limit == "none" or lim is None:
+        if show_limit == "shade" and lim is None:
             raise ValueError(f"no limit declared for {field.quantity!r}; declare it in limits= to shade")
         return
     zs, xs, vs = labels.scale("z"), labels.scale("x"), labels.scale(field.quantity)
@@ -446,7 +446,7 @@ def draw_field_limit(field, ax, style: Style, labels: Labels, limit: str, bound:
         cs = ax.contour(xx, zz, values, levels=[level], colors=[style.limit_color], linewidths=style.limit_linewidth)
         ax.clabel(cs, fmt={level: _limit_text(labels, field.quantity, lim)}, fontsize=9, inline=True)
     unsafe = lim.unsafe(drawn)
-    if limit == "shade" and unsafe.any():
+    if show_limit == "shade" and unsafe.any():
         zb, xb = _cell_bounds(field)
         cells = np.ma.masked_array(np.zeros(unsafe.shape), mask=~unsafe)
         ax.pcolor(xb * xs, zb * zs, cells, cmap=ListedColormap(["white"]), alpha=style.shade_alpha,
@@ -529,11 +529,11 @@ def _check_field_arguments(values: dict, band: str, errorbars: bool) -> None:
 
 
 def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal", band="total",
-         errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
+         errorbars=False, show_limit="line", crossing="none", style_sheet=None, labels=None):
     """Draw ``result`` as documented on ``Result.plot``."""
     _check("bound", bound, BOUNDS)
     _check("band", band, BANDS)
-    _check("limit", limit, LIMITS)
+    _check("show_limit", show_limit, SHOW_LIMITS)
     _check("crossing", crossing, CROSSINGS)
     _check_crossing(result, crossing)
     sheet = style_sheet or DEFAULT_STYLE
@@ -546,20 +546,20 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             _check_field_arguments(dict(zip(FIELD_ARGUMENTS, (color, style, marker, col, row))), band, errorbars)
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
             draw_field(result, ax, sheet, bound, merged)
-            draw_field_limit(result, ax, sheet, merged, limit, bound)
+            _show_field_limit(result, ax, sheet, merged, show_limit, bound)
             ax.set_title(result.subtitle_with(merged), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
             return fig, ax
         if result.kind == "map":
             from ._maps import plot_map
 
-            return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, limit)
+            return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, show_limit)
         enc = encode(result.dims, result._spec.numeric, merged, sheet, color, style, marker, col, row, result._spec.level_space)
         binding = binder_colors(result.frame, sheet, enc) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
             drawn, inner_drawn, filled_drawn, found = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged,
                                                                  binding, crossing)
-            draw_limits(result, ax, enc, sheet, merged, limit)
+            _show_limits(result, ax, enc, sheet, merged, show_limit)
             if found:
                 ax.autoscale_view()
                 draw_crossings(result, ax, found, sheet, merged, foot=crossing == "mark")
@@ -590,11 +590,11 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             if ri != len(rows) - 1:
                 panel_ax.set_xlabel("")
         for panel, panel_ax, _ in panels:
-            draw_limit_lines(panel, panel_ax, enc, sheet, merged, limit)
-        if limit == "shade" or any(hits for _, _, hits in panels):
+            _draw_limit_lines(panel, panel_ax, enc, sheet, merged, show_limit)
+        if show_limit == "shade" or any(hits for _, _, hits in panels):
             axes[0, 0].autoscale_view()
         for panel, panel_ax, found in panels:
-            shade_limits(panel, panel_ax, enc, sheet, merged, limit)
+            _shade_unsafe(panel, panel_ax, enc, sheet, merged, show_limit)
             if found:
                 panel_ax.tick_params(labelbottom=True)
             draw_crossings(panel, panel_ax, found, sheet, merged, foot=True)

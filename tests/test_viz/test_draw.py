@@ -398,7 +398,7 @@ def test_limit_line_scaled_and_coloured_by_quantity(agr, grid_cases):
 
 def test_limit_shade_hatches_the_unsafe_side(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", limit="shade")
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", show_limit="shade")
     (patch,) = hatched(ax)
     assert patch.get_hatch() == "////"
     lo, hi = ax.get_ylim()
@@ -406,7 +406,7 @@ def test_limit_shade_hatches_the_unsafe_side(agr, grid_cases):
     assert lo < 1.5 < hi
     plt.close(fig)
     sweep2 = limited(agr, grid_cases, T_cool=at_most(50.0))
-    fig, ax = sweep2.reduce("T_cool", "max", versus="power").plot(limit="shade")
+    fig, ax = sweep2.reduce("T_cool", "max", versus="power").plot(show_limit="shade")
     assert len(hatched(ax)) == 1
     plt.close(fig)
 
@@ -442,7 +442,7 @@ def test_unequal_limits_keep_one_line_per_quantity(agr, grid_cases):
 
 def test_shade_is_allowed_when_the_limits_merge(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_least(1.3))
-    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power").plot(limit="shade")
+    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power").plot(show_limit="shade")
     assert len(hatched(ax)) == 1
     plt.close(fig)
 
@@ -450,33 +450,33 @@ def test_shade_is_allowed_when_the_limits_merge(agr, grid_cases):
 def test_limit_shade_refusals(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
     with pytest.raises(ValueError, match="shade needs one quantity per axes; put quantity on col= or row="):
-        sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(limit="shade")
+        sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(show_limit="shade")
     with pytest.raises(ValueError, match="no limit declared for 'T_cool'; declare it in limits= to shade"):
-        sweep.reduce("T_cool", "max", versus="power").plot(limit="shade")
+        sweep.reduce("T_cool", "max", versus="power").plot(show_limit="shade")
     r = limited(agr, grid_cases).required("CHFR", equals=1.6, solve_for="power", versus="mdot")
     with pytest.raises(ValueError, match="shading needs the side of the limit; declare CHFR in limits="):
-        r.plot(limit="shade")
-    with pytest.raises(ValueError, match="limit='both'; use one of line, shade, none"):
-        sweep.reduce("CHFR", "min", versus="power").plot(limit="both")
+        r.plot(show_limit="shade")
+    with pytest.raises(ValueError, match="show_limit='both'; use one of line, shade, none"):
+        sweep.reduce("CHFR", "min", versus="power").plot(show_limit="both")
 
 
 def test_limit_shade_allowed_with_quantity_on_panels(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(50.0))
-    fig, axes = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity", limit="shade")
+    fig, axes = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity", show_limit="shade")
     assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
 
 
 def test_limit_none_and_required_shade(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(limit="none")
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(show_limit="none")
     assert dashed_lines(ax) == [] and hatched(ax) == []
     plt.close(fig)
     r = sweep.required("CHFR", solve_for="power", versus="mdot")
     fig, ax = r.plot()
     assert dashed_lines(ax) == []
     plt.close(fig)
-    fig, ax = r.plot(limit="shade")
+    fig, ax = r.plot(show_limit="shade")
     assert len(hatched(ax)) == 1
     plt.close(fig)
 
@@ -487,7 +487,7 @@ def test_field_limit_contour(agr, grid_cases):
     assert any(type(c).__name__ == "QuadContourSet" for c in ax.collections)
     plt.close(fig)
     field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
-    fig, ax = field.plot(limit="shade")
+    fig, ax = field.plot(show_limit="shade")
     (cells,) = hatched(ax)
     assert isinstance(cells, PolyCollection)
     assert len(cells.get_paths()) == at_most(60.0).unsafe(field.arrays["value"]).sum() == 2
@@ -498,7 +498,7 @@ def test_limit_shade_on_panels_keeps_every_limit_in_view(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(100.0))
     for order in (["CHFR", "T_cool"], ["T_cool", "CHFR"]):
         r = sweep.profile(order, where=dict(power=4e6, mdot=0.3))
-        fig, axes = r.plot(col="quantity", limit="shade")
+        fig, axes = r.plot(col="quantity", show_limit="shade")
         for ax in axes.ravel():
             lo, hi = ax.get_ylim()
             assert lo < 1.5 and 100.0 < hi
@@ -521,24 +521,24 @@ def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
     sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
     r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
     with pytest.raises(ValueError, match="shade needs one curve per axes; put peak on col= or row="):
-        r.plot(color="peak", limit="shade")
-    fig, axes = r.plot(col="peak", limit="shade")
+        r.plot(color="peak", show_limit="shade")
+    fig, axes = r.plot(col="peak", show_limit="shade")
     assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
     r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"])
     with pytest.raises(ValueError, match="shade needs one curve per axes; put calculation on col= or row="):
-        r.plot(limit="shade")
+        r.plot(show_limit="shade")
 
 
 def test_field_shade_reads_the_drawn_bound_and_skips_safe_fields(agr, grid_cases):
     sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"T": at_most(60.0)})
     field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
-    fig, ax = field.plot(bound="upper", limit="shade")
+    fig, ax = field.plot(bound="upper", show_limit="shade")
     (cells,) = hatched(ax)
     assert len(cells.get_paths()) == at_most(60.0).unsafe(field.arrays["upper"]).sum() == 3
     plt.close(fig)
     safe = limited(agr, grid_cases, T=at_most(100.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3))
-    fig, ax = safe.plot(limit="shade")
+    fig, ax = safe.plot(show_limit="shade")
     assert hatched(ax) == []
     plt.close(fig)
 
@@ -561,10 +561,10 @@ def test_map_draws_filled_contours_with_a_colour_bar(agr, grid_cases):
 
 def test_map_shade_and_none(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
-    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(limit="shade")
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(show_limit="shade")
     assert any(h for c in contour_sets(ax) for h in c.hatches)
     plt.close(fig)
-    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(limit="none")
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(show_limit="none")
     assert len(contour_sets(ax)) == 1
     plt.close(fig)
 
@@ -638,13 +638,13 @@ def test_where_reducer_carries_no_limit(agr, grid_cases):
     assert dashed_lines(ax) == [] and len(ax.texts) == 0
     plt.close(fig)
     with pytest.raises(ValueError, match=r"where_min gives a location, not a value of CHFR; use min, max, mean or at\(\) to shade"):
-        r.plot(limit="shade")
+        r.plot(show_limit="shade")
     m = sweep.reduce("CHFR", "where_min", versus=("power", "mdot"))
     fig, ax = m.plot()
     assert len(contour_sets(ax)) == 1 and len(ax.texts) == 0
     plt.close(fig)
     with pytest.raises(ValueError, match="where_min gives a location, not a value of CHFR"):
-        m.plot(limit="shade")
+        m.plot(show_limit="shade")
 
 
 def test_custom_reducer_carries_no_limit(agr, grid_cases):
@@ -660,23 +660,23 @@ def test_custom_reducer_carries_no_limit(agr, grid_cases):
     with pytest.raises(
         ValueError, match=r"a custom reducer gives no value of CHFR to compare with its limit; use min, max, mean or at\(\)"
     ):
-        r.plot(limit="shade")
+        r.plot(show_limit="shade")
 
 
 def test_required_shade_reads_each_panel_side(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_least(45.0))
     r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot")
     assert set(r.frame.safe) == {"below", "above"} and r.safe_side is None
-    fig, axes = r.plot(col="quantity", limit="shade")
+    fig, axes = r.plot(col="quantity", show_limit="shade")
     assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
     with pytest.raises(ValueError, match="CHFR is safe below the required power and T_cool above it; shade one quantity per axes"):
-        r.plot(limit="shade")
+        r.plot(show_limit="shade")
 
 
 def test_map_shade_at_most_hatches_above_the_limit(agr, grid_cases):
     sweep = limited(agr, grid_cases, T_cool=at_most(60.0))
-    fig, ax = sweep.reduce("T_cool", "max", versus=("power", "mdot")).plot(limit="shade")
+    fig, ax = sweep.reduce("T_cool", "max", versus=("power", "mdot")).plot(show_limit="shade")
     (shade,) = [c for c in contour_sets(ax) if any(c.hatches)]
     assert shade.levels[0] == pytest.approx(60.0) and shade.levels[1] > 60.0
     plt.close(fig)
@@ -920,7 +920,7 @@ def test_crossing_follows_the_drawn_bound(agr, grid_cases):
 
 def test_crossing_without_the_limit_line(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(limit="none", crossing="mark")
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(show_limit="none", crossing="mark")
     assert len(drop_lines(ax)) == 1 and dashed_lines(ax) == []
     assert [t.get_text() for t in ax.texts] == ["4.8e+06"]
     plt.close(fig)
@@ -1017,10 +1017,10 @@ def test_crossing_mark_on_a_binding_result(agr):
 def test_crossing_mark_under_a_shaded_limit_keeps_the_axes(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
     r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
-    fig, ax = r.plot(limit="shade")
+    fig, ax = r.plot(show_limit="shade")
     shaded = ax.get_ylim()
     plt.close(fig)
-    fig, ax = r.plot(limit="shade", crossing="mark")
+    fig, ax = r.plot(show_limit="shade", crossing="mark")
     assert ax.get_ylim() == pytest.approx(shaded)
     (drop,) = drop_lines(ax)
     assert drop.get_segments()[0][0][1] == pytest.approx(shaded[0])
@@ -1040,7 +1040,7 @@ def test_a_sweep_keeps_the_default_format_of_its_labels(agr, grid_cases):
 def test_limit_color_reaches_line_hatch_contour_and_crossing(agr, grid_cases):
     sheet = Style(limit_color="#123456")
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(limit="shade", crossing="mark", style_sheet=sheet)
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(show_limit="shade", crossing="mark", style_sheet=sheet)
     assert {to_hex(ln.get_color()) for ln in dashed_lines(ax)} == {"#123456"}
     assert {to_hex(np.atleast_2d(h.get_edgecolor())[0]) for h in hatched(ax)} == {"#123456"}
     (drop,) = drop_lines(ax)
@@ -1053,7 +1053,7 @@ def test_limit_color_reaches_line_hatch_contour_and_crossing(agr, grid_cases):
 
 def test_limit_color_reaches_the_field_contour_and_hatch(agr, grid_cases):
     field = limited(agr, grid_cases, T=at_most(60.0)).field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
-    fig, ax = field.plot(limit="shade", style_sheet=Style(limit_color="#123456"))
+    fig, ax = field.plot(show_limit="shade", style_sheet=Style(limit_color="#123456"))
     assert to_hex(limit_contour(ax).get_edgecolor()[0]) == "#123456"
     (cells,) = hatched(ax)
     assert to_hex(np.atleast_2d(cells.get_edgecolor())[0]) == "#123456"

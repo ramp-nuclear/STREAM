@@ -44,7 +44,7 @@ def _in_panel(hole: dict, fixed: dict) -> bool:
     return all(hole[p] == v if isinstance(v, str) else np.isclose(hole[p], v) for p, v in fixed.items() if p in hole)
 
 
-def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, levels: np.ndarray,
+def draw_map(result, ax, style: Style, bound: str, show_limit: str, labels: Labels, levels: np.ndarray,
              grid: tuple[np.ndarray, np.ndarray]):
     """Filled contours of a reduced quantity over two parameters; returns the contour set for the colour bar.
 
@@ -67,17 +67,17 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
     masked = np.ma.masked_invalid(Z)
     cf = ax.contourf(X, Y, masked, levels=levels, cmap=style.ramp)
     lim = result.limits.get(q)
-    if limit == "shade" and lim is None:
+    if show_limit == "shade" and lim is None:
         if result.limit_note is not None:
             raise ValueError(result.limit_note)
         raise ValueError(f"no limit declared for {q!r}; declare it in limits= to shade")
-    if limit != "none" and lim is not None:
+    if show_limit != "none" and lim is not None:
         level = lim.value * vs
         lo, hi = np.nanmin(Z), np.nanmax(Z)
         if lo < level < hi:
             cs = ax.contour(X, Y, masked, levels=[level], colors=[style.limit_color], linewidths=style.limit_linewidth)
             ax.clabel(cs, fmt={level: _limit_text(labels, q, lim)}, fontsize=9, inline=True)
-        if limit == "shade":
+        if show_limit == "shade":
             margin = max(hi - lo, abs(level), 1.0)
             band = [lo - margin, level] if lim.side == "above" else [level, hi + margin]
             if band[0] < band[1]:
@@ -104,7 +104,7 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
 
 
 def plot_map(result, ax, sheet: Style, labels: Labels, color, style, marker, col, row, bound: str, band: str,
-             errorbars: bool, limit: str):
+             errorbars: bool, show_limit: str):
     """Draw a map result, one panel per level of ``col`` and ``row``, with one colour bar and one scale."""
     _check_map_arguments(dict(zip(MAP_ARGUMENTS, (color, style, marker))), band, errorbars)
     panel_dims = [d for d in result.dims if d not in (col, row)]
@@ -120,7 +120,7 @@ def plot_map(result, ax, sheet: Style, labels: Labels, color, style, marker, col
     grid = (np.asarray(result._spec.level_space[result.x], float), np.asarray(result._spec.level_space[result.y], float))
     if col is None and row is None:
         fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
-        cf = draw_map(result, ax, sheet, bound, limit, labels, levels, grid)
+        cf = draw_map(result, ax, sheet, bound, show_limit, labels, levels, grid)
         ax.set_title(result.subtitle_with(labels), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
         fig.colorbar(cf, ax=ax).set_label(bar_text)
         return fig, ax
@@ -135,7 +135,7 @@ def plot_map(result, ax, sheet: Style, labels: Labels, color, style, marker, col
         fixed = {k: v for k, v in ((row, rv), (col, cv)) if k is not None}
         panel = _with_frame(result, _subset(result.frame, list(fixed), list(fixed.values())), fixed)
         panel = replace(panel, fixed={**result.fixed, **fixed})
-        cf = draw_map(panel, panel_ax, sheet, bound, limit, labels, levels, grid)
+        cf = draw_map(panel, panel_ax, sheet, bound, show_limit, labels, levels, grid)
         panel_ax.set_title(_panel_text(labels, fixed), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
         if ci:
             panel_ax.set_ylabel("")

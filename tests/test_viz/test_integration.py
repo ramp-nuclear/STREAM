@@ -88,10 +88,10 @@ def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
     with pytest.warns(UserWarning, match="rests on interpolated case 11"):
         r = sweep.required("CHFR", solve_for="power", versus="mdot")
     assert r.dims == {"wall_law": ["Dittus", "regime"]} and r.safe_side == "below"
-    fig, axes = r.plot(col="wall_law", limit="shade")
+    fig, axes = r.plot(col="wall_law", show_limit="shade")
     assert axes.shape == (1, 2)
     plt.close(fig)
-    fig, axes = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="wall_law", limit="shade")
+    fig, axes = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="wall_law", show_limit="shade")
     assert axes.shape == (1, 2)
     plt.close(fig)
     fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(wall_law="regime")).plot(color="mdot")

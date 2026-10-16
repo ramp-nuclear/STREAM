@@ -120,8 +120,8 @@ def figures(s):
 OPTIONS = {
     "profile": {},
     "curves": {"color": "mdot", "crossing": "mark"},
-    "panels": {"color": "mdot", "col": "shape", "limit": "shade"},
-    "map": {"limit": "shade"},
+    "panels": {"color": "mdot", "col": "shape", "show_limit": "shade"},
+    "map": {"show_limit": "shade"},
     "required": {"color": "shape"},
 }
 

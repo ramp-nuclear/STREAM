@@ -491,7 +491,7 @@ def test_reduce_limiting_across_quantities_needs_one_limit_value(agr, grid_cases
     same = osvr_sweep(agr, grid_cases, CHFR=at_least(1.3), OSVR=at_least(1.3))
     r = same.reduce(["CHFR", "OSVR"], "min", versus="power", limiting=True)
     assert set(r.frame.binder) == {"CHFR", "OSVR"}
-    fig, ax = r.plot(color="mdot", limit="shade")
+    fig, ax = r.plot(color="mdot", show_limit="shade")
     assert len([p for p in ax.patches if p.get_hatch()]) == 1
     assert len([ln for ln in ax.get_lines() if ln.get_linestyle() == "--"]) == 1
     plt.close(fig)

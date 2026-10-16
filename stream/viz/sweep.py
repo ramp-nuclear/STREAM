@@ -450,7 +450,7 @@ class Sweep:
         ::
 
             sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()
-            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(bound="upper", limit="shade")
+            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(bound="upper", show_limit="shade")
 
         Parameters
         ----------
@@ -504,7 +504,7 @@ class Sweep:
 
             A scalar quantity is taken as it is. A ``where_*`` reducer gives a
             location and a callable an unknown value, so their results carry no
-            limit: ``limit="line"`` draws nothing, and ``limit="shade"`` or
+            limit: ``show_limit="line"`` draws nothing, and ``show_limit="shade"`` or
             ``limiting=True`` raises.
         versus:
             A numeric parameter for the x axis, or a pair of two numeric

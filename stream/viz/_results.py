@@ -171,7 +171,7 @@ class Result:
         return f"{labels.value(q, target)}" + (f" {unit}" if unit else "")
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
-             band="total", errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
+             band="total", errorbars=False, show_limit="line", crossing="none", style_sheet=None, labels=None):
         """Draw this result and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
 
         Parameters
@@ -198,14 +198,14 @@ class Result:
             * ``"none"``: no band.
         errorbars:
             Draw the band as error bars instead of a fill. Not for a map or a field.
-        limit:
-            The declared limit of each drawn quantity:
+        show_limit:
+            How the declared limit of each drawn quantity is shown:
 
-            * ``"line"``: a dashed line at the limit, a contour on a map or a field,
-              nothing extra on a ``required`` result (the default). When the
-              quantities on the axes all carry the same limit, one line in
+            * ``"line"``: a dashed line at the limit (a contour on a map or a
+              field), nothing extra on a ``required`` result (the default). When
+              the quantities on the axes all carry the same limit, one line in
               ``Style.limit_color`` is drawn for all of them;
-            * ``"shade"``: the line and the unsafe side hatched; on a ``required``
+            * ``"shade"``: adds hatching of the unsafe side; on a ``required``
               result, the side of the curve where the limit is not met. Needs one
               quantity (or one curve, or quantities sharing one limit) per axes; each
               panel counts on its own.
@@ -213,7 +213,7 @@ class Result:
               declared, or a ``where_*`` or custom reducer), when several
               quantities with different limits share the axes, or on a
               ``required`` result whose side is unknown;
-            * ``"none"``: neither.
+            * ``"none"``: draws nothing.
         crossing:
             Where each curve meets the declared limit of its quantity, at its
             first linear crossing in ``x`` on the drawn ``bound``:
@@ -251,7 +251,7 @@ class Result:
         """
         from ._draw import plot
 
-        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, crossing, style_sheet, labels)
+        return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, show_limit, crossing, style_sheet, labels)
 
 
 @dataclass
