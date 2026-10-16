@@ -326,13 +326,13 @@ it. The cell below runs the first five minutes of the both-pumps case at 5, 10, 
 <div class="highlight"><pre>
           status  peak_max  margin  t_rev_hot  wall s
 cells
-5      completed     97.09   19.75      190.0    15.0
-10     completed    101.14   15.70      192.0    28.0
-20     completed    103.39   13.45      194.0    74.0
-40     completed    104.54   12.30      196.0   183.0
+5      completed     97.09   19.75      190.0    10.0
+10     completed    101.14   15.70      192.0    19.0
+20     completed    103.40   13.44      194.0    54.0
+40     completed    104.54   12.30      196.0   171.0
 
-margin lost per doubling [K]:  4.05, 2.25, 1.15
-ratio of successive losses:    0.55, 0.51
+margin lost per doubling [K]:  4.05, 2.25, 1.14
+ratio of successive losses:    0.56, 0.51
 margin if the losses keep shrinking by 0.51: 11.1 K
 </pre></div></div>
 </div>
@@ -378,7 +378,7 @@ tolerance outputs
           601      completed  12.4948  38.8881      192.0   101.149
 
           between grids between tolerances
-t_trip          5.1e-11             0.0025
+t_trip          1.1e-10             0.0025
 t_open          0.00032             0.0025
 t_rev_hot             0                  0
 peak_max         0.0088             0.0057

@@ -82,6 +82,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc_context</span>
@@ -110,6 +111,10 @@
 
 <span class="sd">    ``number_format`` is the Python format spec of every printed number whose</span>
 <span class="sd">    label declares no format of its own.</span>
+
+<span class="sd">    ``with style:`` applies the style's matplotlib settings inside the block,</span>
+<span class="sd">    as ``with style.context():`` does, and makes it the sheet every ``plot``</span>
+<span class="sd">    call inside the block draws with unless given a ``style_sheet``.</span>
 <span class="sd">    """</span>
 
     <span class="n">palette</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"#2980b9"</span><span class="p">,</span> <span class="s2">"#1abc9c"</span><span class="p">,</span> <span class="s2">"#e67e22"</span><span class="p">,</span> <span class="s2">"#8e44ad"</span><span class="p">,</span> <span class="s2">"#7f8c8d"</span><span class="p">,</span> <span class="s2">"#2c3e50"</span><span class="p">)</span>
@@ -155,6 +160,19 @@
             <span class="p">}</span>
         <span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">()</span>
+        <span class="n">context</span><span class="o">.</span><span class="fm">__enter__</span><span class="p">()</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_entered"</span><span class="p">,</span> <span class="p">(</span><span class="o">*</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_entered"</span><span class="p">,</span> <span class="p">()),</span> <span class="n">context</span><span class="p">))</span>
+        <span class="n">_ACTIVE</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">exc</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="o">*</span><span class="n">rest</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entered</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"_entered"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">rest</span><span class="p">))</span>
+        <span class="n">_ACTIVE</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+        <span class="n">context</span><span class="o">.</span><span class="fm">__exit__</span><span class="p">(</span><span class="o">*</span><span class="n">exc</span><span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">ramp_colors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""``n`` hex colours from the ramp, light to dark, avoiding the pale end."""</span>
         <span class="n">cmap</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">colormaps</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ramp</span><span class="p">]</span>
@@ -165,6 +183,12 @@
 
 
 <span class="n">DEFAULT_STYLE</span> <span class="o">=</span> <span class="n">Style</span><span class="p">()</span>
+<span class="n">_ACTIVE</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Style</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_active_style</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Style</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The innermost ``Style`` entered with ``with``, else the default."""</span>
+    <span class="k">return</span> <span class="n">_ACTIVE</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">_ACTIVE</span> <span class="k">else</span> <span class="n">DEFAULT_STYLE</span>
 </pre></div>
 
            </div>
