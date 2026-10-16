@@ -84,9 +84,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Label"</span><span class="p">,</span> <span class="s2">"Labels"</span><span class="p">]</span>
+
 
 <div class="viewcode-block" id="Label">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Label">[docs]</a>
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Label">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Label</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""How one name is shown.</span>
@@ -118,9 +120,7 @@
 
 
 
-<div class="viewcode-block" id="as_label">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.as_label">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">as_label</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_label</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Turn a registry entry into a :class:`Label`.</span>
 
 <span class="sd">    Accepted forms: a ``Label``; ``None`` (hidden); a string (display only);</span>
@@ -140,12 +140,11 @@
         <span class="sa">f</span><span class="s2">"label for </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> must be a string, a (display, unit) tuple, a (display, unit, scale) "</span>
         <span class="sa">f</span><span class="s2">"tuple, a (display, unit, scale, fmt) tuple with fmt a format spec or a callable, a Label "</span>
         <span class="sa">f</span><span class="s2">"or None, not </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">"</span>
-    <span class="p">)</span></div>
-
+    <span class="p">)</span>
 
 
 <div class="viewcode-block" id="Labels">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels">[docs]</a>
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Labels">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Labels</span><span class="p">(</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">"""A registry from internal names to :class:`Label` records.</span>
 
@@ -156,12 +155,12 @@
 <span class="sd">    ``default_format``, a Python format spec (``".4g"`` unless given). A</span>
 <span class="sd">    registry's own ``default_format`` reaches ``Result.subtitle``,</span>
 <span class="sd">    ``Result.ylabel`` and direct :meth:`value` and :meth:`describe` calls;</span>
-<span class="sd">    in figures :func:`~stream.viz.draw.plot` replaces it with the style</span>
+<span class="sd">    in figures :meth:`~stream.viz.Result.plot` replaces it with the style</span>
 <span class="sd">    sheet's ``number_format``.</span>
 <span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".4g"</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">as_label</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">entries</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_as_label</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">entries</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">default_format</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
@@ -176,15 +175,10 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
 
-<div class="viewcode-block" id="Labels.known">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.known">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">known</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Whether ``name`` has an entry."""</span>
-        <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span></div>
+        <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
 
-
-<div class="viewcode-block" id="Labels.merged">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.merged">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Labels</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""A new registry with ``other``'s entries overriding this one's.</span>
 
@@ -194,46 +188,31 @@
         <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">Labels</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Labels</span><span class="p">)</span> <span class="k">else</span> <span class="n">other</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">merged</span></div>
+        <span class="k">return</span> <span class="n">merged</span>
 
-
-<div class="viewcode-block" id="Labels.with_default_format">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.with_default_format">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">with_default_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""A copy whose numbers without a format of their own print with ``fmt``."""</span>
         <span class="n">copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
         <span class="n">copy</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">fmt</span>
-        <span class="k">return</span> <span class="n">copy</span></div>
+        <span class="k">return</span> <span class="n">copy</span>
 
-
-<div class="viewcode-block" id="Labels.unit">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.unit">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""The unit string, or ``None`` when the name has no entry."""</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">else</span> <span class="kc">None</span></div>
-
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">scale</span>
 
-<div class="viewcode-block" id="Labels.display">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.display">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""The display text of ``name``, or ``name`` itself when the entry hides it."""</span>
         <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">display</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">display</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">display</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">display</span><span class="p">)</span>
 
-
-<div class="viewcode-block" id="Labels.axis">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.axis">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``Display [unit]``, or ``Display`` when the unit is empty."""</span>
         <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">]"</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">unit</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">]"</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">unit</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
 
-
-<div class="viewcode-block" id="Labels.value">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.value">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``x`` scaled and formatted for printing; a string is returned as it is.</span>
 
@@ -244,11 +223,8 @@
         <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">label</span><span class="o">.</span><span class="n">scale</span>
         <span class="n">fmt</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">fmt</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span>
-        <span class="k">return</span> <span class="n">fmt</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">fmt</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
 
-
-<div class="viewcode-block" id="Labels.describe">
-<a class="viewcode-back" href="../../../viz.html#stream.viz.labels.Labels.describe">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``Display = value unit`` for each fixed parameter, comma separated."""</span>
         <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
@@ -257,7 +233,6 @@
             <span class="n">unit</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">unit</span> <span class="k">else</span> <span class="s2">""</span>
             <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="si">}{</span><span class="n">unit</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span></div>
-</div>
 
 
 
@@ -313,7 +288,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 15, 2026.
+      <span class="lastupdated">Last updated on Oct 16, 2026.
       </span></p>
   </div>
 
