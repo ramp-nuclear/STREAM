@@ -191,7 +191,7 @@ def _is_required(result) -> bool:
 
 
 def _limit_color(enc: Encoding, style: Style, q: str) -> str:
-    return enc.maps["color"][q] if enc.channels.get("color") == "quantity" else style.palette[2]
+    return enc.maps["color"][q] if enc.channels.get("color") == "quantity" else style.limit_color
 
 
 def _one_curve_error(result) -> ValueError:
@@ -275,7 +275,7 @@ def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit:
         sub = result.frame.sort_values(result.x)
         x, y = sub[result.x].to_numpy(float) * xs, sub["value"].to_numpy(float) * ys
         edge = hi if side == "below" else lo
-        _shade(ax, style, style.palette[2], (lo, edge), x=x, y=y)
+        _shade(ax, style, style.limit_color, (lo, edge), x=x, y=y)
     else:
         q = _quantities_on(result)[0]
         lim = result.limits[q]
@@ -376,14 +376,14 @@ def draw_field_limit(field, ax, style: Style, labels: Labels, limit: str, bound:
     values = drawn * vs
     level = lim.value * vs
     if np.nanmin(values) < level < np.nanmax(values):
-        cs = ax.contour(xx, zz, values, levels=[level], colors=[style.palette[2]], linewidths=style.limit_linewidth)
+        cs = ax.contour(xx, zz, values, levels=[level], colors=[style.limit_color], linewidths=style.limit_linewidth)
         ax.clabel(cs, fmt={level: _limit_text(labels, field.quantity, lim)}, fontsize=9, inline=True)
     unsafe = lim.unsafe(drawn)
     if limit == "shade" and unsafe.any():
         zb, xb = _cell_bounds(field)
         cells = np.ma.masked_array(np.zeros(unsafe.shape), mask=~unsafe)
         ax.pcolor(xb * xs, zb * zs, cells, cmap=ListedColormap(["white"]), alpha=style.shade_alpha,
-                  edgecolor=style.palette[2], linewidth=0, hatch=style.shade_hatch)
+                  edgecolor=style.limit_color, linewidth=0, hatch=style.shade_hatch)
 
 
 def _band_texts(band: str, inner_drawn: bool, sigma_text: str, labels: Labels) -> list[tuple[str | None, bool]]:

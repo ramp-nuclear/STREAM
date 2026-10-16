@@ -19,8 +19,10 @@ class Style:
     for numeric levels, and the two alphas shade the total and the inner
     systematic band. Every field can be changed with :meth:`replace`.
 
-    ``limit_linewidth``, ``shade_alpha`` and ``shade_hatch`` draw a declared
-    limit and ``crossing_linewidth`` the drop line where a curve meets it;
+    ``limit_color`` is the colour of a declared limit wherever one is drawn
+    (the dashed line, the contour on a map or a field, the hatch edge);
+    ``limit_linewidth``, ``shade_alpha`` and ``shade_hatch`` draw it and
+    ``crossing_linewidth`` the drop line where a curve meets it;
     ``map_levels`` is the number of filled contour bands of a map and
     ``map_cases`` adds a dot at every solved case; ``filled_marker`` marks a
     case filled by interpolation.
@@ -40,6 +42,7 @@ class Style:
     legend_frame: bool = False
     grid_alpha: float = 0.25
     subtitle_size: float = 9.5
+    limit_color: str = "#e67e22"
     limit_linewidth: float = 1.6
     crossing_linewidth: float = 1.2
     shade_alpha: float = 0.55

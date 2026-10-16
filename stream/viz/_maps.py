@@ -75,7 +75,7 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
         level = lim.value * vs
         lo, hi = np.nanmin(Z), np.nanmax(Z)
         if lo < level < hi:
-            cs = ax.contour(X, Y, masked, levels=[level], colors=[style.palette[2]], linewidths=style.limit_linewidth)
+            cs = ax.contour(X, Y, masked, levels=[level], colors=[style.limit_color], linewidths=style.limit_linewidth)
             ax.clabel(cs, fmt={level: _limit_text(labels, q, lim)}, fontsize=9, inline=True)
         if limit == "shade":
             margin = max(hi - lo, abs(level), 1.0)
@@ -83,7 +83,7 @@ def draw_map(result, ax, style: Style, bound: str, limit: str, labels: Labels, l
             if band[0] < band[1]:
                 shade = ax.contourf(X, Y, masked, levels=band, colors=["white"], alpha=style.shade_alpha,
                                     hatches=[style.shade_hatch])
-                shade.set_edgecolor(style.palette[2])
+                shade.set_edgecolor(style.limit_color)
                 shade.set_linewidth(0)
     for hole in result.holes:
         if _in_panel(hole, result.fixed):

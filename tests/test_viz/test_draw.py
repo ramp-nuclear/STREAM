@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from conftest import make_case_frame
 from matplotlib.collections import LineCollection, PolyCollection
+from matplotlib.colors import to_hex
 from matplotlib.contour import QuadContourSet
 
 from stream.viz import Labels, Style, Sweep, at, at_least, at_most
@@ -320,6 +321,11 @@ def limited(agr, grid_cases, **limits):
 
 def dashed_lines(ax):
     return [ln for ln in ax.get_lines() if ln.get_linestyle() == "--"]
+
+
+def limit_contour(ax):
+    (cs,) = [c for c in ax.collections if isinstance(c, QuadContourSet) and not c.filled]
+    return cs
 
 
 def hatched(ax):
@@ -902,4 +908,27 @@ def test_a_sweep_keeps_the_default_format_of_its_labels(agr, grid_cases):
     assert r.subtitle == "Power = 4000000.00 W, Mass flow = 0.30 kg/s, CC"
     fig, ax = r.plot()
     assert ax.get_title() == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
+    plt.close(fig)
+
+
+def test_limit_color_reaches_line_hatch_contour_and_crossing(agr, grid_cases):
+    sheet = Style(limit_color="#123456")
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(limit="shade", crossing="mark", style_sheet=sheet)
+    assert {to_hex(ln.get_color()) for ln in dashed_lines(ax)} == {"#123456"}
+    assert {to_hex(np.atleast_2d(h.get_edgecolor())[0]) for h in hatched(ax)} == {"#123456"}
+    (drop,) = drop_lines(ax)
+    assert to_hex(drop.get_color()[0]) == to_hex(ax.get_lines()[0].get_color()) != "#123456"
+    plt.close(fig)
+    fig, ax = sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(style_sheet=sheet)
+    assert to_hex(limit_contour(ax).get_edgecolor()[0]) == "#123456"
+    plt.close(fig)
+
+
+def test_limit_color_reaches_the_field_contour_and_hatch(agr, grid_cases):
+    field = limited(agr, grid_cases, T=at_most(60.0)).field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
+    fig, ax = field.plot(limit="shade", style_sheet=Style(limit_color="#123456"))
+    assert to_hex(limit_contour(ax).get_edgecolor()[0]) == "#123456"
+    (cells,) = hatched(ax)
+    assert to_hex(np.atleast_2d(cells.get_edgecolor())[0]) == "#123456"
     plt.close(fig)

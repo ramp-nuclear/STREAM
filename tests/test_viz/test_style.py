@@ -49,3 +49,7 @@ def test_map_fields():
 def test_number_format_defaults_to_four_significant_digits():
     assert DEFAULT_STYLE.number_format == ".4g"
     assert DEFAULT_STYLE.replace(number_format=".2f").number_format == ".2f"
+
+
+def test_style_limit_color_defaults_to_the_accent():
+    assert Style().limit_color == Style().palette[2]
