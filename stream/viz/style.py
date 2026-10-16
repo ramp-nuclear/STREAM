@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Self
 
 import matplotlib
 from matplotlib import rc_context
@@ -29,6 +30,9 @@ class Style:
 
     ``number_format`` is the Python format spec of every printed number whose
     label declares no format of its own.
+
+    ``with style:`` applies the style to everything drawn inside the block, as
+    ``with style.context():`` does.
     """
 
     palette: tuple[str, ...] = ("#2980b9", "#1abc9c", "#e67e22", "#8e44ad", "#7f8c8d", "#2c3e50")
@@ -73,6 +77,17 @@ class Style:
                 "axes.labelcolor": self.palette[-1],
             }
         )
+
+    def __enter__(self) -> Self:
+        context = self.context()
+        context.__enter__()
+        object.__setattr__(self, "_entered", (*getattr(self, "_entered", ()), context))
+        return self
+
+    def __exit__(self, *exc) -> None:
+        *rest, context = self._entered
+        object.__setattr__(self, "_entered", tuple(rest))
+        context.__exit__(*exc)
 
     def ramp_colors(self, n: int) -> list[str]:
         """``n`` hex colours from the ramp, light to dark, avoiding the pale end."""

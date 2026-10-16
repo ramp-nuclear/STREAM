@@ -174,11 +174,14 @@ class Sweep:
         style or panel a figure, never be an axis.
     frames:
         One ``State.to_dataframe()`` result per case, or ``None`` for a case
-        whose solve failed (a hole).
+        whose solve failed (a hole). The list :func:`run_cases` returns also
+        carries each hole's message.
     agr:
         The aggregator, static across the sweep, used for coordinates.
     labels:
-        Display names, units and scales, merged over the module defaults.
+        A :class:`~stream.viz.Labels`, or a mapping from name to a :class:`~stream.viz.Label` or its
+        shorthand tuple: display names, units and scales, merged over the
+        module defaults.
     limits:
         The limits the design must respect, one per quantity::
 
@@ -199,7 +202,15 @@ class Sweep:
         ``filled``. Off by default because an interpolated case is a guess.
     """
 
-    def __init__(self, cases, frames, agr, labels=None, limits=None, fill_holes=False):
+    def __init__(
+        self,
+        cases: Sequence[Mapping[str, float | str]],
+        frames: Sequence[DataFrame | None],
+        agr,
+        labels: Labels | Mapping | None = None,
+        limits: Mapping[str, Limit] | None = None,
+        fill_holes: bool = False,
+    ) -> None:
         self.cases, self._categorical = _check_cases(cases)
         self.parameters: tuple[str, ...] = tuple(self.cases[0]) if self.cases else ()
         if len(self.cases) != len(frames):

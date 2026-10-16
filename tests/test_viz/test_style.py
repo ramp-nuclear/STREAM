@@ -17,6 +17,18 @@ def test_context_applies_and_restores_rc():
     assert plt.rcParams["axes.spines.top"] == before
 
 
+def test_with_style_applies_and_restores_rc():
+    before = plt.rcParams["lines.linewidth"]
+    style = Style(linewidth=3.5)
+    with style as entered:
+        assert entered is style
+        assert plt.rcParams["lines.linewidth"] == 3.5
+        with style:
+            assert plt.rcParams["axes.spines.top"] is False
+        assert plt.rcParams["lines.linewidth"] == 3.5
+    assert plt.rcParams["lines.linewidth"] == before
+
+
 def test_ramp_colors_are_hex_and_ordered_light_to_dark():
     colors = DEFAULT_STYLE.ramp_colors(3)
     assert len(colors) == 3 and all(c.startswith("#") and len(c) == 7 for c in colors)
