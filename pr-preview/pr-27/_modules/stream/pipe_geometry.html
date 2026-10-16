@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.pipe_geometry &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.pipe_geometry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.pipe_geometry</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">Pipe Geometry</span>
+<span class="sd">=============</span>
+<span class="sd">A pipe geometry interface used by different calculations, defined through</span>
+<span class="sd">:class:`EffectivePipe`.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">Meter2</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"EffectivePipe"</span><span class="p">]</span>
+
+<span class="n">_T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"_T"</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">"EffectivePipe"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="EffectivePipe">
+<a class="viewcode-back" href="../../utility_packages.html#stream.pipe_geometry.EffectivePipe">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EffectivePipe</span><span class="p">:</span>
+    <span class="c1"># noinspection PyUnresolvedReferences</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    A simple constant-cross-sectional pipe's parameters, where the parameters</span>
+<span class="sd">    are "effectively" fitting to a circular pipe, and there is a distinction</span>
+<span class="sd">    between "wet" (for fluid flow) and "heated" (for heat transfer) geometries.</span>
+
+<span class="sd">    Essentially, for both perimeters, :math:`P_\text{heated}, P_\text{wet}`,</span>
+<span class="sd">    the appropriate diameter is given using the flow area :math:`A`:</span>
+
+<span class="sd">    .. math:: D = 4A / P</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    length: Meter</span>
+<span class="sd">        Pipe Length</span>
+<span class="sd">    heated_perimeter: Meter</span>
+<span class="sd">        The cross-sectional heated perimeter</span>
+<span class="sd">    wet_perimeter: Meter</span>
+<span class="sd">        The cross-sectional wet (hydraulic) perimeter</span>
+<span class="sd">    area: Meter2</span>
+<span class="sd">        Flow cross-section</span>
+<span class="sd">    heated_parts: tuple[Meter, ...] or None</span>
+<span class="sd">        For a cross-section of the pipe, there may be several distinct regions</span>
+<span class="sd">        which contribute flux (e.g. in MTR there are 2 in most cases).</span>
+<span class="sd">        This is also the default case.</span>
+<span class="sd">    width: Meter | None</span>
+<span class="sd">        Channel width. When this is None, that means one should not use this attribute.</span>
+<span class="sd">        This property is currently only used in the Sudo &amp; Kaminaga CHF for one</span>
+<span class="sd">        of its terms.</span>
+<span class="sd">        See that usage in :func:`~stream.physical_models.thresholds.Sudo_Kaminaga_CHF`.</span>
+<span class="sd">        For rectangular channels this is the longer side of the channel, which is commonly also the heated one.</span>
+<span class="sd">        In annular channels, this is the hydraulic diameter of the channel.</span>
+<span class="sd">        The reference for why this is so is by [#Mishima]_.</span>
+<span class="sd">    depth: Meter | None</span>
+<span class="sd">        Channel depth. This property is in use in the Elenbaas correlation</span>
+<span class="sd">        for natural convection between parallel plates</span>
+<span class="sd">        `stream.physical_models.heat_transfer_coeffcient.natural_convection.Elenbaas_h_spl`</span>
+<span class="sd">        For rectangular channels this is the shorter side of the channel cross-section.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#Mishima] K. Mishima, H. Nishihara, T. Shibata, "CHF Correlations Related</span>
+<span class="sd">       to the Core Cooling of a Research Reactor", JAERI-M 84-073, International</span>
+<span class="sd">       Meeting on Reduced Enrichment for Research and Test Reactors, Tokai, Japan, 1983.</span>
+<span class="sd">    """</span>
+
+    <span class="n">length</span><span class="p">:</span> <span class="n">Meter</span>
+    <span class="n">heated_perimeter</span><span class="p">:</span> <span class="n">Meter</span>
+    <span class="n">wet_perimeter</span><span class="p">:</span> <span class="n">Meter</span>
+    <span class="n">area</span><span class="p">:</span> <span class="n">Meter2</span>
+    <span class="n">heated_parts</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Meter</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">width</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">heated_diameter</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">hydraulic_diameter</span><span class="p">:</span> <span class="n">Meter</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"heated_diameter"</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">heated_perimeter</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"hydraulic_diameter"</span><span class="p">,</span> <span class="mi">4</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">wet_perimeter</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">"heated_parts"</span><span class="p">,</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heated_parts</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">heated_parts</span> <span class="k">else</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heated_perimeter</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">heated_perimeter</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">heated_parts</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">heated_perimeter</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-15</span><span class="p">),</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The partitions of P_heated: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">heated_parts</span><span class="si">}</span><span class="s2"> do not sum up to the total within relative tolerance 1e-15"</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="EffectivePipe.rectangular">
+<a class="viewcode-back" href="../../utility_packages.html#stream.pipe_geometry.EffectivePipe.rectangular">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rectangular</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">length</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">edge1</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">edge2</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">heated_edge</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">one_sided</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"EffectivePipe"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Create an EffectivePipe geometry for a channel with a rectangular cross-section,</span>
+<span class="sd">        which is heated on two opposite sides.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        length: Meter</span>
+<span class="sd">            Length along the flow.</span>
+<span class="sd">        edge1, edge2: Meter</span>
+<span class="sd">            Edges of the rectangular cross-section.</span>
+<span class="sd">        heated_edge: Meter</span>
+<span class="sd">            The heated section length which may differ from the edge itself.</span>
+<span class="sd">        one_sided: bool</span>
+<span class="sd">            A flag for whether heating happens on two opposite edges (False) or on just one edge (True).</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        EffectivePipe</span>
+<span class="sd">        """</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"left"</span><span class="p">:</span> <span class="p">(</span><span class="n">heated_edge</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="s2">"right"</span><span class="p">:</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">heated_edge</span><span class="p">),</span>
+            <span class="kc">None</span><span class="p">:</span> <span class="p">(</span><span class="n">heated_edge</span><span class="p">,</span> <span class="n">heated_edge</span><span class="p">),</span>
+        <span class="p">}[</span><span class="n">one_sided</span><span class="p">]</span>
+        <span class="n">width</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">edge1</span><span class="p">,</span> <span class="n">edge2</span><span class="p">)</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="nb">min</span><span class="p">((</span><span class="n">edge1</span><span class="p">,</span> <span class="n">edge2</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+            <span class="n">heated_perimeter</span><span class="o">=</span><span class="n">heated_edge</span> <span class="k">if</span> <span class="n">one_sided</span> <span class="k">else</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">heated_edge</span><span class="p">,</span>
+            <span class="n">wet_perimeter</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">edge1</span> <span class="o">+</span> <span class="n">edge2</span><span class="p">),</span>
+            <span class="n">area</span><span class="o">=</span><span class="n">edge1</span> <span class="o">*</span> <span class="n">edge2</span><span class="p">,</span>
+            <span class="n">heated_parts</span><span class="o">=</span><span class="n">parts</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="EffectivePipe.circular">
+<a class="viewcode-back" href="../../utility_packages.html#stream.pipe_geometry.EffectivePipe.circular">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">circular</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">length</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">diameter</span><span class="p">:</span> <span class="n">Meter</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Create an EffectivePipe geometry for a channel with a circular cross-section, which is fully heated.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        length: Meter</span>
+<span class="sd">            Length along the flow.</span>
+<span class="sd">        diameter: Meter</span>
+<span class="sd">            Diameter of the pipe.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        EffectivePipe</span>
+<span class="sd">        """</span>
+        <span class="n">perimeter</span> <span class="o">=</span> <span class="n">diameter</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span>
+            <span class="n">heated_perimeter</span><span class="o">=</span><span class="n">perimeter</span><span class="p">,</span>
+            <span class="n">wet_perimeter</span><span class="o">=</span><span class="n">perimeter</span><span class="p">,</span>
+            <span class="n">area</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">diameter</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span>
+            <span class="n">heated_parts</span><span class="o">=</span><span class="p">(</span><span class="n">perimeter</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">width</span><span class="o">=</span><span class="n">diameter</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

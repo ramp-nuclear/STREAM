@@ -1,0 +1,1228 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aggregator &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Calculation" href="calculation.html" />
+    <link rel="prev" title="Documentation" href="stream.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="stream.html">Documentation</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aggregator</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example">Example</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.aggregator.Aggregator"><code class="docutils literal notranslate"><span class="pre">Aggregator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-stream.solvers">Solvers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backends">Backends</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.TransientRuntimeError"><code class="docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.algebraic"><code class="docutils literal notranslate"><span class="pre">algebraic</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.differential"><code class="docutils literal notranslate"><span class="pre">differential</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.differential_algebraic"><code class="docutils literal notranslate"><span class="pre">differential_algebraic</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.quasi_static"><code class="docutils literal notranslate"><span class="pre">quasi_static</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.solvers.scaled_newton"><code class="docutils literal notranslate"><span class="pre">scaled_newton</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-stream.jacobians">Jacobians</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.jacobians.DAE_jacobian"><code class="docutils literal notranslate"><span class="pre">DAE_jacobian</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.jacobians.scaled_step"><code class="docutils literal notranslate"><span class="pre">scaled_step</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#state">State</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.State"><code class="docutils literal notranslate"><span class="pre">State</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.from_dataframe"><code class="docutils literal notranslate"><span class="pre">from_dataframe</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.parse_value"><code class="docutils literal notranslate"><span class="pre">parse_value</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.state_timeseries_from_dataframe"><code class="docutils literal notranslate"><span class="pre">state_timeseries_from_dataframe</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.to_dataframe"><code class="docutils literal notranslate"><span class="pre">to_dataframe</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.state.StateTimeseries"><code class="docutils literal notranslate"><span class="pre">StateTimeseries</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#solution">Solution</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.aggregator.solution.Solution"><code class="docutils literal notranslate"><span class="pre">Solution</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#constraints">Constraints</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.aggregator.constraints.CONSTRAINT"><code class="docutils literal notranslate"><span class="pre">CONSTRAINT</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.aggregator.constraints.create_constraints"><code class="docutils literal notranslate"><span class="pre">create_constraints</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="calculation.html">Calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.calculations.html">Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.composition.html">Composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.physical_models.html">Physical Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="stream.html">Documentation</a></li>
+      <li class="breadcrumb-item active">Aggregator</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/aggregator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-stream.aggregator">
+<span id="aggregator"></span><h1>Aggregator<a class="headerlink" href="#module-stream.aggregator" title="Link to this heading"></a></h1>
+<p>The <a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> class defined below is the beating heart of <strong>STREAM</strong>.</p>
+<p>It defines a methodology where several (separate) calculations can be simulated in a coupled manner.
+Such coupling is defined through a graph, and is simulated through several backends (see <a class="reference internal" href="#backends"><span class="std std-ref">Backends</span></a>).
+The main scheme is neatly presented in <a class="reference internal" href="stream.html#module-stream"><span class="std std-ref">Documentation</span></a>.</p>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.compute" title="stream.aggregator.Aggregator.compute"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.compute</span></code></a></p></td>
+<td><p>The main function of the Aggregator - bridging between the solver and the calculations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.load" title="stream.aggregator.Aggregator.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.load</span></code></a></p></td>
+<td><p>Given a description of the system state either at one time or at many, returns a vector or a solution that fits this information.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.save" title="stream.aggregator.Aggregator.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.save</span></code></a></p></td>
+<td><p>Given either a vector solution of the system or a Solution object, creates a human-readable state description of the solution.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.var_index" title="stream.aggregator.Aggregator.var_index"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.var_index</span></code></a></p></td>
+<td><p>Return the Place at which a given variable lies</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.at_times" title="stream.aggregator.Aggregator.at_times"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.at_times</span></code></a></p></td>
+<td><p>Given a transient solution and a variable, returns the variable at the calculated times.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.solve" title="stream.aggregator.Aggregator.solve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.solve</span></code></a></p></td>
+<td><p>For a Differential Algebraic set of eqs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Aggregator.solve_steady</span></code></a></p></td>
+<td><p>Solving an Algebraic Equation <span class="math notranslate nohighlight">\(0=F(y)\)</span> using <a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>, with an optional globalized fallback.</p></td>
+</tr>
+</tbody>
+</table>
+<section id="example">
+<h2>Example<a class="headerlink" href="#example" title="Link to this heading"></a></h2>
+<p>Consider the attached image. This graph describes the <strong>dependencies</strong> of each
+calculation: <em>A</em>, <em>B</em>, <em>C</em>. Let’s consider the Calculation <em>A</em>. <em>A</em> owns a subset
+of the entire vector <span class="math notranslate nohighlight">\(\vec{y}_A\in\vec{y}\)</span>, which it receives as input.
+However, <em>A</em> depends on values owned by other Calculations:
+<span class="math notranslate nohighlight">\(\left(\vec{y}_i, \vec{y}_j\right)\)</span>, namely <em>B</em> and <em>C</em>.
+Thus, <em>B</em> (e.g.) must be able to show the Aggregator the <strong>place</strong> in which
+it stores <span class="math notranslate nohighlight">\(\vec{y}_i\)</span>.
+In this manner, there exists no communication between Calculations, and <em>B</em>
+remains undisturbed regardless of other coupling to <span class="math notranslate nohighlight">\(\vec{y}_i\)</span>.</p>
+<p>The above analysis is done at construction time. At evaluation time, the
+Aggregator divides the vector according to the references it was given, and
+collects the results.</p>
+<p>Required variables which are not present on the graph must be provided as
+time-only functions or constants.</p>
+<p>This can easily become a rather complex system:</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Aggregator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Collects and calls calculations in order to solve a large coupled
+generalized equation (presented in the calculation module). This
+object connects the Solver to the Calculations. It receives input from
+the Solver, which is then distributed to the different Calculations.
+The Calculations then compute their allotted piece of the functional.
+The Aggregator then passes the results back to the Solver.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.sections">
+<span class="sig-name descname"><span class="pre">sections</span></span><a class="headerlink" href="#stream.aggregator.Aggregator.sections" title="Link to this definition"></a></dt>
+<dd><p>A mapping of each <a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Calculation</span></code></a> to its
+given slice of <span class="math notranslate nohighlight">\(\vec{y}\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>, slice]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.mass">
+<span class="sig-name descname"><span class="pre">mass</span></span><a class="headerlink" href="#stream.aggregator.Aggregator.mass" title="Link to this definition"></a></dt>
+<dd><p>The gathered <a class="reference internal" href="calculation.html#stream.calculation.Calculation.mass_vector" title="stream.calculation.Calculation.mass_vector"><code class="xref py py-meth docutils literal notranslate"><span class="pre">mass_vector</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.external">
+<span class="sig-name descname"><span class="pre">external</span></span><a class="headerlink" href="#stream.aggregator.Aggregator.external" title="Link to this definition"></a></dt>
+<dd><p>For each calculation, maps the variable names which are passed from
+other calculations, and for each variable name maps the
+calculations which pass such a variable and the places in
+<span class="math notranslate nohighlight">\(\vec{y}\)</span> from which they are to be taken</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>, dict[str, dict[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>, Place]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation</span></code></a></p>
+</div>
+<p>Create an instance of Aggregator. The following are required:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>graph</strong> (<em>DiGraph</em>) – containing Calculations at nodes and variable coupling
+at the edges.</p></li>
+<li><p><strong>funcs</strong> (<em>ExternalFunctions</em><em> | </em><em>None</em>) – time-only-dependent functions, which are user controlled.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.connect">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">edges</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.connect" title="Link to this definition"></a></dt>
+<dd><p>Connect two Aggregator objects. An edge present in both graphs carries
+the union of the variables routed on it in <code class="docutils literal notranslate"><span class="pre">a</span></code> and in <code class="docutils literal notranslate"><span class="pre">b</span></code>. A
+calculation present in both has its functions dictionaries merged key
+by key, with <code class="docutils literal notranslate"><span class="pre">b</span></code>’s entry winning when both define the same key. If
+<code class="docutils literal notranslate"><span class="pre">edges</span></code> contains an edge already in either <code class="docutils literal notranslate"><span class="pre">a.graph</span></code> or
+<code class="docutils literal notranslate"><span class="pre">b.graph</span></code>, its variables are added to that edge’s, not overridden.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The two inputs may share nodes. This is very useful!</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – First (, second) input</p></li>
+<li><p><strong>b</strong> (<a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – First (, second) input</p></li>
+<li><p><strong>edges</strong> (<em>tuple</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>Names</em><em>]</em>) – Any edges which may connect the two.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>new</strong> – A new Aggregator whose graph and functions are composed out of a,b.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator">Aggregator</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.from_CalculationGraph">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_CalculationGraph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.from_CalculationGraph"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.from_CalculationGraph" title="Link to this definition"></a></dt>
+<dd><p>Creates an Aggregator using a <code class="xref py py-class docutils literal notranslate"><span class="pre">CalculationGraph</span></code>
+object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>a</strong> (<em>CalculationGraph</em>) – Graph to use for the creation.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.aggregator.Aggregator"><em>Aggregator</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.from_decoupled">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_decoupled</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">funcs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.from_decoupled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.from_decoupled" title="Link to this definition"></a></dt>
+<dd><p>Instantiate an Aggregator from calculations, which are not connected.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nodes</strong> (<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a>) – Calculations to ba added</p></li>
+<li><p><strong>funcs</strong> (<em>ExternalFunctions</em><em> or </em><em>None</em>) – to be passed to the aggregator</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>agr</strong> – Which contains a disconnected-nodes-graph</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator">Aggregator</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.at_times">
+<span class="sig-name descname"><span class="pre">at_times</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solution</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.at_times"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.at_times" title="Link to this definition"></a></dt>
+<dd><p>Given a transient solution and a variable, returns the variable at
+the calculated times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solution</strong> (<em>Array2D</em>) – The solution matrix, i.e. the variable vector (columns) at
+different times (rows)</p></li>
+<li><p><strong>node</strong> (<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a>) – The inquired calculation</p></li>
+<li><p><strong>var_name</strong> (<em>str</em>) – the inquired variable of node.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>output</strong> – A slice of the solution at the correct var_index.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array2D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.compute">
+<span class="sig-name descname"><span class="pre">compute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.compute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.compute" title="Link to this definition"></a></dt>
+<dd><p>The main function of the Aggregator - bridging between the solver
+and the calculations.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">graph</span></code> attribute of Aggregator contains a set of
+<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Calculation</span></code></a> objects, each representing different equations
+which come together to form the full Functional
+<span class="math notranslate nohighlight">\(\vec{F}(\vec{y},t)\)</span>, returned by this method. Therefore, this
+method orchestrates the inputs and outputs to each calculation and
+<cite>aggregates</cite> the result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – guess/ result from solver</p></li>
+<li><p><strong>t</strong> (<em>Second</em>) – time</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Functional</strong> – the differential-algebraic functional f(y,t)
+which is provided in parts from the different calculations.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.draw">
+<span class="sig-name descname"><span class="pre">draw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_options</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.draw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.draw" title="Link to this definition"></a></dt>
+<dd><p>Method equivalent of <code class="xref py py-func docutils literal notranslate"><span class="pre">draw_aggregator</span></code></p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.load" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#stream.state.State" title="stream.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#stream.aggregator.solution.Solution" title="stream.aggregator.solution.Solution"><span class="pre">Solution</span></a></span></span></dt>
+<dd><p>Given a description of the system state either at one time or at many,
+returns a vector or a solution that fits this information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> – The system description to parse.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solution</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#stream.aggregator.solution.Solution" title="stream.aggregator.solution.Solution"><span class="pre">Solution</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#stream.state.State" title="stream.state.State"><span class="pre">State</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.save" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">solution</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#stream.state.State" title="stream.state.State"><span class="pre">State</span></a></span></span></dt>
+<dd><p>Given either a vector solution of the system or a Solution object,
+creates a human-readable state description of the solution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>solution</strong> – The solution to make human-readable.</p></li>
+<li><p><strong>t</strong> – The time at which the solution is given (if it is a single vector)</p></li>
+<li><p><strong>strict</strong> – Whether information beyond the vector state variables should be added.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.scaled_atol">
+<span class="sig-name descname"><span class="pre">scaled_atol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scales</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.scaled_atol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.scaled_atol" title="Link to this definition"></a></dt>
+<dd><p>Per-variable absolute tolerance <code class="docutils literal notranslate"><span class="pre">rel</span> <span class="pre">*</span> <span class="pre">typ_j</span></code> for <a class="reference internal" href="#stream.aggregator.Aggregator.solve" title="stream.aggregator.Aggregator.solve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve</span></code></a>.</p>
+<p>Builds a length-<code class="docutils literal notranslate"><span class="pre">N</span></code> <code class="docutils literal notranslate"><span class="pre">atol</span></code> vector aligned to the state vector, for
+threading into DAE/ODE error control as <code class="docutils literal notranslate"><span class="pre">agr.solve(...,</span> <span class="pre">atol=...)</span></code> (both
+IDA and <code class="docutils literal notranslate"><span class="pre">solve_ivp</span></code> accept a per-variable array). Opt-in: nothing
+consumes it implicitly. The ALG steady path has no <code class="docutils literal notranslate"><span class="pre">atol</span></code> knob.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rel</strong> (<em>float</em><em>, </em><em>default 1e-6</em>) – Relative factor multiplying each nominal magnitude.</p></li>
+<li><p><strong>scales</strong> (<em>None</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em>] or </em><em>Array1D</em><em>, </em><em>default None</em>) – Nominal magnitudes: <code class="docutils literal notranslate"><span class="pre">None</span></code> -&gt; <code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_SCALES</span></code>;
+<code class="docutils literal notranslate"><span class="pre">dict</span></code> -&gt; name -&gt; scale registry; length-<code class="docutils literal notranslate"><span class="pre">N</span></code> array -&gt; used directly
+(validated against <code class="docutils literal notranslate"><span class="pre">len(self)</span></code>).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The vector <code class="docutils literal notranslate"><span class="pre">rel</span> <span class="pre">*</span> <span class="pre">typ</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.solve">
+<span class="sig-name descname"><span class="pre">solve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yp0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eq_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">progressbar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.solve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.solve" title="Link to this definition"></a></dt>
+<dd><p>For a Differential Algebraic set of eqs. (DAE), the chosen solver is
+IDA from the LLNL SUNDIALS suite, which is kindly wrapped by
+Scikits.Odes, originally written in C with DASPK (Fortran) usages.
+This solver performs (among many other capabilities) integration by
+variable-order, variable-coefficient BDF. Newton iteration is used to
+find a solution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y0</strong> (<em>Array1D</em><em> or </em><em>DictState</em>) – Initial values or guess. Can either be an array or a State, in the
+latter case <a class="reference internal" href="#stream.aggregator.Aggregator.load" title="stream.aggregator.Aggregator.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load</span></code></a> will be used to obtain the desired array.</p></li>
+<li><p><strong>time</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Return results at these time points. For a steady root find use
+<a class="reference internal" href="#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a> instead.</p></li>
+<li><p><strong>yp0</strong> (<em>Array1D</em><em> or </em><em>None</em>) – Initial derivatives. It helps if they’re known (in the DAE case),
+but by default the consistent yp0 is found from y0.</p></li>
+<li><p><strong>eq_type</strong> (<em>'ODE'</em><em>, </em><em>'DAE'</em><em>, </em><em>'ALG'</em><em> or </em><em>None</em>) – A solver may be chosen deliberately from [ODE, DAE, ALG].
+If None, the method is set by looking at the mass matrix: ODE if
+every variable is differential, DAE if some are, and a quasi-static
+ALG solve if none are.</p></li>
+<li><p><strong>progressbar</strong> (<em>ProgressBarLike</em><em> or </em><em>bool</em>) – Whether to use a progressbar, and if so, which one. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use <code class="docutils literal notranslate"><span class="pre">use</span> <span class="pre">progressbar.ProgressBar</span></code></p></li>
+<li><p><strong>options</strong> – <p>Other options, passed to the chosen backend.</p>
+<p>If a DAE transient crawls or dies right after an event restart, pass
+<code class="docutils literal notranslate"><span class="pre">exclude_algvar_from_error=True</span></code>. It leaves algebraic variables out
+of IDA’s local error test, which stops the step size from collapsing
+when one edge’s flow is pinned by an algebraic law while the rest of
+the loop carries inertia. Algebraic variables are then no longer
+error-controlled between steps, so an event whose margin reads an
+algebraic flow (for example a flow-based event on an inertia-free
+network) can be localized late.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – Calculated vector at requested times: [time, variable].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.aggregator.solution.Solution" title="stream.aggregator.solution.Solution">Solution</a></p>
+</dd>
+</dl>
+<p>:raises ValueError : If <code class="docutils literal notranslate"><span class="pre">time</span></code> is None.:</p>
+<p class="rubric">References</p>
+<p>Scikits.Odes documentation</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.solve_steady">
+<span class="sig-name descname"><span class="pre">solve_steady</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">guess</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">globalize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scales</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.solve_steady"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.solve_steady" title="Link to this definition"></a></dt>
+<dd><p>Solving an Algebraic Equation <span class="math notranslate nohighlight">\(0=F(y)\)</span> using
+<a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>, with an optional globalized fallback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>guess</strong> (<em>Array1D</em><em> or </em><em>DictState</em>) – Initial guess. Can either be an array or a State, in the
+latter case <a class="reference internal" href="#stream.aggregator.Aggregator.load" title="stream.aggregator.Aggregator.load"><code class="xref py py-meth docutils literal notranslate"><span class="pre">load</span></code></a> will be used to obtain the desired array.</p></li>
+<li><p><strong>globalize</strong> (<em>{'auto'</em><em>, </em><em>True</em><em>, </em><em>False}</em><em>, </em><em>default 'auto'</em>) – <p>Selects the steady-solve strategy (keyword-only):</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">'auto'</span></code>: run <a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>
+(<code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.root</span></code>) with <code class="docutils literal notranslate"><span class="pre">options</span></code> and return its result;
+<strong>only</strong> if it raises <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code>, fall
+back to <a class="reference internal" href="#stream.solvers.scaled_newton" title="stream.solvers.scaled_newton"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_newton</span></code></a>, whose own
+<code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code> propagates if it also fails.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">True</span></code>: skip scipy entirely and go straight to
+<a class="reference internal" href="#stream.solvers.scaled_newton" title="stream.solvers.scaled_newton"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_newton</span></code></a>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">False</span></code>: scipy only, with no fallback; an
+<code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code> from scipy propagates.</p></li>
+</ul>
+</p></li>
+<li><p><strong>scales</strong> (<em>None</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em>] or </em><em>Array1D</em><em>, </em><em>default None</em>) – Source of the per-variable nominal magnitudes (<code class="docutils literal notranslate"><span class="pre">typ</span></code>) used to build
+the fallback’s scaled finite-difference step. <code class="docutils literal notranslate"><span class="pre">None</span></code> uses
+<code class="xref py py-data docutils literal notranslate"><span class="pre">DEFAULT_SCALES</span></code>; a <code class="docutils literal notranslate"><span class="pre">dict</span></code> is a
+name -&gt; scale registry; a length-<code class="docutils literal notranslate"><span class="pre">N</span></code> array is used directly as the
+<code class="docutils literal notranslate"><span class="pre">typ</span></code> vector. Ignored on the scipy success path.</p></li>
+<li><p><strong>options</strong> – Solver options forwarded verbatim to <a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>
+on the scipy path (the keywords above are keyword-only and never
+reach <code class="docutils literal notranslate"><span class="pre">scipy.optimize.root</span></code>). A caller-supplied <code class="docutils literal notranslate"><span class="pre">jac</span></code> is also used
+by the fallback; only when it is absent does the fallback build
+<code class="docutils literal notranslate"><span class="pre">ALG_jacobian(self,</span> <span class="pre">scaled_step(typ))</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – Calculated vector.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.aggregator.Aggregator.var_index">
+<span class="sig-name descname"><span class="pre">var_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">node</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">var_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/aggregator.html#Aggregator.var_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.Aggregator.var_index" title="Link to this definition"></a></dt>
+<dd><p>Return the Place at which a given variable lies</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>node</strong> (<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a>) – The calculation whose variable is requested</p></li>
+<li><p><strong>var_name</strong> (<em>str</em>) – Variable name</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Place in aggregator vector where this variable resides</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Place</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-stream.solvers">
+<span id="solvers"></span><h2>Solvers<a class="headerlink" href="#module-stream.solvers" title="Link to this heading"></a></h2>
+<p>The <a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> defines a functional <span class="math notranslate nohighlight">\(\vec{F}(\vec{y},t)\)</span> which can be
+utilized to solve several problems. Below are several backends used for different
+classes of problems.</p>
+<section id="backends">
+<h3>Backends<a class="headerlink" href="#backends" title="Link to this heading"></a></h3>
+<p>Each <code class="docutils literal notranslate"><span class="pre">eq_type</span></code> in <a class="reference internal" href="#stream.aggregator.Aggregator.solve" title="stream.aggregator.Aggregator.solve"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve</span></code></a> relies on a different backend solver,
+for which different <code class="docutils literal notranslate"><span class="pre">options</span></code> are relevant. For the sake of brevity, these options are not specified here,
+and the user is encouraged to look at each backend, as well as the defaults set in <a class="reference internal" href="#module-stream.aggregator" title="stream.aggregator"><code class="xref py py-mod docutils literal notranslate"><span class="pre">aggregator</span></code></a>
+to achieve a higher level of proficiency.</p>
+<table class="docutils align-default" id="backend-solvers">
+<thead>
+<tr class="row-odd"><th class="head"><p>eq_type</p></th>
+<th class="head"><p>Solver</p></th>
+<th class="head"><p>Function Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ODE</strong></p></td>
+<td><p>Scipy.integrate.solve_ivp</p></td>
+<td><p><a class="reference internal" href="#stream.solvers.differential" title="stream.solvers.differential"><code class="xref py py-func docutils literal notranslate"><span class="pre">differential</span></code></a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>DAE</strong></p></td>
+<td><p>Scikits.odes.ida</p></td>
+<td><p><a class="reference internal" href="#stream.solvers.differential_algebraic" title="stream.solvers.differential_algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">differential_algebraic</span></code></a></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>ALG</strong></p></td>
+<td><p>Scipy.optimize.root</p></td>
+<td><p><a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>,
+<a class="reference internal" href="#stream.solvers.quasi_static" title="stream.solvers.quasi_static"><code class="xref py py-func docutils literal notranslate"><span class="pre">quasi_static</span></code></a></p></td>
+</tr>
+</tbody>
+</table>
+<p>Beyond the <code class="docutils literal notranslate"><span class="pre">eq_type</span></code> backends above, <a class="reference internal" href="#stream.solvers.scaled_newton" title="stream.solvers.scaled_newton"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_newton</span></code></a> provides a
+globalized steady solve, an equilibrated, Armijo-damped Newton, for root finds
+from far guesses where <a class="reference internal" href="#stream.solvers.algebraic" title="stream.solvers.algebraic"><code class="xref py py-func docutils literal notranslate"><span class="pre">algebraic</span></code></a>’s <code class="docutils literal notranslate"><span class="pre">hybr</span></code> stalls.</p>
+</section>
+<dl class="py exception">
+<dt class="sig sig-object py" id="stream.solvers.TransientRuntimeError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">TransientRuntimeError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#TransientRuntimeError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.TransientRuntimeError" title="Link to this definition"></a></dt>
+<dd><p>RuntimeError which occurred during a transient simulation,
+mostly because of solver convergence problems.</p>
+<p>Data for debugging the error may be extracted by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="c1"># error raising simulation</span>
+<span class="k">except</span> <span class="n">TransientRuntimeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">ydot</span> <span class="o">=</span> <span class="n">e</span><span class="o">.</span><span class="n">t</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">ydot</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">Solution</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">e</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>str</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.solvers.algebraic">
+<span class="sig-name descname"><span class="pre">algebraic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#algebraic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.algebraic" title="Link to this definition"></a></dt>
+<dd><p>Solving an Algebraic Equation <span class="math notranslate nohighlight">\(0=F(y, 0)\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>Functional</em>) – The main right-hand side function <span class="math notranslate nohighlight">\(F(y,t)\)</span>, evaluated at <span class="math notranslate nohighlight">\(t=0\)</span>.</p></li>
+<li><p><strong>y0</strong> (<em>Array1D</em>) – Initial Guess.</p></li>
+<li><p><strong>options</strong> – Other options to be passed to the <code class="docutils literal notranslate"><span class="pre">Scipy.optimize.root</span></code> solver.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – The root of the functional. A failed root find raises <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.solvers.differential">
+<span class="sig-name descname"><span class="pre">differential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#differential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.differential" title="Link to this definition"></a></dt>
+<dd><p>Solving an Ordinary Differential Equation (ODE) <span class="math notranslate nohighlight">\(\dot{y}=F(y, t)\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>Functional</em>) – The main right-hand side function <span class="math notranslate nohighlight">\(F(y,t)\)</span>.</p></li>
+<li><p><strong>y0</strong> (<em>Array1D</em>) – Initial values.</p></li>
+<li><p><strong>time</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Time points for which the simulation values should be returned.</p></li>
+<li><p><strong>options</strong> – Other options to be passed to the <code class="docutils literal notranslate"><span class="pre">scipy.integrate.solve_ivp</span></code> solver.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – The solution matrix ([time, variable]) and the times it spans. A solver
+failure raises <a class="reference internal" href="#stream.solvers.TransientRuntimeError" title="stream.solvers.TransientRuntimeError"><code class="xref py py-class docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code></a> carrying the reached times and
+the partial data, as the DAE path does, instead of returning a truncated
+result.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[Array2D, Array1D]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.solvers.differential_algebraic">
+<span class="sig-name descname"><span class="pre">differential_algebraic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">yp0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">on_event</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">continuous</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#differential_algebraic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.differential_algebraic" title="Link to this definition"></a></dt>
+<dd><p>Solving a Differential Algebraic Equation (DAE) <span class="math notranslate nohighlight">\(M\dot{y}=F(y, t)\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>Functional</em>) – The main right-hand side function <span class="math notranslate nohighlight">\(F(y,t)\)</span>.</p></li>
+<li><p><strong>mass</strong> (<em>Array1D</em>) – Mass vector, determining which index is differential and which is algebraic.</p></li>
+<li><p><strong>y0</strong> (<em>Array1D</em>) – Initial values.</p></li>
+<li><p><strong>time</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Time points for which the simulation values should be returned.</p></li>
+<li><p><strong>yp0</strong> (<em>Array1D</em><em> | </em><em>None</em>) – Initial value derivatives. If None, considered 0. However, when
+<code class="docutils literal notranslate"><span class="pre">compute_initcond</span> <span class="pre">=</span> <span class="pre">'yp0'</span></code> is set (as is default), this vector is deduced
+from <code class="docutils literal notranslate"><span class="pre">y0</span></code>.</p></li>
+<li><p><strong>R</strong> (<em>Functional</em><em> | </em><em>None</em>) – The continuous event-margin function <code class="docutils literal notranslate"><span class="pre">R(y,</span> <span class="pre">t)</span> <span class="pre">-&gt;</span> <span class="pre">float[]</span></code> (IDA’s rootfn).
+Each component is positive while its event is not pending and sign-changes
+at the event, so IDA localizes the true event time. When <code class="docutils literal notranslate"><span class="pre">None</span></code> there are
+no events and the equation is integrated straight through.</p></li>
+<li><p><strong>on_event</strong> (<em>Callable</em><em> | </em><em>None</em>) – <code class="docutils literal notranslate"><span class="pre">on_event(t_root,</span> <span class="pre">y_root,</span> <span class="pre">ydot_root)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> applied at each confirmed
+root: it performs the state transition and returns whether to continue.
+An exception it raises propagates with the trajectory up to and including
+the root attached as <code class="docutils literal notranslate"><span class="pre">t</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p></li>
+<li><p><strong>continuous</strong> (<em>bool</em>) – Controls what a stop request (<code class="docutils literal notranslate"><span class="pre">on_event</span></code> returning <code class="docutils literal notranslate"><span class="pre">False</span></code>) does. With
+<code class="docutils literal notranslate"><span class="pre">continuous=False</span></code> (default) it stops the run; with <code class="docutils literal notranslate"><span class="pre">True</span></code> the run
+restarts past it. In either case a <em>non-terminal</em> transition (<code class="docutils literal notranslate"><span class="pre">on_event</span></code>
+returns <code class="docutils literal notranslate"><span class="pre">True</span></code>) restarts from the root with fresh, small initial steps.</p></li>
+<li><p><strong>options</strong> – Other options to be passed to the <code class="docutils literal notranslate"><span class="pre">scikits.odes</span></code> solver.
+<code class="docutils literal notranslate"><span class="pre">exclude_algvar_from_error=True</span></code> (IDA’s suppress-algebraic option) leaves
+algebraic variables out of the local error test, which keeps the step size
+from collapsing after an event restart at tight tolerance on a loop where
+one edge’s flow is pinned by an algebraic law while the rest carries
+inertia. The price is that algebraic variables are no longer
+error-controlled between steps, so an event margin that reads an algebraic
+flow (an inertia-free network with a flow-based event) can be localized late.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – The solution matrix: [time, variable], and the vector of times
+in which it was calculated.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[Array2D, Array1D]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.solvers.quasi_static">
+<span class="sig-name descname"><span class="pre">quasi_static</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#quasi_static"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.quasi_static" title="Link to this definition"></a></dt>
+<dd><p>Solving an Algebraic Equation <span class="math notranslate nohighlight">\(0=F(y, t)\)</span> at each of a sequence of time points</p>
+<p>The root at each time point is found from the root at the previous one, so this is a
+quasi-static simulation of the algebraic system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>Functional</em>) – The main right-hand side function <span class="math notranslate nohighlight">\(F(y,t)\)</span>.</p></li>
+<li><p><strong>y0</strong> (<em>Array1D</em>) – The state at <code class="docutils literal notranslate"><span class="pre">time[0]</span></code>, which is taken as is.</p></li>
+<li><p><strong>time</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Time points at which the root is found.</p></li>
+<li><p><strong>R</strong> (<em>Functional</em><em> | </em><em>None</em>) – A function controlling stop events: the simulation stops after the first time point at
+which not all of its values are truthy.</p></li>
+<li><p><strong>options</strong> – Other options to be passed to the <code class="docutils literal notranslate"><span class="pre">Scipy.optimize.root</span></code> solver.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>solution</strong> – The solution matrix ([time, variable]) and the times it spans. These are shorter than
+the requested <code class="docutils literal notranslate"><span class="pre">time</span></code> when the stop condition <code class="docutils literal notranslate"><span class="pre">R</span></code> trips (the stop-triggering row
+included), so callers must take their time axis from the returned times. A failed
+root find raises <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[Array2D, Array1D]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.solvers.scaled_newton">
+<span class="sig-name descname"><span class="pre">scaled_newton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">jac</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tikhonov</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/solvers.html#scaled_newton"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.solvers.scaled_newton" title="Link to this definition"></a></dt>
+<dd><p>Globalized damped Newton steady solve with equilibrated linear solves.</p>
+<p>Each iteration equilibrates the Jacobian (row-then-column infinity norm)<a class="footnote-reference brackets" href="#higham" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>, solves the Tikhonov-regularized<a class="footnote-reference brackets" href="#tikhonov" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>, equilibrated
+linear system for a Newton step, and backtracks the step with a merit line
+search<a class="footnote-reference brackets" href="#nocedalwright" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> on <code class="docutils literal notranslate"><span class="pre">||F(y</span> <span class="pre">+</span> <span class="pre">a*dy,</span> <span class="pre">t)||</span></code>. It is meant
+for steady solves from far guesses where the globalization in
+<code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.optimize.root</span></code> (<code class="docutils literal notranslate"><span class="pre">hybr</span></code>) stalls; once the damped steps bring
+the iterate near a root, full Newton steps resume.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>F</strong> (<em>Functional</em>) – Residual <code class="docutils literal notranslate"><span class="pre">F(y,</span> <span class="pre">t)</span> <span class="pre">-&gt;</span> <span class="pre">Array1D</span></code> (the aggregator <code class="docutils literal notranslate"><span class="pre">compute</span></code> signature).
+The root <code class="docutils literal notranslate"><span class="pre">F</span> <span class="pre">=</span> <span class="pre">0</span></code> is sought.</p></li>
+<li><p><strong>y0</strong> (<em>Array1D</em>) – Initial guess.</p></li>
+<li><p><strong>jac</strong> (<em>Callable</em>) – Analytic/approximate Jacobian <code class="docutils literal notranslate"><span class="pre">jac(y,</span> <span class="pre">t)</span> <span class="pre">-&gt;</span> <span class="pre">Array2D</span></code> of <code class="docutils literal notranslate"><span class="pre">F</span></code>.</p></li>
+<li><p><strong>t</strong> (<em>float</em><em>, </em><em>optional</em>) – Time argument threaded into <code class="docutils literal notranslate"><span class="pre">F</span></code> and <code class="docutils literal notranslate"><span class="pre">jac</span></code> (default <code class="docutils literal notranslate"><span class="pre">0.0</span></code>).</p></li>
+<li><p><strong>tol</strong> (<em>float</em><em>, </em><em>optional</em>) – Convergence tolerance on <code class="docutils literal notranslate"><span class="pre">||F||</span></code> (default <code class="docutils literal notranslate"><span class="pre">1e-6</span></code>).</p></li>
+<li><p><strong>maxit</strong> (<em>int</em><em>, </em><em>optional</em>) – Maximum Newton iterations (default <code class="docutils literal notranslate"><span class="pre">100</span></code>).</p></li>
+<li><p><strong>tikhonov</strong> (<em>float</em><em>, </em><em>optional</em>) – Tikhonov regularization<a class="footnote-reference brackets" href="#tikhonov" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a>: a small multiple of the identity
+added to the <em>equilibrated</em> (<code class="docutils literal notranslate"><span class="pre">O(1)</span></code>) Jacobian so a rank-deficient step
+stays finite (default <code class="docutils literal notranslate"><span class="pre">1e-10</span></code>). If the shifted matrix is still
+singular, the step is the minimum-norm least-squares solution.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The converged state <code class="docutils literal notranslate"><span class="pre">y</span></code> with <code class="docutils literal notranslate"><span class="pre">||F(y,</span> <span class="pre">t)||</span> <span class="pre">&lt;</span> <span class="pre">tol</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>AlgRuntimeError</strong> – If the backtracking line search<a class="footnote-reference brackets" href="#nocedalwright" id="id5" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> finds no descent
+    (raised immediately, not spun out to <code class="docutils literal notranslate"><span class="pre">maxit</span></code>) or <code class="docutils literal notranslate"><span class="pre">maxit</span></code> is
+    exhausted. The best iterate reached is attached as the <code class="docutils literal notranslate"><span class="pre">y</span></code> attribute
+    for diagnosis.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The equilibration serves conditioning diagnostics and insurance for
+badly-scaled systems (making <code class="docutils literal notranslate"><span class="pre">cond</span></code>/rank meaningful and giving Tikhonov a
+sane <code class="docutils literal notranslate"><span class="pre">O(1)</span></code> metric); the <em>damping</em> provides the convergence. The Tikhonov
+term is a defensive default with no measurable effect on well-posed systems.</p>
+<p class="rubric">References</p>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="nocedalwright" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id5">2</a>)</span>
+<p>J. Nocedal, S. J. Wright, “Numerical Optimization”, 2nd
+edition, Springer, 2006, chapter 3 (backtracking line search with the
+Armijo sufficient decrease condition, Algorithm 3.1).</p>
+</aside>
+<aside class="footnote brackets" id="tikhonov" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id4">2</a>)</span>
+<p>A. N. Tikhonov, V. Y. Arsenin, “Solutions of Ill-Posed
+Problems”, Winston, Washington DC, 1977.</p>
+</aside>
+<aside class="footnote brackets" id="higham" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">3</a><span class="fn-bracket">]</span></span>
+<p>N. J. Higham, “Accuracy and Stability of Numerical Algorithms”,
+2nd edition, SIAM, 2002, section 7.3 (row and column scaling); LAPACK
+routine <code class="docutils literal notranslate"><span class="pre">dgeequ</span></code>.</p>
+</aside>
+</aside>
+</dd></dl>
+
+</section>
+<section id="module-stream.jacobians">
+<span id="jacobians"></span><h2>Jacobians<a class="headerlink" href="#module-stream.jacobians" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> solvers can greatly benefit from calculated Jacobians. The following
+are some implementations for the <code class="docutils literal notranslate"><span class="pre">DAE</span></code> (Differential-Algebraic Equations) form and
+the <code class="docutils literal notranslate"><span class="pre">ALG</span></code> (Algebraic) form.</p>
+<p>The main idea behind these implementations is that the graphical structure of an
+<a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> object can be utilized to deduce the Jacobian sparsity, at least
+across <a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Calculation</span></code></a> boundaries.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.jacobians.DAE_jacobian">
+<span class="sig-name descname"><span class="pre">DAE_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">step_strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">_default_step_strategy&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/jacobians.html#DAE_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.jacobians.DAE_jacobian" title="Link to this definition"></a></dt>
+<dd><p>A function for creating a one-sided approximation of the Jacobian of
+an <code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code> functional. The Jacobian is defined as follows:</p>
+<div class="math notranslate nohighlight">
+\[J_{ij} = \frac{dF_i}{dy_j}
+\approx \frac{F_i(y + h_j) - F_i(y)}{h_j}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(h_j\)</span> is the <code class="docutils literal notranslate"><span class="pre">jth</span></code> step size and <span class="math notranslate nohighlight">\(y + h_j\)</span> simply means
+the <code class="docutils literal notranslate"><span class="pre">jth</span></code> component is <span class="math notranslate nohighlight">\(y_j + h_j\)</span>. This is however a bit
+simplistic, since the actual required Jacobian is of the full functional:</p>
+<div class="math notranslate nohighlight">
+\[G(t, y, \dot{y}) = F(y, t) - M\dot{y}\]</div>
+<p>Meaning the Jacobian is actually</p>
+<div class="math notranslate nohighlight">
+\[\frac{dG}{dy}=\frac{\partial G}{\partial\dot{y}}
+\frac{\partial\dot{y}}{\partial y} + \frac{\partial G}{\partial y}\]</div>
+<p>Since <span class="math notranslate nohighlight">\(\dot{y}\)</span> is approximated linearly,
+<span class="math notranslate nohighlight">\(\partial_y\dot{y}\equiv\sigma\)</span> does not depend
+on the functions considered above, only on the approximation scheme and
+time step.</p>
+<p>In our case, <span class="math notranslate nohighlight">\(\partial_{\dot{y}_j} G_i=-M_{ij} = -m_i \delta_{i,j}\)</span>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The Aggregator whose functional is desired</p></li>
+<li><p><strong>step_strategy</strong> (<em>Callable</em><em> or </em><em>None</em>) – A function for the step vector <span class="math notranslate nohighlight">\(h = f(y, \dot{y})\)</span></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>J_func</strong> – A function whose signature is
+<span class="math notranslate nohighlight">\(J(t, y, \dot{y}, G(t, y, \dot{y}), \sigma, \text{result})\)</span>,
+matching the required SUNDIALS format.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.jacobians.scaled_step">
+<span class="sig-name descname"><span class="pre">scaled_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">typ</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/jacobians.html#scaled_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.jacobians.scaled_step" title="Link to this definition"></a></dt>
+<dd><p>Scale-aware finite-difference step strategy.</p>
+<p>Builds the per-variable FD step <span class="math notranslate nohighlight">\(h_j = \sqrt{\epsilon}\,
+\max(|y_j|, \text{typ}_j)\)</span>, which keeps steps above the rounding noise of
+high-scale variables that pass near zero (e.g. a reversing <code class="docutils literal notranslate"><span class="pre">mdot</span></code> column)
+instead of quantizing their column to zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>typ</strong> (<em>Array1D</em>) – Per-variable nominal magnitudes, typically <code class="xref py py-func docutils literal notranslate"><span class="pre">scale_vector</span></code>.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A <code class="docutils literal notranslate"><span class="pre">step(y,</span> <span class="pre">*_)</span> <span class="pre">-&gt;</span> <span class="pre">h</span></code> closure. The trailing <code class="docutils literal notranslate"><span class="pre">*_</span></code> absorbs the <code class="docutils literal notranslate"><span class="pre">ydot</span></code>
+argument, so the same closure serves both the ALG (<code class="docutils literal notranslate"><span class="pre">y</span></code>-only) and DAE
+(<code class="docutils literal notranslate"><span class="pre">y,</span> <span class="pre">ydot</span></code>) step-strategy signatures.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>StepStrategyWithydot</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="state">
+<h2>State<a class="headerlink" href="#state" title="Link to this heading"></a></h2>
+<p>The solution of a steady state problem is represented as a State object, which is mostly a fancy dict-type.</p>
+<p id="module-stream.state">The concept of a human-readable state of the system.</p>
+<p>Basically a 2-deep nested dict with str keys and the inner values are Value
+objects. We provide additional useful methods in the same namespace.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.state.State">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">State</span></span><a class="reference internal" href="_modules/stream/state.html#State"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State" title="Link to this definition"></a></dt>
+<dd><p>A nested dictionary with str keys that connects calculations to a dictionary of the values of their variables.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.from_dataframe">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.from_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Creates a State from a DataFrame representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>DataFrame</em>) – Data to turn into a State</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.from_liststate">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_liststate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.from_liststate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.from_liststate" title="Link to this definition"></a></dt>
+<dd><p>Make a new State from its serializable list version.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em> | </em><em>list</em><em>]</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.load">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.load" title="Link to this definition"></a></dt>
+<dd><p>Load a State from a YAML IO.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>IO</em>) – Stream to read from</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.merge">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">merge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">st</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.merge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.merge" title="Link to this definition"></a></dt>
+<dd><p>Merge states together. Later states have precedence. Inner dicts and
+array values are copied, so the result never aliases its input states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>st</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.uniform">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">uniform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calculations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">variables</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.uniform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.uniform" title="Link to this definition"></a></dt>
+<dd><p>Create a state, or a partial state for given calculations and given
+target variables, which are assigned a uniform value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calculations</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>]</em>) – Desired calculations to assign a partial state.</p></li>
+<li><p><strong>value</strong> (<em>Value</em>) – Value to assign to the variable states.</p></li>
+<li><p><strong>variables</strong> (<em>str</em>) – Variables to have states. If none are given, all variables in <code class="docutils literal notranslate"><span class="pre">calculations</span></code> are included.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state</strong> – A partially legal state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.dump">
+<span class="sig-name descname"><span class="pre">dump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.dump"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.dump" title="Link to this definition"></a></dt>
+<dd><p>Dump this State as YML.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>Stream to dump to.</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.filter_calculations">
+<span class="sig-name descname"><span class="pre">filter_calculations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.filter_calculations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.filter_calculations" title="Link to this definition"></a></dt>
+<dd><p>Filter out state calculations predicated upon a function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>Callable</em>) – Predicate function. False values are filtered out.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state’</strong> – A filtered partial state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">State</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">a</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">B</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">filter_calculations</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">isupper</span><span class="p">)</span>
+<span class="go">{'A': {'b': 1}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.filter_values">
+<span class="sig-name descname"><span class="pre">filter_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.filter_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.filter_values" title="Link to this definition"></a></dt>
+<dd><p>Filter out state variables predicated upon a function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>Callable</em>) – Predicate function. False values are filtered out.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state’</strong> – A filtered partial state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">State</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">a</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">B</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">filter_values</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span>
+<span class="go">{'a': {'B': 2}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.filter_var_names">
+<span class="sig-name descname"><span class="pre">filter_var_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.filter_var_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.filter_var_names" title="Link to this definition"></a></dt>
+<dd><p>Filter out state variable names predicated upon a function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>f</strong> (<em>Callable</em>) – Predicate function. False values are filtered out.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state’</strong> – A filtered partial state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">State</span><span class="p">(</span><span class="n">A</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">a</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">B</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span><span class="o">.</span><span class="n">filter_var_names</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">isupper</span><span class="p">)</span>
+<span class="go">{'a': {'B': 2}}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.listify">
+<span class="sig-name descname"><span class="pre">listify</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.listify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.listify" title="Link to this definition"></a></dt>
+<dd><p>Replace all arrays in self with serializable lists</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, dict[str, float | list]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.records">
+<span class="sig-name descname"><span class="pre">records</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.records"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.records" title="Link to this definition"></a></dt>
+<dd><p>Generate records from this state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>Iterable</em>[dict[str, <em>Any</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.state.State.to_dataframe">
+<span class="sig-name descname"><span class="pre">to_dataframe</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#State.to_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.State.to_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Represents a State as a DataFrame</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><em>DataFrame</em></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.state.from_dataframe">
+<span class="sig-name descname"><span class="pre">from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.from_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Creates a State or a dictionary of {time: State} from a DataFrame representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>DataFrame</em>) – Data to turn into a State</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a> | dict[float, <a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.state.parse_value">
+<span class="sig-name descname"><span class="pre">parse_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#parse_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.parse_value" title="Link to this definition"></a></dt>
+<dd><p>Parse records in a dataframe into a float/array, depending on the shape they represent.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>records</strong> (<em>DataFrame</em>) – The DataFrame that contains only records that belong to one variable.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>This is a float if the array is a scalar, or a numpy array if it is dimensional.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.state.state_timeseries_from_dataframe">
+<span class="sig-name descname"><span class="pre">state_timeseries_from_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#state_timeseries_from_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.state_timeseries_from_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Reads a DataFrame into an Aggregator-readable StateTimeseries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>df</strong> (<em>DataFrame</em>) – The DataFrame to parse.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the given DataFrame has no column named ‘time’.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[float, <a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a>]</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">state_timeseries_to_dataframe</span></code></p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.state.to_dataframe">
+<span class="sig-name descname"><span class="pre">to_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">s</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/state.html#to_dataframe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.state.to_dataframe" title="Link to this definition"></a></dt>
+<dd><p>Transforms the state(s) into a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>s</strong> (<a class="reference internal" href="#stream.state.State" title="stream.state.State"><em>State</em></a><em> | </em><a class="reference internal" href="#stream.state.StateTimeseries" title="stream.state.StateTimeseries"><em>StateTimeseries</em></a>) – State or a time keyed dictionary of states.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A Pandas DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="stream.state.StateTimeseries">
+<span class="sig-name descname"><span class="pre">StateTimeseries</span></span><a class="headerlink" href="#stream.state.StateTimeseries" title="Link to this definition"></a></dt>
+<dd><p>A mapping from time points to Aggregator <a class="reference internal" href="#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a></p>
+<p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <a class="reference internal" href="#stream.state.State" title="stream.state.State"><code class="xref py py-class docutils literal notranslate"><span class="pre">State</span></code></a>]</p>
+</dd></dl>
+
+</section>
+<section id="solution">
+<h2>Solution<a class="headerlink" href="#solution" title="Link to this heading"></a></h2>
+<p>The solution at different times can be represented bya bunch of States and times, but a compact equivalent object
+is the Solution object.</p>
+<p id="module-stream.aggregator.solution">The result of a time dependent solution of the initial value problem with an Aggregator</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.aggregator.solution.Solution">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Solution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/solution.html#Solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.solution.Solution" title="Link to this definition"></a></dt>
+<dd><p>The result of asking an <a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> to solve a system of equations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (<em>Array1D</em>) – The times at which the solution was calculated.</p></li>
+<li><p><strong>data</strong> (<em>Array2D</em>) – The vector of values for each time in the time vector.
+Shaped as (len(time), len(state_vector))</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="constraints">
+<h2>Constraints<a class="headerlink" href="#constraints" title="Link to this heading"></a></h2>
+<p>When solving using the IDA solver, it is possible to constrain the solution. Tools for this can be found in
+<code class="file docutils literal notranslate"><span class="pre">stream.aggregator</span></code>
+See the <cite>sundials</cite> package documentation for more details.</p>
+<dl class="py class" id="module-stream.aggregator.constraints">
+<dt class="sig sig-object py" id="stream.aggregator.constraints.CONSTRAINT">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">CONSTRAINT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/constraints.html#CONSTRAINT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.constraints.CONSTRAINT" title="Link to this definition"></a></dt>
+<dd><p>Possible values for IDA for sign constraints.
+See the sundials documentation for explanation of these values</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.aggregator.constraints.create_constraints">
+<span class="sig-name descname"><span class="pre">create_constraints</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_sign</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">CONSTRAINT.none</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/aggregator/constraints.html#create_constraints"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.aggregator.constraints.create_constraints" title="Link to this definition"></a></dt>
+<dd><p>Create a constraint array, as expected by IDA
+Currently, we support sign constraints in DAE mode only.
+Defaults to no sign constraint for all variables.</p>
+<p>Meant to be used as the <cite>contraints_type</cite> option for <cite>differential_algebraic</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The aggregator for which to create the constraints array.</p></li>
+<li><p><strong>default_sign</strong> (<a class="reference internal" href="#stream.aggregator.constraints.CONSTRAINT" title="stream.aggregator.constraints.CONSTRAINT"><em>CONSTRAINT</em></a>) – The default option to set all variables to, if not specified in kwargs.</p></li>
+<li><p><strong>kwargs</strong> (<em>_ConstraintTypes</em>) – The variables to set to each of the possible CONSTRAINT values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array with the same shape as <cite>agr.graph</cite>, with sign contraints.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="stream.html" class="btn btn-neutral float-left" title="Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="calculation.html" class="btn btn-neutral float-right" title="Calculation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

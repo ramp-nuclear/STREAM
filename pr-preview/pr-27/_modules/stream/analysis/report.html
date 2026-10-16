@@ -1,0 +1,261 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.analysis.report &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.analysis.report</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.analysis.report</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">Reporting</span>
+<span class="sd">=========</span>
+
+<span class="sd">A set of utilities for analysing an :ref:`Aggregator` system before solving or as part</span>
+<span class="sd">of a debugging process</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">signature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">Markdown</span><span class="p">,</span> <span class="n">display</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rich.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">Table</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_filter_vars</span><span class="p">(</span>
+    <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">,</span>
+    <span class="n">condition</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Aggregator</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">],</span> <span class="nb">bool</span><span class="p">],</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Filters out variable names according to a given condition"""</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">signature</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">calculate</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">condition</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_unset</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="n">Parameter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Checks whether an input (name, parameter) is included in the Aggregator. `kwargs`</span>
+<span class="sd">    are regarded as set, since they are provisional.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">VAR_KEYWORD</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="p">(</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">external</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="ow">and</span> <span class="p">(</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_missing</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">param</span><span class="p">:</span> <span class="n">Parameter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_check_unset</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">param</span><span class="p">)</span> <span class="ow">and</span> <span class="n">param</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="n">Parameter</span><span class="o">.</span><span class="n">empty</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_set_externally</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">c</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="p">[])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_entries</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">yield</span> <span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">),</span>
+            <span class="nb">type</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">section</span><span class="o">.</span><span class="n">start</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">section</span><span class="o">.</span><span class="n">stop</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_filter_vars</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">_check_unset</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]),</span>
+            <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_filter_vars</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">_check_set_externally</span><span class="p">)),</span>
+            <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_filter_vars</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">_check_missing</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]),</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_md_table_format</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">_entries</span><span class="p">(</span><span class="n">agr</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="s2">"| "</span>
+        <span class="k">yield</span> <span class="s2">" | "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="s2">" |</span><span class="se">\n</span><span class="s2">"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_rich_table_format</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Table</span><span class="p">:</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="n">Table</span><span class="p">(</span><span class="s2">"Calculation"</span><span class="p">,</span> <span class="s2">"Type"</span><span class="p">,</span> <span class="s2">"Equation No."</span><span class="p">,</span> <span class="s2">"Unset"</span><span class="p">,</span> <span class="s2">"Set Externally"</span><span class="p">,</span> <span class="s2">"Missing"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">_entries</span><span class="p">(</span><span class="n">agr</span><span class="p">):</span>
+        <span class="n">T</span><span class="o">.</span><span class="n">add_row</span><span class="p">(</span><span class="o">*</span><span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">T</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Contains </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span><span class="si">}</span><span class="s2"> Equations, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> Nodes, </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span><span class="si">}</span><span class="s2"> Edges.</span><span class="se">\n</span><span class="s2">"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_markdown_report</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Creates the data to report prettily using markdown"""</span>
+
+    <span class="n">header</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"| Calculation | Type | Equation No. | Unset | Set Externally | Missing |</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"| :---------- | :--- | :----------- | :---- | :------------- | :------ |</span><span class="se">\n</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">description</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">,</span> <span class="n">header</span><span class="p">,</span> <span class="o">*</span><span class="n">_md_table_format</span><span class="p">(</span><span class="n">agr</span><span class="p">)])</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Printer</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">JUPYTER</span> <span class="o">=</span> <span class="s2">"jupyter"</span>
+    <span class="n">TERMINAL</span> <span class="o">=</span> <span class="s2">"terminal"</span>
+    <span class="n">RAW</span> <span class="o">=</span> <span class="s2">"raw"</span>
+
+
+<div class="viewcode-block" id="report">
+<a class="viewcode-back" href="../../../analysis.html#stream.analysis.report.report">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">report</span><span class="p">(</span>
+    <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
+    <span class="n">printer</span><span class="p">:</span> <span class="n">Printer</span> <span class="o">|</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"jupyter"</span><span class="p">,</span> <span class="s2">"terminal"</span><span class="p">,</span> <span class="s2">"raw"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Printer</span><span class="o">.</span><span class="n">JUPYTER</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Print a report with useful information regarding an :ref:`Aggregator`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    agr : Aggregator</span>
+<span class="sd">        to be reported</span>
+<span class="sd">    printer : Printer | Literal["jupyter", "terminal", "raw"]</span>
+<span class="sd">        Which method to use for printing the report. By default, we try</span>
+<span class="sd">        to use IPython to display the report nicely inside a Jupyter notebook.</span>
+<span class="sd">        The ``terminal`` option uses ``rich`` to display the report in simpler REPLs</span>
+<span class="sd">        such as the Python REPL.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from stream import Aggregator</span>
+<span class="sd">    &gt;&gt;&gt; from stream.composition import Calculation_factory as Factory</span>
+<span class="sd">    &gt;&gt;&gt; A = Factory(lambda v, *, a = None, b: _, [True], dict(v=1))("A")</span>
+<span class="sd">    &gt;&gt;&gt; B = Factory(lambda v, *, c = None, d: _, [True], dict(a=1, b=2))("B")</span>
+<span class="sd">    &gt;&gt;&gt; report(Aggregator.from_decoupled(A, B, funcs={A: dict(b=0)}), "raw")</span>
+<span class="sd">    Contains 2 Equations, 2 Nodes, 0 Edges.</span>
+<span class="sd">    &lt;BLANKLINE&gt;</span>
+<span class="sd">    | Calculation | Type | Equation No. | Unset | Set Externally | Missing |</span>
+<span class="sd">    | :---------- | :--- | :----------- | :---- | :------------- | :------ |</span>
+<span class="sd">    | A | Constructed | 0 - 1 | a | b |  |</span>
+<span class="sd">    | B | Constructed | 1 - 2 | c, d |  | d |</span>
+<span class="sd">    &lt;BLANKLINE&gt;</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    What do `Unset`, `Set Externally`, `Missing` mean?</span>
+
+<span class="sd">    * **Unset**: Variables which are requested by the calculate method and not present</span>
+<span class="sd">      in the graph or external functions</span>
+<span class="sd">    * **Set Externally**: Variables which are not provided by the calculation graph,</span>
+<span class="sd">      but by external functions.</span>
+<span class="sd">    * **Missing**: Variables which are requested by the calculate method and not present</span>
+<span class="sd">      in the graph or external functions, **and** do not have a default value.</span>
+<span class="sd">      If an Aggregator has a non-empty `Missing` column, the simulation is</span>
+<span class="sd">      expected to crash.</span>
+<span class="sd">    """</span>
+    <span class="k">match</span> <span class="n">printer</span><span class="p">:</span>
+        <span class="k">case</span> <span class="n">Printer</span><span class="o">.</span><span class="n">JUPYTER</span> <span class="o">|</span> <span class="n">Printer</span><span class="o">.</span><span class="n">JUPYTER</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">display</span><span class="p">(</span><span class="n">Markdown</span><span class="p">(</span><span class="n">_markdown_report</span><span class="p">(</span><span class="n">agr</span><span class="p">)))</span>
+        <span class="k">case</span> <span class="n">Printer</span><span class="o">.</span><span class="n">TERMINAL</span> <span class="o">|</span> <span class="n">Printer</span><span class="o">.</span><span class="n">TERMINAL</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">description</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+            <span class="n">display</span><span class="p">(</span><span class="n">_rich_table_format</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+        <span class="k">case</span> <span class="n">Printer</span><span class="o">.</span><span class="n">RAW</span> <span class="o">|</span> <span class="n">Printer</span><span class="o">.</span><span class="n">RAW</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">_markdown_report</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Printer '</span><span class="si">{</span><span class="n">printer</span><span class="si">}</span><span class="s2">' is not registered, please use one "</span>
+                <span class="sa">f</span><span class="s2">"of the following: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">Printer</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

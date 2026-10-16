@@ -1,0 +1,162 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tests &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="General Framework Tests" href="tests.test_general.html" />
+    <link rel="prev" title="Contributing" href="Contributing.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tests</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.integration.html">Integration Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-the-test-suite">Running the Test Suite</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#controlling-the-number-of-generated-examples">Controlling the Number of Generated Examples</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Tests</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tests.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="tests">
+<h1>Tests<a class="headerlink" href="#tests" title="Link to this heading"></a></h1>
+<p>Tests are an inherent requirement of any serious software development project. <a class="reference internal" href="stream.html#module-stream"><span class="std std-ref">STREAM</span></a> is
+especially dependent on tests (specifically analytic and unit tests) since nuclear reactor thermohydraulic experiments
+are difficult and scarce, and many existing commercial software projects (e.g. <code class="docutils literal notranslate"><span class="pre">RELAP</span></code>) are notoriously user-variable
+and themselves cannot fully simulate core behaviors.</p>
+<p>For this reason, the entire test suite is included in the documentation, except for <strong>doctests</strong>, which are part of the
+<a class="reference internal" href="stream.html#module-stream"><span class="std std-ref">documentation</span></a> and included therein.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.integration.html">Integration Tests</a></li>
+</ul>
+</div>
+<section id="running-the-test-suite">
+<h2>Running the Test Suite<a class="headerlink" href="#running-the-test-suite" title="Link to this heading"></a></h2>
+<p>We use Pytest and Hypothesis to run our tests. To run all tests, in the <code class="docutils literal notranslate"><span class="pre">tests</span></code> directory simply run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span>
+</pre></div>
+</div>
+<p>To avoid running tests marked <cite>slow</cite>, one can run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="o">-</span><span class="n">k</span> <span class="s1">'not slow'</span>
+</pre></div>
+</div>
+<section id="controlling-the-number-of-generated-examples">
+<h3>Controlling the Number of Generated Examples<a class="headerlink" href="#controlling-the-number-of-generated-examples" title="Link to this heading"></a></h3>
+<p>Hypothesis generates examples to run against many of our tests. As a matter of convenience,
+two profile are defined, controlling the number of examples: <code class="docutils literal notranslate"><span class="pre">fast</span></code> and <code class="docutils literal notranslate"><span class="pre">thorough</span></code>. Run them using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span> <span class="o">--</span><span class="n">hypothesis</span><span class="o">-</span><span class="n">profile</span><span class="o">=</span><span class="n">thorough</span>
+</pre></div>
+</div>
+<p>which can be mixed and matched with other pytest options.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Contributing.html" class="btn btn-neutral float-left" title="Contributing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tests.test_general.html" class="btn btn-neutral float-right" title="General Framework Tests" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

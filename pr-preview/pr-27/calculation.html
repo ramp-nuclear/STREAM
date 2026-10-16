@@ -1,0 +1,474 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calculation &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Calculations" href="stream.calculations.html" />
+    <link rel="prev" title="Aggregator" href="aggregator.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="stream.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="aggregator.html">Aggregator</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Calculation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#stream.calculation.Calculation"><code class="docutils literal notranslate"><span class="pre">Calculation</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.calculate"><code class="docutils literal notranslate"><span class="pre">Calculation.calculate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.change_state"><code class="docutils literal notranslate"><span class="pre">Calculation.change_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.event_margin"><code class="docutils literal notranslate"><span class="pre">Calculation.event_margin</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.has_event"><code class="docutils literal notranslate"><span class="pre">Calculation.has_event</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.indices"><code class="docutils literal notranslate"><span class="pre">Calculation.indices</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.load"><code class="docutils literal notranslate"><span class="pre">Calculation.load</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.save"><code class="docutils literal notranslate"><span class="pre">Calculation.save</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.should_continue"><code class="docutils literal notranslate"><span class="pre">Calculation.should_continue</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.strict_save"><code class="docutils literal notranslate"><span class="pre">Calculation.strict_save</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.mass_vector"><code class="docutils literal notranslate"><span class="pre">Calculation.mass_vector</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.name"><code class="docutils literal notranslate"><span class="pre">Calculation.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.calculation.Calculation.variables"><code class="docutils literal notranslate"><span class="pre">Calculation.variables</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#stream.calculation.unpacked"><code class="docutils literal notranslate"><span class="pre">unpacked</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stream.calculations.html">Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.composition.html">Composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.physical_models.html">Physical Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="stream.html">Documentation</a></li>
+      <li class="breadcrumb-item active">Calculation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/calculation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="calculation">
+<h1>Calculation<a class="headerlink" href="#calculation" title="Link to this heading"></a></h1>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.calculation.Calculation.calculate" title="stream.calculation.Calculation.calculate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.calculate</span></code></a></p></td>
+<td><p>The main method of a calculation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.calculation.Calculation.indices" title="stream.calculation.Calculation.indices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.indices</span></code></a></p></td>
+<td><p>For a given variable name, return the appropriate positions in the vector</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.calculation.Calculation.mass_vector" title="stream.calculation.Calculation.mass_vector"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.mass_vector</span></code></a></p></td>
+<td><p>Each entry corresponds to an equation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.__len__</span></code></p></td>
+<td><p>Number of slots used by the calculation, meaning length of calculate()'s output</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.calculation.Calculation.variables" title="stream.calculation.Calculation.variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.variables</span></code></a></p></td>
+<td><p>All variables owned by calculation</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.calculation.Calculation.load" title="stream.calculation.Calculation.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.load</span></code></a></p></td>
+<td><p>Given a state of the calculation, return the untagged corresponding array, which may be used to calculate the next step.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.calculation.Calculation.save" title="stream.calculation.Calculation.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.save</span></code></a></p></td>
+<td><p>Given input for &quot;calculate&quot; (which is a legal state of the system), tag the information, i.e. create a &quot;State&quot; and return it.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.__repr__</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.should_continue</span></code></a></p></td>
+<td><p>A function to be used in transient calculations to determine stopping conditions at physical states of a system.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Calculation.change_state</span></code></a></p></td>
+<td><p>A function to be used in transient calculations called at physical states of a system.</p></td>
+</tr>
+</tbody>
+</table>
+<p id="module-stream.calculation">A module defining what is a <a class="reference internal" href="#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Calculation</span></code></a>, in the sense of a first order in time
+differential and algebraic system of equation. A <a class="reference internal" href="#stream.calculation.Calculation" title="stream.calculation.Calculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">Calculation</span></code></a> is a subset of
+such a system.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.calculation.Calculation">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Calculation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></p>
+<p>A calculation in the context of STREAM is derived from the following DAE,
+which is a first order in time differential and algebraic equation:
+<span class="math notranslate nohighlight">\(M\frac{d\vec{y}}{dt} = \vec{F}\left(\vec{y}, t\right)\)</span></p>
+<p>Where <span class="math notranslate nohighlight">\(M_{ii}=1,0\)</span> is the matrix defining whether
+<span class="math notranslate nohighlight">\(F_i(\vec{y}, t)\)</span> is the
+differential or an algebraic equation <span class="math notranslate nohighlight">\(F_i(\vec{y},t) = 0\)</span>.
+<span class="math notranslate nohighlight">\(\vec{y}\)</span> is the variable vector, from which a subset is the input
+for each individual calculation. The calculation yields a subset
+of <span class="math notranslate nohighlight">\(F(\vec{y}, t)\)</span>, for which it is deemed the unique owner.</p>
+<p>Therefore,</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>One may say that a Calculation
+<strong>is</strong> a subset of <span class="math notranslate nohighlight">\(\vec{F} \left(\vec{y}, t\right)\)</span></p>
+</div>
+<p><strong>Three kinds of inputs are distinguished:</strong></p>
+<p>1. <strong>Model Parameters</strong>: Attributes of the calculation itself,
+independent of all other inputs. Supposedly, these are component and
+physical constants.</p>
+<p>2. <strong>Input Functions</strong>: These are functions through which a user may
+interfere with a system. Namely, they are only time-dependent. A
+calculation should not be made aware of the separation between them and
+Variables.</p>
+<p>3. <strong>Variables</strong>: These are the main input for a calculation. Every
+property having distinct time dependence which is not user defined is a
+variable.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.calculate">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">calculate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.calculate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.calculate" title="Link to this definition"></a></dt>
+<dd><p>The main method of a calculation</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – the variables required for the calculation,
+which the calculation handles itself.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>ndarray</em></p>
+</dd>
+</dl>
+<p>Requested external variables can be passed via keyword arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Output results</strong> – subset of the differential/algebraic functional result.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array1D</p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.change_state">
+<span class="sig-name descname"><span class="pre">change_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.change_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.change_state" title="Link to this definition"></a></dt>
+<dd><p>A function to be used in transient calculations called at physical states
+of a system. If the calculation has an internal state which depends
+on the physical state, this state should be changed here.</p>
+<p>This function’s inputs should equal those of <a class="reference internal" href="#stream.calculation.Calculation.save" title="stream.calculation.Calculation.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save</span></code></a> and <a class="reference internal" href="#stream.calculation.Calculation.calculate" title="stream.calculation.Calculation.calculate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Input</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.event_margin">
+<span class="sig-name descname"><span class="pre">event_margin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.event_margin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.event_margin" title="Link to this definition"></a></dt>
+<dd><p>Continuous, signed event margins for this calculation.</p>
+<p>Each returned value is a smooth function of the inputs that is strictly
+positive while no event is pending and crosses zero (positive -&gt;
+non-positive) exactly at the event. The transient drivers pass these to
+the solver (IDA’s rootfn / <code class="docutils literal notranslate"><span class="pre">solve_ivp</span></code> events) so the true event time is
+localized by sign-change bisection; <a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">change_state</span></code></a> /
+<a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">should_continue</span></code></a> are then consulted at that time to decide what the
+event does.</p>
+<p>Inputs match <a class="reference internal" href="#stream.calculation.Calculation.calculate" title="stream.calculation.Calculation.calculate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate</span></code></a>/<a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">should_continue</span></code></a>/<a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">change_state</span></code></a>.
+Return an empty array (the default) for calculations with no localizable
+event; such calculations, if they still override
+<a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">change_state</span></code></a>/<a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">should_continue</span></code></a>, are polled at output grid
+points instead (coarser).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>margins</strong> – Signed continuous margins (empty for no event).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array1D</p>
+</dd>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.has_event">
+<span class="sig-name descname"><span class="pre">has_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.has_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.has_event" title="Link to this definition"></a></dt>
+<dd><p>Whether this calculation currently participates in transient events, that
+is, whether the drivers must consult its <a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">change_state</span></code></a> and
+<a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">should_continue</span></code></a>.</p>
+<p>By default a calculation is an event node if and only if it overrides either
+hook. A component whose event participation depends on a runtime flag should
+override this to return that flag, so that when inactive it is classified and
+integrated like a plain calculation rather than as a margin-less event node.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.indices">
+<span class="sig-name descname"><span class="pre">indices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variable</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asking</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.indices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.indices" title="Link to this definition"></a></dt>
+<dd><p>For a given variable name, return the appropriate positions in the vector</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>variable</strong> (<em>Name</em>) – Name of requested variable</p></li>
+<li><p><strong>asking</strong> (<a class="reference internal" href="#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em> or </em><em>None</em>) – What calculation is asking for the indices?
+For example, this is important in
+<a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff" title="stream.calculations.kirchhoff.Kirchhoff"><code class="xref py py-class docutils literal notranslate"><span class="pre">Kirchhoff</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>indices</strong> – The place in which the calculation uses the variable, or a
+dictionary with variable names related to this name and
+their places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Place or dict[<a class="reference internal" href="#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>, Place]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">state</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.load" title="Link to this definition"></a></dt>
+<dd><p>Given a state of the calculation, return the untagged corresponding
+array, which may be used to calculate the next step.</p>
+<p>The default method implemented here assumes the state is completely
+described by the variables presented in self.variables.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>state</strong> (<em>CalcState</em>) – Tagged information regarding system state</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>y</strong> – Calculation ready array</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array1D</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vector</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.save" title="Link to this definition"></a></dt>
+<dd><p>Given input for “calculate” (which is a legal state of the system),
+tag the information, i.e. create a “State” and return it.</p>
+<p>The default method implemented here assumes the state is completely
+described by the variables presented in self.variables.
+This may not be the best descriptor of the state, as there can be more
+favourable expressions. This is the separation between <code class="docutils literal notranslate"><span class="pre">strict_save</span></code>, which
+is the vanilla version described above, and <code class="docutils literal notranslate"><span class="pre">save</span></code>, which should be free to
+add other keys to the “State”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vector</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Input</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state</strong> – Tagged information regarding system state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>CalcState</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.should_continue">
+<span class="sig-name descname"><span class="pre">should_continue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">variables</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#Calculation.should_continue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.Calculation.should_continue" title="Link to this definition"></a></dt>
+<dd><p>A function to be used in transient calculations to determine stopping
+conditions at physical states of a system. Returning False signals the
+calculation is to be stopped. Logging the reason is encouraged.</p>
+<p>This function’s inputs should equal those of <a class="reference internal" href="#stream.calculation.Calculation.save" title="stream.calculation.Calculation.save"><code class="xref py py-meth docutils literal notranslate"><span class="pre">save</span></code></a> and <a class="reference internal" href="#stream.calculation.Calculation.calculate" title="stream.calculation.Calculation.calculate"><code class="xref py py-meth docutils literal notranslate"><span class="pre">calculate</span></code></a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Implementation in <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><code class="xref py py-class docutils literal notranslate"><span class="pre">Aggregator</span></code></a> dictates
+the <a class="reference internal" href="#stream.calculation.Calculation.change_state" title="stream.calculation.Calculation.change_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">change_state</span></code></a> method is called right before <a class="reference internal" href="#stream.calculation.Calculation.should_continue" title="stream.calculation.Calculation.should_continue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">should_continue</span></code></a>,
+with the same input.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Input</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>should_continue</strong> – Should the transient simulation continue?</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.strict_save">
+<span class="sig-name descname"><span class="pre">strict_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vector</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">_</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#stream.calculation.Calculation.strict_save" title="Link to this definition"></a></dt>
+<dd><p>Given input for “calculate” (which is a legal state of the system),
+tag the information, i.e. create a “State” and return it.</p>
+<p>The default method implemented here assumes the state is completely
+described by the variables presented in self.variables.
+This may not be the best descriptor of the state, as there can be more
+favourable expressions. This is the separation between <code class="docutils literal notranslate"><span class="pre">strict_save</span></code>, which
+is the vanilla version described above, and <code class="docutils literal notranslate"><span class="pre">save</span></code>, which should be free to
+add other keys to the “State”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vector</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>) – Input</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>state</strong> – Tagged information regarding system state</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>CalcState</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.mass_vector">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mass_vector</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.calculation.Calculation.mass_vector" title="Link to this definition"></a></dt>
+<dd><p>Each entry corresponds to an equation. For each entry the value is
+either 0 or 1:</p>
+<ol class="arabic simple" start="0">
+<li><p>Algebraic equation <span class="math notranslate nohighlight">\(F(\vec{y},t)=0\)</span></p></li>
+<li><p>Differential equation <span class="math notranslate nohighlight">\(\dot{y}=F(\vec{y},t)\)</span></p></li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mass</strong> – The “mass” of each variable under this calculation’s control.
+Values are 0 for algebraically defined terms and 1 for differentially
+defined terms.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sequence[bool]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#stream.calculation.Calculation.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="stream.calculation.Calculation.variables">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">variables</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">slice</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.calculation.Calculation.variables" title="Link to this definition"></a></dt>
+<dd><p>All variables owned by calculation</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.calculation.unpacked">
+<span class="sig-name descname"><span class="pre">unpacked</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">calculate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculation.html#unpacked"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.calculation.unpacked" title="Link to this definition"></a></dt>
+<dd><p>This is a decorator for Calculation methods (calculate and save, mostly),
+to be applied when the origin of the external variables is unimportant.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>calculate</strong> (<em>callable</em>) – Calculation.calculate actualized method</p></li>
+<li><p><strong>exclude</strong> (<em>Iterable</em><em>[</em><em>str</em><em>]</em>) – Which variables to exclude from unpacking</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>calculate*</strong> – The method which now receives its keyword arguments as
+np.arrays or as floats and not a dictionary</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>callable</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="aggregator.html" class="btn btn-neutral float-left" title="Aggregator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="stream.calculations.html" class="btn btn-neutral float-right" title="Calculations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

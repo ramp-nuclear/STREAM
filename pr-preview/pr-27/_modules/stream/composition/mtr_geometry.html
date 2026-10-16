@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.composition.mtr_geometry &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.composition.mtr_geometry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.composition.mtr_geometry</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">MTR: Material Test Reactors</span>
+<span class="sd">===========================</span>
+<span class="sd">In this context, MTR refers to a typical type of fuels, which comprise of several rectangular parallel plates in each</span>
+<span class="sd">rod, with coolant flowing between the plates.</span>
+
+<span class="sd">The combination of calculations into an MTR-like setup, containing:</span>
+
+<span class="sd">1. Fuel Plates</span>
+<span class="sd">2. Coolant (T, incompressible scheme) channels on both sides.</span>
+
+<span class="sd">The created objects are CalculationGraph objects which may be combined to eventually create an executable scheme.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Sequence</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">more_itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">interleave_longest</span><span class="p">,</span> <span class="n">windowed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiGraph</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalculationGraph</span><span class="p">,</span> <span class="n">ExternalFunctions</span><span class="p">,</span> <span class="n">vars_</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array2D</span><span class="p">,</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">Name</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">concat</span><span class="p">,</span> <span class="n">cosine_shape</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"chain_fuels_channels"</span><span class="p">,</span>
+    <span class="s2">"plate"</span><span class="p">,</span>
+    <span class="s2">"rod"</span><span class="p">,</span>
+    <span class="s2">"one_sided_connection"</span><span class="p">,</span>
+    <span class="s2">"symmetric_plate"</span><span class="p">,</span>
+    <span class="s2">"x_boundaries"</span><span class="p">,</span>
+    <span class="s2">"uniform_x_power_shape"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="plate">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.plate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plate</span><span class="p">(</span><span class="n">channel_l</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">channel_r</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">fuel</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Build a fuel "plate" setup and its surroundings using the following components:</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channel_l: ChannelAndContacts</span>
+<span class="sd">        Left coolant channel</span>
+<span class="sd">    channel_r: ChannelAndContacts</span>
+<span class="sd">        Right coolant channel</span>
+<span class="sd">    fuel: Fuel</span>
+<span class="sd">        (Central) Fuel region</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    agr: CalculationGraph</span>
+<span class="sd">        An CalculationGraph whose time-funcs are empty</span>
+<span class="sd">    """</span>
+
+    <span class="k">return</span> <span class="n">CalculationGraph</span><span class="p">(</span>
+        <span class="n">DiGraph</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="n">channel_l</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">)),</span>
+                <span class="p">(</span><span class="n">channel_r</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">)),</span>
+                <span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel_l</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">)),</span>
+                <span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel_r</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">)),</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="chain_fuels_channels">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.chain_fuels_channels">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">chain_fuels_channels</span><span class="p">(</span><span class="n">channels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ChannelAndContacts</span><span class="p">],</span> <span class="n">fuels</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Fuel</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Build a setup of interchanging fuel plates and channels by order of appearance.</span>
+<span class="sd">    This function is to be used for the following geometry only::</span>
+
+<span class="sd">        ... Channel, Fuel, Channel, Fuel ...</span>
+
+<span class="sd">    Which is the case for MTR-like reactor rods.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channels: Sequence[ChannelAndContacts]</span>
+<span class="sd">        Channels</span>
+<span class="sd">    fuels: Sequence[Fuel]</span>
+<span class="sd">        Fuel Plates</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    agr: CalculationGraph</span>
+<span class="sd">        whose time-functions are empty</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        if the lengths of sequences does not allow interchanging</span>
+<span class="sd">        (if difference is not +-1).</span>
+<span class="sd">    """</span>
+    <span class="n">diff</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">channels</span><span class="p">)</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">fuels</span><span class="p">)</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">DiGraph</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">diff</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">joint</span> <span class="o">=</span> <span class="n">interleave_longest</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="n">fuels</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">channel_l</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">channel_r</span> <span class="ow">in</span> <span class="n">windowed</span><span class="p">(</span><span class="n">joint</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">channel_l</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">channel_r</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel_l</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">,))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel_r</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">diff</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="n">joint</span> <span class="o">=</span> <span class="n">interleave_longest</span><span class="p">(</span><span class="n">fuels</span><span class="p">,</span> <span class="n">channels</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">fuel_l</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">fuel_r</span> <span class="ow">in</span> <span class="n">windowed</span><span class="p">(</span><span class="n">joint</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">fuel_l</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">,))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">fuel_r</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">,))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel_r</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">))</span>
+            <span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel_l</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T_right"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"Interchanging Fuel-Channel not possible since the difference: #Channels - #Fuels = </span><span class="si">{</span><span class="n">diff</span><span class="si">}</span><span class="s2">, not +-1"</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pair_connection</span><span class="p">(</span>
+    <span class="n">fuel</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span>
+    <span class="n">funcs</span><span class="p">:</span> <span class="n">ExternalFunctions</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">fvars</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Name</span><span class="p">],</span>
+    <span class="n">cvars</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Name</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Connects a single fuel to a single channel by given variables</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channel: ChannelAndContacts</span>
+<span class="sd">        The channel object to connect.</span>
+<span class="sd">    fuel: Fuel</span>
+<span class="sd">        The fuel object to connect.</span>
+<span class="sd">    fvars: Iterable[Name]</span>
+<span class="sd">        Fuel variables to send to the channel.</span>
+<span class="sd">    cvars: Iterable[Name]</span>
+<span class="sd">        Channel variables to send to the fuel.</span>
+<span class="sd">    funcs: ExternalFunctions</span>
+<span class="sd">        Functions of time to connect to fuel or channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    CalculationGraph</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">CalculationGraph</span><span class="p">(</span>
+        <span class="n">DiGraph</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="o">*</span><span class="n">fvars</span><span class="p">)),</span>
+                <span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="o">*</span><span class="n">cvars</span><span class="p">)),</span>
+            <span class="p">)</span>
+        <span class="p">),</span>
+        <span class="n">funcs</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="one_sided_connection">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.one_sided_connection">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_sided_connection</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span>
+    <span class="n">fuel</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">fuel_side</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">],</span>
+    <span class="n">funcs</span><span class="p">:</span> <span class="n">ExternalFunctions</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Connects a single fuel to a single channel on one side</span>
+
+<span class="sd">    .. important::</span>
+<span class="sd">     In this connection, the fuel assumes it is connected on both sides to the channel,</span>
+<span class="sd">     but the channel is connected only to one chosen ``fuel_side``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channel: ChannelAndContacts</span>
+<span class="sd">        The channel object to connect.</span>
+<span class="sd">    fuel: Fuel</span>
+<span class="sd">        The fuel object to connect.</span>
+<span class="sd">    fuel_side: 'left' or 'right'</span>
+<span class="sd">        The side of the channel at which the fuel is placed.</span>
+<span class="sd">        The following diagrams might help. Assume there are no previous connections for the fuel or channel.</span>
+<span class="sd">        Therefore, a `left` case looks like this::</span>
+
+<span class="sd">         ||          |            ||</span>
+<span class="sd">         ||   Fuel   |   Channel  ||</span>
+<span class="sd">         ||          |            ||</span>
+
+<span class="sd">        and a `right` case looks like this::</span>
+
+<span class="sd">         ||             |         ||</span>
+<span class="sd">         ||   Channel   |   Fuel  ||</span>
+<span class="sd">         ||             |         ||</span>
+
+<span class="sd">    funcs: ExternalFunctions</span>
+<span class="sd">        Functions of time to connect to fuel or channel.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    CalculationGraph</span>
+
+<span class="sd">    """</span>
+    <span class="n">fuel_var</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"left"</span><span class="p">:</span> <span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">:</span> <span class="s2">"T_right"</span><span class="p">}[</span><span class="n">fuel_side</span><span class="p">]</span>
+    <span class="n">channel_vars</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"T_right"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">,</span> <span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_pair_connection</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="n">funcs</span><span class="p">,</span> <span class="p">(</span><span class="n">fuel_var</span><span class="p">,),</span> <span class="n">channel_vars</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="symmetric_plate">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.symmetric_plate">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">symmetric_plate</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">fuel</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="p">:</span> <span class="n">ExternalFunctions</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a symmetric plate.</span>
+<span class="sd">    This is convenient if symmetry or low calculation costs are relevant.</span>
+<span class="sd">    The objects must already describe the desired geometry.</span>
+
+<span class="sd">    The fuel and channel are combined such that they're simultaneously on both sides of each other.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channel: ChannelAndContacts</span>
+<span class="sd">        The channel object to connect.</span>
+<span class="sd">    fuel: Fuel</span>
+<span class="sd">        The fuel object to connect.</span>
+<span class="sd">    funcs: ExternalFunctions</span>
+<span class="sd">        External functions relating to the components</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    CalculationGraph</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_pair_connection</span><span class="p">(</span>
+        <span class="n">fuel</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">,</span>
+        <span class="n">funcs</span><span class="p">,</span>
+        <span class="p">(</span><span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"T_right"</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">"T_left"</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">,</span> <span class="s2">"T_right"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rod">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.rod">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rod</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fuel</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">plates</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">CalculationGraph</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">ChannelAndContacts</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Fuel</span><span class="p">]):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Create a rod of interleaving channels and fuel plates, in which all channels, fuel plates are the same.</span>
+<span class="sd">    This function utilizes :func:`chain_fuels_channels`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    channel: ChannelAndContacts</span>
+<span class="sd">        calculation which is to be constructed several times.</span>
+<span class="sd">    channels: int</span>
+<span class="sd">        # of channels.</span>
+<span class="sd">    fuel: Fuel</span>
+<span class="sd">        calculation which is to be constructed several times.</span>
+<span class="sd">    plates: int</span>
+<span class="sd">        # of fuel plates.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    out: tuple[CalculationGraph, Sequence[ChannelAndContacts], Sequence[Fuel]]</span>
+<span class="sd">        The connected CalculationGraph, created channels, created fuels.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    chain_fuels_channels</span>
+<span class="sd">    """</span>
+    <span class="n">chs</span> <span class="o">=</span> <span class="p">[</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">channels</span><span class="p">)]</span>
+    <span class="n">fuels</span> <span class="o">=</span> <span class="p">[</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">fuel</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">plates</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="n">chain_fuels_channels</span><span class="p">(</span><span class="n">channels</span><span class="o">=</span><span class="n">chs</span><span class="p">,</span> <span class="n">fuels</span><span class="o">=</span><span class="n">fuels</span><span class="p">),</span> <span class="n">chs</span><span class="p">,</span> <span class="n">fuels</span></div>
+
+
+
+<div class="viewcode-block" id="x_boundaries">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.x_boundaries">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">:</span> <span class="n">Meter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Construct the plate boundaries perpendicular to the plate's large plane (denoted `x`).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    clad_N: int</span>
+<span class="sd">        Into how many cladding cells to partition (symmetrically on each side).</span>
+<span class="sd">    fuel_N: int</span>
+<span class="sd">        Into how many fuel (meat) cells to partition (centered).</span>
+<span class="sd">    clad_w: Meter</span>
+<span class="sd">        Width of cladding (on each side). This value is not used if clad_N = 0.</span>
+<span class="sd">    meat_w: Meter</span>
+<span class="sd">        Width of Meat.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    x_bounds: Meter</span>
+<span class="sd">        An array containing the cells boundary placements, beginning with zero.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">clad_N</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">concat</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">clad_N</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">clad_w</span><span class="p">,</span> <span class="n">clad_w</span> <span class="o">+</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">clad_w</span> <span class="o">+</span> <span class="n">meat_w</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_w</span> <span class="o">+</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">clad_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">x</span></div>
+
+
+
+<div class="viewcode-block" id="uniform_x_power_shape">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.mtr_geometry.uniform_x_power_shape">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">uniform_x_power_shape</span><span class="p">(</span>
+    <span class="n">z_N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">fuel_N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">clad_N</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">clad_w</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">meat_w</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">meat_h</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">z_shaper</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Meter</span><span class="p">],</span> <span class="n">Meter</span><span class="p">]</span> <span class="o">=</span> <span class="n">cosine_shape</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array2D</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Create a ``power_shape`` for :class:`~.Fuel` in which the distribution along the x-axis is uniform,</span>
+<span class="sd">    and controlled by ``z_shaper`` along the z-axis. Utilizes :func:`x_boundaries`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    z_N : int</span>
+<span class="sd">        Number of cells in the direction of flow across the plate (denoted `z`)</span>
+<span class="sd">    fuel_N : int</span>
+<span class="sd">        Into how many fuel (meat) cells to partition (centered).</span>
+<span class="sd">    clad_N : int</span>
+<span class="sd">        Into how many cladding cells to partition (symmetrically on each side).</span>
+<span class="sd">    clad_w: Meter</span>
+<span class="sd">        Width of cladding (on each side). This value is not used if clad_N = 0.</span>
+<span class="sd">    meat_w: Meter</span>
+<span class="sd">        Width of meat.</span>
+<span class="sd">    meat_h : Meter</span>
+<span class="sd">        Height of meat (assumed to be the total modelled plate)</span>
+<span class="sd">    z_shaper : Callable[[Meter], Meter]</span>
+<span class="sd">        Profiler function, which receives cell boundaries and returns weights for each cell.</span>
+<span class="sd">        Default is :func:`~.cosine_shape`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Array2D</span>
+<span class="sd">    """</span>
+    <span class="n">power_shape_in_rod</span> <span class="o">=</span> <span class="n">z_shaper</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">meat_h</span><span class="p">,</span> <span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+    <span class="n">dx_meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">))</span>
+    <span class="n">dx_meat</span> <span class="o">=</span> <span class="n">dx_meat</span> <span class="k">if</span> <span class="n">clad_N</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">dx_meat</span><span class="p">[</span><span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span>
+    <span class="n">area_fraction</span> <span class="o">=</span> <span class="n">dx_meat</span> <span class="o">/</span> <span class="n">meat_w</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">power_shape_in_rod</span><span class="p">,</span> <span class="n">area_fraction</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

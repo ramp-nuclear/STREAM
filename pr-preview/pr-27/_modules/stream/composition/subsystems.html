@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.composition.subsystems &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.composition.subsystems</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.composition.subsystems</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Helper functions for creating steady state initial guesses for small and specific subsystems"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cytoolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">keymap</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Channel</span><span class="p">,</span>
+    <span class="n">ChannelAndContacts</span><span class="p">,</span>
+    <span class="n">DPCalculation</span><span class="p">,</span>
+    <span class="n">Flapper</span><span class="p">,</span>
+    <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">Junction</span><span class="p">,</span>
+    <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">PointKinetics</span><span class="p">,</span>
+    <span class="n">PointKineticsWInput</span><span class="p">,</span>
+    <span class="n">Pump</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition.mtr_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">symmetric_plate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">local_pressure_by_mdot</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Watt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">just</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"check_gravity_mismatch"</span><span class="p">,</span>
+    <span class="s2">"guess_hydraulic_steady_state"</span><span class="p">,</span>
+    <span class="s2">"point_kinetics_steady_state"</span><span class="p">,</span>
+    <span class="s2">"symmetric_plate_steady_state"</span><span class="p">,</span>
+    <span class="s2">"HydraulicStrategy"</span><span class="p">,</span>
+    <span class="s2">"HydraulicStrategyMap"</span><span class="p">,</span>
+    <span class="s2">"GravityMismatchError"</span><span class="p">,</span>
+    <span class="s2">"MissingFlowError"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"stream.subsystems"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="symmetric_plate_steady_state">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.symmetric_plate_steady_state">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">symmetric_plate_steady_state</span><span class="p">(</span>
+    <span class="n">c</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">,</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">p_abs</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">Tin</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">initial_guess_iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">solver_options</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Steady state for a :func:`.symmetric_plate` system</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    c: ChannelAndContacts</span>
+<span class="sd">        A channel (and contacts...) instance</span>
+<span class="sd">    f: Fuel</span>
+<span class="sd">        A fuel instance</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Desired mass current</span>
+<span class="sd">    p_abs: Pascal</span>
+<span class="sd">        Desired absolute pressure at the top of the plate</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Desired power</span>
+<span class="sd">    Tin: Celsius</span>
+<span class="sd">         Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),</span>
+<span class="sd">         the inlet temperature is a source term for the (first, last) cell.</span>
+<span class="sd">    initial_guess_iterations: int</span>
+<span class="sd">        Before employing a solver, an initial educated guess is assumed. This</span>
+<span class="sd">        guess should become better educated with each iteration controlled by</span>
+<span class="sd">        ``precondition``. The iteration floors the wall heat transfer</span>
+<span class="sd">        coefficient at the conduction scale ``k/Dh``, so correlations with no</span>
+<span class="sd">        conduction floor (e.g. the Elenbaas natural-convection HTC, whose</span>
+<span class="sd">        ``h -&gt; 0`` at zero wall superheat) still yield a finite seed.</span>
+<span class="sd">    solver_options: Dict</span>
+<span class="sd">        Keyword arguments to control steady state solver behavior</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    steady: State</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">initial_guess_iterations</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Must try at least once to obtain values. Was </span><span class="si">{</span><span class="n">initial_guess_iterations</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">plate</span> <span class="o">=</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">f</span><span class="p">,</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">Tin</span><span class="p">),</span> <span class="n">f</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)})</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+
+    <span class="n">power_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+    <span class="n">power_mat</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">meat</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">power</span> <span class="o">*</span> <span class="n">f</span><span class="o">.</span><span class="n">power_shape</span>
+    <span class="n">cp</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fluid</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">(</span><span class="n">Tin</span><span class="p">)</span>
+    <span class="n">p_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">power_mat</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">q2t_z</span> <span class="o">=</span> <span class="n">p_z</span> <span class="o">/</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">heated_perimeter</span> <span class="o">*</span> <span class="n">c</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span>
+    <span class="n">dT</span> <span class="o">=</span> <span class="n">p_z</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">*</span> <span class="n">cp</span><span class="p">)</span>
+    <span class="n">tc0</span> <span class="o">=</span> <span class="n">Tin</span> <span class="o">+</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dT</span><span class="p">)</span> <span class="k">if</span> <span class="n">mdot</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">dT</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">tw0</span> <span class="o">=</span> <span class="n">tc0</span>
+    <span class="n">h_floor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fluid</span><span class="o">.</span><span class="n">conductivity</span><span class="p">(</span><span class="n">Tin</span><span class="p">)</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">initial_guess_iterations</span><span class="p">):</span>
+        <span class="n">dp0</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">pressure</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">tc0</span><span class="p">,</span> <span class="n">Tw</span><span class="o">=</span><span class="n">tw0</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">)</span>
+        <span class="n">h0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">h_wall</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="n">tw0</span><span class="p">,</span> <span class="n">T_cool</span><span class="o">=</span><span class="n">tc0</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">p_abs</span> <span class="o">-</span> <span class="n">dp0</span><span class="p">),</span> <span class="n">h_floor</span><span class="p">)</span>
+        <span class="n">tw0</span> <span class="o">=</span> <span class="p">(</span><span class="n">q2t_z</span> <span class="o">/</span> <span class="n">h0</span><span class="p">)</span> <span class="o">+</span> <span class="n">tc0</span>
+    <span class="n">T0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">tw0</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">shape</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="c1"># Safe because the initial guess iterations are &gt;= 1</span>
+    <span class="c1"># noinspection PyUnboundLocalVariable</span>
+    <span class="n">y0</span> <span class="o">=</span> <span class="n">plate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">T0</span><span class="p">,</span> <span class="n">T_wall_left</span><span class="o">=</span><span class="n">tw0</span><span class="p">,</span> <span class="n">T_wall_right</span><span class="o">=</span><span class="n">tw0</span><span class="p">),</span>
+            <span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_cool</span><span class="o">=</span><span class="n">tc0</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">h0</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h0</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp0</span><span class="p">)),</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">plate</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">plate</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="point_kinetics_steady_state">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.point_kinetics_steady_state">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">point_kinetics_steady_state</span><span class="p">(</span><span class="n">pk</span><span class="p">:</span> <span class="n">PointKinetics</span><span class="p">,</span> <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span> <span class="n">power_input</span><span class="p">:</span> <span class="n">Watt</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Zero reactivity steady :class:`.PointKinetics` steady state</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pk: PointKinetics</span>
+<span class="sd">        a PK instance</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Desired power at which the reactor operates</span>
+<span class="sd">    power_input: Watt or None</span>
+<span class="sd">        If another source of power (besides PK, e.g decay heat) contributes to total power (which should be provided at</span>
+<span class="sd">        simulation time), the neutronic power generation is ``power - power_input``.</span>
+<span class="sd">        Note this only applies to :class:`.PointKineticsWInput`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    steady: State</span>
+<span class="sd">        Assuming zero reactivity (criticality)</span>
+<span class="sd">    """</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">PointKineticsWInput</span><span class="p">):</span>
+        <span class="n">Pn</span> <span class="o">=</span> <span class="n">power</span> <span class="o">-</span> <span class="p">(</span><span class="n">power_input</span> <span class="ow">or</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">ck</span><span class="o">=</span><span class="n">Pn</span> <span class="o">*</span> <span class="p">(</span><span class="n">pk</span><span class="o">.</span><span class="n">betak</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">lambdak</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">Lambda</span><span class="p">))</span>
+        <span class="n">d</span><span class="p">[</span><span class="s2">"pk_power"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Pn</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">ck</span><span class="o">=</span><span class="n">power</span> <span class="o">*</span> <span class="p">(</span><span class="n">pk</span><span class="o">.</span><span class="n">betak</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">lambdak</span> <span class="o">/</span> <span class="n">pk</span><span class="o">.</span><span class="n">Lambda</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">State</span><span class="p">({</span><span class="n">pk</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">d</span><span class="p">})</span></div>
+
+
+
+<div class="viewcode-block" id="MissingFlowError">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.MissingFlowError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingFlowError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Error to signify missing :class:`.Kirchhoff` flow data."""</span>
+
+    <span class="k">pass</span></div>
+
+
+
+<span class="n">HydraulicStrategy</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">KgPerS</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">],</span> <span class="n">Pascal</span><span class="p">]</span>
+<span class="n">HydraulicStrategyMap</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">HydraulicStrategy</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_float_values</span><span class="p">(</span><span class="n">d</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">],</span> <span class="n">keys</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">inner_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"pressure"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">d</span><span class="p">[</span><span class="n">key</span><span class="p">][</span><span class="n">inner_key</span><span class="p">]</span>
+        <span class="k">yield</span> <span class="n">y</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="k">else</span> <span class="n">y</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="guess_hydraulic_steady_state">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.guess_hydraulic_steady_state">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">guess_hydraulic_steady_state</span><span class="p">(</span>
+    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">mdots</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">],</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="n">HydraulicStrategyMap</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A guess for a :class:`.Kirchhoff` derived system, in which the flows are known</span>
+
+<span class="sd">    .. note:: When a component's pressure difference cannot be **physically** determined from the flow,</span>
+<span class="sd">       the guess is ``0.0``.</span>
+<span class="sd">       Prominent examples are ideal flow sources such as :class:`.Pump` ``(mdot0=x)`` or a closed :class:`.Flapper`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    k : Kirchhoff</span>
+<span class="sd">        Kirchhoff Calculation</span>
+<span class="sd">    mdots : dict[Calculation, KgPerS]</span>
+<span class="sd">        Known mass flows :math:`\dot{m}` for components in the hydraulic system.</span>
+<span class="sd">        Supported Calculations are :class:`.DPCalculation` and :class:`.Channel`.</span>
+<span class="sd">    temperature : Celsius</span>
+<span class="sd">        Assumed temperature for hydraulic calculations</span>
+<span class="sd">    strategy : dict[Calculation, Callable[[KgPerS, Celsius], Pascal]] | None</span>
+<span class="sd">        For unknown calculations, pressure drop functions :math:`\Delta p(\dot{m}, T)`</span>
+<span class="sd">        may be provided. These are used when the Calculation isn't identified as</span>
+<span class="sd">        known types or protocols, and failing that, the guess is ``0.0``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    State</span>
+<span class="sd">        A guess in which pressures are computed from the known flows, and the flows themselves.</span>
+<span class="sd">    """</span>
+
+    <span class="n">k_guess</span> <span class="o">=</span> <span class="n">keymap</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">,</span> <span class="n">mdots</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">(</span><span class="n">k_guess</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">MissingFlowError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Missing flow data in edges </span><span class="si">{</span><span class="n">s</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">k_guess</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="n">strategy</span> <span class="o">=</span> <span class="n">strategy</span> <span class="ow">or</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_dp</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="n">k_guess</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">x</span><span class="p">)]</span>
+
+        <span class="k">match</span> <span class="n">x</span><span class="p">:</span>
+            <span class="k">case</span> <span class="n">Pump</span><span class="p">():</span>
+                <span class="c1"># Safe because Pump has x.p.</span>
+                <span class="c1"># noinspection PyUnresolvedReferences</span>
+                <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">p</span> <span class="ow">or</span> <span class="mf">0.0</span>
+            <span class="k">case</span> <span class="n">Flapper</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isposinf</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">t_open</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="mf">0.0</span>
+                <span class="k">return</span> <span class="o">-</span><span class="n">local_pressure_by_mdot</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">fluid</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">temperature</span><span class="p">),</span> <span class="n">x</span><span class="o">.</span><span class="n">f</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">_A</span><span class="p">)</span>
+            <span class="k">case</span> <span class="n">DPCalculation</span><span class="p">():</span>
+                <span class="c1"># Safe because LumpedComponent has dp_out in its protocol.</span>
+                <span class="c1"># noinspection PyUnresolvedReferences</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">dp_out</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">temperature</span><span class="p">]),</span> <span class="n">mdot</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="k">case</span> <span class="n">Channel</span><span class="p">():</span>
+                <span class="c1"># Safe because Channel has pressure.</span>
+                <span class="c1"># noinspection PyUnresolvedReferences</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">pressure</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="p">(</span><span class="n">T</span> <span class="o">:=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">temperature</span><span class="p">)),</span> <span class="n">Tw</span><span class="o">=</span><span class="n">T</span><span class="p">))</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">strategy</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">just</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))(</span><span class="n">m</span><span class="p">,</span> <span class="n">temperature</span><span class="p">)</span>
+
+    <span class="n">pressures</span> <span class="o">=</span> <span class="p">{</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="n">_get_dp</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_htc_guess</span><span class="p">(</span><span class="n">c</span><span class="p">:</span> <span class="n">ChannelAndContacts</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Value</span><span class="p">]:</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">temperature</span><span class="p">)</span>
+        <span class="n">h0</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">h_wall</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">T_cool</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">k_guess</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)],</span> <span class="n">pressure</span><span class="o">=</span><span class="n">k</span><span class="o">.</span><span class="n">ref_pressure</span> <span class="ow">or</span> <span class="mf">1e5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">h_left</span><span class="o">=</span><span class="n">h0</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h0</span><span class="p">)</span>
+
+    <span class="n">htc</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">_htc_guess</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">ChannelAndContacts</span><span class="p">)}</span>
+
+    <span class="n">junctions</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">Junction</span><span class="p">)]</span>
+    <span class="n">T_vars</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">,</span> <span class="s2">"T_wall_left"</span><span class="p">,</span> <span class="s2">"T_wall_right"</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">]</span>
+    <span class="n">Ts</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">)</span> <span class="o">+</span> <span class="n">junctions</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="o">*</span><span class="n">T_vars</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">(</span>
+        <span class="n">_float_values</span><span class="p">(</span><span class="n">pressures</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">)),</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+        <span class="n">count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">k</span><span class="p">))</span>
+    <span class="n">a</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">variables_by_type</span><span class="p">[</span><span class="s2">"abs_pressure"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">ref_pressure</span> <span class="o">+</span> <span class="n">k</span><span class="o">.</span><span class="n">_abs_matrix</span> <span class="o">@</span> <span class="n">p</span>
+
+    <span class="k">return</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">Ts</span><span class="p">,</span> <span class="n">pressures</span><span class="p">,</span> <span class="n">htc</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">k</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">|</span> <span class="n">k_guess</span><span class="p">})</span></div>
+
+
+
+<div class="viewcode-block" id="GravityMismatchError">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.GravityMismatchError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">GravityMismatchError</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+
+<div class="viewcode-block" id="check_gravity_mismatch">
+<a class="viewcode-back" href="../../../stream.composition.html#stream.composition.subsystems.check_gravity_mismatch">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_gravity_mismatch</span><span class="p">(</span>
+    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="mf">10.0</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="n">HydraulicStrategy</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">,</span>
+    <span class="n">head</span><span class="p">:</span> <span class="n">Pascal</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Report if :math:`\sum_{loop}\Delta p(\dot{m}=0) \neq 0` for any loop</span>
+
+<span class="sd">    Usually, if there are no flows at all and thermally equal, total pressure drops in loops should be trivially zero.</span>
+<span class="sd">    If that's not the case, it is probably due to gravity pressures of differing heights.</span>
+
+<span class="sd">    This is a tool to allow users to inspect their models for such glaring issues.</span>
+<span class="sd">    It relies on :meth:`guess_steady_state`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    k : Kirchhoff</span>
+<span class="sd">        Kirchhoff Calculation</span>
+<span class="sd">    temperature : Celsius</span>
+<span class="sd">        Though quite unimportant, some temperature for the hydraulic calculation must be assumed.</span>
+<span class="sd">    strategy : dict[Calculation, Callable[[KgPerS, Celsius], Pascal]] | None</span>
+<span class="sd">        For unknown calculations, pressure drop functions :math:`\Delta p(\dot{m}, T)` may be provided.</span>
+<span class="sd">        These are used when the Calculation isn't identified as known types or protocols, and failing that,</span>
+<span class="sd">        the guess is ``0.0``.</span>
+<span class="sd">    tol: float</span>
+<span class="sd">        Tolerance for deciding total pressure drops. Default is 1e-5.</span>
+<span class="sd">    head: Pascal</span>
+<span class="sd">        Convert units to meter head for convenience when checking height differences.</span>
+<span class="sd">        Default output is in Pascal.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    GravityMismatchError</span>
+<span class="sd">    """</span>
+    <span class="n">comps</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span>
+    <span class="n">md</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">comps</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">deal_with_pressure_pumps</span> <span class="o">=</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">comps</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">Pump</span><span class="p">)}</span>
+    <span class="n">hs</span> <span class="o">=</span> <span class="n">guess_hydraulic_steady_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">md</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span>
+    <span class="n">s</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">hs</span><span class="p">,</span> <span class="n">deal_with_pressure_pumps</span><span class="p">)</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">(</span><span class="n">_float_values</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">comps</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">comps</span><span class="p">))</span>
+    <span class="n">p_errors</span> <span class="o">=</span> <span class="n">k</span><span class="o">.</span><span class="n">kvl_errors</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">/</span> <span class="n">head</span>
+    <span class="n">almost_zeros</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">p_errors</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="n">tol</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="o">~</span><span class="n">almost_zeros</span><span class="p">):</span>
+        <span class="n">bad_loops_components</span> <span class="o">=</span> <span class="p">[(</span><span class="n">k</span><span class="o">.</span><span class="n">loop_components</span><span class="p">(</span><span class="n">i</span><span class="p">),</span> <span class="n">p_errors</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">())</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="o">~</span><span class="n">almost_zeros</span><span class="p">)]</span>
+        <span class="k">raise</span> <span class="n">GravityMismatchError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"There are unclosed loops when flows are 0.</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"The following is a report of those loop components "</span>
+            <span class="sa">f</span><span class="s2">"and their aggregate pressure difference (in head = </span><span class="si">{</span><span class="n">head</span><span class="si">}</span><span class="s2"> [Pascal]):</span><span class="se">\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">bad_loops_components</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

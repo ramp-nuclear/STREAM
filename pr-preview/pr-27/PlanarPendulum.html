@@ -1,0 +1,320 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planar Pendulum &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Primary Cooling System Coastdown" href="PCSCoastdown.html" />
+    <link rel="prev" title="Coupled Masses and Springs" href="CoupledSprings.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="SeriesRLCCircuit.html">Series RLC Circuit</a></li>
+<li class="toctree-l3"><a class="reference internal" href="CoupledSprings.html">Coupled Masses and Springs</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Planar Pendulum</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Planar Pendulum</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PlanarPendulum.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"savefig"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"figure"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"mathtext"</span><span class="p">,</span> <span class="n">fontset</span><span class="o">=</span><span class="s2">"dejavuserif"</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"lines"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Planar-Pendulum">
+<h1>Planar Pendulum<a class="headerlink" href="#Planar-Pendulum" title="Link to this heading"></a></h1>
+<p>This example is taken from the <code class="docutils literal notranslate"><span class="pre">Scikits.odes</span></code> documentation. Here approximately the same example is given, but using the STREAM package which kindly depends on Scikits.odes.</p>
+<p>Imagine a planar (2D) pendulum whose string is of length <span class="math notranslate nohighlight">\(l\)</span>, at the end of which hangs a weight of mass <span class="math notranslate nohighlight">\(m\)</span>, given gravitational acceleration <span class="math notranslate nohighlight">\(g\)</span>. Friction is disregarded, as usual.</p>
+<p>The Lagrangian of such a problem is simply</p>
+<div class="math notranslate nohighlight">
+\[L = \frac{1}{2}m\left(u^2+v^2\right) - mgy\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\dot{x} = u, \dot{y} = v\)</span>, and subject to the holonomic constraint</p>
+<div class="math notranslate nohighlight">
+\[x^2 + y^2 = l^2\]</div>
+<p>This constraint may be added by a Lagrange multiplier:</p>
+<div class="math notranslate nohighlight">
+\[L = \frac{1}{2}m\left(u^2+v^2\right) - mgy - \frac{1}{2}\lambda\left(l^2 - x^2 - y^2\right)\]</div>
+<p>Now using the Euler-Lagrange equation we arrive at 2 additional equation to a total of 4:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}\dot{x} &amp;= u \\
+\dot{y} &amp;= v \\
+\dot{u} &amp;= \lambda x / m \\
+\dot{v} &amp;= \lambda y / m - g\end{align}\end{split}\]</div>
+<p>A final equation is the constraint itself (which is derived twice to a final form of <span class="math notranslate nohighlight">\(u^2 + v^2 + \lambda l^2/m - gy = 0\)</span>, left to the reader as an exercise). Implementation is quite straightforward:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">Calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span>
+
+<span class="n">l</span><span class="p">,</span> <span class="n">m</span><span class="p">,</span> <span class="n">g</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PendulumCalculation</span><span class="p">(</span><span class="n">Calculation</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"Pendulum"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">λ</span> <span class="o">=</span> <span class="n">variables</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">λ</span> <span class="o">/</span> <span class="n">m</span>
+        <span class="n">ẋ</span> <span class="o">=</span> <span class="n">u</span>
+        <span class="n">ẏ</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">u̇</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">x</span>
+        <span class="n">v̇</span> <span class="o">=</span> <span class="n">k</span> <span class="o">*</span> <span class="n">y</span> <span class="o">-</span> <span class="n">g</span>
+        <span class="n">constraint</span> <span class="o">=</span> <span class="n">u</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">v</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">k</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">y</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="n">y</span> <span class="o">*</span> <span class="n">g</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ẋ</span><span class="p">,</span> <span class="n">ẏ</span><span class="p">,</span> <span class="n">u̇</span><span class="p">,</span> <span class="n">v̇</span><span class="p">,</span> <span class="n">constraint</span><span class="p">])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">λ</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+
+<span class="n">pendulum</span> <span class="o">=</span> <span class="n">PendulumCalculation</span><span class="p">()</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">pendulum</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We’ll give the same initial conditions:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">λ0</span> <span class="o">=</span> <span class="mf">0.1</span>
+<span class="n">θ0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">3</span>
+<span class="n">x0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">θ0</span><span class="p">)</span>
+<span class="n">y0</span> <span class="o">=</span> <span class="o">-</span><span class="p">((</span><span class="n">l</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x0</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span><span class="p">)</span>
+<span class="n">z0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">x0</span><span class="p">,</span> <span class="n">y0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">λ0</span><span class="p">])</span>
+<span class="n">zp0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">λ0</span> <span class="o">*</span> <span class="n">x0</span> <span class="o">/</span> <span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="n">λ0</span> <span class="o">*</span> <span class="n">y0</span> <span class="o">/</span> <span class="n">m</span><span class="p">)</span> <span class="o">-</span> <span class="n">g</span><span class="p">,</span> <span class="o">-</span><span class="n">g</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">time</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">]</span>
+<span class="n">solution</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">z0</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">zp0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">solution</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">pendulum</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>x</th>
+      <th>y</th>
+      <th>u</th>
+      <th>v</th>
+      <th>λ</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0.0</th>
+      <td>0.866025</td>
+      <td>-0.500000</td>
+      <td>0.000000</td>
+      <td>0.000000</td>
+      <td>-0.500000</td>
+    </tr>
+    <tr>
+      <th>1.0</th>
+      <td>0.592664</td>
+      <td>-0.805450</td>
+      <td>-0.629538</td>
+      <td>-0.463228</td>
+      <td>-1.416349</td>
+    </tr>
+    <tr>
+      <th>2.0</th>
+      <td>-0.304225</td>
+      <td>-0.952604</td>
+      <td>-0.906323</td>
+      <td>0.289441</td>
+      <td>-1.857788</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>The ‘x’ position is given in the example and appears to be in total agreement. Up till here we’ve confirmed STREAM allows usage of <code class="docutils literal notranslate"><span class="pre">Scikits.odes</span></code>. Now, let’s make some sense of the solution:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+<span class="n">solution</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">z0</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">zp0</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="n">pendulum</span><span class="p">,</span> <span class="s2">"x"</span><span class="p">),</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">solution</span><span class="p">,</span> <span class="n">pendulum</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">l</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">),</span> <span class="n">color</span><span class="o">=</span><span class="s2">"orange"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"dashed"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"x"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"y"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">([</span><span class="s2">"Circular Constraint"</span><span class="p">,</span> <span class="s2">"Solution"</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/PlanarPendulum_8_0.png" src="_images/PlanarPendulum_8_0.png" />
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="CoupledSprings.html" class="btn btn-neutral float-left" title="Coupled Masses and Springs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PCSCoastdown.html" class="btn btn-neutral float-right" title="Primary Cooling System Coastdown" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

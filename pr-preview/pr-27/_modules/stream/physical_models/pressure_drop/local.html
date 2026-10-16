@@ -1,0 +1,583 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.pressure_drop.local &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../pressure_drop.html">stream.physical_models.pressure_drop</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.pressure_drop.local</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.pressure_drop.local</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">References</span>
+<span class="sd">----------</span>
+<span class="sd">    .. [#Idelchik] Handbook of Hydraulic Resistance, I. E. Idelchik, ????</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegularGridInterpolator</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">Array2D</span><span class="p">,</span>
+    <span class="n">KgPerM3</span><span class="p">,</span>
+    <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">Radians</span><span class="p">,</span>
+    <span class="n">Value</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">lin_interp</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_table_interp</span><span class="p">(</span>
+    <span class="n">re_numbers</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">area_ratios</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">f_factors</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">,</span>
+    <span class="n">area_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">re</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">area_ratios</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">area_ratio</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">interp</span> <span class="o">=</span> <span class="n">RegularGridInterpolator</span><span class="p">((</span><span class="n">re_numbers</span><span class="p">,</span> <span class="n">area_ratios</span><span class="p">),</span> <span class="n">f_factors</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">interp</span><span class="p">([</span><span class="nb">float</span><span class="p">(</span><span class="n">re</span><span class="p">),</span> <span class="n">area_ratio</span><span class="p">])</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="k">elif</span> <span class="n">area_ratio</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Area ratio cannot be negative. </span><span class="si">{</span><span class="n">area_ratio</span><span class="si">=}</span><span class="s2"> is."</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Smaller area must be smaller than the larger area.</span><span class="si">{</span><span class="n">area_ratio</span><span class="si">=}</span><span class="s2"> is not &lt;=1!"</span><span class="p">)</span>
+
+
+<span class="n">_tabulated_area_ratios</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">])</span>
+<span class="n">_idelchik_4_2_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mf">1e3</span><span class="p">,</span> <span class="mf">2e3</span><span class="p">,</span> <span class="mf">3e3</span><span class="p">,</span> <span class="mi">3300</span><span class="p">])</span>
+
+<span class="n">_idelchik_4_2_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">3.20</span><span class="p">,</span> <span class="mf">3.00</span><span class="p">,</span> <span class="mf">2.40</span><span class="p">,</span> <span class="mf">2.15</span><span class="p">,</span> <span class="mf">1.95</span><span class="p">,</span> <span class="mf">1.70</span><span class="p">,</span> <span class="mf">1.65</span><span class="p">,</span> <span class="mf">1.70</span><span class="p">,</span> <span class="mf">2.00</span><span class="p">,</span> <span class="mf">1.60</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">,</span> <span class="mf">0.81</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">3.20</span><span class="p">,</span> <span class="mf">2.80</span><span class="p">,</span> <span class="mf">2.20</span><span class="p">,</span> <span class="mf">1.85</span><span class="p">,</span> <span class="mf">1.65</span><span class="p">,</span> <span class="mf">1.40</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">1.60</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">,</span> <span class="mf">0.70</span><span class="p">,</span> <span class="mf">0.64</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">3.10</span><span class="p">,</span> <span class="mf">2.60</span><span class="p">,</span> <span class="mf">2.00</span><span class="p">,</span> <span class="mf">1.60</span><span class="p">,</span> <span class="mf">1.40</span><span class="p">,</span> <span class="mf">1.20</span><span class="p">,</span> <span class="mf">1.10</span><span class="p">,</span> <span class="mf">1.10</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">3.00</span><span class="p">,</span> <span class="mf">2.40</span><span class="p">,</span> <span class="mf">1.80</span><span class="p">,</span> <span class="mf">1.50</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">1.10</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">,</span> <span class="mf">0.36</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">2.80</span><span class="p">,</span> <span class="mf">2.30</span><span class="p">,</span> <span class="mf">1.65</span><span class="p">,</span> <span class="mf">1.35</span><span class="p">,</span> <span class="mf">1.15</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">3.10</span><span class="p">,</span> <span class="mf">2.70</span><span class="p">,</span> <span class="mf">2.15</span><span class="p">,</span> <span class="mf">1.55</span><span class="p">,</span> <span class="mf">1.25</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.16</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">_idelchik_local_expansion_interp</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">_table_interp</span><span class="p">,</span> <span class="n">_idelchik_4_2_re</span><span class="p">,</span> <span class="n">_tabulated_area_ratios</span><span class="p">,</span> <span class="n">_idelchik_4_2_f</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="expansion_factor">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.expansion_factor">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">expansion_factor</span><span class="p">(</span><span class="n">aratio</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Compute *K*, the pressure drop factor (Borda, Carnot), for</span>
+
+<span class="sd">    .. math:: \Delta p = K\rho v^2/2</span>
+
+<span class="sd">    Where</span>
+
+<span class="sd">    .. math:: K = \left(1 - \frac{A_1}{A_2}\right)^2</span>
+
+<span class="sd">    According to Idelchik Table 4.2 [#idelchik]_, this formula is correct for large Re numbers, above 3300.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aratio: float</span>
+<span class="sd">        Area ratio in [0,1]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    K: float</span>
+<span class="sd">        Pressure drop factor</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; expansion_factor(0. / 1.)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; expansion_factor(1. / np.inf)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; expansion_factor(1. / 2.)</span>
+<span class="sd">    0.25</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">aratio</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sudden_area_factor</span><span class="p">(</span>
+    <span class="n">max_re</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_re</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_re_val</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">max_ar</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">min_ar</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">infval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">analytic</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">table_interp</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">aratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">re</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="k">if</span> <span class="n">re</span> <span class="o">&gt;=</span> <span class="n">max_re</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">analytic</span><span class="p">(</span><span class="n">aratio</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">re</span> <span class="o">&gt;=</span> <span class="n">min_re</span> <span class="ow">and</span> <span class="n">min_ar</span> <span class="o">&lt;=</span> <span class="n">aratio</span> <span class="o">&lt;=</span> <span class="n">max_ar</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">table_interp</span><span class="p">(</span><span class="n">aratio</span><span class="p">,</span> <span class="n">re</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="k">return</span> <span class="mf">0.0</span>  <span class="c1"># In this case v=0 and there would be no pressure drop</span>
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">min_re_val</span> <span class="o">*</span> <span class="n">min_re</span> <span class="o">/</span> <span class="n">re</span>
+        <span class="k">if</span> <span class="n">aratio</span> <span class="o">&gt;</span> <span class="n">max_ar</span><span class="p">:</span>
+            <span class="n">v_at_ratio</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span><span class="n">max_ar</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">v1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">aratio</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">lin_interp</span><span class="p">(</span><span class="n">min_re</span><span class="p">,</span> <span class="n">max_re</span><span class="p">,</span> <span class="n">v_at_ratio</span><span class="p">,</span> <span class="n">analytic</span><span class="p">(</span><span class="n">aratio</span><span class="p">),</span> <span class="n">re</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">aratio</span> <span class="o">&lt;</span> <span class="n">min_ar</span><span class="p">:</span>
+            <span class="n">v_at_ratio</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span><span class="n">min_ar</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">v1</span><span class="p">,</span> <span class="n">infval</span><span class="p">,</span> <span class="n">aratio</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">lin_interp</span><span class="p">(</span><span class="n">min_re</span><span class="p">,</span> <span class="n">max_re</span><span class="p">,</span> <span class="n">v_at_ratio</span><span class="p">,</span> <span class="n">analytic</span><span class="p">(</span><span class="n">aratio</span><span class="p">),</span> <span class="n">re</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">v1</span>
+
+
+<span class="n">sudden_expansion_factor</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+    <span class="n">_sudden_area_factor</span><span class="p">,</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">_idelchik_4_2_re</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">_idelchik_4_2_re</span><span class="p">),</span>
+    <span class="n">_idelchik_4_2_f</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">_tabulated_area_ratios</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">_tabulated_area_ratios</span><span class="p">),</span>
+    <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">expansion_factor</span><span class="p">,</span>
+    <span class="n">_idelchik_local_expansion_interp</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">sudden_expansion_factor</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"""The Idelchik Table 4.2 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_</span>
+<span class="s2">    </span>
+<span class="s2">    The table used is bounded by :math:`A_1/A_2 \in [0.1, 0.6]` and :math:`\text</span><span class="si">{Re}</span><span class="s2"> \in [10, 3300]`. </span>
+<span class="s2">    Within those boundaries, linear interpolation is performed.</span>
+<span class="s2">    </span>
+<span class="s2">    For larger Reynolds numbers, an analytic solution is used, :func:`expansion_factor`.</span>
+<span class="s2">    For smaller Reynolds numbers, :math:`K = 31/\text</span><span class="si">{Re}</span><span class="s2">` is used.</span>
+<span class="s2">    </span>
+<span class="s2">    As for area ratios :math:`A_1/A_2 \notin [0.1, 0.6]`, where the Reynolds no. is within the table values, </span>
+<span class="s2">    an interpolation by the Reynolds no. is performed between the limiting analytic solutions, </span>
+<span class="s2">    while for the lower end (:math:`\text</span><span class="si">{Re}</span><span class="s2">=10`) an interpolation by the area ratio is added to match </span>
+<span class="s2">    :math:`K(A_1/A_2=1)=0` and :math:`K(A_1/A_2=0)=1` (matching an expansion into an infinite pool).</span>
+<span class="s2">    </span>
+<span class="s2">    The above result may not be applicable for such small Re numbers, but it would not </span>
+<span class="s2">    have a large effect since these pressure drops zero out as :math:`\mathcal</span><span class="si">{O}</span><span class="s2">(v)`. </span>
+<span class="s2">    </span>
+<span class="s2">    Parameters</span>
+<span class="s2">    ----------</span>
+<span class="s2">    aratio: float</span>
+<span class="s2">        Area ratio in [0,1]</span>
+<span class="s2">    re: float</span>
+<span class="s2">        Reynolds number</span>
+<span class="s2">    """</span>
+
+
+<div class="viewcode-block" id="contraction_factor">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.contraction_factor">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">contraction_factor</span><span class="p">(</span><span class="n">aratio</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Closed form approximation for sudden contraction at high Re numbers.</span>
+
+<span class="sd">    According to Idelchik Table 4.10, there is a closed form approximation for</span>
+<span class="sd">    sudden contraction of the form :math:`\frac{1}{2}\left(1-\frac{A_2}{A_1}\right)^{\frac{3}{4}}`.</span>
+<span class="sd">    This is written to be true for Re &gt; 35000, but the table for lower Re numbers</span>
+<span class="sd">    stops at 10000, so it is unclear what to do for interim values of Re.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aratio: Value</span>
+<span class="sd">        Area ratio in [0,1]</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">aratio</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.75</span></div>
+
+
+
+<span class="n">_idelchik_4_10_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">40</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mf">1e3</span><span class="p">,</span> <span class="mf">2e3</span><span class="p">,</span> <span class="mf">4e3</span><span class="p">,</span> <span class="mf">5e3</span><span class="p">,</span> <span class="mf">1e4</span><span class="p">])</span>
+
+<span class="c1"># This is the original data</span>
+<span class="n">_idelchik_4_10_f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">3.20</span><span class="p">,</span> <span class="mf">2.40</span><span class="p">,</span> <span class="mf">2.00</span><span class="p">,</span> <span class="mf">1.80</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">1.04</span><span class="p">,</span> <span class="mf">0.82</span><span class="p">,</span> <span class="mf">0.64</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">3.10</span><span class="p">,</span> <span class="mf">2.30</span><span class="p">,</span> <span class="mf">1.84</span><span class="p">,</span> <span class="mf">1.62</span><span class="p">,</span> <span class="mf">1.20</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.70</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">2.95</span><span class="p">,</span> <span class="mf">2.15</span><span class="p">,</span> <span class="mf">1.70</span><span class="p">,</span> <span class="mf">1.50</span><span class="p">,</span> <span class="mf">1.10</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mf">0.60</span><span class="p">,</span> <span class="mf">0.44</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">,</span> <span class="mf">0.55</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">2.80</span><span class="p">,</span> <span class="mf">2.00</span><span class="p">,</span> <span class="mf">1.60</span><span class="p">,</span> <span class="mf">1.40</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">,</span> <span class="mf">0.78</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.45</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">2.70</span><span class="p">,</span> <span class="mf">1.80</span><span class="p">,</span> <span class="mf">1.46</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">0.65</span><span class="p">,</span> <span class="mf">0.42</span><span class="p">,</span> <span class="mf">0.30</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">,</span> <span class="mf">0.40</span><span class="p">,</span> <span class="mf">0.42</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">],</span>
+        <span class="p">[</span><span class="mf">5.00</span><span class="p">,</span> <span class="mf">2.60</span><span class="p">,</span> <span class="mf">1.70</span><span class="p">,</span> <span class="mf">1.35</span><span class="p">,</span> <span class="mf">1.20</span><span class="p">,</span> <span class="mf">0.80</span><span class="p">,</span> <span class="mf">0.56</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.24</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.20</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="c1"># For Re=1e4, we change the original values, so they match `contraction_factor`</span>
+<span class="n">_idelchik_4_10_f</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">contraction_factor</span><span class="p">(</span><span class="n">_tabulated_area_ratios</span><span class="p">)</span>
+
+<span class="n">_idelchik_local_contraction_interp</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+    <span class="n">_table_interp</span><span class="p">,</span> <span class="n">_idelchik_4_10_re</span><span class="p">,</span> <span class="n">_tabulated_area_ratios</span><span class="p">,</span> <span class="n">_idelchik_4_10_f</span><span class="o">.</span><span class="n">T</span>
+<span class="p">)</span>
+
+<span class="n">sudden_contraction_factor</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+    <span class="n">_sudden_area_factor</span><span class="p">,</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">_idelchik_4_10_re</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">_idelchik_4_10_re</span><span class="p">),</span>
+    <span class="n">_idelchik_4_10_f</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">_tabulated_area_ratios</span><span class="p">),</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">_tabulated_area_ratios</span><span class="p">),</span>
+    <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">contraction_factor</span><span class="p">,</span>
+    <span class="n">_idelchik_local_contraction_interp</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">sudden_contraction_factor</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"""The Idelchik Table 4.10 interpolation of the local sudden expansion pressure drop coefficient. [#idelchik]_</span>
+<span class="s2">    </span>
+<span class="s2">    The table used is bounded by :math:`A_2/A_1 \in [0.1, 0.6]` and :math:`\text</span><span class="si">{Re}</span><span class="s2"> \in [10, 10000]`. </span>
+<span class="s2">    Within those boundaries, linear interpolation is performed.</span>
+<span class="s2">    </span>
+<span class="s2">    For larger Reynolds numbers, an analytic solution is used, :func:`contraction_factor`.</span>
+<span class="s2">    For smaller Reynolds numbers, :math:`K = 50/\text</span><span class="si">{Re}</span><span class="s2">` is used.</span>
+<span class="s2">    </span>
+<span class="s2">    As for area ratios :math:`A_2/A_1 \notin [0.1, 0.6]`, where the Reynolds no. is within the table values, </span>
+<span class="s2">    an interpolation by the Reynolds no. is performed between the limiting analytic solutions, </span>
+<span class="s2">    while for the lower end (:math:`\text</span><span class="si">{Re}</span><span class="s2">=10`) an interpolation by the area ratio is added to match </span>
+<span class="s2">    :math:`K(A_2/A_1=1)=0` and :math:`K(A_2/A_1=0)=0.5` (matching a contraction from an infinite pool, [#idelchik]_).</span>
+<span class="s2">    </span>
+<span class="s2">    The above result may not be applicable for such small Re numbers, but it would not </span>
+<span class="s2">    have a large effect since these pressure drops zero out as :math:`\mathcal</span><span class="si">{O}</span><span class="s2">(v)`.</span>
+<span class="s2">    </span>
+<span class="s2">    Parameters</span>
+<span class="s2">    ----------</span>
+<span class="s2">    aratio: float</span>
+<span class="s2">        Area ratio in [0,1]</span>
+<span class="s2">    re: float</span>
+<span class="s2">        Reynolds number</span>
+<span class="s2">    </span>
+<span class="s2">    """</span>
+
+
+<div class="viewcode-block" id="local_pressure_factor">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.local_pressure_factor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">local_pressure_factor</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">positive_flow</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">negative_flow</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Considering :math:`\dot{m}`, returns ``K`` pressure coefficient of</span>
+<span class="sd">    ``positive_flow(A1, A2)`` or ``negative_flow(A1, A2)``.</span>
+
+<span class="sd">    This pressure coefficient is the loss coefficient for the total pressure in the Bernoulli equation,</span>
+<span class="sd">    i.e. actual energy loss, not energy transfer between static and dynamic pressures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass current.</span>
+<span class="sd">    positive_flow:  LocalPressureFactorFunc</span>
+<span class="sd">        Expansion/Contraction</span>
+<span class="sd">    negative_flow : LocalPressureFactorFunc</span>
+<span class="sd">        Expansion/Contraction</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    K: float</span>
+<span class="sd">        Pressure drop factor</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; def pos(a1, a2): return a1+a2</span>
+<span class="sd">    &gt;&gt;&gt; def neg(a1, a2): return a1*a2</span>
+<span class="sd">    &gt;&gt;&gt; local_pressure_factor(mdot=1., positive_flow=pos, negative_flow=neg, a1=1., a2=2.)</span>
+<span class="sd">    3.0</span>
+<span class="sd">    &gt;&gt;&gt; local_pressure_factor(mdot=-1., positive_flow=pos, negative_flow=neg, a1=1., a2=2.)</span>
+<span class="sd">    2.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">positive_flow</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">if</span> <span class="n">mdot</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">negative_flow</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="local_pressure_by_mdot">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.local_pressure_by_mdot">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">local_pressure_by_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">KgPerM3</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Calculates the local pressure dot according to a known mass flow rate.</span>
+
+<span class="sd">    This pressure drop is not the static pressure drop across the local pipe area change,</span>
+<span class="sd">    but rather the total pressure drop, i.e. the amount of lost energy in the Bernoulli equation terms.</span>
+
+<span class="sd">    Following the quadratic velocity relation to local pressure:</span>
+
+<span class="sd">    .. math:: \Delta p = f \frac{\rho u^2}{2}</span>
+
+<span class="sd">    In this function, the velocity is replaced by :math:`\dot{m}=\rho u A`</span>
+<span class="sd">    where `u` is the average velocity and `A` the cross-section.</span>
+<span class="sd">    The pressure drop is sensitive to the flow's direction:</span>
+
+<span class="sd">    .. math:: \Delta p = f \frac{\dot{m}|\dot{m}|}{2 \rho A^2}</span>
+
+<span class="sd">    If :math:`\dot{m}&gt;0` then the pressure returned is positive.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass current.</span>
+<span class="sd">    rho: KgPerM3</span>
+<span class="sd">        Fluid density.</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy Friction Factor.</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Cross-sectional flow area.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop across the pipe.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; local_pressure_by_mdot(1., 1000., 1., 1.)</span>
+<span class="sd">    0.0005</span>
+<span class="sd">    &gt;&gt;&gt; local_pressure_by_mdot(-1., 1000., 1., 1.)</span>
+<span class="sd">    -0.0005</span>
+<span class="sd">    &gt;&gt;&gt; local_pressure_by_mdot(0., 1000., 1., 1.)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="n">mdot</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">A</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="mdot_by_local_pressure">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.mdot_by_local_pressure">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mdot_by_local_pressure</span><span class="p">(</span><span class="n">dp</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">KgPerM3</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KgPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""The inverse function of :func:`local_pressure_by_mdot`, which returns</span>
+<span class="sd">    :math:`\dot{m}` given a known pressure difference.</span>
+
+<span class="sd">    .. math:: \dot{m}</span>
+<span class="sd">     = \text{sign}(\Delta p)\sqrt{\frac{2\rho A^2 |\Delta p|}{f}}</span>
+
+<span class="sd">    If :math:`\Delta p &gt; 0` then the current returned is positive.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop across the pipe.</span>
+<span class="sd">    rho: KgPerM3</span>
+<span class="sd">        Fluid density.</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy Friction Factor.</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Cross-sectional flow area.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass current.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; mdot_by_local_pressure(dp=0., rho=1e3, f=1., A=1.)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; mdot_by_local_pressure(dp=1., rho=1., f=2., A=1.)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; mdot_by_local_pressure(dp=-1., rho=1., f=2., A=1.)</span>
+<span class="sd">    -1.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">dp</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">A</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">f</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="bend_factor">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.local.bend_factor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bend_factor</span><span class="p">(</span><span class="n">angle</span><span class="p">:</span> <span class="n">Radians</span><span class="p">,</span> <span class="n">relative_curvature</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">re</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Compute *K*, the local pressure drop factor for</span>
+
+<span class="sd">    .. math:: \Delta p = K\rho v^2/2,</span>
+
+<span class="sd">    (where :math:`\Delta p` is the pressure drop over a pipe bend, :math:`\rho` is the fluid's density</span>
+<span class="sd">    and :math:`v` is the fluid's velocity), according to Idelchik Diagram 6.1 [#idelchik]_ (page 424).</span>
+
+<span class="sd">    This correlation applies to the case of a low curvature smooth pipe bend</span>
+
+<span class="sd">    .. math:: R_0/D_h &lt; 3</span>
+
+<span class="sd">    (where :math:`R_0` is the pipe's axis radius of curvature, measured from the bend center to the</span>
+<span class="sd">    center of the pipe, and :math:`D_h` is the hydraulic diameter of the pipe), with circular/square cross-sections</span>
+<span class="sd">    and at large Re numbers (above 10,000).</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    angle: Radians</span>
+<span class="sd">        The angle of the bend.</span>
+<span class="sd">    relative_curvature: float</span>
+<span class="sd">        The radius of curvature of the pipe's axis divided by the hydraulic diameter.</span>
+<span class="sd">    re: float</span>
+<span class="sd">        The Reynolds number.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    K: float</span>
+<span class="sd">        Local pressure drop factor.</span>
+<span class="sd">    """</span>
+    <span class="n">a1</span> <span class="o">=</span> <span class="n">_angle_effect</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="n">b1</span> <span class="o">=</span> <span class="n">_relative_curvature_effect</span><span class="p">(</span><span class="n">relative_curvature</span><span class="p">)</span>
+    <span class="n">c1</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+    <span class="n">k_re</span> <span class="o">=</span> <span class="n">_reynolds_number_effect</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="n">relative_curvature</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">k_re</span> <span class="o">*</span> <span class="n">a1</span> <span class="o">*</span> <span class="n">b1</span> <span class="o">*</span> <span class="n">c1</span></div>
+
+
+
+<span class="n">_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">([</span><span class="mi">70</span><span class="p">,</span> <span class="mi">75</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span> <span class="mi">100</span><span class="p">]))</span>
+<span class="n">_angle_effects</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.9</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mi">70</span><span class="p">)),</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.7</span> <span class="o">+</span> <span class="mf">0.35</span> <span class="o">*</span> <span class="p">(</span><span class="mi">100</span> <span class="o">/</span> <span class="mi">90</span><span class="p">)])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_angle_effect</span><span class="p">(</span><span class="n">angle</span><span class="p">:</span> <span class="n">Radians</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">degree</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rad2deg</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="k">if</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">degree</span> <span class="o">&lt;</span> <span class="mi">70</span><span class="p">:</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="mf">0.9</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="mi">70</span> <span class="o">&lt;=</span> <span class="n">degree</span> <span class="o">&lt;=</span> <span class="mi">100</span><span class="p">:</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">angle</span><span class="p">,</span> <span class="n">_angles</span><span class="p">,</span> <span class="n">_angle_effects</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="mi">100</span> <span class="o">&lt;</span> <span class="n">degree</span> <span class="o">&lt;=</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="n">a1</span> <span class="o">=</span> <span class="mf">0.7</span> <span class="o">+</span> <span class="mf">0.35</span> <span class="o">*</span> <span class="n">degree</span> <span class="o">/</span> <span class="mi">90</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Bend </span><span class="si">{</span><span class="n">angle</span><span class="w"> </span><span class="si">= }</span><span class="s2"> out of limits (0 &lt;= angle &lt;= pi)."</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a1</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_relative_curvature_effect</span><span class="p">(</span><span class="n">relative_curvature</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">relative_curvature</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Relative curvature must be greater than 0.5."</span><span class="p">)</span>
+
+    <span class="n">power</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2.5</span> <span class="k">if</span> <span class="p">(</span><span class="mf">0.5</span> <span class="o">&lt;=</span> <span class="n">relative_curvature</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">)</span> <span class="k">else</span> <span class="o">-</span><span class="mf">0.5</span>
+    <span class="k">return</span> <span class="mf">0.21</span> <span class="o">*</span> <span class="p">(</span><span class="n">relative_curvature</span><span class="o">**</span><span class="n">power</span><span class="p">)</span>
+
+
+<span class="c1"># Taken from I.E. Idelchik, Handbook of Hydraulic Resistance, 4th Edition, Diagram 6.1(e), Page 426</span>
+<span class="n">_reynolds_numbers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="mf">0.1e5</span><span class="p">,</span>
+        <span class="mf">0.14e5</span><span class="p">,</span>
+        <span class="mf">0.2e5</span><span class="p">,</span>
+        <span class="mf">0.3e5</span><span class="p">,</span>
+        <span class="mf">0.4e5</span><span class="p">,</span>
+        <span class="mf">0.6e5</span><span class="p">,</span>
+        <span class="mf">0.8e5</span><span class="p">,</span>
+        <span class="mf">1.0e5</span><span class="p">,</span>
+        <span class="mf">1.4e5</span><span class="p">,</span>
+        <span class="mf">2.0e5</span><span class="p">,</span>
+        <span class="mf">3.0e5</span><span class="p">,</span>
+        <span class="mf">4.0e5</span><span class="p">,</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="n">_reynolds_number_effect_low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.40</span><span class="p">,</span> <span class="mf">1.33</span><span class="p">,</span> <span class="mf">1.26</span><span class="p">,</span> <span class="mf">1.19</span><span class="p">,</span> <span class="mf">1.14</span><span class="p">,</span> <span class="mf">1.09</span><span class="p">,</span> <span class="mf">1.06</span><span class="p">,</span> <span class="mf">1.04</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+<span class="n">_reynolds_number_effect_mid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.67</span><span class="p">,</span> <span class="mf">1.58</span><span class="p">,</span> <span class="mf">1.49</span><span class="p">,</span> <span class="mf">1.40</span><span class="p">,</span> <span class="mf">1.34</span><span class="p">,</span> <span class="mf">1.26</span><span class="p">,</span> <span class="mf">1.21</span><span class="p">,</span> <span class="mf">1.19</span><span class="p">,</span> <span class="mf">1.17</span><span class="p">,</span> <span class="mf">1.14</span><span class="p">,</span> <span class="mf">1.06</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+<span class="n">_reynolds_number_effect_high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.00</span><span class="p">,</span> <span class="mf">1.89</span><span class="p">,</span> <span class="mf">1.77</span><span class="p">,</span> <span class="mf">1.64</span><span class="p">,</span> <span class="mf">1.56</span><span class="p">,</span> <span class="mf">1.46</span><span class="p">,</span> <span class="mf">1.38</span><span class="p">,</span> <span class="mf">1.30</span><span class="p">,</span> <span class="mf">1.15</span><span class="p">,</span> <span class="mf">1.02</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_reynolds_number_effect</span><span class="p">(</span><span class="n">re</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">relative_curvature</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">if</span> <span class="mf">0.5</span> <span class="o">&lt;=</span> <span class="n">relative_curvature</span> <span class="o">&lt;</span> <span class="mf">0.55</span><span class="p">:</span>
+        <span class="n">k_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="n">_reynolds_numbers</span><span class="p">,</span> <span class="n">_reynolds_number_effect_low</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="mf">0.55</span> <span class="o">&lt;=</span> <span class="n">relative_curvature</span> <span class="o">&lt;</span> <span class="mf">0.70</span><span class="p">:</span>
+        <span class="n">k_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="n">_reynolds_numbers</span><span class="p">,</span> <span class="n">_reynolds_number_effect_mid</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">relative_curvature</span> <span class="o">&gt;=</span> <span class="mf">0.70</span><span class="p">:</span>
+        <span class="n">k_re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="n">_reynolds_numbers</span><span class="p">,</span> <span class="n">_reynolds_number_effect_high</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Relative curvature </span><span class="si">{</span><span class="n">relative_curvature</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2"> is not supported"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">k_re</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 16, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
