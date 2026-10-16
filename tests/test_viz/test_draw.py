@@ -315,6 +315,42 @@ def test_binding_marker_colours_agree_across_panels(agr):
     plt.close(fig)
 
 
+def _two_binder_sweep(agr, labels=None):
+    from conftest import channel_rows, frame
+
+    def make(power, mdot, shape):
+        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        k = {"cosine": 1.0, "peaked": 2.0}[shape]
+        wall = 50.0 + k * power / 1e5 * np.array([0.7, 0.9, 1.0, 0.8])
+        return frame(channel_rows(T, chfr, power) + [("CC", "T_wall, left", 0, j, wall[j]) for j in range(4)])
+
+    cases = [{"power": p, "mdot": m, "shape": s} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for s in ("cosine", "peaked")]
+    sweep = Sweep(cases, [make(**c) for c in cases], agr, labels=labels,
+                  limits={"CHFR": at_least(1.5), "T_wall, left": at_most(100.0)})
+    return sweep.required(["CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True)
+
+
+def test_binding_markers_keep_off_the_line_colours(agr):
+    r = _two_binder_sweep(agr)
+    assert set(r.frame.binder) == {"CHFR", "T_wall, left"}
+    fig, ax = r.plot(color="shape")
+    lines = {to_hex(ln.get_color()) for ln in ax.get_lines() if ln.get_linestyle() != "None"}
+    markers = set(_marker_colors(ax))
+    assert len(lines) == 2 and len(markers) == 2
+    assert lines.isdisjoint(markers)
+    plt.close(fig)
+
+
+def test_binding_legend_shows_display_names(agr):
+    r = _two_binder_sweep(agr, labels={"T_wall, left": ("Clad surface temperature", "°C")})
+    fig, ax = r.plot(color="shape")
+    texts = [t.strip() for t in legend_texts(ax)]
+    assert "Clad surface temperature" in texts and "T_wall, left" not in texts
+    assert "CHFR" in texts
+    plt.close(fig)
+
+
 def limited(agr, grid_cases, **limits):
     return Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, limits=limits)
 

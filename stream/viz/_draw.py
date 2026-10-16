@@ -53,10 +53,15 @@ class Crossing:
     x: float
 
 
-def binder_colors(frame, style: Style) -> dict[str, str]:
-    """A palette colour per binder, in order of first appearance."""
+def binder_colors(frame, style: Style, enc: Encoding) -> dict[str, str]:
+    """A palette colour per binder, in order of first appearance, from the entries the colour encoding leaves free.
+
+    The colours wrap over the whole palette only when the free entries run out.
+    """
     names = list(dict.fromkeys(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "binder"].astype(str)))
-    return {name: style.palette[k % len(style.palette)] for k, name in enumerate(names)}
+    used = set(enc.maps["color"].values()) if "color" in enc.channels else set()
+    pool = [c for c in style.palette if c not in used] + [c for c in style.palette if c in used]
+    return {name: pool[k % len(pool)] for k, name in enumerate(names)}
 
 
 def draw_lines(result, enc: Encoding, ax, style: Style, bound: str, band: str, errorbars: bool, labels: Labels,
@@ -485,7 +490,7 @@ def build_legend(ax, enc: Encoding, band_drawn: bool, inner_drawn: bool, band: s
         texts.append(labels["binding"].display)
         for name, color in binding.items():
             handles.append(Line2D([], [], linestyle="none", marker="o", color=color))
-            texts.append(f"  {name}")
+            texts.append(f"  {labels.display(name)}")
     if not texts:
         return
     if len(enc.legend) == 1 and not band_drawn and not binding and not filled_drawn:
@@ -549,7 +554,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
 
             return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, limit)
         enc = encode(result.dims, result._spec.numeric, merged, sheet, color, style, marker, col, row, result._spec.level_space)
-        binding = binder_colors(result.frame, sheet) if result.binding else None
+        binding = binder_colors(result.frame, sheet, enc) if result.binding else None
         if enc.col is None and enc.row is None:
             fig, ax = (ax.figure, ax) if ax is not None else plt.subplots()
             drawn, inner_drawn, filled_drawn, found = draw_lines(result, enc, ax, sheet, bound, band, errorbars, merged,
