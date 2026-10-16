@@ -323,6 +323,10 @@ def dashed_lines(ax):
     return [ln for ln in ax.get_lines() if ln.get_linestyle() == "--"]
 
 
+def limit_texts(ax):
+    return [t.get_text() for t in ax.texts if getattr(t, "xycoords", None) == ("axes fraction", "data")]
+
+
 def limit_contour(ax):
     (cs,) = [c for c in ax.collections if isinstance(c, QuadContourSet) and not c.filled]
     return cs
@@ -367,6 +371,42 @@ def test_limit_shade_hatches_the_unsafe_side(agr, grid_cases):
     plt.close(fig)
     sweep2 = limited(agr, grid_cases, T_cool=at_most(50.0))
     fig, ax = sweep2.reduce("T_cool", "max", versus="power").plot(limit="shade")
+    assert len(hatched(ax)) == 1
+    plt.close(fig)
+
+
+def test_equal_limits_draw_one_line_and_one_text(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_least(1.3))
+    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power", where={"mdot": 0.3}).plot()
+    assert len(dashed_lines(ax)) == 1 and to_hex(dashed_lines(ax)[0].get_color()) == Style().limit_color
+    assert limit_texts(ax) == ["limit = 1.3"]
+    plt.close(fig)
+
+
+def test_equal_limits_with_one_display_keep_the_name(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_least(1.3))
+    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power").plot(labels={"T_cool": ("CHFR", "")})
+    assert limit_texts(ax) == ["CHFR = 1.3"]
+    plt.close(fig)
+
+
+def test_equal_limits_format_with_the_first_quantity(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_least(1.3))
+    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power").plot(labels={"CHFR": ("CHFR", "", 1.0, ".2f"), "T_cool": ("T", "", 1.0, ".0f")})
+    assert limit_texts(ax) == ["limit = 1.30"]
+    plt.close(fig)
+
+
+def test_unequal_limits_keep_one_line_per_quantity(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_most(50.0))
+    fig, ax = sweep.profile(["CHFR", "T_cool"], where={"power": 4e6, "mdot": 0.3}).plot()
+    assert len(dashed_lines(ax)) == 2
+    plt.close(fig)
+
+
+def test_shade_is_allowed_when_the_limits_merge(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3), T_cool=at_least(1.3))
+    fig, ax = sweep.reduce(["CHFR", "T_cool"], "min", versus="power").plot(limit="shade")
     assert len(hatched(ax)) == 1
     plt.close(fig)
 

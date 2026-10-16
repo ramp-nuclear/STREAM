@@ -131,6 +131,7 @@ class Sweep:
 
         A declared limit is drawn on every figure that shows the quantity,
         gives ``required`` its target and ``limiting=True`` its meaning.
+        Quantities that share axes and one limit get one line between them.
     fill_holes:
         ``True`` fills a hole when, along a numeric parameter and with every
         other parameter equal, the grid levels immediately below and above it

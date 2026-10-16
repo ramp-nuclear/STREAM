@@ -172,6 +172,22 @@ def _limit_text(labels: Labels, q: str, limit) -> str:
     return f"{labels.display(q)} = {labels.value(q, limit.value)}" + (f" {unit}" if unit else "")
 
 
+def _merged_limit(result, drawn: list[str]):
+    """The one limit several drawn quantities all carry, or ``None`` for one quantity, a missing limit or two that differ."""
+    limits = [result.limits.get(q) for q in drawn]
+    if len(limits) < 2 or any(lim is None for lim in limits):
+        return None
+    first = limits[0]
+    return first if all(lim.value == first.value and lim.side == first.side for lim in limits) else None
+
+
+def _merged_text(labels: Labels, drawn: list[str], limit) -> str:
+    if len({labels.display(q) for q in drawn}) == 1:
+        return _limit_text(labels, drawn[0], limit)
+    unit = labels[drawn[0]].unit
+    return f"limit = {labels.value(drawn[0], limit.value)}" + (f" {unit}" if unit else "")
+
+
 def _quantities_on(result) -> list[str]:
     if "quantity" in result.frame.columns:
         return list(dict.fromkeys(result.frame["quantity"].astype(str)))
@@ -234,7 +250,7 @@ def _check_shade(result, enc: Encoding) -> None:
     if result.limit_note is not None:
         raise ValueError(result.limit_note)
     drawn = _quantities_on(result)
-    if len(drawn) > 1 and not result.binding:
+    if len(drawn) > 1 and not result.binding and _merged_limit(result, drawn) is None:
         raise ValueError("shade needs one quantity per axes; put quantity on col= or row=")
     if "calculation" in enc.channels.values():
         raise _one_curve_error(result)
@@ -250,15 +266,21 @@ def draw_limit_lines(result, ax, enc: Encoding, style: Style, labels: Labels, li
         return
     ys = labels.scale(y_axis(result, labels)[1])
     drawn = _quantities_on(result)
+    merged = None if result.binding else _merged_limit(result, drawn)
+    if merged is not None:
+        _draw_limit_line(ax, style, merged.value * ys, _merged_text(labels, drawn, merged), style.limit_color)
+        return
     for q in drawn[:1] if result.binding else drawn:
         lim = result.limits.get(q)
         if lim is None:
             continue
-        color = _limit_color(enc, style, q)
-        y = lim.value * ys
-        ax.axhline(y, linestyle="--", linewidth=style.limit_linewidth, color=color, zorder=2)
-        ax.annotate(_limit_text(labels, q, lim), xy=(1.0, y), xycoords=("axes fraction", "data"),
-                    xytext=(-2, 3), textcoords="offset points", ha="right", va="bottom", fontsize=9, color=color)
+        _draw_limit_line(ax, style, lim.value * ys, _limit_text(labels, q, lim), _limit_color(enc, style, q))
+
+
+def _draw_limit_line(ax, style: Style, y: float, text: str, color: str) -> None:
+    ax.axhline(y, linestyle="--", linewidth=style.limit_linewidth, color=color, zorder=2)
+    ax.annotate(text, xy=(1.0, y), xycoords=("axes fraction", "data"),
+                xytext=(-2, 3), textcoords="offset points", ha="right", va="bottom", fontsize=9, color=color)
 
 
 def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit: str) -> None:
@@ -277,10 +299,12 @@ def shade_limits(result, ax, enc: Encoding, style: Style, labels: Labels, limit:
         edge = hi if side == "below" else lo
         _shade(ax, style, style.limit_color, (lo, edge), x=x, y=y)
     else:
-        q = _quantities_on(result)[0]
-        lim = result.limits[q]
+        drawn = _quantities_on(result)
+        merged = None if result.binding else _merged_limit(result, drawn)
+        lim = merged or result.limits[drawn[0]]
+        color = style.limit_color if merged is not None else _limit_color(enc, style, drawn[0])
         y = lim.value * ys
-        _shade(ax, style, _limit_color(enc, style, q), (lo, y) if lim.side == "above" else (y, hi))
+        _shade(ax, style, color, (lo, y) if lim.side == "above" else (y, hi))
     ax.set_ylim(lo, hi)
 
 
@@ -495,14 +519,17 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         The declared limit of each drawn quantity:
 
         * ``"line"``: a dashed line at the limit, a contour on a map or a field,
-          nothing extra on a ``required`` result (the default);
+          nothing extra on a ``required`` result (the default). When every
+          quantity on the axes carries the same limit, one line in
+          ``Style.limit_color`` is drawn for all of them;
         * ``"shade"``: the line and the unsafe side hatched; on a ``required``
           result, the side of the curve where the limit is not met. Needs one
-          quantity (or one curve) per axes; each panel counts on its own.
+          quantity (or one curve, or quantities sharing one limit) per axes; each
+          panel counts on its own.
           Raises when the result carries no limit for the drawn quantity (none
           declared, or a ``where_*`` or custom reducer), when several
-          quantities share the axes, or on a ``required`` result whose side is
-          unknown;
+          quantities with different limits share the axes, or on a
+          ``required`` result whose side is unknown;
         * ``"none"``: neither.
     crossing:
         Where each curve meets the declared limit of its quantity, at its
