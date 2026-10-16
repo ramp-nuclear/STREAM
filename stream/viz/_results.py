@@ -210,7 +210,9 @@ class Result:
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
              band="total", errorbars=False, show_limit="line", crossing="none", style_sheet=None, labels=None):
-        """Draw this result and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
+        """Use this to see the answer to a question; read ``frame`` instead when you want the numbers.
+
+        Draw this result and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
 
         Parameters
         ----------

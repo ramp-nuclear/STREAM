@@ -43,7 +43,9 @@ class _FrameList(list):
 
 
 def cases(**levels) -> list[dict]:
-    """The product of the given levels, one dict per case.
+    """Use this to lay out every combination of parameter levels you want solved.
+
+    The product of the given levels, one dict per case.
 
     Each keyword is a parameter and its levels; a single number or string is a
     parameter with one level. The last parameter varies fastest::
@@ -84,7 +86,9 @@ def run_cases(
     catch: tuple[type[BaseException], ...] = (AlgRuntimeError, TransientRuntimeError, SaturationReachedError),
     mapper: Callable = map,
 ) -> _FrameList:
-    """Solve every case with ``model(**case)`` and collect the frames for :class:`Sweep`.
+    """Use this when one function solves one case, to solve the whole grid in order and keep the failures as holes.
+
+    Solve every case with ``model(**case)`` and collect the frames for :class:`Sweep`.
 
     ::
 
@@ -148,7 +152,9 @@ def run_cases(
 
 
 class Sweep:
-    """Cases, result frames and the aggregator they came from.
+    """Use this to ask questions of steady states solved over a grid of design parameters.
+
+    Cases, result frames and the aggregator they came from.
 
     Build one from your own loop or from :func:`cases` and :func:`run_cases`,
     then ask it a question, :meth:`profile`, :meth:`field`, :meth:`reduce`
@@ -467,7 +473,9 @@ class Sweep:
         return self._coords_cache[calculation]
 
     def profile(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
-        """A profile quantity against its mesh coordinate, one line per selected case.
+        """Use this to see how a quantity varies along the channel in one case or a family of cases.
+
+        A profile quantity against its mesh coordinate, one line per selected case.
 
         Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by
         :meth:`~stream.viz.Result.plot`.
@@ -498,7 +506,9 @@ class Sweep:
         return profile(self, _Question("profile", quantity, of, where or {}, nearest, sigma, uncertainty))
 
     def field(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
-        """A field quantity of exactly one case, drawn as a colour mesh over its two axes.
+        """Use this to see a quantity over both axes of a plate, such as the fuel temperature, in one case.
+
+        A field quantity of exactly one case, drawn as a colour mesh over its two axes.
 
         Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by
         :meth:`~stream.viz.Result.plot`.
@@ -528,7 +538,9 @@ class Sweep:
 
     def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0,
                uncertainty=True, limiting=False):
-        """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis.
+        """Use this to see how the worst value of a quantity moves with one parameter, or over two as a map.
+
+        Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis.
 
         Asked by the reducer, ``versus``, ``of``, ``where``, ``axis``, ``nearest``, ``sigma``,
         ``uncertainty`` and ``limiting``; drawn by :meth:`~stream.viz.Result.plot`.
@@ -598,7 +610,9 @@ class Sweep:
 
     def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
                  method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False):
-        """The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``.
+        """Use this to find how far a parameter can go before a quantity reaches its limit.
+
+        The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``.
 
         Asked by ``equals``, ``solve_for``, ``versus``, ``reduce``, ``of``, ``at``, ``where``,
         ``nearest``, ``sigma``, ``uncertainty`` and ``limiting``; drawn by

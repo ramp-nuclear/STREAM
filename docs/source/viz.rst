@@ -3,11 +3,19 @@ Visualization
 
 :mod:`stream.viz` turns a steady-state parameter sweep into figures and tidy data.
 Build a :class:`~stream.viz.Sweep` from the cases and their result frames, ask it a question, and call ``.plot()`` on the answer, or read its ``frame``.
-In the example, ``model(**case)`` solves one case and returns its ``State.to_dataframe()``, and ``agr`` is the aggregator the states came from.
+
+Each task below starts from what you want to look at and ends at the call that draws it.
+The figures come from ``docs/viz_figures.py``, a fuel plate and its coolant channel solved over ten powers, six mass flows and two axial power shapes.
+
+Build the sweep
+---------------
+
+A sweep needs three things: the cases, one frame per case, and the aggregator the frames came from.
+A frame is ``State.to_dataframe()`` of a solved case, so the model is any function that takes one case's parameters as keywords, solves it and returns that frame.
 
 .. code-block:: python
 
-    from stream.viz import Sweep, cases, run_cases, at_least, at_most
+    from stream.viz import Sweep, at_least, at_most, cases, run_cases
 
     cases_ = cases(power=[20e3, 40e3, 60e3, 80e3], mdot=[0.2, 0.3], shape=["cosine", "flat"])
     frames = run_cases(model, cases_)
@@ -20,38 +28,13 @@ In the example, ``model(**case)`` solves one case and returns its ``State.to_dat
                           "T_wall, left": ("Clad surface temperature", "°C")},
                   limits={"OSVR": at_least(1.3), "CHFR": at_least(1.3), "T_wall, left": at_most(110.0)})
     print(sweep)
-    sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()
-    sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")
-    sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")
-    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")
-    sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")
 
-.. figure:: _static/viz/profile.png
-   :width: 100%
+- :func:`~stream.viz.cases` makes one dict per combination of levels; a parameter can be a number or a string (a choice, such as a wall law).
+- ``labels=`` gives each name its display text, unit and scale; ``"power": ("Power per plate", "kW", 1e-3)`` prints watts as kilowatts.
+- ``limits=`` declares what the design must respect; a declared limit is drawn on every figure that shows its quantity.
 
-   ``sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()``
-
-.. figure:: _static/viz/curves.png
-   :width: 100%
-
-   ``sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")``
-
-.. figure:: _static/viz/panels.png
-   :width: 100%
-
-   ``sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")``
-
-.. figure:: _static/viz/map.png
-   :width: 100%
-
-   ``sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")``
-
-.. figure:: _static/viz/required.png
-   :width: 100%
-
-   ``sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")``
-
-The figures and this summary come from a larger run of the same model than the example, ten powers by six mass flows, and ``docs/viz_figures.py`` is their complete source; ``print(sweep)`` says what can be asked of a sweep:
+Cases and frames from your own loop work the same way: ``Sweep(cases_, frames, agr)`` with ``None`` in the slot of a case that did not solve.
+``print(sweep)`` says what can be asked of the sweep:
 
 .. code-block:: text
 
@@ -64,10 +47,161 @@ The figures and this summary come from a larger run of the same model than the e
             case 37 (power=40000, mdot=0.1, shape=flat): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=nan.
             ...
 
-Building a sweep
-----------------
+A profile has one value per cell along the channel, a field one value per cell over a plate's two axes, and a scalar one value per case.
 
-Build the case grid and solve every case, or bring cases and frames from your own loop; declare the limits on the sweep.
+See a quantity along the channel
+--------------------------------
+
+.. code-block:: python
+
+    sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()
+
+.. figure:: _static/viz/profile.png
+   :width: 100%
+
+- ``where=`` fixes parameters at grid levels; every parameter it leaves free draws one line per level.
+- Several quantities share one axis when they share a unit, and each gets its own colour.
+- ``plot(color="power")`` puts a free parameter on colour; ``style=`` and ``marker=`` take the next ones.
+
+For a plate, ``sweep.field("T", of="Fuel", where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()`` draws one case's temperature over both axes.
+
+See how the worst value moves with a parameter
+----------------------------------------------
+
+.. code-block:: python
+
+    sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")
+
+.. figure:: _static/viz/curves.png
+   :width: 100%
+
+- The reducer collapses each case to one number: ``"min"`` or ``"max"`` for the worst value; the reference below lists the others.
+- ``versus=`` is the parameter on the x axis; ``plot(color="mdot")`` gives each mass flow its own line.
+- ``plot(crossing="mark")`` marks where each line meets its limit and prints the value under the axis.
+
+.. code-block:: python
+
+    sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")
+
+.. figure:: _static/viz/panels.png
+   :width: 100%
+
+- ``plot(col="shape")`` draws one panel per level; ``row=`` adds a second direction.
+- ``plot(show_limit="shade")`` hatches the unsafe side of the limit; the default ``"line"`` draws only the dashed line.
+
+See the worst value over two parameters
+---------------------------------------
+
+.. code-block:: python
+
+    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")
+
+.. figure:: _static/viz/map.png
+   :width: 100%
+
+- A pair on ``versus=`` makes a map: filled contours over the two parameters.
+- The declared limit is a contour; with ``show_limit="shade"`` its unsafe side is hatched.
+- When the reducer is the limit's own (``"min"`` for ``at_least``, ``"max"`` for ``at_most``), the limit contour is the curve of the next task.
+
+Find how far a parameter can go
+-------------------------------
+
+.. code-block:: python
+
+    sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")
+
+.. figure:: _static/viz/required.png
+   :width: 100%
+
+- ``solve_for=`` is the parameter walked until the quantity meets its limit, ``versus=`` the parameter on the x axis.
+- ``equals=`` replaces the declared limit with a number, a dict per quantity, or the name of another quantity.
+- ``limiting=True`` keeps, at each level, only the quantity that binds; the markers say which one.
+
+Read ``.frame`` for the numbers: one row per level with ``lower``, ``value``, ``upper`` and ``safe``, the side of the crossing where the design is safe.
+
+See the uncertainty
+-------------------
+
+A model that returns its frame with ``uq_attach`` bands gives a banded sweep: the ``sys`` and ``stat`` columns become ``lower`` and ``upper`` envelopes in every answer.
+
+.. code-block:: python
+
+    from functools import partial
+
+    from stream.analysis.UQ import UQModel, Uncertainty
+
+    def banded(power, mdot, shape):
+        uq = UQModel(dict(power=power, mdot=mdot), partial(model, shape=shape))
+        return uq.uq_attach(power=Uncertainty(systematic_relative=0.02), mdot=Uncertainty(statistical_relative=0.03))
+
+    frames = run_cases(banded, cases_)
+    sweep = Sweep(cases_, frames, agr)
+    sweep.reduce("CHFR", "min", versus="power", sigma=2.0).plot(color="mdot", band="split")
+
+- ``band=`` draws ``"total"`` (the default), ``"split"`` (the systematic part darker inside the total) or ``"none"``; ``plot(errorbars=True)`` draws error bars instead.
+- ``sigma=`` on the question is the multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
+- ``plot(bound="lower")`` or ``bound="upper"`` draws an envelope instead of the nominal value, and a crossing or a limit contour follows it.
+
+Handle cases that did not solve
+-------------------------------
+
+A case whose solve failed is a hole: its frame is ``None``, and ``run_cases`` keeps the solver's message.
+The sweep warns once with every hole, and each question warns again with the holes it skips; the map above marks them with crosses.
+
+.. code-block:: python
+
+    sweep = Sweep(cases_, frames, agr, fill_holes=True)
+    print(sweep.holes, sweep.filled)
+
+- ``fill_holes=True`` interpolates a hole between its two solved neighbours along a numeric parameter; a hole at the edge of the sweep, or next to another hole, stays a hole.
+- A filled case draws with an open marker and carries ``filled=True`` in every frame, and ``required`` warns when a crossing rests on it.
+- ``sweep.holes`` maps each hole to its message and ``sweep.filled`` each filled hole to the cases it was interpolated from.
+
+Run the cases in parallel
+-------------------------
+
+``run_cases`` runs the cases one after the other.
+``mapper=`` takes any map that keeps the order of the cases, called as ``mapper(f, cases)``:
+
+.. code-block:: python
+
+    from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+
+    import dask
+
+    with ThreadPoolExecutor() as pool:
+        frames = run_cases(model, cases_, mapper=pool.map)
+    with ProcessPoolExecutor() as pool:
+        frames = run_cases(model, cases_, mapper=pool.map)
+    frames = run_cases(model, cases_, mapper=lambda f, xs: dask.compute(*(dask.delayed(f)(x) for x in xs)))
+
+- A process pool pickles the model, so the model must be a function defined at module level; threads and dask take any callable.
+- ``catch=`` is the tuple of exceptions that make a case a hole. The default holds the three ways a STREAM solve reports that it did not finish: ``AlgRuntimeError``, ``TransientRuntimeError`` and ``SaturationReachedError``.
+- Any other exception, a bug in the model among them, stops the run.
+
+Change the look
+---------------
+
+.. code-block:: python
+
+    import matplotlib.pyplot as plt
+
+    from stream.viz import Label, Style
+
+    sheet = Style(palette=("#1b9e77", "#d95f02", "#7570b3"), number_format=".3g", limit_color="#d62728")
+    sweep.reduce("CHFR", "min", versus="power").plot(style_sheet=sheet, labels={"power": Label("Power", "kW", 1e-3, ".0f")})
+    with sheet:
+        fig, ax = plt.subplots()
+        ax.plot(measured_z, measured_temperature)
+
+- ``style_sheet=`` on ``plot`` takes a :class:`~stream.viz.Style`: palette, sizes, the limit's colour and hatch, the map's levels, and the number format of every printed value.
+- ``labels=`` on ``plot`` overrides the sweep's labels for one figure. A :class:`~stream.viz.Label` or its tuple ``(display, unit, scale, fmt)`` sets how a name prints; ``fmt`` is a format spec such as ``".1f"`` or a function of the scaled number.
+- ``with sheet:`` applies the style's matplotlib settings to your own figures drawn inside the block, so they match; a ``plot`` call inside it still takes its sheet from ``style_sheet=``.
+
+A frame with a ``time`` column is refused: the module draws steady states only.
+
+Reference
+---------
 
 .. autofunction:: stream.viz.cases
 
@@ -87,9 +221,6 @@ Build the case grid and solve every case, or bring cases and frames from your ow
 
 .. autofunction:: stream.viz.at_most
 
-Asking
-------
-
 A reducer, the second argument of :meth:`~stream.viz.Sweep.reduce` and the ``reduce`` argument of :meth:`~stream.viz.Sweep.required`, collapses the cells of each case:
 
 =================================================  ==========================================
@@ -104,14 +235,7 @@ Reducer                                            Value
 a callable ``f(values, coords)``                   whatever it returns
 =================================================  ==========================================
 
-``limiting=True`` keeps, per case or per level, only the calculation and quantity that bind.
-
 .. autofunction:: stream.viz.at
-
-Plotting
---------
-
-:meth:`~stream.viz.Result.plot` carries every drawing option; labels and the style sheet set how names and figures look.
 
 .. autoclass:: stream.viz.Result()
    :members: plot, ylabel, subtitle
@@ -121,5 +245,3 @@ Plotting
 .. autoclass:: stream.viz.Labels
 
 .. autoclass:: stream.viz.Style
-
-Steady state only: a frame with a ``time`` column is refused.
