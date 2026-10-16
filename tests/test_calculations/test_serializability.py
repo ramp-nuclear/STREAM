@@ -96,18 +96,17 @@ def _gmake(comps_per_edge: list[tuple[str, ...]]) -> MultiDiGraph:
     return g
 
 
-class _InterList(frozenset):
-    def __eq__(self, other):
-        return not self.isdisjoint(other)
+@st.composite
+def graphs(draw) -> MultiDiGraph:
+    sizes = draw(st.lists(st.integers(min_value=1, max_value=4), min_size=2, max_size=6))
+    total = sum(sizes)
+    stems = draw(st.lists(names, min_size=total, max_size=total))
+    unique_names = iter(f"{stem}{i}" for i, stem in enumerate(stems))
+    return _gmake([tuple(next(unique_names) for _ in range(size)) for size in sizes])
 
-    def __hash__(self):
-        return hash(None)
 
-
-comp_tuples = st.lists(names, min_size=1, unique=True).map(tuple)
-graphs = st.builds(_gmake, st.lists(comp_tuples, min_size=2, unique_by=_InterList))
-kirchoffs = st.builds(calcs.Kirchhoff, graphs, name=names)
-kirchoffs_w_deriv = st.builds(calcs.KirchhoffWDerivatives, graph=graphs, name=names)
+kirchoffs = st.builds(calcs.Kirchhoff, graphs(), name=names)
+kirchoffs_w_deriv = st.builds(calcs.KirchhoffWDerivatives, graph=graphs(), name=names)
 
 
 strats = {
