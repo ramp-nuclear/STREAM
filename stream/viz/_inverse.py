@@ -10,7 +10,7 @@ from pandas import DataFrame
 from scipy.interpolate import PchipInterpolator
 
 from ._envelope import ENVELOPES, INNER, At, reducer_name
-from ._results import Result, _dims, _level_space, _limits_of, _numeric, check_units, keep_binding, reduce
+from ._results import Result, _dims, _level_space, _limits_of, _numeric, _Spec, check_units, keep_binding, reduce
 from .sweep import Sweep, _case_text
 
 COLUMNS = ENVELOPES + INNER
@@ -224,24 +224,26 @@ def required(
         frame=frame,
         x=versus,
         dims=dims,
-        numeric=_numeric(sweep, dims),
         fixed=fixed,
         calculation=single,
-        labels=sweep.labels,
-        banded=sweep.banded and uncertainty,
-        reducer=None,
-        ylabel_source=(solve_for,),
-        sigma=sigma,
-        walk_reducer=reducer_names[quantities[0]],
-        walk_reducers=reducer_names,
-        walk_reducers_at={q: r for q, r in reducers.items() if isinstance(r, At)},
-        level_space=_level_space(sweep),
-        target=targets[quantities[0]],
-        targets=dict(targets),
-        walk_quantity=", ".join(quantities),
         limits=_limits_of(sweep, quantities),
         safe_side=sides.pop() if len(sides) == 1 and sides <= {"below", "above"} else None,
         binding=limiting,
+        _spec=_Spec(
+            numeric=_numeric(sweep, dims),
+            labels=sweep.labels,
+            banded=sweep.banded and uncertainty,
+            reducer=None,
+            ylabel_source=(solve_for,),
+            sigma=sigma,
+            walk_reducer=reducer_names[quantities[0]],
+            walk_reducers=reducer_names,
+            walk_reducers_at={q: r for q, r in reducers.items() if isinstance(r, At)},
+            level_space=_level_space(sweep),
+            target=targets[quantities[0]],
+            targets=dict(targets),
+            walk_quantity=", ".join(quantities),
+        ),
     )
 
 

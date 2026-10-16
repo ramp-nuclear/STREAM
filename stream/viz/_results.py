@@ -46,18 +46,39 @@ def y_axis_text(labels: Labels, quantities: list[str], prefix: str = "") -> str:
 
 def y_axis(result, labels: Labels) -> tuple[str, str]:
     """The y axis text of ``result`` under ``labels``, and the name whose scale its values carry."""
-    names = list(result.ylabel_source)
+    names = list(result._spec.ylabel_source)
     if result.kind == "field":
         return labels.axis("z"), "z"
     drawn = set(result.frame["quantity"]) if "quantity" in result.frame.columns else set()
-    if result.kind == "curve" and result.reducer is None and len(names) == 1 and names[0] not in drawn:
+    if result.kind == "curve" and result._spec.reducer is None and len(names) == 1 and names[0] not in drawn:
         return labels.axis(names[0]), names[0]
-    if result.reducer is not None and result.reducer.startswith("where_"):
-        coordinate = result.coordinate or "z"
+    if result._spec.reducer is not None and result._spec.reducer.startswith("where_"):
+        coordinate = result._spec.coordinate or "z"
         unit = f" [{labels.unit(coordinate)}]" if labels.unit(coordinate) else ""
-        return f"{result.reducer} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
-    prefix = (result.reducer or "") if result.reducer_at is None else reducer_name(result.reducer_at, labels)
+        return f"{result._spec.reducer} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
+    prefix = (result._spec.reducer or "") if result._spec.reducer_at is None else reducer_name(result._spec.reducer_at, labels)
     return y_axis_text(labels, names, prefix), (names[0] if names else "")
+
+
+@dataclass
+class _Spec:
+    """What drawing a result reads besides its public fields."""
+
+    numeric: frozenset[str]
+    labels: Labels
+    banded: bool
+    reducer: str | None = None
+    ylabel_source: tuple[str, ...] = ()
+    sigma: float = 1.0
+    walk_reducer: str | None = None
+    walk_reducers: dict = dc_field(default_factory=dict)
+    level_space: dict[str, list] = dc_field(default_factory=dict)
+    coordinate: str | None = None
+    target: float | str | None = None
+    targets: dict = dc_field(default_factory=dict)
+    walk_quantity: str | None = None
+    reducer_at: At | None = None
+    walk_reducers_at: dict = dc_field(default_factory=dict)
 
 
 @dataclass
@@ -76,20 +97,15 @@ class Result:
     * ``frame``: the tidy DataFrame, one row per drawn point, with the dimension
       columns, the x column, ``lower``, ``value``, ``upper`` and ``filled``;
     * ``x``: the column on the x axis;
-    * ``y``: the parameter on the y axis of a map, else ``None``;
     * ``dims``: the dimensions that vary, with their levels;
     * ``fixed``: the parameters that do not vary, with their values;
     * ``calculation``: the calculation drawn, when there is one;
     * ``limits``: the declared limits of the quantities drawn, when the values are the quantity's own;
     * ``safe_side``: for ``required``, the side of the crossing where every quantity is safe, when it is one;
     * ``binding``: whether ``limiting=True`` collapsed the result;
-    * ``targets``: for ``required``, the target walked for each quantity;
-    * ``walk_reducers``: for ``required``, the mesh reducer of each quantity;
+    * ``y``: the parameter on the y axis of a map, else ``None``;
     * ``holes``: the unsolved cases of the selection left unfilled;
-    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``;
-    * ``reducer_at``: the :func:`at` reducer of a ``reduce`` result, so a figure prints its position with the
-      labels it is drawn under, else ``None``;
-    * ``walk_reducers_at``: for ``required``, the :func:`at` reducer of each quantity walked with one.
+    * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``.
 
     A binding frame carries a ``binder`` column naming the quantity (and
     ``quantity of calculation`` when calculations varied) that binds at each
@@ -100,39 +116,25 @@ class Result:
     frame: DataFrame
     x: str
     dims: dict[str, list]
-    numeric: frozenset[str]
     fixed: dict[str, float | str]
     calculation: str | None
-    labels: Labels
-    banded: bool
-    reducer: str | None = None
-    ylabel_source: tuple[str, ...] = ()
-    sigma: float = 1.0
-    walk_reducer: str | None = None
-    walk_reducers: dict = dc_field(default_factory=dict)
-    level_space: dict[str, list] = dc_field(default_factory=dict)
-    coordinate: str | None = None
-    target: float | str | None = None
-    targets: dict = dc_field(default_factory=dict)
-    walk_quantity: str | None = None
     limits: dict = dc_field(default_factory=dict)
     safe_side: str | None = None
     binding: bool = False
     y: str | None = None
     holes: list = dc_field(default_factory=list)
     limit_note: str | None = None
-    reducer_at: At | None = None
-    walk_reducers_at: dict = dc_field(default_factory=dict)
+    _spec: _Spec = dc_field(kw_only=True, repr=False)
 
     @property
     def ylabel(self) -> str:
         """The y axis text under this result's own labels."""
-        return y_axis(self, self.labels)[0]
+        return y_axis(self, self._spec.labels)[0]
 
     @property
     def subtitle(self) -> str:
         """The line above the axes under this result's own labels."""
-        return self.subtitle_with(self.labels)
+        return self.subtitle_with(self._spec.labels)
 
     def subtitle_with(self, labels: Labels) -> str:
         """The line above the axes under ``labels``: the target, the fixed parameters, the calculation."""
@@ -145,21 +147,21 @@ class Result:
         return ", ".join(p for p in parts if p)
 
     def _target_text(self, labels: Labels) -> str:
-        if self.target is None or self.walk_quantity is None:
+        if self._spec.target is None or self._spec.walk_quantity is None:
             return ""
         if self.binding:
-            return f"limiting of {', '.join(labels.display(q) for q in self.targets)}"
-        if len(self.targets) > 1:
-            return ", ".join(self._one_target(labels, q, t) for q, t in self.targets.items())
-        head = " ".join(p for p in (self._walk_name(labels, self.walk_quantity, self.walk_reducer), labels.display(self.walk_quantity)) if p)
-        return f"{head} = {self._value_text(labels, self.walk_quantity, self.target)}"
+            return f"limiting of {', '.join(labels.display(q) for q in self._spec.targets)}"
+        if len(self._spec.targets) > 1:
+            return ", ".join(self._one_target(labels, q, t) for q, t in self._spec.targets.items())
+        head = " ".join(p for p in (self._walk_name(labels, self._spec.walk_quantity, self._spec.walk_reducer), labels.display(self._spec.walk_quantity)) if p)
+        return f"{head} = {self._value_text(labels, self._spec.walk_quantity, self._spec.target)}"
 
     def _one_target(self, labels: Labels, q: str, target) -> str:
-        head = " ".join(p for p in (self._walk_name(labels, q, self.walk_reducers.get(q)), labels.display(q)) if p)
+        head = " ".join(p for p in (self._walk_name(labels, q, self._spec.walk_reducers.get(q)), labels.display(q)) if p)
         return f"{head} = {self._value_text(labels, q, target)}"
 
     def _walk_name(self, labels: Labels, q: str, name: str | None) -> str | None:
-        at_ = self.walk_reducers_at.get(q)
+        at_ = self._spec.walk_reducers_at.get(q)
         return name if at_ is None else reducer_name(at_, labels)
 
     def _value_text(self, labels: Labels, q: str, target) -> str:
@@ -345,16 +347,18 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
         frame=pd.concat(pieces, ignore_index=True),
         x=xnames[ofs[0]],
         dims=dims,
-        numeric=_numeric(sweep, dims),
         fixed=fixed,
         calculation=single,
-        labels=sweep.labels,
-        banded=sweep.banded and uncertainty,
-        ylabel_source=tuple(quantities),
-        sigma=sigma,
-        level_space=_level_space(sweep),
         limits=_limits_of(sweep, quantities),
         holes=_unfilled_holes(sweep, resolved),
+        _spec=_Spec(
+            numeric=_numeric(sweep, dims),
+            labels=sweep.labels,
+            banded=sweep.banded and uncertainty,
+            ylabel_source=tuple(quantities),
+            sigma=sigma,
+            level_space=_level_space(sweep),
+        ),
     )
 
 
@@ -409,14 +413,8 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
         frame=frame,
         x="x",
         dims=dims,
-        numeric=_numeric(sweep, dims),
         fixed=fixed,
         calculation=single,
-        labels=sweep.labels,
-        banded=sweep.banded and uncertainty,
-        ylabel_source=(q,),
-        sigma=sigma,
-        level_space=_level_space(sweep),
         limits=_limits_of(sweep, [q]),
         quantity=q,
         z=np.asarray(z, float),
@@ -425,6 +423,14 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
         x_bounds=xb,
         arrays=arrays,
         mask=mask,
+        _spec=_Spec(
+            numeric=_numeric(sweep, dims),
+            labels=sweep.labels,
+            banded=sweep.banded and uncertainty,
+            ylabel_source=(q,),
+            sigma=sigma,
+            level_space=_level_space(sweep),
+        ),
     )
 
 
@@ -555,20 +561,22 @@ def reduce(
         frame=frame,
         x=xname,
         dims=dims,
-        numeric=_numeric(sweep, dims),
         fixed=fixed,
         calculation=single,
-        labels=sweep.labels,
-        banded=sweep.banded and uncertainty,
-        reducer=None if scalar else name,
-        ylabel_source=tuple(quantities),
-        sigma=sigma,
-        level_space=_level_space(sweep),
-        coordinate=coordinate if name.startswith("where_") else None,
         limits={} if value_free else _limits_of(sweep, quantities),
         limit_note=no_value_note(reducer, quantities, "to shade") if value_free else None,
         y=axes_[1] if pair else None,
         holes=_unfilled_holes(sweep, resolved),
         binding=limiting,
-        reducer_at=reducer if isinstance(reducer, At) and not scalar else None,
+        _spec=_Spec(
+            numeric=_numeric(sweep, dims),
+            labels=sweep.labels,
+            banded=sweep.banded and uncertainty,
+            reducer=None if scalar else name,
+            ylabel_source=tuple(quantities),
+            sigma=sigma,
+            level_space=_level_space(sweep),
+            coordinate=coordinate if name.startswith("where_") else None,
+            reducer_at=reducer if isinstance(reducer, At) and not scalar else None,
+        ),
     )

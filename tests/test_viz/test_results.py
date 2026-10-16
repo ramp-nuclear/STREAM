@@ -21,13 +21,13 @@ def test_profile_single_case(sweep):
     assert r.calculation == "CC"
     assert r.ylabel == "Coolant temperature [°C]"
     assert r.subtitle == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
-    assert not r.banded
+    assert not r._spec.banded
 
 
 def test_profile_family_has_free_dimension(sweep):
     r = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3))
     assert r.dims == {"power": [2e6, 4e6, 6e6, 8e6]}
-    assert r.numeric == frozenset({"power"})
+    assert r._spec.numeric == frozenset({"power"})
     assert r.fixed == dict(mdot=0.3)
     assert len(r.frame) == 16
 
@@ -100,10 +100,10 @@ def test_profile_without_a_solved_case_names_the_selection(holed_sweep):
 
 def test_profile_envelopes_from_bands(banded_sweep):
     r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0)
-    assert r.banded
+    assert r._spec.banded
     np.testing.assert_allclose(r.frame.upper - r.frame.value, 0.1 + 2 * 0.05)
     r0 = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), uncertainty=False)
-    assert not r0.banded and (r0.frame.upper == r0.frame.value).all()
+    assert not r0._spec.banded and (r0.frame.upper == r0.frame.value).all()
 
 
 def test_field_single_case(sweep):
@@ -172,9 +172,9 @@ def test_reduce_min_versus_power(sweep):
     np.testing.assert_allclose(r.frame.power, [2e6, 4e6, 6e6, 8e6])
     np.testing.assert_allclose(r.frame.value, 1.5 * 4e6 / np.array([2e6, 4e6, 6e6, 8e6]))
     assert r.dims == {} and r.fixed == dict(mdot=0.3)
-    assert r.reducer == "min"
+    assert r._spec.reducer == "min"
     assert r.ylabel == "min CHFR"
-    assert r.ylabel_source == ("CHFR",) and r.sigma == 1.0
+    assert r._spec.ylabel_source == ("CHFR",) and r._spec.sigma == 1.0
 
 
 def test_reduce_keeps_values_on_their_own_coordinate_after_a_dropped_cell(agr):
@@ -257,7 +257,7 @@ def test_reduce_where_min_and_at(sweep):
 
 def test_where_with_axis_reports_the_collapsed_coordinate(sweep):
     r = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
-    assert r.coordinate == "x"
+    assert r._spec.coordinate == "x"
     assert r.ylabel == "where_max Temperature [m]"
     sweep.labels = {"x": ("x", "mm", 1e3)}
     scaled = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
@@ -266,8 +266,8 @@ def test_where_with_axis_reports_the_collapsed_coordinate(sweep):
 
 def test_level_space_holds_every_parameter_of_the_sweep(sweep):
     r = sweep.reduce("CHFR", "min", versus="power")
-    assert r.level_space == {"power": [2e6, 4e6, 6e6, 8e6], "mdot": [0.2, 0.3]}
-    assert sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).level_space == r.level_space
+    assert r._spec.level_space == {"power": [2e6, 4e6, 6e6, 8e6], "mdot": [0.2, 0.3]}
+    assert sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))._spec.level_space == r._spec.level_space
 
 
 def test_reduce_with_axis_returns_profile(sweep):

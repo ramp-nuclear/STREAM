@@ -61,10 +61,10 @@ def test_required_power_for_min_chfr(sweep):
     np.testing.assert_allclose(r.frame.mdot, [0.2, 0.3])
     np.testing.assert_allclose(r.frame.value, [3e6, 4e6], rtol=1e-6)
     assert r.ylabel == "Power [W]"
-    assert r.reducer is None and r.walk_reducer == "min"
-    assert r.ylabel_source == ("power",)
+    assert r._spec.reducer is None and r._spec.walk_reducer == "min"
+    assert r._spec.ylabel_source == ("power",)
     assert r.dims == {} and r.fixed == {}
-    assert r.target == 1.5 and r.walk_quantity == "CHFR"
+    assert r._spec.target == 1.5 and r._spec.walk_quantity == "CHFR"
     assert r.subtitle == "min CHFR = 1.5, CC"
     fig, ax = r.plot()
     assert ax.get_title() == "min CHFR = 1.5, CC"
@@ -143,7 +143,7 @@ def test_required_quantity_target(agr):
     s = Sweep(cases, [rows(c["power"]) for c in cases], agr)
     r = s.required("hot", equals="cold", reduce="max", solve_for="power", versus="mdot")
     np.testing.assert_allclose(r.frame.value, [5e6, 5e6])
-    assert r.target == "cold" and r.walk_quantity == "hot"
+    assert r._spec.target == "cold" and r._spec.walk_quantity == "hot"
     assert r.subtitle == "max hot = cold, CC"
     assert r.ylabel == "Power [W]"
 
@@ -189,7 +189,7 @@ def test_required_without_equals_uses_the_declared_limit(agr, grid_cases):
     np.testing.assert_allclose(r.frame.value, explicit.frame.value)
     assert list(r.frame.safe) == ["below", "below"]
     assert r.safe_side == "below"
-    assert r.targets == {"CHFR": 1.5}
+    assert r._spec.targets == {"CHFR": 1.5}
 
 
 def test_required_without_equals_and_without_limit_raises(sweep):
@@ -210,7 +210,7 @@ def test_required_dict_targets_and_reducers(agr, grid_cases):
     assert set(r.frame.quantity) == {"CHFR", "T_cool"}
     chfr = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot").frame
     np.testing.assert_allclose(r.frame[r.frame.quantity == "CHFR"].value.to_numpy(), chfr.value.to_numpy())
-    assert r.targets == {"CHFR": 1.5, "T_cool": 60.0}
+    assert r._spec.targets == {"CHFR": 1.5, "T_cool": 60.0}
     assert "min CHFR = 1.5, max Coolant temperature = 60 °C" in r.subtitle
 
 
@@ -226,7 +226,7 @@ def test_required_default_reducer_follows_the_side(agr, grid_cases):
     np.testing.assert_allclose(r.frame.value, explicit.frame.value)
     np.testing.assert_allclose(r.frame.value, [5e6, 5e6])
     assert list(r.frame.safe) == ["below", "below"]
-    assert r.walk_reducers == {"T_cool": "max"}
+    assert r._spec.walk_reducers == {"T_cool": "max"}
 
 
 def test_required_safe_above_when_the_quantity_improves_with_solve_for(agr, grid_cases):
