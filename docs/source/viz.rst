@@ -196,7 +196,7 @@ Change the look
 
 - ``style_sheet=`` on ``plot`` takes a :class:`~stream.viz.Style`: palette, sizes, the limit's colour and hatch, the map's levels, and the number format of every printed value.
 - ``labels=`` on ``plot`` overrides the sweep's labels for one figure. A :class:`~stream.viz.Label` or its tuple ``(display, unit, scale, fmt)`` sets how a name prints; ``fmt`` is a format spec such as ``".1f"`` or a function of the scaled number.
-- ``with sheet:`` applies the style's matplotlib settings to your own figures drawn inside the block, so they match; a ``plot`` call inside it still takes its sheet from ``style_sheet=``.
+- ``with sheet:`` makes it the sheet of every ``plot`` call inside the block, and applies its matplotlib settings to your own figures drawn there, so they match.
 
 A frame with a ``time`` column is refused: the module draws steady states only.
 

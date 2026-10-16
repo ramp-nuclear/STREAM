@@ -16,7 +16,7 @@ from ._common import BOUND_COLUMNS, _limit_text, _panel_text, _subset, _with_fra
 from ._encoding import Encoding, LegendBlock
 from ._maps import _plot_map
 from .labels import Labels
-from .style import DEFAULT_STYLE, Style
+from .style import Style, _active_style
 
 BOUNDS = ("nominal", "lower", "upper")
 BANDS = ("total", "split", "none")
@@ -515,7 +515,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
     _check("show_limit", show_limit, SHOW_LIMITS)
     _check("crossing", crossing, CROSSINGS)
     _check_crossing(result, crossing)
-    sheet = style_sheet or DEFAULT_STYLE
+    sheet = style_sheet or _active_style()
     merged = result.labels.merged(labels).with_default_format(sheet.number_format)
     if ax is not None and (col or row):
         raise ValueError("ax= draws into one axes and cannot be combined with col= or row=")

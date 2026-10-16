@@ -31,8 +31,9 @@ class Style:
     ``number_format`` is the Python format spec of every printed number whose
     label declares no format of its own.
 
-    ``with style:`` applies the style to everything drawn inside the block, as
-    ``with style.context():`` does.
+    ``with style:`` applies the style's matplotlib settings inside the block,
+    as ``with style.context():`` does, and makes it the sheet every ``plot``
+    call inside the block draws with unless given a ``style_sheet``.
     """
 
     palette: tuple[str, ...] = ("#2980b9", "#1abc9c", "#e67e22", "#8e44ad", "#7f8c8d", "#2c3e50")
@@ -82,11 +83,13 @@ class Style:
         context = self.context()
         context.__enter__()
         object.__setattr__(self, "_entered", (*getattr(self, "_entered", ()), context))
+        _ACTIVE.append(self)
         return self
 
     def __exit__(self, *exc) -> None:
         *rest, context = self._entered
         object.__setattr__(self, "_entered", tuple(rest))
+        _ACTIVE.pop()
         context.__exit__(*exc)
 
     def ramp_colors(self, n: int) -> list[str]:
@@ -98,3 +101,9 @@ class Style:
 
 
 DEFAULT_STYLE = Style()
+_ACTIVE: list[Style] = []
+
+
+def _active_style() -> Style:
+    """The innermost ``Style`` entered with ``with``, else the default."""
+    return _ACTIVE[-1] if _ACTIVE else DEFAULT_STYLE
