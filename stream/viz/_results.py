@@ -100,7 +100,8 @@ class Result:
     * ``holes``: the unsolved cases of the selection left unfilled;
     * ``limit_note``: why the result carries no limit, for a ``where_*`` or custom reducer, else ``None``;
     * ``question``: the question asked, its arguments resolved;
-    * ``sweep``: the sweep it was asked of.
+    * ``sweep``: the sweep it was asked of;
+    * ``labels``: the sweep's labels when the question was asked.
 
     A binding frame carries a ``binder`` column naming the quantity (and
     ``quantity of calculation`` when calculations varied) that binds at each
@@ -114,6 +115,7 @@ class Result:
     calculation: str | None
     question: _Question
     sweep: Sweep = dc_field(repr=False)
+    labels: Labels = dc_field(repr=False)
     limits: dict = dc_field(default_factory=dict)
     safe_side: str | None = None
     y: str | None = None
@@ -133,12 +135,12 @@ class Result:
     @property
     def ylabel(self) -> str:
         """The y axis text under this result's own labels."""
-        return y_axis(self, self.sweep.labels)[0]
+        return y_axis(self, self.labels)[0]
 
     @property
     def subtitle(self) -> str:
         """The line above the axes under this result's own labels."""
-        return self.subtitle_with(self.sweep.labels)
+        return self.subtitle_with(self.labels)
 
     def subtitle_with(self, labels: Labels) -> str:
         """The line above the axes under ``labels``: the target, the fixed parameters, the calculation."""
@@ -446,7 +448,7 @@ def profile(sweep: Sweep, question: _Question) -> Result:
     dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices)
     question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved)
     return Result(pd.concat(pieces, ignore_index=True), xnames[ofs[0]], dims, fixed, single, question, sweep,
-                  limits=_limits_of(sweep, quantities), holes=_unfilled_holes(sweep, resolved))
+                  sweep.labels, limits=_limits_of(sweep, quantities), holes=_unfilled_holes(sweep, resolved))
 
 
 def field(sweep: Sweep, question: _Question) -> Field:
@@ -496,7 +498,8 @@ def field(sweep: Sweep, question: _Question) -> Field:
     )
     dims, fixed, single = _dims(sweep, [q], [calc], resolved, indices)
     question = replace(question, quantities=(q,), of=(calc,), where=resolved)
-    return Field(frame, "x", dims, fixed, single, question, sweep, limits=_limits_of(sweep, [q]), quantity=q,
+    return Field(frame, "x", dims, fixed, single, question, sweep, sweep.labels,
+                 limits=_limits_of(sweep, [q]), quantity=q,
                  z=np.asarray(z, float), xs=np.asarray(xs, float), z_bounds=zb, x_bounds=xb, arrays=arrays, mask=mask)
 
 
@@ -608,7 +611,7 @@ def reduce(sweep: Sweep, question: _Question) -> Result:
         frame, dims = _collapse_reduced(sweep, frame, dims, quantities, ofs, note)
     question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved, versus=versus)
     return Result(
-        frame, xname, dims, fixed, single, question, sweep,
+        frame, xname, dims, fixed, single, question, sweep, sweep.labels,
         limits={} if value_free else _limits_of(sweep, quantities),
         limit_note=no_value_note(reducer, quantities, "to shade") if value_free else None,
         y=axes_[1] if pair else None,

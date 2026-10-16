@@ -66,7 +66,7 @@ def test_result_public_fields(agr, grid_cases):
     from conftest import make_case_frame
 
     from stream.viz import Result, Sweep
-    assert [f.name for f in fields(Result)] == ["frame", "x", "dims", "fixed", "calculation", "question", "sweep", "limits", "safe_side", "y", "holes", "limit_note"]
+    assert [f.name for f in fields(Result)] == ["frame", "x", "dims", "fixed", "calculation", "question", "sweep", "labels", "limits", "safe_side", "y", "holes", "limit_note"]
     assert {n for n in dir(Result) if not n.startswith("_") and n not in {f.name for f in fields(Result)}} == {"plot", "ylabel", "subtitle", "subtitle_with", "kind", "binding"}
     sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr)
     assert "sweep=" not in repr(sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}))

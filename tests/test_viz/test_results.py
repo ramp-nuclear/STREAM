@@ -505,3 +505,13 @@ def test_map_accepts_a_list_pair(sweep):
         sweep.reduce("CHFR", "min", versus=["power"])
     with pytest.raises(ValueError, match="5 is not a sweep parameter; the parameters are power, mdot"):
         sweep.reduce("CHFR", "min", versus=5)
+
+
+def test_a_result_keeps_the_labels_it_was_asked_under(sweep):
+    where = {"power": 4e6, "mdot": 0.3}
+    r = sweep.profile("T_cool", where=where)
+    sweep.labels = {"T_cool": ("Bulk temperature", "K")}
+    assert r.ylabel == "Coolant temperature [°C]"
+    assert sweep.profile("T_cool", where=where).ylabel == "Bulk temperature [K]"
+    _, ax = r.plot()
+    assert ax.get_ylabel() == "Coolant temperature [°C]"

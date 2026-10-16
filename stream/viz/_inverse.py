@@ -194,7 +194,8 @@ def required(sweep: Sweep, question: _Question) -> Result:
     shared = all(reducers[q] == reducers[quantities[0]] for q in quantities)
     question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved, at=at_values,
                        targets=targets, reducer=reducers[quantities[0]] if shared else reducers)
-    return Result(frame, versus, dims, fixed, single, question, sweep, limits=_limits_of(sweep, quantities),
+    return Result(frame, versus, dims, fixed, single, question, sweep, sweep.labels,
+                  limits=_limits_of(sweep, quantities),
                   safe_side=sides.pop() if len(sides) == 1 and sides <= {"below", "above"} else None)
 
 

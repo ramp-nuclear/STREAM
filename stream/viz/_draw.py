@@ -516,7 +516,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
     _check("crossing", crossing, CROSSINGS)
     _check_crossing(result, crossing)
     sheet = style_sheet or DEFAULT_STYLE
-    merged = result.sweep.labels.merged(labels).with_default_format(sheet.number_format)
+    merged = result.labels.merged(labels).with_default_format(sheet.number_format)
     if ax is not None and (col or row):
         raise ValueError("ax= draws into one axes and cannot be combined with col= or row=")
     sigma = result.question.sigma
