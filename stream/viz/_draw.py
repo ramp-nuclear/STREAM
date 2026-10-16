@@ -11,9 +11,9 @@ from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
+from ._common import BOUND_COLUMNS, _limit_text, _panel_text, _subset, _with_frame, crossings, y_axis
 from ._encoding import Encoding, LegendBlock, encode
-from ._inverse import crossings
-from ._results import y_axis
+from ._maps import plot_map
 from .labels import Labels
 from .style import DEFAULT_STYLE, Style
 
@@ -21,7 +21,6 @@ BOUNDS = ("nominal", "lower", "upper")
 BANDS = ("total", "split", "none")
 SHOW_LIMITS = ("line", "shade", "none")
 CROSSINGS = ("none", "mark", "legend")
-BOUND_COLUMNS = {"nominal": "value", "lower": "lower", "upper": "upper"}
 FIELD_ARGUMENTS = ("color", "style", "marker", "col", "row")
 
 
@@ -33,14 +32,6 @@ def _check(name: str, value: str, allowed: tuple[str, ...]) -> None:
 def _levels_of(result, enc: Encoding):
     dims = [d for d in result.dims if d not in (enc.col, enc.row)]
     return dims, list(product(*(result.dims[d] for d in dims)))
-
-
-def _subset(frame, dims, levels):
-    keep = np.ones(len(frame), dtype=bool)
-    for d, v in zip(dims, levels):
-        column = frame[d].to_numpy()
-        keep &= np.isclose(column, v) if np.issubdtype(column.dtype, np.number) else (column == v)
-    return frame[keep]
 
 
 @dataclass(frozen=True)
@@ -170,11 +161,6 @@ def draw_field(field, ax, style: Style, bound: str, labels: Labels) -> None:
     ax.set_xlabel(labels.axis("x"))
     ax.set_ylabel(labels.axis("z"))
     ax.grid(False)
-
-
-def _limit_text(labels: Labels, q: str, limit) -> str:
-    unit = labels[q].unit
-    return f"{labels.display(q)} = {labels.value(q, limit.value)}" + (f" {unit}" if unit else "")
 
 
 def _merged_limit(result, drawn: list[str]):
@@ -510,14 +496,6 @@ def finish_axes(ax, result, labels: Labels, style: Style, title: str) -> None:
     ax.set_title(title, fontsize=style.subtitle_size, color=style.palette[-1])
 
 
-def _panel_text(labels: Labels, fixed: dict) -> str:
-    """``Display = value unit`` for a parameter panel level, the display name for a quantity or calculation."""
-    parts = []
-    for name, level in fixed.items():
-        parts.append(labels.display(level) if name in ("quantity", "calculation") else labels.describe({name: level}))
-    return ", ".join(parts)
-
-
 def _check_field_arguments(values: dict, band: str, errorbars: bool) -> None:
     for name, value in values.items():
         if value is not None:
@@ -550,8 +528,6 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             ax.set_title(result.subtitle_with(merged), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
             return fig, ax
         if result.kind == "map":
-            from ._maps import plot_map
-
             return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, show_limit)
         enc = encode(result.dims, result._spec.numeric, merged, sheet, color, style, marker, col, row, result._spec.level_space)
         binding = binder_colors(result.frame, sheet, enc) if result.binding else None
@@ -607,6 +583,3 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         return fig, axes
 
 
-def _with_frame(result, frame, fixed):
-    dims = {k: v for k, v in result.dims.items() if k not in fixed}
-    return replace(result, frame=frame, dims=dims)

@@ -4,41 +4,20 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Mapping
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pandas import DataFrame
-from scipy.interpolate import PchipInterpolator
 
+from ._common import _case_text, crossings
 from ._envelope import ENVELOPES, INNER, At, reducer_name
 from ._results import Result, _dims, _level_space, _limits_of, _numeric, _Spec, check_units, keep_binding, reduce
-from .sweep import Sweep, _case_text
+
+if TYPE_CHECKING:
+    from .sweep import Sweep
 
 COLUMNS = ENVELOPES + INNER
 METHODS = ("linear", "pchip")
-
-
-def crossings(x, y, target: float, method: str = "linear") -> list[float]:
-    """Every ``x`` at which ``y`` crosses ``target``, ascending; ``x`` sorted."""
-    x, y = np.asarray(x, float), np.asarray(y, float)
-    keep = np.isfinite(y)
-    x, y = x[keep], y[keep]
-    if len(x) < 2:
-        return []
-    if method == "pchip":
-        spline = PchipInterpolator(x, y - target)
-        return sorted(float(r) for r in spline.roots() if x[0] <= r <= x[-1])
-    if method != "linear":
-        raise ValueError(f"unknown method {method!r}; use 'linear' or 'pchip'")
-    d = y - target
-    out = []
-    for k in range(len(x) - 1):
-        if d[k] == 0:
-            out.append(float(x[k]))
-        elif d[k] * d[k + 1] < 0:
-            out.append(float(x[k] + (x[k + 1] - x[k]) * d[k] / (d[k] - d[k + 1])))
-    if d[-1] == 0:
-        out.append(float(x[-1]))
-    return sorted(set(out))
 
 
 def first_crossing(x, y, target: float, method: str, context: str) -> float:
@@ -129,12 +108,7 @@ def required(
     sweep: Sweep, quantity, equals=None, solve_for=None, versus=None, reducer=None, of=None, at=None, where=None,
     method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False,
 ) -> Result:
-    """The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``; see :meth:`Sweep.required`.
-
-    Every envelope column is walked on its own; ``lower`` and ``upper`` hold the smaller and the
-    larger of the two walked bounds, so they bracket ``value`` whether the quantity rises or falls
-    with ``solve_for``, and both are missing when either walk finds no crossing.
-    """
+    """The implementation of :meth:`Sweep.required`."""
     at = dict(at or {})
     if method not in METHODS:
         raise ValueError(f"unknown method {method!r}; use {' or '.join(map(repr, METHODS))}")

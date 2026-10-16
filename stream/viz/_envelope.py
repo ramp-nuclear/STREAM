@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 from pandas import DataFrame
 
 from .labels import Labels
-from .sweep import _Coords
+
+if TYPE_CHECKING:
+    from ._common import _Coords
 
 REDUCERS = ("min", "max", "mean", "where_min", "where_max")
 ENVELOPES = ("lower", "value", "upper")

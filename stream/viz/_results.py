@@ -5,14 +5,20 @@ from __future__ import annotations
 import warnings
 from dataclasses import dataclass
 from dataclasses import field as dc_field
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
+from ._common import _case_text, y_axis
+from ._draw import plot
 from ._envelope import ENVELOPES, INNER, At, mesh_shape, reduce_rows, reducer_name, to_array, with_envelopes
 from .labels import Labels
-from .sweep import Sweep, _case_text, _Coords
+
+if TYPE_CHECKING:
+    from ._common import _Coords
+    from .sweep import Sweep
 
 COLUMNS = ENVELOPES + INNER
 
@@ -34,30 +40,6 @@ def check_units(labels: Labels, quantities: list[str]) -> None:
             raise ValueError(
                 f"{q0!r} is scaled by {s0:g} and {q!r} by {s:g}; one axis cannot carry both"
             )
-
-
-def y_axis_text(labels: Labels, quantities: list[str], prefix: str = "") -> str:
-    """``prefix Display1, Display2 [unit]`` for quantities sharing a unit."""
-    displays = ", ".join(labels.display(q) for q in quantities)
-    units = [labels.unit(q) for q in quantities if labels.unit(q)]
-    head = f"{prefix} " if prefix else ""
-    return f"{head}{displays} [{units[0]}]" if units else f"{head}{displays}"
-
-
-def y_axis(result, labels: Labels) -> tuple[str, str]:
-    """The y axis text of ``result`` under ``labels``, and the name whose scale its values carry."""
-    names = list(result._spec.ylabel_source)
-    if result.kind == "field":
-        return labels.axis("z"), "z"
-    drawn = set(result.frame["quantity"]) if "quantity" in result.frame.columns else set()
-    if result.kind == "curve" and result._spec.reducer is None and len(names) == 1 and names[0] not in drawn:
-        return labels.axis(names[0]), names[0]
-    if result._spec.reducer is not None and result._spec.reducer.startswith("where_"):
-        coordinate = result._spec.coordinate or "z"
-        unit = f" [{labels.unit(coordinate)}]" if labels.unit(coordinate) else ""
-        return f"{result._spec.reducer} {', '.join(labels.display(q) for q in names)}{unit}", coordinate
-    prefix = (result._spec.reducer or "") if result._spec.reducer_at is None else reducer_name(result._spec.reducer_at, labels)
-    return y_axis_text(labels, names, prefix), (names[0] if names else "")
 
 
 @dataclass
@@ -249,8 +231,6 @@ class Result:
             scaled number. A name without a format prints with the style
             sheet's ``number_format``.
         """
-        from ._draw import plot
-
         return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, show_limit, crossing, style_sheet, labels)
 
 
@@ -382,7 +362,7 @@ def _x_clash(xnames: dict[str, str]) -> ValueError:
 
 
 def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Result:
-    """A rank-1 quantity against its coordinate for every selected case."""
+    """The implementation of :meth:`Sweep.profile`."""
     quantities, ofs = sweep._names(quantity, of)
     check_units(sweep.labels, quantities)
     resolved, indices = _selection(sweep, where, nearest)
@@ -439,7 +419,7 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
 
 
 def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Field:
-    """A rank-2 quantity of exactly one case with its mesh."""
+    """The implementation of :meth:`Sweep.field`."""
     quantities, ofs = sweep._names(quantity, of)
     if len(quantities) != 1 or len(ofs) != 1:
         raise ValueError(
@@ -561,7 +541,7 @@ def reduce(
     uncertainty=True,
     limiting=False,
 ) -> Result:
-    """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis; see :meth:`Sweep.reduce`."""
+    """The implementation of :meth:`Sweep.reduce`."""
     quantities, ofs = sweep._names(quantity, of)
     check_units(sweep.labels, quantities)
     if axis is not None and versus is not None:

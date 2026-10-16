@@ -17,6 +17,9 @@ from pandas import DataFrame
 from stream.calculations.channel import SaturationReachedError
 from stream.solvers import AlgRuntimeError, TransientRuntimeError
 
+from ._common import _case_text, _Coords, _level_text
+from ._inverse import required
+from ._results import field, profile, reduce
 from .labels import STREAM_LABELS, Labels
 from .limits import Limit
 
@@ -29,21 +32,6 @@ RESERVED_COLUMNS = ("case",) + STATE_COLUMNS + BAND_COLUMNS + ("filled", "safe",
 RANKS = ("scalar", "profile", "field")
 
 
-@dataclass(frozen=True)
-class _Coords:
-    """Cell centres, edges and lengths of a calculation's mesh.
-
-    ``names`` is ``("z",)`` for a channel and ``("z", "x")`` for a plate;
-    the other tuples follow the same order. ``mask`` marks the plate's meat.
-    """
-
-    names: tuple[str, ...]
-    centers: tuple[np.ndarray, ...]
-    bounds: tuple[np.ndarray | None, ...]
-    weights: tuple[np.ndarray, ...]
-    mask: np.ndarray | None = None
-
-
 class _FrameList(list):
     """A list of result frames that remembers why some slots are ``None``."""
 
@@ -52,14 +40,6 @@ class _FrameList(list):
     def __init__(self, frames: Iterable = ()):
         super().__init__(frames)
         self.failures = {}
-
-
-def _level_text(v: float | str) -> str:
-    return v if isinstance(v, str) else format(v, "g")
-
-
-def _case_text(case: Mapping[str, float | str]) -> str:
-    return ", ".join(f"{k}={v if isinstance(v, str) else format(v, 'g')}" for k, v in case.items())
 
 
 def cases(**levels) -> list[dict]:
@@ -504,8 +484,6 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        from ._results import profile
-
         return profile(self, quantity, of, where, nearest, sigma, uncertainty)
 
     def field(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
@@ -535,8 +513,6 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        from ._results import field
-
         return field(self, quantity, of, where, nearest, sigma, uncertainty)
 
     def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0,
@@ -605,8 +581,6 @@ class Sweep:
             quantities it is meaningful only when they share a limit value; use
             ``required(..., limiting=True)`` for quantities with different limits.
         """
-        from ._results import reduce
-
         return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty, limiting)
 
     def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
@@ -682,7 +656,11 @@ class Sweep:
         Result
             A curve whose ``frame`` has one row per crossing with ``lower``,
             ``value``, ``upper`` (the walked envelopes), ``filled`` (whether the
-            crossing rests on an interpolated case) and ``safe``, where the
+            crossing rests on an interpolated case) and ``safe``. Every envelope
+            is walked on its own; ``lower`` and ``upper`` are the smaller and
+            the larger of the two walked bounds, so they bracket ``value``
+            whether the quantity rises or falls with ``solve_for``, and both are
+            missing when either walk finds no crossing. ``safe`` says where the
             quantity is safe:
 
             * ``"below"``: below the crossing, in ``solve_for``;
@@ -693,8 +671,6 @@ class Sweep:
               point is unsafe;
             * ``None``: no limit is declared for the quantity.
         """
-        from ._inverse import required
-
         return required(self, quantity, equals, solve_for, versus, reducer=reduce, of=of, at=at, where=where,
                         method=method, nearest=nearest, sigma=sigma, uncertainty=uncertainty, limiting=limiting)
 

@@ -4,7 +4,7 @@ from pathlib import Path
 import stream.viz
 
 PUBLIC_MODULES = {"sweep", "labels", "limits", "style"}
-PRIVATE_MODULES = {"_results", "_inverse", "_envelope", "_draw", "_encoding", "_maps"}
+PRIVATE_MODULES = {"_common", "_results", "_inverse", "_envelope", "_draw", "_encoding", "_maps"}
 
 
 def test_the_package_exports_exactly_the_user_names():
