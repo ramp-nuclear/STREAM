@@ -1,4 +1,5 @@
 import pkgutil
+from pathlib import Path
 
 import stream.viz
 
@@ -69,3 +70,11 @@ def test_result_public_fields(agr, grid_cases):
     assert {n for n in dir(Result) if not n.startswith("_") and n not in {f.name for f in fields(Result)}} == {"plot", "ylabel", "subtitle", "subtitle_with"}
     sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr)
     assert "_spec" not in repr(sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}))
+
+
+def test_docs_page_carries_the_package_example():
+    import stream.viz
+    example = stream.viz.__doc__.split("::\n\n", 1)[1].split("\n\n", 1)[0]
+    page = (Path(stream.viz.__file__).parents[2] / "docs/source/viz.rst").read_text()
+    assert example.strip() in page
+    assert "automodule" not in page
