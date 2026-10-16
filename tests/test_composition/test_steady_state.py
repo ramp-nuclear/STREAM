@@ -563,6 +563,53 @@ def test_seed_kinetics_from_powers():
     full.load(seed)
 
 
+def _standalone_plate(channel_funcs=None):
+    fuel, channel = _pair("Fuel", "Channel")
+    if channel_funcs is None:
+        channel_funcs = {"mdot": MDOT, "p_abs": P_REF, "Tin": TIN, "Tin_minus": TIN}
+    agr = symmetric_plate(channel, fuel, {channel: channel_funcs, fuel: {"power": POWER}}).to_aggregator()
+    return agr, {"channel": channel, "fuel": fuel}
+
+
+def test_decompose_a_plate_without_a_kirchhoff_has_an_empty_hydraulic_block():
+    agr, r = _standalone_plate()
+    blocks = decompose(agr)
+    assert blocks.hydraulic == frozenset()
+    assert blocks.thermal == (frozenset({r["channel"], r["fuel"]}),)
+    assert blocks.unassigned == ()
+
+
+def test_seed_of_a_plate_without_a_kirchhoff_equals_the_plate_seed():
+    agr, r = _standalone_plate()
+    seed = seed_steady_state(agr)
+    plate = symmetric_plate_seed(r["channel"], r["fuel"], mdot=MDOT, p_abs=P_REF, power=POWER, Tin=TIN)
+    assert set(seed) == set(plate)
+    for name, variables in plate.items():
+        for var, value in variables.items():
+            assert np.allclose(np.asarray(seed[name][var]).ravel(), np.asarray(value).ravel()), (name, var)
+
+
+def test_guess_of_a_plate_without_a_kirchhoff_converges_without_globalization():
+    agr, _ = _standalone_plate()
+    y = _solve_without_globalization(agr, guess_steady_state(agr))
+    assert np.linalg.norm(agr.compute(y)) < 1e-6
+
+
+def test_seed_of_a_channel_without_a_flow_asks_for_one():
+    agr, _ = _standalone_plate({"p_abs": P_REF, "Tin": TIN, "Tin_minus": TIN})
+    with pytest.raises(MissingFlowError, match="mdot"):
+        seed_steady_state(agr)
+
+
+def test_seed_of_a_kinetics_driven_plate_without_a_kirchhoff():
+    fuel, channel = _pair("Fuel", "Channel")
+    pk = _point_kinetics()
+    funcs = {channel: {"mdot": MDOT, "p_abs": P_REF, "Tin": TIN, "Tin_minus": TIN}}
+    thermal = symmetric_plate(channel, fuel, funcs) + CalculationGraph(DiGraph([(pk, fuel, vars_("power"))]))
+    seed = seed_steady_state(thermal.to_aggregator(), powers={fuel: POWER})
+    assert seed[pk.name]["power"] == POWER
+
+
 def _solve_without_globalization(agr, guess):
     return agr.solve_steady(guess, globalize=False)
 

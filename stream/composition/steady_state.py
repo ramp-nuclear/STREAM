@@ -442,21 +442,60 @@ def _abs_pressure(k: Kirchhoff, hydraulic: State, channel: Channel) -> float:
     return float(k.ref_pressure) if np.ndim(k.ref_pressure) == 0 else 1e5
 
 
-def _cluster_seed(agr: Aggregator, k: Kirchhoff, cluster, hydraulic: State, profiles: dict, flows: dict, sides: dict, T0: float) -> State:
+def _standalone_channels(agr: Aggregator, blocks: Blocks, flows: dict, channel_powers: dict, temperature, t: Second):
+    mdots, p_abs, profiles = {}, {}, {}
+    for c in (n for cluster in blocks.thermal for n in cluster if isinstance(n, Channel)):
+        mdot = flows[c] if c in flows else _func(agr, c, "mdot", t)
+        if mdot is None:
+            raise MissingFlowError(
+                f"{c} has no flow: there is no Kirchhoff, no 'mdot' func and no entry in flows. Pass "
+                f"flows={{{c.name!r}: <KgPerS>}} or give the channel an 'mdot' func."
+            )
+        mdot = float(np.asarray(mdot).item())
+        first, second = ("Tin", "Tin_minus") if mdot >= 0 else ("Tin_minus", "Tin")
+        inlet = _func(agr, c, first, t)
+        inlet = _func(agr, c, second, t) if inlet is None else inlet
+        inlet = temperature if inlet is None else inlet
+        if inlet is None:
+            raise ValueError(f"{c} has no 'Tin' or 'Tin_minus' func; pass temperature=<Celsius>.")
+        pressure = _func(agr, c, "p_abs", t)
+        mdots[c], p_abs[c] = mdot, 1e5 if pressure is None else float(np.asarray(pressure).item())
+        _, profiles[c] = _outlet(c, float(np.asarray(inlet).item()), mdot, channel_powers.get(c))
+    return mdots, p_abs, profiles
+
+
+def _cluster_seed(
+    agr: Aggregator,
+    cluster,
+    mdots: dict,
+    p_abs: dict,
+    profiles: dict,
+    sides: dict,
+    T0: float,
+    seed_coolant: bool = False,
+) -> State:
     state = {}
     walls = {}
+    if seed_coolant:
+        for c in (n for n in cluster if isinstance(n, Channel)):
+            state[c.name] = {"T_cool": profiles[c]}
     for c in (n for n in cluster if isinstance(n, ChannelAndContacts)):
-        mdot, tc, p_abs = flows[k.component_edge(c)], profiles[c], _abs_pressure(k, hydraulic, c)
+        mdot, tc, p_abs_c = mdots[c], profiles[c], p_abs[c]
         h_floor = c.fluid.conductivity(tc) / c.pipe.hydraulic_diameter
         h_sides = {}
         for side, width in zip(("left", "right"), c.pipe.heated_parts):
             q = sides[c][side] / (c.dz * width) if width > 0 else np.zeros(c.n)
             tw = tc.copy()
             for _ in range(2):
-                h = np.maximum(c.h_wall(T_wall=tw, T_cool=tc, mdot=mdot, pressure=p_abs), h_floor)
+                h = np.maximum(c.h_wall(T_wall=tw, T_cool=tc, mdot=mdot, pressure=p_abs_c), h_floor)
                 tw = tc + q / h
             walls[(c, side)], h_sides[side] = tw, h
-        state[c.name] = dict(h_left=h_sides["left"], h_right=h_sides["right"])
+        state.setdefault(c.name, {}).update(h_left=h_sides["left"], h_right=h_sides["right"])
+    if seed_coolant:
+        for c in (n for n in cluster if isinstance(n, Channel)):
+            tc = profiles[c]
+            tw = (walls[(c, "left")] + walls[(c, "right")]) / 2.0 if (c, "left") in walls else tc
+            state[c.name]["pressure"] = np.sum(c.pressure(T=tc, Tw=tw, mdot=mdots[c]))
     for f in (n for n in cluster if isinstance(n, Fuel)):
         fed = {}
         for u, v, names in agr.graph.in_edges(f, data=VARS):
@@ -505,6 +544,13 @@ def seed_steady_state(
     coefficient, and fuel interiors are tiled from their walls. Funcs win over walked
     values, as they do in the Aggregator.
 
+    A system without a Kirchhoff (plates that take their coolant from funcs, as
+    :func:`~stream.composition.mtr_geometry.symmetric_plate` builds them) is seeded channel by
+    channel: the flow from ``flows`` or the channel's ``mdot`` func, the inlet from its
+    ``Tin`` func (``Tin_minus`` for reversed flow), the absolute pressure from its
+    ``p_abs`` func (1e5 Pa without one), and the channel's own ``pressure`` from its
+    pressure drop at the seeded temperatures.
+
     Parameters
     ----------
     agr: Aggregator
@@ -514,9 +560,11 @@ def seed_steady_state(
     flows: Mapping[Calculation | str, KgPerS] or None
         Known flows by component or name. Needed only where the network cannot fix a
         flow itself: a head-driven pump, or a pump-free loop (pass a small signed flow).
+        Without a Kirchhoff, a channel's entry here wins over its ``mdot`` func.
     temperature: Celsius or None
         Reference temperature. Required when the network has no heat exchanger and no
-        pinned inlet; otherwise it only sets the walk's start.
+        pinned inlet; otherwise it only sets the walk's start. Without a Kirchhoff, it
+        is the inlet of a channel that has no ``Tin`` or ``Tin_minus`` func.
     powers: Mapping[Calculation | str, Watt] or None
         Fuel powers by fuel or name. Override a fuel's ``power`` func; required for a
         fuel driven by a kinetics node.
@@ -544,20 +592,33 @@ def seed_steady_state(
     """
     k = _find_kirchhoff(agr, k)
     blocks = decompose(agr, k)
-    flows = _complete_flows(k, _known_flows(k, _resolve(agr, flows), t))
-    _check_heated_legs(k, blocks, flows)
-    fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
-    sides = _side_powers(agr, blocks, fuel_powers)
-    channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
-    outlets, profiles, nodes = _walk_temperatures(agr, k, flows, channel_powers, temperature, t)
-    temperatures = {c: profiles.get(c, outlets[c]) for c in k.components}
-    temperatures |= {n: nodes[n] for n in k.g.nodes if isinstance(n, Calculation)}
-    hydraulic = guess_hydraulic_steady_state(k, {c: flows[k.component_edge(c)] for c in k.components}, temperatures, strategy)
-    T0 = float(np.mean(list(nodes.values())))
-    for c in k.components:
-        if isinstance(c, Channel) and c not in profiles:
-            profiles[c] = np.full(c.n, outlets[c])
-    clusters = [_cluster_seed(agr, k, cluster, hydraulic, profiles, flows, sides, T0) for cluster in blocks.thermal]
+    if k is None:
+        fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
+        sides = _side_powers(agr, blocks, fuel_powers)
+        channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
+        mdots, p_abs, profiles = _standalone_channels(agr, blocks, _resolve(agr, flows), channel_powers, temperature, t)
+        hydraulic = State({})
+        T0 = float(np.mean([np.mean(p) for p in profiles.values()])) if profiles else temperature
+    else:
+        flows = _complete_flows(k, _known_flows(k, _resolve(agr, flows), t))
+        _check_heated_legs(k, blocks, flows)
+        fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
+        sides = _side_powers(agr, blocks, fuel_powers)
+        channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
+        outlets, profiles, nodes = _walk_temperatures(agr, k, flows, channel_powers, temperature, t)
+        temperatures = {c: profiles.get(c, outlets[c]) for c in k.components}
+        temperatures |= {n: nodes[n] for n in k.g.nodes if isinstance(n, Calculation)}
+        hydraulic = guess_hydraulic_steady_state(k, {c: flows[k.component_edge(c)] for c in k.components}, temperatures, strategy)
+        T0 = float(np.mean(list(nodes.values())))
+        for c in k.components:
+            if isinstance(c, Channel) and c not in profiles:
+                profiles[c] = np.full(c.n, outlets[c])
+        mdots = {c: flows[k.component_edge(c)] for c in k.components}
+        p_abs = {c: _abs_pressure(k, hydraulic, c) for c in k.components if isinstance(c, ChannelAndContacts)}
+    clusters = [
+        _cluster_seed(agr, cluster, mdots, p_abs, profiles, sides, T0, seed_coolant=k is None)
+        for cluster in blocks.thermal
+    ]
     names = sorted(getattr(n, "name", str(n)) for n in blocks.unassigned)
     names = [name for name in names if name not in (overrides or {})]
     if names:
@@ -587,6 +648,7 @@ def guess_steady_state(
     system block by block with :func:`solve_block`: every thermal cluster with its
     hydraulics frozen, then the hydraulic block with its walls frozen, ``sweeps``
     times, and the clusters once more so the returned walls match the returned flows.
+    A system without a Kirchhoff has no hydraulic block, so only its clusters are solved.
     A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its seed
     values and is named in a warning.
 
@@ -643,7 +705,8 @@ def guess_steady_state(
     for _ in range(sweeps):
         for i, cluster in enumerate(blocks.thermal):
             attempt(cluster, f"thermal cluster {i}")
-        attempt(blocks.hydraulic, "hydraulic")
+        if blocks.hydraulic:
+            attempt(blocks.hydraulic, "hydraulic")
     for i, cluster in enumerate(blocks.thermal):
         attempt(cluster, f"thermal cluster {i}")
     return state
