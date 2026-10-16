@@ -99,20 +99,24 @@ def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
     plt.close(fig)
 
 
+@pytest.mark.filterwarnings("error")
 def test_the_module_example_runs(agr):
     import textwrap
 
-    from conftest import channel_rows, frame
+    from conftest import frame
 
     import stream.viz as viz
 
-    def model(power, mdot, wall_law):
-        m = mdot * (1.1 if wall_law == "regime" else 1.0)
-        T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
-        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * m / 0.3 * (4e6 / power)
-        rows = channel_rows(T, chfr, power)
-        rows += [("CC", "T_clad", 0, j, t + 15.0 * power / 1e6 / m) for j, t in enumerate((400.0, 500.0, 600.0, 700.0))]
-        return frame(rows)
+    def model(power, mdot, shape):
+        r = power / 20e3 * 0.2 / mdot
+        q = r * (np.array([0.7, 1.0, 1.2, 0.9]) if shape == "cosine" else np.ones(4))
+        quantities = {
+            "T_cool": 35.0 + 3.0 * np.arange(4) + 8.0 * q,
+            "T_wall, left": 50.0 + 60.0 / 1.7 * q,
+            "CHFR": 2.2 * 1.3 / q,
+            "OSVR": 1.9 * 1.3 / q,
+        }
+        return frame([("CC", name, 0, j, v[j]) for name, v in quantities.items() for j in range(4)])
 
     lines = viz.__doc__.split("::\n\n", 1)[1].splitlines()
     code = []

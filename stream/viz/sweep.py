@@ -107,8 +107,16 @@ def run_cases(
 class Sweep:
     """Cases, result frames and the aggregator they came from.
 
+    Build one from your own loop or from :func:`cases` and :func:`run_cases`,
+    then ask it a question, :meth:`profile`, :meth:`field`, :meth:`reduce`
+    (two parameters on ``versus`` make a map) or :meth:`required`, and call
+    ``.plot()`` on the answer or read its ``frame``. What is true of the whole
+    sweep is set here: labels, limits and whether holes are filled.
+
     Ask ``print(sweep)`` for the parameters and their levels, the quantities of
-    each calculation, the holes and the limits.
+    each calculation, the holes and the limits. The sweep keeps its data
+    readable: ``cases``, ``frames``, the aggregator ``agr``, the stacked
+    ``table``, ``holes``, ``filled``, ``limits`` and ``labels``.
 
     Parameters
     ----------
@@ -403,6 +411,9 @@ class Sweep:
     def profile(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
         """A profile quantity against its mesh coordinate, one line per selected case.
 
+        Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by
+        :meth:`~stream.viz.Result.plot`.
+
         ::
 
             sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
@@ -433,6 +444,9 @@ class Sweep:
     def field(self, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True):
         """A field quantity of exactly one case, drawn as a colour mesh over its two axes.
 
+        Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by
+        :meth:`~stream.viz.Result.plot`.
+
         ::
 
             sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()
@@ -461,6 +475,9 @@ class Sweep:
     def reduce(self, quantity, reducer, versus=None, of=None, where=None, axis=None, nearest=False, sigma=1.0,
                uncertainty=True, limiting=False):
         """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis.
+
+        Asked by the reducer, ``versus``, ``of``, ``where``, ``axis``, ``nearest``, ``sigma``,
+        ``uncertainty`` and ``limiting``; drawn by :meth:`~stream.viz.Result.plot`.
 
         ::
 
@@ -528,6 +545,10 @@ class Sweep:
     def required(self, quantity, equals=None, solve_for=None, versus=None, reduce=None, of=None, at=None, where=None,
                  method="linear", nearest=False, sigma=1.0, uncertainty=True, limiting=False):
         """The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``.
+
+        Asked by ``equals``, ``solve_for``, ``versus``, ``reduce``, ``of``, ``at``, ``where``,
+        ``nearest``, ``sigma``, ``uncertainty`` and ``limiting``; drawn by
+        :meth:`~stream.viz.Result.plot`.
 
         Each quantity is reduced over the mesh per case, the curve along
         ``solve_for`` is walked at every level of ``versus`` (and of every other

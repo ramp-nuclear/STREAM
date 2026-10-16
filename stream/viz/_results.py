@@ -172,7 +172,83 @@ class Result:
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
              band="total", errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
-        """Draw this result; see :func:`stream.viz._draw.plot`."""
+        """Draw this result and return ``(figure, axes)``; ``axes`` is an array for a panel grid.
+
+        Parameters
+        ----------
+        ax:
+            Draw into this axes instead of a new figure. Not with ``col`` or ``row``.
+        color, style, marker:
+            Dimensions on colour, line style and marker. Unassigned dimensions
+            take them in that order, ``quantity`` first. Not for a map, whose
+            colour is the quantity, nor for a field.
+        col, row:
+            Dimensions on a grid of panels. Not for a field.
+        bound:
+            Which envelope column is drawn:
+
+            * ``"nominal"``: ``value`` (the default);
+            * ``"lower"``: the lower envelope;
+            * ``"upper"``: the upper envelope.
+        band:
+            The uncertainty band around a nominal line. Not for a map or a field.
+
+            * ``"total"``: one band from ``lower`` to ``upper`` (the default);
+            * ``"split"``: the total band with the systematic part shaded darker inside it;
+            * ``"none"``: no band.
+        errorbars:
+            Draw the band as error bars instead of a fill. Not for a map or a field.
+        limit:
+            The declared limit of each drawn quantity:
+
+            * ``"line"``: a dashed line at the limit, a contour on a map or a field,
+              nothing extra on a ``required`` result (the default). When the
+              quantities on the axes all carry the same limit, one line in
+              ``Style.limit_color`` is drawn for all of them;
+            * ``"shade"``: the line and the unsafe side hatched; on a ``required``
+              result, the side of the curve where the limit is not met. Needs one
+              quantity (or one curve, or quantities sharing one limit) per axes; each
+              panel counts on its own.
+              Raises when the result carries no limit for the drawn quantity (none
+              declared, or a ``where_*`` or custom reducer), when several
+              quantities with different limits share the axes, or on a
+              ``required`` result whose side is unknown;
+            * ``"none"``: neither.
+        crossing:
+            Where each curve meets the declared limit of its quantity, at its
+            first linear crossing in ``x`` on the drawn ``bound``:
+
+            * ``"none"``: nothing (the default);
+            * ``"mark"``: for every drawn curve, a dashed drop line in the
+              curve's colour from the x axis up to the limit, a marker where the
+              curve meets the limit, and the x value printed horizontally on a
+              row under the tick labels, centred on the line, in the curve's
+              colour and the label's number format, without the unit (the axis
+              label carries it); a value that would overlap its left neighbour on
+              the first row drops to a second row;
+            * ``"legend"``: the drop line and marker, with the x value and its
+              unit in the legend instead of under the ticks; on a panel grid the
+              value is printed under the ticks of each panel, as ``"mark"`` does,
+              because the legend is shared.
+
+            On a panel grid every panel that marks a crossing shows its own x
+            tick labels.
+
+            A curve that never meets its limit gets no mark. For a ``profile`` or
+            a ``reduce`` curve only. Raises on a ``required`` result, a map or a
+            field, and when a drawn quantity carries no limit (none declared, or
+            a ``where_*`` or custom reducer).
+        style_sheet:
+            A :class:`Style` for the look (sizes, colours, the map's levels, the
+            markers of filled cases).
+        labels:
+            Display names merged over the result's own for this figure. An
+            entry is a ``Label`` or a shorthand tuple; the 4-tuple
+            ``(display, unit, scale, fmt)`` also sets how that name's numbers
+            print, with ``fmt`` a format spec like ``".1f"`` or a callable on the
+            scaled number. A name without a format prints with the style
+            sheet's ``number_format``.
+        """
         from ._draw import plot
 
         return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, crossing, style_sheet, labels)

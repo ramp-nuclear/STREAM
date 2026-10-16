@@ -71,7 +71,7 @@ class Labels(Mapping[str, Label]):
     ``default_format``, a Python format spec (``".4g"`` unless given). A
     registry's own ``default_format`` reaches ``Result.subtitle``,
     ``Result.ylabel`` and direct :meth:`value` and :meth:`describe` calls;
-    in figures :func:`~stream.viz._draw.plot` replaces it with the style
+    in figures :meth:`~stream.viz.Result.plot` replaces it with the style
     sheet's ``number_format``.
     """
 

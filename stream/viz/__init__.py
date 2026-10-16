@@ -1,28 +1,48 @@
 """Figures and tidy data from steady-state sweeps.
 
-Build a :class:`Sweep` from a list of case dicts and the matching list of
-result frames (``State.to_dataframe()`` outputs, optionally with threshold
-rows and ``uq_attach`` bands), declare the limits the design must respect,
-then ask it a question (``profile``, ``field``, ``reduce``, ``required``)
-and plot the answer::
+A sweep is a set of steady states over a grid of design parameters, and the
+figures that matter are the answers to a few questions about it: how a
+quantity varies along the channel, how its worst value moves with a
+parameter, and how far a parameter can go before a limit is crossed. The
+workflow has three steps:
 
-    cases_ = cases(power=[2e6, 4e6, 6e6], mdot=[0.2, 0.3], wall_law=["Dittus", "regime"])
+1. Build a :class:`Sweep` from the case dicts, the matching result frames
+   (``State.to_dataframe()`` outputs, optionally with threshold rows and
+   ``uq_attach`` bands) and the aggregator they came from, from your own loop
+   or from :func:`cases` and :func:`run_cases`. ``print(sweep)`` says what can be asked of it.
+2. Ask a question: :meth:`Sweep.profile`, :meth:`Sweep.field`,
+   :meth:`Sweep.reduce` or :meth:`Sweep.required`. A map is ``reduce`` with
+   two parameters on ``versus``.
+3. Call ``.plot()`` on the answer, or read its ``frame``, a tidy DataFrame
+   with ``lower``, ``value`` and ``upper`` columns from the uncertainty
+   envelopes.
+
+::
+
+    cases_ = cases(power=[20e3, 40e3, 60e3, 80e3], mdot=[0.2, 0.3], shape=["cosine", "flat"])
     cases_, frames = run_cases(model, cases_)
     sweep = Sweep(cases_, frames, agr,
-                  labels={"power": ("Power", "MW", 1e-6)},
-                  limits={"CHFR": at_least(1.3), "T_clad": at_most(900.0)})
+                  labels={"power": ("Power per plate", "kW", 1e-3),
+                          "mdot": ("Mass flow", "kg/s"),
+                          "shape": ("Axial power shape", ""),
+                          "OSVR": ("OSV ratio", ""),
+                          "CHFR": ("CHF ratio", ""),
+                          "T_wall, left": ("Clad surface temperature", "°C")},
+                  limits={"OSVR": at_least(1.3), "CHFR": at_least(1.3), "T_wall, left": at_most(110.0)})
     print(sweep)
-    sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3, wall_law="regime")).plot()
-    sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", style="wall_law")
-    sweep.reduce("CHFR", "min", versus="power", where=dict(wall_law="regime")).plot(crossing="mark")
-    sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(col="wall_law", limit="shade")
-    sweep.required(["CHFR", "T_clad"], solve_for="power", versus="mdot", limiting=True).plot()
+    sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()
+    sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")
+    sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", limit="shade")
+    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(limit="shade")
+    sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")
 
-Every answer carries ``frame``, a tidy DataFrame with ``lower``, ``value``
-and ``upper`` columns from the uncertainty envelopes, and ``plot`` draws it
-with generated labels and legends under the STREAM style. A declared limit
-is drawn on every figure that shows its quantity, and ``limiting=True``
-collapses several quantities or calculations to the one that binds.
+Customisation lives in three places. The :class:`Sweep` holds what is true of
+the whole sweep: parameter and quantity labels, the declared limits and
+whether holes are filled. The question holds what is asked: ``where``, ``of``,
+the reducer, ``versus``, ``limiting`` and the target. :meth:`Result.plot` holds how
+the answer is drawn: the encodings, bands, how the limit and its crossing are
+shown, the style sheet and label overrides. A declared limit is drawn on every
+figure that shows its quantity.
 """
 
 from ._envelope import at as at
