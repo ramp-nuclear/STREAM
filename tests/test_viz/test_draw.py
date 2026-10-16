@@ -739,8 +739,12 @@ def crossing_markers(ax):
     return [ln for ln in ax.get_lines() if ln.get_linestyle() == "None" and ln.get_markeredgecolor() == "white"]
 
 
+def foot_annotations(ax):
+    return [t for t in ax.texts if getattr(t, "xycoords", None) == ("data", "axes fraction")]
+
+
 def foot_texts(ax):
-    return [t.get_text() for t in ax.texts if t.get_rotation() == 90]
+    return [t.get_text() for t in foot_annotations(ax)]
 
 
 def test_crossing_mark_draws_a_drop_line_a_marker_and_the_value(agr, grid_cases):
@@ -755,8 +759,54 @@ def test_crossing_mark_draws_a_drop_line_a_marker_and_the_value(agr, grid_cases)
     assert segment[1][1] == pytest.approx(1.3) and segment[0][1] == pytest.approx(ax.get_ylim()[0])
     (marker,) = crossing_markers(ax)
     assert marker.get_xdata()[0] == pytest.approx(xc) and marker.get_ydata()[0] == pytest.approx(1.3)
-    assert foot_texts(ax) == ["4.8e+06 W"]
+    assert foot_texts(ax) == ["4.8e+06"]
     assert len(dashed_lines(ax)) == 1
+    plt.close(fig)
+
+
+def test_crossing_text_sits_under_the_ticks(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(crossing="mark")
+    (t,) = foot_annotations(ax)
+    assert t.get_rotation() == 0 and t.xycoords == ("data", "axes fraction") and t.xy[1] == 0
+    assert t.xyann[1] < 0 and t.get_ha() == "center" and t.get_va() == "top"
+    plt.close(fig)
+
+
+def test_crossing_mark_twice_on_one_axes_keeps_the_label_pad(agr, grid_cases):
+    r = limited(agr, grid_cases, CHFR=at_least(1.3)).reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
+    fig, ax = r.plot(crossing="mark")
+    pad = ax.xaxis.labelpad
+    assert pad > plt.rcParams["axes.labelpad"]
+    r.plot(ax=ax, crossing="mark")
+    assert ax.xaxis.labelpad == pytest.approx(pad)
+    plt.close(fig)
+
+
+def test_crossing_mark_draws_on_a_figure_without_pyplot(agr, grid_cases):
+    from matplotlib.figure import Figure
+
+    fig = Figure()
+    ax = fig.subplots()
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(ax=ax, crossing="mark")
+    assert len(foot_annotations(ax)) == 1
+
+
+def test_close_crossings_take_two_rows_and_far_ones_one(agr):
+    cases = [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.28, 0.3, 0.45)]
+    sweep = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr, limits={"CHFR": at_least(1.3)})
+    fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="mark")
+    rows = [t.xyann[1] for t in sorted(foot_annotations(ax), key=lambda t: t.xy[0])]
+    assert rows[0] == rows[2] and rows[1] < rows[0]
+    plt.close(fig)
+
+
+def test_crossing_mark_on_a_shared_x_grid_shows_ticks_in_every_panel(agr, grid_cases):
+    sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
+    fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(row="mdot", crossing="mark")
+    assert all(ax.xaxis.get_ticklabels()[0].get_visible() for ax in axes.ravel())
+    assert all(len(foot_annotations(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
 
 
@@ -816,7 +866,7 @@ def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
     (drop,) = drop_lines(ax)
     (segment,) = drop.get_segments()
     assert segment[0][0] == pytest.approx(found[0])
-    assert foot_texts(ax) == ["0.21 m"]
+    assert foot_texts(ax) == ["0.21"]
     plt.close(fig)
 
 
@@ -836,7 +886,7 @@ def test_crossing_without_the_limit_line(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
     fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(limit="none", crossing="mark")
     assert len(drop_lines(ax)) == 1 and dashed_lines(ax) == []
-    assert [t.get_text() for t in ax.texts] == ["4.8e+06 W"]
+    assert [t.get_text() for t in ax.texts] == ["4.8e+06"]
     plt.close(fig)
 
 
@@ -859,7 +909,7 @@ def test_crossing_refusals(agr, grid_cases):
 def test_crossing_legend_on_panels_prints_at_the_foot(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
     fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot", crossing="legend")
-    assert [foot_texts(ax) for ax in axes.ravel()] == [["3.4e+06 W"], ["4.8e+06 W"]]
+    assert [foot_texts(ax) for ax in axes.ravel()] == [["3.4e+06"], ["4.8e+06"]]
     assert all(ax.get_legend() is None for ax in axes.ravel())
     plt.close(fig)
 
@@ -868,7 +918,7 @@ def test_crossing_value_prints_with_the_label_format(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
     r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
     fig, ax = r.plot(crossing="mark", labels={"power": ("Power", "MW", 1e-6, ".1f")})
-    assert foot_texts(ax) == ["4.8 MW"]
+    assert foot_texts(ax) == ["4.8"]
     (marker,) = crossing_markers(ax)
     assert marker.get_xdata()[0] == pytest.approx(4.8)
     plt.close(fig)
@@ -924,7 +974,7 @@ def test_crossing_mark_on_a_binding_result(agr):
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
     assert drop.get_segments()[0][0][0] == pytest.approx(xc)
-    assert foot_texts(ax) == [f"{xc:.4g} W"]
+    assert foot_texts(ax) == [f"{xc:.4g}"]
     plt.close(fig)
 
 

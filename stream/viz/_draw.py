@@ -336,8 +336,47 @@ def _crossing_text(labels: Labels, result, xc: float) -> str:
     return labels.value(result.x, xc) + (f" {unit}" if unit else "")
 
 
+def _foot_rows(ax, found_x: list[float], widths: list[float]) -> list[int]:
+    """The row, 0 or 1, of each foot label centred at ``found_x`` (data) with ``widths`` (display units).
+
+    Left to right, a label takes row 1 when its box would overlap the previous label on row 0.
+    """
+    px = ax.transData.transform([(x, 0.0) for x in found_x])[:, 0]
+    rows = [0] * len(found_x)
+    edge = None
+    for k in sorted(range(len(found_x)), key=lambda k: px[k]):
+        left = px[k] - widths[k] / 2
+        if edge is not None and left < edge + 2:
+            rows[k] = 1
+        else:
+            edge = px[k] + widths[k] / 2
+    return rows
+
+
+def _draw_foot(result, ax, found: list[Crossing], labels: Labels, xs: float) -> None:
+    fig = ax.figure
+    texts = [labels.value(result.x, c.x) for c in found]
+    probes = [ax.text(0, 0, text, fontsize=8) for text in texts]
+    fig.canvas.draw()
+    points = 72.0 / fig.dpi
+    bottom = ax.get_window_extent().y0
+    ticks = [t.get_window_extent().y0 for t in ax.xaxis.get_ticklabels() if t.get_visible() and t.get_text()]
+    tick_height = (bottom - min(ticks)) * points if ticks else 0.0
+    boxes = [t.get_window_extent() for t in probes]
+    for t in probes:
+        t.remove()
+    line_height = max(b.height for b in boxes) * points
+    found_x = [c.x * xs for c in found]
+    rows = _foot_rows(ax, found_x, [b.width for b in boxes]) if len(found) > 1 else [0]
+    for c, x, text, row in zip(found, found_x, texts, rows):
+        ax.annotate(text, xy=(x, 0), xycoords=("data", "axes fraction"),
+                    xytext=(0, -(tick_height + 2 + row * line_height)), textcoords="offset points",
+                    ha="center", va="top", rotation=0, fontsize=8, color=c.props["color"])
+    ax.xaxis.labelpad = plt.rcParams["axes.labelpad"] + (max(rows) + 1) * line_height
+
+
 def draw_crossings(result, ax, found: list[Crossing], style: Style, labels: Labels, foot: bool) -> None:
-    """A dashed drop line and a marker where each curve meets its limit, the value at the foot on request.
+    """A dashed drop line and a marker where each curve meets its limit, the value under the ticks on request.
 
     The axes limits are kept as they are.
     """
@@ -352,10 +391,9 @@ def draw_crossings(result, ax, found: list[Crossing], style: Style, labels: Labe
         ax.vlines(x, lo, y, linestyles="--", linewidth=style.crossing_linewidth, colors=color, zorder=2)
         ax.plot(x, y, linestyle="none", marker="o", markersize=style.markersize, color=color,
                 markeredgecolor="white", markeredgewidth=0.8, zorder=5)
-        if foot:
-            ax.annotate(_crossing_text(labels, result, c.x), xy=(x, lo), xycoords="data", xytext=(3, 3),
-                        textcoords="offset points", rotation=90, ha="left", va="bottom", fontsize=9, color=color)
     ax.set_ylim(lo, hi)
+    if foot:
+        _draw_foot(result, ax, found, labels, xs)
 
 
 def _level_text(result, labels: Labels, dim: str, level) -> str:
@@ -538,12 +576,18 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
         * ``"none"``: nothing (the default);
         * ``"mark"``: for every drawn curve, a dashed drop line in the
           curve's colour from the x axis up to the limit, a marker where the
-          curve meets the limit, and the x value printed along the foot of
-          the line;
-        * ``"legend"``: the drop line and marker, with the x value in the
-          legend instead of at the foot; on a panel grid the value is printed
-          at the foot inside each panel, as ``"mark"`` does, because the
-          legend is shared.
+          curve meets the limit, and the x value printed horizontally on a
+          row under the tick labels, centred on the line, in the curve's
+          colour and the label's number format, without the unit (the axis
+          label carries it); a value that would overlap its left neighbour
+          drops to a second row;
+        * ``"legend"``: the drop line and marker, with the x value and its
+          unit in the legend instead of under the ticks; on a panel grid the
+          value is printed under the ticks of each panel, as ``"mark"`` does,
+          because the legend is shared.
+
+        On a panel grid every panel that marks a crossing shows its own x
+        tick labels.
 
         A curve that never meets its limit gets no mark. For a ``profile`` or
         a ``reduce`` curve only. Raises on a ``required`` result, a map or a
@@ -624,6 +668,8 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             axes[0, 0].autoscale_view()
         for panel, panel_ax, found in panels:
             shade_limits(panel, panel_ax, enc, sheet, merged, limit)
+            if found:
+                panel_ax.tick_params(labelbottom=True)
             draw_crossings(panel, panel_ax, found, sheet, merged, foot=True)
         build_legend(axes[0, -1], enc, drawn_any, inner_any, band, sigma_text, merged, sheet, binding=binding,
                      filled_drawn=filled_any)
