@@ -382,7 +382,16 @@ def _mixing_eps(node) -> float:
     return eps if eps is not None else smoothing.DEFAULT_MDOT_EPS
 
 
-def _walk_temperatures(agr: Aggregator, k: Kirchhoff, flows: dict, channel_powers: dict, temperature, t: Second):
+def _walk_temperatures(
+    agr: Aggregator,
+    k: Kirchhoff,
+    flows: dict,
+    channel_powers: dict,
+    temperature,
+    t: Second,
+    passes: int = 50,
+    tolerance: Celsius = 1e-6,
+):
     sources = [comp.T for comp in k.components if isinstance(comp, HeatExchanger)]
     for comp in k.components:
         for name in ("Tin", "Tin_minus"):
@@ -400,7 +409,7 @@ def _walk_temperatures(agr: Aggregator, k: Kirchhoff, flows: dict, channel_power
     outlets = dict.fromkeys(k.components, T0)
     profiles = {}
     edges = list(k.g.edges(data=COMPS))
-    for _ in range(50):
+    for _ in range(passes):
         change = 0.0
         for u, v, comps in edges:
             mdot = flows[k.component_edge(comps[0])]
@@ -430,7 +439,7 @@ def _walk_temperatures(agr: Aggregator, k: Kirchhoff, flows: dict, channel_power
             mixed = N / D if D > 0 else nodes[node]
             change = max(change, abs(mixed - nodes[node]))
             nodes[node] = mixed
-        if change < 1e-6:
+        if change < tolerance:
             break
     return outlets, profiles, nodes
 
@@ -532,6 +541,8 @@ def seed_steady_state(
     overrides: DictState | None = None,
     t: Second = 0.0,
     strategy: HydraulicStrategyMap | None = None,
+    walk_passes: int = 50,
+    walk_tolerance: Celsius = 1e-6,
 ) -> State:
     """A closed-form steady-state guess for a flow network wall-coupled to fuel plates.
 
@@ -575,6 +586,13 @@ def seed_steady_state(
         Time at which funcs are evaluated.
     strategy: HydraulicStrategyMap or None
         Per-component pressure-drop laws for components the hydraulic guesser does not know.
+    walk_passes: int
+        The seed walks the network in flow direction, computing each component's outlet
+        from its inlet and mixing the arrivals at every junction, and repeats the pass
+        until no temperature moves by more than ``walk_tolerance``, at most
+        ``walk_passes`` times. A loop settles in a few passes. Default 50.
+    walk_tolerance: Celsius
+        The largest temperature change that ends the walk. Default 1e-6.
 
     Returns
     -------
@@ -605,7 +623,9 @@ def seed_steady_state(
         fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
         sides = _side_powers(agr, blocks, fuel_powers)
         channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
-        outlets, profiles, nodes = _walk_temperatures(agr, k, flows, channel_powers, temperature, t)
+        outlets, profiles, nodes = _walk_temperatures(
+            agr, k, flows, channel_powers, temperature, t, walk_passes, walk_tolerance
+        )
         temperatures = {c: profiles.get(c, outlets[c]) for c in k.components}
         temperatures |= {n: nodes[n] for n in k.g.nodes if isinstance(n, Calculation)}
         hydraulic = guess_hydraulic_steady_state(k, {c: flows[k.component_edge(c)] for c in k.components}, temperatures, strategy)
@@ -628,6 +648,15 @@ def seed_steady_state(
     return State.merge(hydraulic, *clusters, _kinetics_seed(agr, blocks, fuel_powers, t), overrides or {})
 
 
+def _attempt(agr: Aggregator, nodes, state: State, label: str, t: Second, **solver_options) -> State:
+    try:
+        return State.merge(state, solve_block(agr, nodes, state, t=t, **solver_options))
+    except AlgRuntimeError as err:
+        names = sorted(getattr(n, "name", str(n)) for n in nodes)
+        warnings.warn(f"The {label} block {names} did not solve from the seed and keeps its seed values: {err}")
+        return state
+
+
 def guess_steady_state(
     agr: Aggregator,
     k: Kirchhoff | None = None,
@@ -638,19 +667,20 @@ def guess_steady_state(
     overrides: DictState | None = None,
     t: Second = 0.0,
     strategy: HydraulicStrategyMap | None = None,
-    refine: bool = True,
     sweeps: int = 2,
+    walk_passes: int = 50,
+    walk_tolerance: Celsius = 1e-6,
     **solver_options,
 ) -> State:
     """A steady-state guess for a flow network wall-coupled to fuel plates.
 
-    Seeds with :func:`seed_steady_state`, then, unless ``refine`` is off, sweeps the
-    system block by block with :func:`solve_block`: every thermal cluster with its
-    hydraulics frozen, then the hydraulic block with its walls frozen, ``sweeps``
-    times, and the clusters once more so the returned walls match the returned flows.
-    A system without a Kirchhoff has no hydraulic block, so only its clusters are solved.
-    A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its seed
-    values and is named in a warning.
+    Seeds with :func:`seed_steady_state`, then refines the seed block by block with
+    :func:`solve_block`. Every thermal cluster is solved first with its hydraulics
+    frozen. Each sweep then solves the hydraulic block with its walls frozen, and every
+    cluster again, so the walls are solved last, against the final flows. A system
+    without a Kirchhoff has no hydraulic block, and a sweep solves its clusters only.
+    A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its
+    previous values and is named in a warning.
 
     Parameters
     ----------
@@ -658,12 +688,13 @@ def guess_steady_state(
         The full system.
     k: Kirchhoff or None
         The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used.
-    flows, temperature, powers, overrides, t, strategy:
+    flows, temperature, powers, overrides, t, strategy, walk_passes, walk_tolerance:
         As in :func:`seed_steady_state`.
-    refine: bool
-        Sweep the blocks after seeding. Default ``True``.
     sweeps: int
-        Number of cluster-then-hydraulic sweeps. One is enough for forced flow.
+        Number of hydraulic-then-clusters sweeps after the first cluster solves. Zero
+        or less returns the seed. One sweep is enough on a single forced loop; two are
+        worth it where the flows feed back on the walls (parallel channels, natural
+        convection). Default 2.
     solver_options:
         Forwarded to every block's :meth:`~stream.aggregator.Aggregator.solve_steady`.
 
@@ -675,38 +706,34 @@ def guess_steady_state(
     Raises
     ------
     ValueError
-        If ``sweeps`` is less than one, or as in :func:`seed_steady_state`.
+        An error raised by :func:`seed_steady_state` (also when the Kirchhoff or the
+        kinetics node is ambiguous).
     ~stream.composition.subsystems.MissingFlowError
         A heated channel whose flow nothing fixes.
     MissingPowerError
         A fuel whose steady power is unknown.
     """
-    if sweeps < 1:
-        raise ValueError(f"sweeps must be at least 1, was {sweeps}")
     k = _find_kirchhoff(agr, k)
     blocks = decompose(agr, k)
     state = seed_steady_state(
-        agr, k, flows=flows, temperature=temperature, powers=powers, overrides=overrides, t=t, strategy=strategy
+        agr,
+        k,
+        flows=flows,
+        temperature=temperature,
+        powers=powers,
+        overrides=overrides,
+        t=t,
+        strategy=strategy,
+        walk_passes=walk_passes,
+        walk_tolerance=walk_tolerance,
     )
-    if not refine:
+    if sweeps <= 0:
         return state
-    agr.load(state)
-
-    def attempt(nodes, label: str) -> None:
-        nonlocal state
-        try:
-            state = State.merge(state, solve_block(agr, nodes, state, t=t, **solver_options))
-        except AlgRuntimeError as err:
-            names = sorted(getattr(n, "name", str(n)) for n in nodes)
-            warnings.warn(
-                f"The {label} block {names} did not solve from the seed and keeps its seed values: {err}"
-            )
-
-    for _ in range(sweeps):
-        for i, cluster in enumerate(blocks.thermal):
-            attempt(cluster, f"thermal cluster {i}")
-        if blocks.hydraulic:
-            attempt(blocks.hydraulic, "hydraulic")
     for i, cluster in enumerate(blocks.thermal):
-        attempt(cluster, f"thermal cluster {i}")
+        state = _attempt(agr, cluster, state, f"thermal cluster {i}", t, **solver_options)
+    for _ in range(sweeps):
+        if blocks.hydraulic:
+            state = _attempt(agr, blocks.hydraulic, state, "hydraulic", t, **solver_options)
+        for i, cluster in enumerate(blocks.thermal):
+            state = _attempt(agr, cluster, state, f"thermal cluster {i}", t, **solver_options)
     return state

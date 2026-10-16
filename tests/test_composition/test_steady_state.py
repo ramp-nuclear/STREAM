@@ -614,10 +614,10 @@ def _solve_without_globalization(agr, guess):
     return agr.solve_steady(guess, globalize=False)
 
 
-def test_guess_refine_false_returns_the_seed():
+def test_guess_with_zero_sweeps_returns_the_seed():
     agr, _, _ = _forced_plate_loop()
     seed = seed_steady_state(agr)
-    guess = guess_steady_state(agr, refine=False)
+    guess = guess_steady_state(agr, sweeps=0)
     assert np.allclose(agr.load(seed), agr.load(guess))
 
 
@@ -674,12 +674,6 @@ def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
     assert guess[k.name][k.component_edge(r["channel"])] == seed[k.name][k.component_edge(r["channel"])]
     assert not np.allclose(guess[r["fuel"].name]["T"], seed[r["fuel"].name]["T"])
     agr.load(guess)
-
-
-def test_guess_rejects_zero_sweeps():
-    agr, _, _ = _forced_plate_loop()
-    with pytest.raises(ValueError):
-        guess_steady_state(agr, sweeps=0)
 
 
 def test_guess_parallel_core_needs_only_the_pump_flow():
