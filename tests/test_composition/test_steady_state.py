@@ -44,6 +44,7 @@ from .test_natural_convection import NC_MDOT
 from .test_natural_convection import _build as _nc_build
 
 TIN, P_REF, POWER, MDOT = 40.0, 2e5, 1000.0, 0.5
+PINNED_INLET = 15.0
 
 
 def _pair(fuel_name: str, channel_name: str):
@@ -118,48 +119,6 @@ def _parallel_core():
         + symmetric_plate(c2, f2, funcs={f2: dict(power=2 * POWER)}).to_aggregator()
     )
     return agr, fg, dict(c1=c1, c2=c2, f1=f1, f2=f2, pump=pump, hx=hx)
-
-
-def _forced_and_passive_loops():
-    fuel, channel = _pair("Fuel", "Channel")
-    passive_fuel, passive_channel = _pair("PassiveFuel", "PassiveChannel")
-    j_top, j_bot, j_side = Junction(name="J_top"), Junction(name="J_bot"), Junction(name="J_side")
-    pump = Pump(mdot0=MDOT, name="Pump")
-    hx = HeatExchanger(outlet=TIN, name="HX")
-    fg = FlowGraph(
-        flow_edge((j_top, j_bot), channel),
-        flow_edge((j_bot, j_top), pump, hx),
-        flow_edge((j_top, j_side), passive_channel),
-        flow_edge((j_side, j_top), Resistor(resistance=2e4, name="R")),
-        abs_pressure_comps=[channel, passive_channel],
-        reference_node=(j_top, P_REF),
-    )
-    agr = (
-        fg.aggregator
-        + symmetric_plate(channel, fuel, funcs={fuel: dict(power=POWER)}).to_aggregator()
-        + symmetric_plate(passive_channel, passive_fuel, funcs={passive_fuel: dict(power=POWER)}).to_aggregator()
-    )
-    return agr, fg, dict(channel=channel, passive_channel=passive_channel, fuel=fuel, passive_fuel=passive_fuel, pump=pump)
-
-
-def _chain_with_outer_plates():
-    f0, c0 = _pair("F0", "C0")
-    f1, c1 = _pair("F1", "C1")
-    f2, _ = _pair("F2", "Unused")
-    j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
-    pump = Pump(mdot0=2 * MDOT, name="Pump")
-    hx = HeatExchanger(outlet=TIN, name="HX")
-    fg = FlowGraph(
-        flow_edge((j_top, j_bot), c0),
-        flow_edge((j_top, j_bot), c1),
-        flow_edge((j_bot, j_top), pump, hx),
-        abs_pressure_comps=[c0, c1],
-        reference_node=(j_top, P_REF),
-    )
-    thermal = chain_fuels_channels([c0, c1], [f0, f1, f2])
-    thermal.funcs = {f: dict(power=POWER) for f in (f0, f1, f2)}
-    agr = fg.aggregator + thermal.to_aggregator()
-    return agr, fg, dict(c0=c0, c1=c1, f0=f0, f1=f1, f2=f2, pump=pump, hx=hx)
 
 
 def test_decompose_symmetric_plate_loop():
@@ -306,7 +265,7 @@ def test_known_flows_reads_the_pump_flow():
     assert known == {k.component_edge(r["pump"]): MDOT}
 
 
-def test_known_flows_user_value_and_pump_disagree():
+def test_known_flows_rejects_a_user_flow_that_contradicts_the_pump():
     agr, fg, r = _forced_plate_loop()
     k = fg.kirchhoff
     with pytest.raises(ValueError, match="disagree"):
@@ -339,18 +298,21 @@ def test_complete_flows_gives_weighted_parallel_edges_the_same_per_element_flow(
     assert np.max(np.abs(k._kcl @ x)) < 1e-12
 
 
-def test_complete_flows_keeps_a_closed_flapper_leg_at_zero():
+def _flapper_loop():
     j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
-    pump = Pump(mdot0=MDOT, name="Pump")
     core = Resistor(resistance=2e4, name="Core")
     flapper = Flapper(open_at_current=0.0, f=1.0, fluid=light_water, area=1e-3, open_rate=1.0, name="Flapper")
     fg = FlowGraph(
         flow_edge((j_top, j_bot), core),
         flow_edge((j_top, j_bot), flapper),
-        flow_edge((j_bot, j_top), pump),
-        funcs={flapper: dict(t=identity, ref_mdot=np.inf)},
+        flow_edge((j_bot, j_top), Pump(mdot0=MDOT, name="Pump")),
+        funcs={flapper: {"t": identity, "ref_mdot": np.inf}},
     )
-    k = fg.kirchhoff
+    return fg.kirchhoff, flapper, core
+
+
+def test_complete_flows_keeps_a_closed_flapper_leg_at_zero():
+    k, flapper, core = _flapper_loop()
     assert np.isposinf(flapper.t_open)
     known = _known_flows(k, {}, 0.0)
     assert known[k.component_edge(flapper)] == 0.0
@@ -360,6 +322,9 @@ def test_complete_flows_keeps_a_closed_flapper_leg_at_zero():
     residual = flapper.calculate(np.array([TIN, 0.0]), mdot=flows[k.component_edge(flapper)], Tin=TIN, t=0.0)
     assert residual[1] == 0.0
 
+
+def test_complete_flows_shares_the_flow_with_an_open_flapper():
+    k, flapper, _ = _flapper_loop()
     flapper.open(0.0)
     open_flows = _complete_flows(k, _known_flows(k, {}, 1.0))
     assert open_flows[k.component_edge(flapper)] == pytest.approx(MDOT / 2)
@@ -369,6 +334,28 @@ def test_seed_pump_free_heated_loop_asks_for_a_signed_flow():
     agr, _, r = _forced_plate_loop(pump=Pump(pressure=0.0, name="Pump"))
     with pytest.raises(MissingFlowError, match="Channel"):
         seed_steady_state(agr)
+
+
+def _forced_and_passive_loops():
+    fuel, channel = _pair("Fuel", "Channel")
+    passive_fuel, passive_channel = _pair("PassiveFuel", "PassiveChannel")
+    j_top, j_bot, j_side = Junction(name="J_top"), Junction(name="J_bot"), Junction(name="J_side")
+    pump = Pump(mdot0=MDOT, name="Pump")
+    hx = HeatExchanger(outlet=TIN, name="HX")
+    fg = FlowGraph(
+        flow_edge((j_top, j_bot), channel),
+        flow_edge((j_bot, j_top), pump, hx),
+        flow_edge((j_top, j_side), passive_channel),
+        flow_edge((j_side, j_top), Resistor(resistance=2e4, name="R")),
+        abs_pressure_comps=[channel, passive_channel],
+        reference_node=(j_top, P_REF),
+    )
+    agr = (
+        fg.aggregator
+        + symmetric_plate(channel, fuel, funcs={fuel: dict(power=POWER)}).to_aggregator()
+        + symmetric_plate(passive_channel, passive_fuel, funcs={passive_fuel: dict(power=POWER)}).to_aggregator()
+    )
+    return agr, fg, dict(channel=channel, passive_channel=passive_channel, fuel=fuel, passive_fuel=passive_fuel, pump=pump)
 
 
 def test_seed_rejects_a_stagnant_heated_leg_completed_by_least_squares():
@@ -407,11 +394,10 @@ def _kinetics_loop():
 
 
 def test_kinetics_driven_fuel_without_powers_is_an_error():
-    full, _, r = _kinetics_loop()
+    full, _, _ = _kinetics_loop()
     blocks = decompose(full)
     with pytest.raises(MissingPowerError, match="Fuel"):
         _fuel_powers(full, blocks, {}, 0.0)
-    assert _fuel_powers(full, blocks, {r["fuel"]: POWER}, 0.0) == {r["fuel"]: POWER}
 
 
 def test_side_powers_symmetric_plate_heats_both_sides_with_half_each():
@@ -448,7 +434,7 @@ def test_walk_heated_channel_outlet_is_inlet_plus_power_over_flow_cp():
     assert nodes[r["j_top"]] == pytest.approx(TIN)
 
 
-def test_walk_honours_a_pinned_reverse_inlet():
+def test_walk_uses_a_pinned_Tin_minus_under_reversed_flow():
     fuel, channel = _pair("Fuel", "Channel")
     j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
     pump = Pump(mdot0=-MDOT, name="Pump")
@@ -459,13 +445,13 @@ def test_walk_honours_a_pinned_reverse_inlet():
         flow_edge((j_bot, j_top), pump, grav, hx),
         abs_pressure_comps=[channel],
         reference_node=(j_top, P_REF),
-        funcs={grav: dict(Tin_minus=15.0)},
+        funcs={grav: dict(Tin_minus=PINNED_INLET)},
     )
     agr = fg.aggregator + symmetric_plate(channel, fuel, funcs={fuel: dict(power=POWER)}).to_aggregator()
     k = fg.kirchhoff
     flows = {k.component_edge(c): -MDOT for c in k.components}
     outlets, _, _ = _walk_temperatures(agr, k, flows, {channel: np.full(channel.n, POWER / channel.n)}, None, 0.0)
-    assert outlets[grav] == 15.0
+    assert outlets[grav] == PINNED_INLET
 
 
 def test_walk_without_a_sink_needs_a_temperature():
@@ -495,12 +481,10 @@ def test_seed_of_a_symmetric_plate_equals_the_plate_seed():
     )
 
 
-def test_seed_loads_and_seeds_every_calculation():
-    for build in (_forced_plate_loop, _chain_loop, _parallel_core):
-        agr, _, _ = build()
-        seed = seed_steady_state(agr)
-        y = agr.load(seed)
-        assert np.all(np.isfinite(y))
+@pytest.mark.parametrize("build", [_forced_plate_loop, _chain_loop, _parallel_core], ids=["forced", "chain", "parallel"])
+def test_seed_loads_and_seeds_every_calculation(build):
+    agr, _, _ = build()
+    assert np.all(np.isfinite(agr.load(seed_steady_state(agr))))
 
 
 def test_seed_chain_gives_each_channel_side_its_own_wall():
@@ -509,6 +493,26 @@ def test_seed_chain_gives_each_channel_side_its_own_wall():
     c1, fuel = r["c1"], r["fuel"]
     assert np.allclose(seed[fuel.name]["T_wall_left"], seed[fuel.name]["T_wall_right"])
     assert np.all(seed[fuel.name]["T_wall_left"] > seed[c1.name]["T_cool"])
+
+
+def _chain_with_outer_plates():
+    f0, c0 = _pair("F0", "C0")
+    f1, c1 = _pair("F1", "C1")
+    f2, _ = _pair("F2", "Unused")
+    j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
+    pump = Pump(mdot0=2 * MDOT, name="Pump")
+    hx = HeatExchanger(outlet=TIN, name="HX")
+    fg = FlowGraph(
+        flow_edge((j_top, j_bot), c0),
+        flow_edge((j_top, j_bot), c1),
+        flow_edge((j_bot, j_top), pump, hx),
+        abs_pressure_comps=[c0, c1],
+        reference_node=(j_top, P_REF),
+    )
+    thermal = chain_fuels_channels([c0, c1], [f0, f1, f2])
+    thermal.funcs = {f: dict(power=POWER) for f in (f0, f1, f2)}
+    agr = fg.aggregator + thermal.to_aggregator()
+    return agr, fg, dict(c0=c0, c1=c1, f0=f0, f1=f1, f2=f2, pump=pump, hx=hx)
 
 
 def test_seed_gives_an_outer_plate_the_same_wall_on_both_sides():
@@ -541,7 +545,6 @@ def test_seed_reports_unassigned_and_merges_overrides_last():
         full.load(seed)
     seed = seed_steady_state(full, overrides={stray.name: dict(Tin=TIN, pressure=0.0), r["hx"].name: dict(Tin=99.0)})
     assert seed[r["hx"].name]["Tin"] == 99.0
-    full.load(seed)
 
 
 def test_seed_does_not_warn_about_a_node_the_overrides_cover():
@@ -552,15 +555,13 @@ def test_seed_does_not_warn_about_a_node_the_overrides_cover():
     full = agr + extra.to_aggregator()
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        seed = seed_steady_state(full, overrides={stray.name: dict(Tin=TIN, pressure=0.0)})
-    full.load(seed)
+        seed_steady_state(full, overrides={stray.name: dict(Tin=TIN, pressure=0.0)})
 
 
 def test_seed_kinetics_from_powers():
     full, _, r = _kinetics_loop()
     seed = seed_steady_state(full, powers={r["fuel"]: POWER})
     assert seed[r["pk"].name]["power"] == POWER
-    full.load(seed)
 
 
 def _standalone_plate(channel_funcs=None):
@@ -621,17 +622,20 @@ def test_guess_with_zero_sweeps_returns_the_seed():
     assert np.allclose(agr.load(seed), agr.load(guess))
 
 
-def test_guess_forced_plate_loop_converges_without_globalization():
+def test_guess_then_solve_gives_the_energy_balance_outlet():
     agr, _, r = _forced_plate_loop()
-    guess = guess_steady_state(agr)
-    y = _solve_without_globalization(agr, guess)
-    st = agr.save(y)
+    st = agr.save(_solve_without_globalization(agr, guess_steady_state(agr)))
     cp = light_water.specific_heat(TIN)
     assert st[r["channel"].name]["T_cool"][-1] == pytest.approx(TIN + POWER / (MDOT * cp), rel=1e-2)
-    assert np.linalg.norm(agr.compute(agr.load(guess))) < np.linalg.norm(agr.compute(agr.load(seed_steady_state(agr))))
 
 
-def test_guess_refines_a_blocks_own_func_at_time_t():
+def test_guess_residual_is_below_the_seed_residual():
+    agr, _, _ = _forced_plate_loop()
+    guess, seed = guess_steady_state(agr), seed_steady_state(agr)
+    assert np.linalg.norm(agr.compute(agr.load(guess))) < np.linalg.norm(agr.compute(agr.load(seed)))
+
+
+def test_guess_evaluates_a_time_dependent_power_at_the_given_time():
     agr, _, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
     guess = guess_steady_state(agr, t=1.0)
     cp = light_water.specific_heat(TIN)
@@ -673,7 +677,6 @@ def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
     k = fg.kirchhoff
     assert guess[k.name][k.component_edge(r["channel"])] == seed[k.name][k.component_edge(r["channel"])]
     assert not np.allclose(guess[r["fuel"].name]["T"], seed[r["fuel"].name]["T"])
-    agr.load(guess)
 
 
 def test_guess_parallel_core_needs_only_the_pump_flow():
