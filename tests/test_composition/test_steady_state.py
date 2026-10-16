@@ -31,7 +31,7 @@ from stream.composition.steady_state import (
     seed_steady_state,
     solve_block,
 )
-from stream.composition.subsystems import MissingFlowError, symmetric_plate_steady_state
+from stream.composition.subsystems import MissingFlowError, symmetric_plate_seed, symmetric_plate_steady_state
 from stream.pipe_geometry import EffectivePipe
 from stream.solvers import AlgRuntimeError
 from stream.state import State
@@ -461,21 +461,20 @@ def test_walk_without_a_sink_needs_a_temperature():
     assert outlets[r["res"]] == 33.0
 
 
-def _plate_seed(monkeypatch, channel, fuel, mdot, power):
-    from stream.aggregator import Aggregator
-
-    monkeypatch.setattr(Aggregator, "solve_steady", lambda self, y0, **_: np.asarray(y0, dtype=float))
-    return symmetric_plate_steady_state(channel, fuel, mdot=mdot, p_abs=P_REF, power=power, Tin=TIN)
-
-
-def test_seed_symmetric_plate_matches_the_plate_seeder(monkeypatch):
+def test_seed_of_a_symmetric_plate_equals_the_plate_seed():
     agr, fg, r = _forced_plate_loop()
     seed = seed_steady_state(agr, fg.kirchhoff)
-    plate = _plate_seed(monkeypatch, r["channel"], r["fuel"], MDOT, POWER)
-    assert np.allclose(seed[r["channel"].name]["T_cool"], plate[r["channel"].name]["T_cool"])
-    assert np.allclose(seed[r["channel"].name]["h_left"], plate[r["channel"].name]["h_left"], rtol=1e-6)
-    assert np.allclose(seed[r["fuel"].name]["T_wall_left"], plate[r["fuel"].name]["T_wall_left"], rtol=1e-6)
-    assert np.allclose(np.asarray(seed[r["fuel"].name]["T"]).ravel(), np.asarray(plate[r["fuel"].name]["T"]).ravel(), rtol=1e-6)
+    channel, fuel = r["channel"].name, r["fuel"].name
+    plate = symmetric_plate_seed(r["channel"], r["fuel"], mdot=MDOT, p_abs=P_REF, power=POWER, Tin=TIN)
+    assert np.allclose(seed[channel]["T_cool"], plate[channel]["T_cool"])
+    assert np.allclose(seed[channel]["h_left"], plate[channel]["h_left"], rtol=1e-6)
+    assert np.allclose(seed[fuel]["T_wall_left"], plate[fuel]["T_wall_left"], rtol=1e-6)
+    assert np.allclose(np.asarray(seed[fuel]["T"]).ravel(), np.asarray(plate[fuel]["T"]).ravel(), rtol=1e-6)
+    solved = symmetric_plate_steady_state(r["channel"], r["fuel"], mdot=MDOT, p_abs=P_REF, power=POWER, Tin=TIN)
+    assert all(
+        np.allclose(np.asarray(seed[name][var]).ravel(), np.asarray(solved[name][var]).ravel(), rtol=1e-3)
+        for name, var in ((channel, "T_cool"), (fuel, "T_wall_left"), (fuel, "T"))
+    )
 
 
 def test_seed_loads_and_seeds_every_calculation():

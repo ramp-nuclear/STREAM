@@ -30,6 +30,7 @@ __all__ = [
     "check_gravity_mismatch",
     "guess_hydraulic_steady_state",
     "point_kinetics_steady_state",
+    "symmetric_plate_seed",
     "symmetric_plate_steady_state",
     "HydraulicStrategy",
     "HydraulicStrategyMap",
@@ -40,7 +41,7 @@ __all__ = [
 logger = logging.getLogger("stream.subsystems")
 
 
-def symmetric_plate_steady_state(
+def symmetric_plate_seed(
     c: ChannelAndContacts,
     f: Fuel,
     mdot: KgPerS,
@@ -48,9 +49,12 @@ def symmetric_plate_steady_state(
     power: Watt,
     Tin: Celsius,
     initial_guess_iterations: int = 2,
-    **solver_options,
 ) -> State:
-    r"""Steady state for a :func:`.symmetric_plate` system
+    r"""Closed-form steady-state seed for a :func:`.symmetric_plate` system, without solving
+
+    The coolant heats up cell by cell by the plate's power over flow times heat capacity,
+    the walls sit at coolant plus heat flux over the wall heat transfer coefficient, and
+    the fuel interior is tiled from its wall.
 
     Parameters
     ----------
@@ -68,23 +72,25 @@ def symmetric_plate_steady_state(
          Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),
          the inlet temperature is a source term for the (first, last) cell.
     initial_guess_iterations: int
-        Before employing a solver, an initial educated guess is assumed. This
-        guess should become better educated with each iteration controlled by
-        ``precondition``. The iteration floors the wall heat transfer
-        coefficient at the conduction scale ``k/Dh``, so correlations with no
-        conduction floor (e.g. the Elenbaas natural-convection HTC, whose
-        ``h -> 0`` at zero wall superheat) still yield a finite seed.
-    solver_options: Dict
-        Keyword arguments to control steady state solver behavior
+        Number of passes that update the wall temperature from the heat transfer
+        coefficient and back. The iteration floors the wall heat transfer coefficient at
+        the conduction scale ``k/Dh``, so correlations with no conduction floor (e.g. the
+        Elenbaas natural-convection HTC, whose ``h -> 0`` at zero wall superheat) still
+        yield a finite seed.
 
     Returns
     -------
-    steady: State
+    seed: State
+        ``T``, ``T_wall_left`` and ``T_wall_right`` of the fuel, ``T_cool``, ``h_left``,
+        ``h_right`` and ``pressure`` of the channel.
+
+    Raises
+    ------
+    ValueError
+        If ``initial_guess_iterations`` is less than one.
     """
     if initial_guess_iterations < 1:
         raise ValueError(f"Must try at least once to obtain values. Was {initial_guess_iterations}")
-    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin, Tin_minus=Tin), f: dict(power=power)}).to_aggregator()
-
     power_mat = np.zeros(f.shape)
     power_mat[f.meat == 1] = power * f.power_shape
     cp = c.fluid.specific_heat(Tin)
@@ -99,16 +105,56 @@ def symmetric_plate_steady_state(
         h0 = np.maximum(c.h_wall(T_wall=tw0, T_cool=tc0, mdot=mdot, pressure=p_abs - dp0), h_floor)
         tw0 = (q2t_z / h0) + tc0
     T0 = np.tile(tw0, f.shape[1]).reshape(f.shape[::-1]).T.flatten()
-    # Safe because the initial guess iterations are >= 1
     # noinspection PyUnboundLocalVariable
-    y0 = plate.load(
+    return State(
         {
-            f.name: dict(T=T0, T_wall_left=tw0, T_wall_right=tw0),
-            c.name: dict(T_cool=tc0, h_left=h0, h_right=h0, pressure=np.sum(dp0)),
+            f.name: {"T": T0, "T_wall_left": tw0, "T_wall_right": tw0},
+            c.name: {"T_cool": tc0, "h_left": h0, "h_right": h0, "pressure": np.sum(dp0)},
         }
     )
 
-    return plate.save(plate.solve_steady(y0, **solver_options))
+
+def symmetric_plate_steady_state(
+    c: ChannelAndContacts,
+    f: Fuel,
+    mdot: KgPerS,
+    p_abs: Pascal,
+    power: Watt,
+    Tin: Celsius,
+    initial_guess_iterations: int = 2,
+    **solver_options,
+) -> State:
+    r"""Steady state for a :func:`.symmetric_plate` system
+
+    Solves the plate from :func:`symmetric_plate_seed`.
+
+    Parameters
+    ----------
+    c: ChannelAndContacts
+        A channel (and contacts...) instance
+    f: Fuel
+        A fuel instance
+    mdot: KgPerS
+        Desired mass current
+    p_abs: Pascal
+        Desired absolute pressure at the top of the plate
+    power: Watt
+        Desired power
+    Tin: Celsius
+         Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),
+         the inlet temperature is a source term for the (first, last) cell.
+    initial_guess_iterations: int
+        As in :func:`symmetric_plate_seed`.
+    solver_options: Dict
+        Keyword arguments to control steady state solver behavior
+
+    Returns
+    -------
+    steady: State
+    """
+    seed = symmetric_plate_seed(c, f, mdot, p_abs, power, Tin, initial_guess_iterations)
+    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin, Tin_minus=Tin), f: dict(power=power)}).to_aggregator()
+    return plate.save(plate.solve_steady(plate.load(seed), **solver_options))
 
 
 def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Watt = None) -> State:
