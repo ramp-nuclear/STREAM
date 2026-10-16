@@ -1,19 +1,19 @@
 import pytest
 
-from stream.viz.labels import STREAM_LABELS, Label, Labels, as_label
+from stream.viz.labels import STREAM_LABELS, Label, Labels, _as_label
 
 
 def test_shorthands_become_labels():
-    assert as_label("mdot", "Mass flow") == Label("Mass flow")
-    assert as_label("mdot", ("Mass flow", "kg/s")) == Label("Mass flow", "kg/s")
-    assert as_label("mdot", ("Mass flow", "g/s", 1e3)) == Label("Mass flow", "g/s", 1e3)
-    assert as_label("band", None) == Label(None)
-    assert as_label("x", Label("x", "mm", 1e3)) == Label("x", "mm", 1e3)
+    assert _as_label("mdot", "Mass flow") == Label("Mass flow")
+    assert _as_label("mdot", ("Mass flow", "kg/s")) == Label("Mass flow", "kg/s")
+    assert _as_label("mdot", ("Mass flow", "g/s", 1e3)) == Label("Mass flow", "g/s", 1e3)
+    assert _as_label("band", None) == Label(None)
+    assert _as_label("x", Label("x", "mm", 1e3)) == Label("x", "mm", 1e3)
 
 
 def test_bad_shorthand_names_the_key():
     with pytest.raises(TypeError, match="power"):
-        as_label("power", 3.0)
+        _as_label("power", 3.0)
 
 
 def test_unknown_name_displays_itself_without_unit():
@@ -90,17 +90,17 @@ def test_value_and_describe_pass_strings_through():
 
 
 def test_four_tuple_carries_a_format_spec_or_a_callable():
-    assert as_label("power", ("Power", "MW", 1e-6, ".1f")) == Label("Power", "MW", 1e-6, ".1f")
+    assert _as_label("power", ("Power", "MW", 1e-6, ".1f")) == Label("Power", "MW", 1e-6, ".1f")
 
     def percent(y):
         return f"{y:.0%}"
 
-    assert as_label("void", ("Void", "", 1.0, percent)).fmt is percent
+    assert _as_label("void", ("Void", "", 1.0, percent)).fmt is percent
 
 
 def test_four_tuple_with_a_bad_format_raises_and_lists_the_forms():
     with pytest.raises(TypeError, match=r"\(display, unit, scale, fmt\)"):
-        as_label("power", ("Power", "MW", 1e-6, 3))
+        _as_label("power", ("Power", "MW", 1e-6, 3))
 
 
 def test_value_uses_the_label_format_before_the_registry_default():

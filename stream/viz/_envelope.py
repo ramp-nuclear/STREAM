@@ -8,7 +8,7 @@ import numpy as np
 from pandas import DataFrame
 
 from .labels import Labels
-from .sweep import Coords
+from .sweep import _Coords
 
 REDUCERS = ("min", "max", "mean", "where_min", "where_max")
 ENVELOPES = ("lower", "value", "upper")
@@ -66,7 +66,7 @@ def reducer_name(reducer, labels: Labels | None = None) -> str:
     return getattr(reducer, "__name__", "custom")
 
 
-def mesh_shape(rows: DataFrame, rank: int, coords: Coords | None = None) -> tuple[int, ...]:
+def mesh_shape(rows: DataFrame, rank: int, coords: _Coords | None = None) -> tuple[int, ...]:
     """The cell shape of a rank-1 or rank-2 quantity, from ``coords`` or from the rows' own indices."""
     if coords is not None and len(coords.names) == rank:
         return tuple(len(c) for c in coords.centers)
@@ -77,7 +77,7 @@ def mesh_shape(rows: DataFrame, rank: int, coords: Coords | None = None) -> tupl
     return int(rows.i.max()) + 1, int(rows.j.max()) + 1
 
 
-def to_array(rows: DataFrame, rank: int, column: str = "value", coords: Coords | None = None) -> float | np.ndarray:
+def to_array(rows: DataFrame, rank: int, column: str = "value", coords: _Coords | None = None) -> float | np.ndarray:
     """The rows of one quantity in one case as a scalar, ``(n,)`` or ``(m, n)`` array.
 
     Rows are scattered to the cell their ``i`` and ``j`` name, so a cell with
@@ -100,7 +100,7 @@ def to_array(rows: DataFrame, rank: int, column: str = "value", coords: Coords |
     return out
 
 
-def _axis_index(coords: Coords | None, values: np.ndarray, axis: str | None) -> int | None:
+def _axis_index(coords: _Coords | None, values: np.ndarray, axis: str | None) -> int | None:
     if axis is None:
         return None
     names = coords.names if coords is not None else ("z", "x")[: values.ndim]
@@ -109,7 +109,7 @@ def _axis_index(coords: Coords | None, values: np.ndarray, axis: str | None) -> 
     return names.index(axis)
 
 
-def _weights(coords: Coords | None, values: np.ndarray) -> np.ndarray:
+def _weights(coords: _Coords | None, values: np.ndarray) -> np.ndarray:
     if coords is None:
         return np.ones_like(values, dtype=float)
     if values.ndim == 1:
@@ -117,13 +117,13 @@ def _weights(coords: Coords | None, values: np.ndarray) -> np.ndarray:
     return np.outer(coords.weights[0], coords.weights[1])
 
 
-def _centers(coords: Coords | None, values: np.ndarray, k: int) -> np.ndarray:
+def _centers(coords: _Coords | None, values: np.ndarray, k: int) -> np.ndarray:
     if coords is None:
         return np.arange(values.shape[k], dtype=float)
     return np.asarray(coords.centers[k], float)
 
 
-def _pick(values: np.ndarray, coords: Coords | None, spec: At):
+def _pick(values: np.ndarray, coords: _Coords | None, spec: At):
     if spec.cell is not None:
         if values.ndim != 1:
             raise ValueError("at(cell=...) applies to a profile; use at(z=...) or at(x=...) on a field")
@@ -143,7 +143,7 @@ def _padded(values: np.ndarray, reducer: str) -> np.ndarray:
     return np.where(np.isfinite(values), values, pad)
 
 
-def reduce_array(values, coords: Coords | None, reducer, axis: str | None = None):
+def reduce_array(values, coords: _Coords | None, reducer, axis: str | None = None):
     """Collapse ``values`` with a named reducer, an :class:`At`, or a callable.
 
     A callable receives ``(values, coords)`` and returns what it likes.
@@ -180,6 +180,6 @@ def reduce_array(values, coords: Coords | None, reducer, axis: str | None = None
     return np.where(any_finite, _centers(coords, values, k)[picked], np.nan)
 
 
-def reduce_rows(rows: DataFrame, rank: int, coords: Coords | None, reducer, axis: str | None = None) -> dict:
+def reduce_rows(rows: DataFrame, rank: int, coords: _Coords | None, reducer, axis: str | None = None) -> dict:
     """``reduce_array`` applied to every envelope column of ``rows``."""
     return {c: reduce_array(to_array(rows, rank, c, coords), coords, reducer, axis) for c in ENVELOPES + INNER}

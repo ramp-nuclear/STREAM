@@ -16,6 +16,9 @@ from pandas import DataFrame
 from .labels import STREAM_LABELS, Labels
 from .limits import Limit
 
+__all__ = ["Sweep", "cases", "run_cases"]
+
+
 STATE_COLUMNS = ("calculation", "variable", "i", "j", "value")
 BAND_COLUMNS = ("sys", "stat")
 RESERVED_COLUMNS = ("case",) + STATE_COLUMNS + BAND_COLUMNS + ("filled", "safe", "binder")
@@ -23,7 +26,7 @@ RANKS = ("scalar", "profile", "field")
 
 
 @dataclass(frozen=True)
-class Coords:
+class _Coords:
     """Cell centres, edges and lengths of a calculation's mesh.
 
     ``names`` is ``("z",)`` for a channel and ``("z", "x")`` for a plate;
@@ -37,7 +40,7 @@ class Coords:
     mask: np.ndarray | None = None
 
 
-class FrameList(list):
+class _FrameList(list):
     """A list of result frames that remembers why some slots are ``None``."""
 
     failures: dict[int, str]
@@ -81,14 +84,14 @@ def run_cases(
     model: Callable[..., DataFrame],
     cases: list[dict[str, float | str]],
     catch: tuple[type[BaseException], ...] = (Exception,),
-) -> tuple[list[dict[str, float | str]], FrameList]:
+) -> tuple[list[dict[str, float | str]], _FrameList]:
     """Call ``model(**case)`` for every case and collect the frames.
 
     A call raising one of ``catch`` leaves ``None`` in its slot; the
     exception text is kept in the returned list's ``failures`` and one
     warning lists every failed case. Other exceptions propagate.
     """
-    frames = FrameList()
+    frames = _FrameList()
     for index, case in enumerate(cases):
         try:
             frames.append(model(**case))
@@ -383,7 +386,7 @@ class Sweep:
                     raise ValueError(f"{q!r} is not a variable of {c}; it has {', '.join(have)}")
         return quantities, ofs
 
-    def coords(self, calculation: str) -> Coords | None:
+    def coords(self, calculation: str) -> _Coords | None:
         """The mesh of ``calculation`` from the aggregator, or ``None`` when it has none."""
         if calculation not in self._coords_cache:
             try:
@@ -422,7 +425,7 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        from .results import profile
+        from ._results import profile
 
         return profile(self, quantity, of, where, nearest, sigma, uncertainty)
 
@@ -450,7 +453,7 @@ class Sweep:
         uncertainty:
             ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.
         """
-        from .results import field
+        from ._results import field
 
         return field(self, quantity, of, where, nearest, sigma, uncertainty)
 
@@ -517,7 +520,7 @@ class Sweep:
             quantities it is meaningful only when they share a limit value; use
             ``required(..., limiting=True)`` for quantities with different limits.
         """
-        from .results import reduce
+        from ._results import reduce
 
         return reduce(self, quantity, reducer, versus, of, where, axis, nearest, sigma, uncertainty, limiting)
 
@@ -601,7 +604,7 @@ class Sweep:
               point is unsafe;
             * ``None``: no limit is declared for the quantity.
         """
-        from .inverse import required
+        from ._inverse import required
 
         return required(self, quantity, equals, solve_for, versus, reducer=reduce, of=of, at=at, where=where,
                         method=method, nearest=nearest, sigma=sigma, uncertainty=uncertainty, limiting=limiting)
@@ -615,14 +618,14 @@ def _calculation_names(agr) -> list[str]:
         return []
 
 
-def _coords_of(calc) -> Coords | None:
+def _coords_of(calc) -> _Coords | None:
     if hasattr(calc, "z_centers") and hasattr(calc, "x_centers"):
         zc, xc = np.asarray(calc.z_centers, float), np.asarray(calc.x_centers, float)
         zb = np.asarray(calc.z_bounds, float) if hasattr(calc, "z_bounds") else None
         xb = np.asarray(calc.x_bounds, float) if hasattr(calc, "x_bounds") else None
         zw = np.abs(np.diff(zb)) if zb is not None else np.ones_like(zc)
         xw = np.abs(np.diff(xb)) if xb is not None else np.ones_like(xc)
-        return Coords(
+        return _Coords(
             names=("z", "x"),
             centers=(zc, xc),
             bounds=(zb, xb),
@@ -633,7 +636,7 @@ def _coords_of(calc) -> Coords | None:
         centers = np.asarray(calc.centers, float)
         bounds = np.asarray(calc.bounds, float) if hasattr(calc, "bounds") else None
         weights = np.abs(np.diff(bounds)) if bounds is not None else np.ones_like(centers)
-        return Coords(names=("z",), centers=(centers,), bounds=(bounds,), weights=(weights,))
+        return _Coords(names=("z",), centers=(centers,), bounds=(bounds,), weights=(weights,))
     return None
 
 

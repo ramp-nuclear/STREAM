@@ -1,6 +1,6 @@
 import pytest
 
-from stream.viz.encoding import LINESTYLES, MARKERS, encode
+from stream.viz._encoding import LINESTYLES, MARKERS, encode
 from stream.viz.labels import Label, Labels
 from stream.viz.style import DEFAULT_STYLE
 

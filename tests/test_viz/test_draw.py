@@ -6,7 +6,7 @@ from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.contour import QuadContourSet
 
 from stream.viz import Labels, Style, Sweep, at, at_least, at_most
-from stream.viz.inverse import crossings
+from stream.viz._inverse import crossings
 
 
 def legend_texts(ax):
@@ -675,7 +675,7 @@ def test_levels_printing_alike_warn_at_the_plot_call(agr):
 
 
 def test_levels_printing_alike_warn_at_a_direct_plot_call(agr):
-    from stream.viz.draw import plot
+    from stream.viz._draw import plot
 
     cases = [dict(power=p, mdot=0.3) for p in (1.0e6, 1.04e6)]
     sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr)

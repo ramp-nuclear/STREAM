@@ -5,7 +5,7 @@ from conftest import frame, make_case_frame
 
 from stream.viz import cases
 from stream.viz.labels import Label
-from stream.viz.sweep import Coords, FrameList, Sweep, run_cases
+from stream.viz.sweep import Sweep, _Coords, _FrameList, run_cases
 
 
 def test_run_cases_keeps_alignment_and_messages():
@@ -18,7 +18,7 @@ def test_run_cases_keeps_alignment_and_messages():
     with pytest.warns(UserWarning, match="case 1 .*power=8e\\+06.*no convergence"):
         out_cases, frames = run_cases(model, cases)
     assert out_cases == cases
-    assert isinstance(frames, FrameList)
+    assert isinstance(frames, _FrameList)
     assert frames[1] is None and frames[0] is not None
     assert frames.failures == {1: "no convergence at 8000000.0"}
 
@@ -54,7 +54,7 @@ def test_case_of(sweep):
 
 
 def test_hole_recorded_and_messages_travel(grid_cases, agr):
-    frames = FrameList(make_case_frame(**c) for c in grid_cases)
+    frames = _FrameList(make_case_frame(**c) for c in grid_cases)
     frames[7] = None
     frames.failures = {7: "diverged"}
     with pytest.warns(UserWarning, match="case 7 .*diverged"):
@@ -209,7 +209,7 @@ def test_names_resolve_defaults_and_validate(sweep):
 
 def test_coords_channel(sweep):
     c = sweep.coords("CC")
-    assert isinstance(c, Coords)
+    assert isinstance(c, _Coords)
     assert c.names == ("z",)
     np.testing.assert_allclose(c.centers[0], [0.05, 0.15, 0.25, 0.35])
     np.testing.assert_allclose(c.weights[0], 0.1)

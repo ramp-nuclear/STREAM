@@ -18,25 +18,25 @@ Limits
 Results
 -------
 
-.. automodule:: stream.viz.results
+.. automodule:: stream.viz._results
    :members:
 
 Required values
 ---------------
 
-.. automodule:: stream.viz.inverse
+.. automodule:: stream.viz._inverse
    :members:
 
 Envelopes and reducers
 ----------------------
 
-.. automodule:: stream.viz.envelope
+.. automodule:: stream.viz._envelope
    :members:
 
 Drawing
 -------
 
-.. automodule:: stream.viz.draw
+.. automodule:: stream.viz._draw
    :members:
 
 Labels

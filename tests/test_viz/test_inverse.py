@@ -4,7 +4,7 @@ import pytest
 from conftest import make_case_frame
 
 from stream.viz import Sweep, at, at_least, at_most
-from stream.viz.inverse import crossings, first_crossing, slice_at
+from stream.viz._inverse import crossings, first_crossing, slice_at
 
 
 def test_crossings_linear():

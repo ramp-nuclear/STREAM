@@ -9,8 +9,8 @@ import numpy as np
 from pandas import DataFrame
 from scipy.interpolate import PchipInterpolator
 
-from .envelope import ENVELOPES, INNER, At, reducer_name
-from .results import Result, _dims, _level_space, _limits_of, _numeric, check_units, keep_binding, reduce
+from ._envelope import ENVELOPES, INNER, At, reducer_name
+from ._results import Result, _dims, _level_space, _limits_of, _numeric, check_units, keep_binding, reduce
 from .sweep import Sweep, _case_text
 
 COLUMNS = ENVELOPES + INNER

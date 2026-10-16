@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
-from .envelope import ENVELOPES, INNER, At, mesh_shape, reduce_rows, reducer_name, to_array, with_envelopes
+from ._envelope import ENVELOPES, INNER, At, mesh_shape, reduce_rows, reducer_name, to_array, with_envelopes
 from .labels import Labels
-from .sweep import Coords, Sweep, _case_text
+from .sweep import Sweep, _case_text, _Coords
 
 COLUMNS = ENVELOPES + INNER
 
@@ -170,8 +170,8 @@ class Result:
 
     def plot(self, ax=None, color=None, style=None, marker=None, col=None, row=None, bound="nominal",
              band="total", errorbars=False, limit="line", crossing="none", style_sheet=None, labels=None):
-        """Draw this result; see :func:`stream.viz.draw.plot`."""
-        from .draw import plot
+        """Draw this result; see :func:`stream.viz._draw.plot`."""
+        from ._draw import plot
 
         return plot(self, ax, color, style, marker, col, row, bound, band, errorbars, limit, crossing, style_sheet, labels)
 
@@ -281,7 +281,7 @@ def _nothing_selected(resolved, quantities) -> ValueError:
     return ValueError(f"no solved case matches {where_text} for {', '.join(map(repr, quantities))}")
 
 
-def _x_of(coords: Coords | None, rows: DataFrame, q: str, calc: str) -> tuple[str, np.ndarray]:
+def _x_of(coords: _Coords | None, rows: DataFrame, q: str, calc: str) -> tuple[str, np.ndarray]:
     cells = rows.sort_values("j").j.to_numpy(dtype=int)
     if coords is None:
         return "cell", cells.astype(float)

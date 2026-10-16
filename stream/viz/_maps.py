@@ -8,9 +8,9 @@ from itertools import product
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .draw import BOUND_COLUMNS, _limit_text, _panel_text, _subset, _with_frame
+from ._draw import BOUND_COLUMNS, _limit_text, _panel_text, _subset, _with_frame
+from ._results import y_axis
 from .labels import Labels
-from .results import y_axis
 from .style import Style
 
 MAP_ARGUMENTS = ("color", "style", "marker")

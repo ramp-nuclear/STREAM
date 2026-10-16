@@ -11,10 +11,10 @@ from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch, Rectangle
 
-from .encoding import Encoding, LegendBlock, encode
-from .inverse import crossings
+from ._encoding import Encoding, LegendBlock, encode
+from ._inverse import crossings
+from ._results import y_axis
 from .labels import Labels
-from .results import y_axis
 from .style import DEFAULT_STYLE, Style
 
 BOUNDS = ("nominal", "lower", "upper")
@@ -552,7 +552,7 @@ def plot(result, ax=None, color=None, style=None, marker=None, col=None, row=Non
             ax.set_title(result.subtitle_with(merged), fontsize=sheet.subtitle_size, color=sheet.palette[-1])
             return fig, ax
         if result.kind == "map":
-            from .maps import plot_map
+            from ._maps import plot_map
 
             return plot_map(result, ax, sheet, merged, color, style, marker, col, row, bound, band, errorbars, limit)
         enc = encode(result.dims, result.numeric, merged, sheet, color, style, marker, col, row, result.level_space)

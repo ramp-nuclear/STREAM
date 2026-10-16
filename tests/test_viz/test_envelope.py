@@ -2,11 +2,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stream.viz.envelope import at, mesh_shape, reduce_array, reduce_rows, reducer_name, to_array, with_envelopes
-from stream.viz.sweep import Coords
+from stream.viz._envelope import at, mesh_shape, reduce_array, reduce_rows, reducer_name, to_array, with_envelopes
+from stream.viz.sweep import _Coords
 
-Z = Coords(("z",), (np.array([0.05, 0.15, 0.25, 0.35]),), (np.linspace(0, 0.4, 5),), (np.full(4, 0.1),))
-ZX = Coords(
+Z = _Coords(("z",), (np.array([0.05, 0.15, 0.25, 0.35]),), (np.linspace(0, 0.4, 5),), (np.full(4, 0.1),))
+ZX = _Coords(
     ("z", "x"),
     (np.array([0.25, 0.75]), np.array([0.5, 1.5, 2.5])),
     (np.array([0.0, 0.5, 1.0]), np.array([0.0, 1.0, 2.0, 3.0])),
@@ -108,7 +108,7 @@ def test_named_reducers_on_a_profile():
 
 
 def test_mean_is_length_weighted():
-    coords = Coords(("z",), (np.array([0.1, 0.4]),), (np.array([0.0, 0.2, 0.6]),), (np.array([0.2, 0.4]),))
+    coords = _Coords(("z",), (np.array([0.1, 0.4]),), (np.array([0.0, 0.2, 0.6]),), (np.array([0.2, 0.4]),))
     assert reduce_array(np.array([1.0, 4.0]), coords, "mean") == pytest.approx(3.0)
     assert reduce_array(np.array([1.0, 4.0]), None, "mean") == pytest.approx(2.5)
 

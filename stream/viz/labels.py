@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 
+__all__ = ["Label", "Labels"]
+
 
 @dataclass(frozen=True)
 class Label:
@@ -36,7 +38,7 @@ class Label:
     color: str | None = None
 
 
-def as_label(name: str, spec) -> Label:
+def _as_label(name: str, spec) -> Label:
     """Turn a registry entry into a :class:`Label`.
 
     Accepted forms: a ``Label``; ``None`` (hidden); a string (display only);
@@ -69,12 +71,12 @@ class Labels(Mapping[str, Label]):
     ``default_format``, a Python format spec (``".4g"`` unless given). A
     registry's own ``default_format`` reaches ``Result.subtitle``,
     ``Result.ylabel`` and direct :meth:`value` and :meth:`describe` calls;
-    in figures :func:`~stream.viz.draw.plot` replaces it with the style
+    in figures :func:`~stream.viz._draw.plot` replaces it with the style
     sheet's ``number_format``.
     """
 
     def __init__(self, entries: Mapping[str, object] | None = None, *, default_format: str = ".4g"):
-        self._entries: dict[str, Label] = {k: as_label(k, v) for k, v in (entries or {}).items()}
+        self._entries: dict[str, Label] = {k: _as_label(k, v) for k, v in (entries or {}).items()}
         self.default_format = default_format
 
     def __getitem__(self, name: str) -> Label:

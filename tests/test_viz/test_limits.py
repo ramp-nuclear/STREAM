@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 from conftest import make_case_frame
 
-from stream.viz import Limit, Sweep, at_least, at_most
+from stream.viz import Sweep, at_least, at_most
+from stream.viz.limits import Limit
 
 
 def test_at_least_and_at_most_sides_and_reducers():

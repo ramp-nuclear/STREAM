@@ -8,6 +8,8 @@ import matplotlib
 from matplotlib import rc_context
 from matplotlib.colors import to_hex
 
+__all__ = ["Style"]
+
 
 @dataclass(frozen=True)
 class Style:

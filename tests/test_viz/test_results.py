@@ -3,8 +3,8 @@ import pytest
 from conftest import make_case_frame
 
 from stream.viz import Sweep, at
+from stream.viz._results import Field, Result, check_units, y_axis_text
 from stream.viz.labels import Labels
-from stream.viz.results import Field, Result, check_units, y_axis_text
 
 
 def test_profile_single_case(sweep):
