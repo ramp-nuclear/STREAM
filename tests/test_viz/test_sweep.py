@@ -128,7 +128,7 @@ def test_non_finite_rows_dropped_with_warning(agr):
     df.loc[1, "value"] = np.nan
     with pytest.warns(UserWarning, match="case 0.*row 1"):
         s = Sweep([dict(power=1.0)], [df], agr)
-    assert s.bad_rows == {0: [1]}
+    assert s._bad_rows == {0: [1]}
     assert len(s.table) == len(df) - 1
 
 
@@ -155,60 +155,60 @@ def test_input_frames_untouched(grid_cases, agr):
 
 
 def test_select_exact_partial_and_empty(sweep):
-    assert list(sweep.select(dict(power=4e6, mdot=0.3))) == [3]
-    assert list(sweep.select(dict(power=4e6))) == [2, 3]
-    assert list(sweep.select({})) == list(range(8))
-    assert list(sweep.select(None)) == list(range(8))
+    assert list(sweep._select(dict(power=4e6, mdot=0.3))) == [3]
+    assert list(sweep._select(dict(power=4e6))) == [2, 3]
+    assert list(sweep._select({})) == list(range(8))
+    assert list(sweep._select(None)) == list(range(8))
 
 
 def test_select_float_tolerance(sweep):
-    assert list(sweep.select(dict(mdot=0.3 + 1e-12))) == [1, 3, 5, 7]
+    assert list(sweep._select(dict(mdot=0.3 + 1e-12))) == [1, 3, 5, 7]
 
 
 def test_select_unknown_parameter_raises(sweep):
     with pytest.raises(ValueError, match="depth.*power, mdot"):
-        sweep.select(dict(depth=1.0))
+        sweep._select(dict(depth=1.0))
 
 
 def test_select_off_grid_raises_and_lists_levels(sweep):
     with pytest.raises(ValueError, match="mdot=0.35.*0.2, 0.3"):
-        sweep.select(dict(mdot=0.35))
+        sweep._select(dict(mdot=0.35))
 
 
 def test_select_a_string_for_a_numeric_parameter_raises(sweep):
     with pytest.raises(ValueError, match="power is a number; got 'x'"):
-        sweep.select(dict(power="x"))
+        sweep._select(dict(power="x"))
 
 
 def test_select_nearest_warns_with_the_case_used(sweep):
     with pytest.warns(UserWarning, match="mdot=0.35.*mdot=0.3"):
-        idx = sweep.select(dict(power=4e6, mdot=0.35), nearest=True)
+        idx = sweep._select(dict(power=4e6, mdot=0.35), nearest=True)
     assert list(idx) == [3]
 
 
 def test_select_includes_holes(holed_sweep):
-    assert list(holed_sweep.select(dict(mdot=0.3))) == [1, 3, 5, 7]
-    assert holed_sweep.is_hole(7) and not holed_sweep.is_hole(5)
+    assert list(holed_sweep._select(dict(mdot=0.3))) == [1, 3, 5, 7]
+    assert holed_sweep._is_hole(7) and not holed_sweep._is_hole(5)
 
 
 def test_rank(sweep):
-    assert sweep.rank("T_cool", "CC") == 1
-    assert sweep.rank("power", "CC") == 0
-    assert sweep.rank("T", "plate") == 2
+    assert sweep._rank("T_cool", "CC") == 1
+    assert sweep._rank("power", "CC") == 0
+    assert sweep._rank("T", "plate") == 2
 
 
 def test_names_resolve_defaults_and_validate(sweep):
-    assert sweep.names("T_cool") == (["T_cool"], ["CC"])
-    assert sweep.names("T") == (["T"], ["plate"])
-    assert sweep.names(["T_cool", "CHFR"], "CC") == (["T_cool", "CHFR"], ["CC"])
+    assert sweep._names("T_cool") == (["T_cool"], ["CC"])
+    assert sweep._names("T") == (["T"], ["plate"])
+    assert sweep._names(["T_cool", "CHFR"], "CC") == (["T_cool", "CHFR"], ["CC"])
     with pytest.raises(ValueError, match="'OSVR'.*CC.*T_cool"):
-        sweep.names("OSVR", "CC")
+        sweep._names("OSVR", "CC")
     with pytest.raises(ValueError, match="'hot'.*CC, plate"):
-        sweep.names("T_cool", "hot")
+        sweep._names("T_cool", "hot")
 
 
 def test_coords_channel(sweep):
-    c = sweep.coords("CC")
+    c = sweep._coords("CC")
     assert isinstance(c, _Coords)
     assert c.names == ("z",)
     np.testing.assert_allclose(c.centers[0], [0.05, 0.15, 0.25, 0.35])
@@ -217,7 +217,7 @@ def test_coords_channel(sweep):
 
 
 def test_coords_plate(sweep):
-    c = sweep.coords("plate")
+    c = sweep._coords("plate")
     assert c.names == ("z", "x")
     np.testing.assert_allclose(c.centers[1], [0.5e-3, 1.5e-3, 2.5e-3])
     np.testing.assert_allclose(c.weights[0], [0.5, 0.5])
@@ -227,14 +227,14 @@ def test_coords_plate(sweep):
 def test_coords_of_a_calculation_the_aggregator_lacks_names_it(agr):
     s = Sweep.single(frame([("ghost", "v", 0, j, float(j)) for j in range(3)]), agr)
     with pytest.raises(ValueError, match="'ghost'.*aggregator.*CC, plate"):
-        s.coords("ghost")
+        s._coords("ghost")
 
 
 def test_coords_unknown_calculation_is_none(agr):
     agr["blob"] = object()
     s = Sweep.single(frame([("blob", "v", 0, j, float(j)) for j in range(3)]), agr)
-    assert s.coords("blob") is None
-    assert s.coords("blob") is None
+    assert s._coords("blob") is None
+    assert s._coords("blob") is None
 
 
 def test_zero_band_warning_fires_once_for_all_cases(agr):
@@ -287,7 +287,7 @@ def test_coords_plate_without_bounds_gets_unit_weights(agr):
 
     agr["thin"] = ThinPlate()
     s = Sweep.single(frame([("thin", "v", 0, j, float(j)) for j in range(3)]), agr)
-    c = s.coords("thin")
+    c = s._coords("thin")
     assert c.names == ("z", "x")
     assert c.bounds == (None, None)
     np.testing.assert_allclose(c.weights[0], [1.0, 1.0])
@@ -306,7 +306,7 @@ def wall_sweep(agr):
 
 def test_string_parameter_levels_keep_first_appearance_order(agr):
     sweep = wall_sweep(agr)
-    assert sweep.categorical == frozenset({"wall_law"})
+    assert sweep._categorical == frozenset({"wall_law"})
     assert list(sweep.levels("wall_law")) == ["regime", "Dittus"]
     np.testing.assert_allclose(sweep.levels("power"), [2e6, 4e6, 6e6])
 
@@ -320,11 +320,11 @@ def test_mixed_kinds_in_one_parameter_raise(agr):
 
 def test_where_matches_a_string_exactly(agr):
     sweep = wall_sweep(agr)
-    assert list(sweep.select(dict(wall_law="Dittus"))) == [3, 4, 5]
+    assert list(sweep._select(dict(wall_law="Dittus"))) == [3, 4, 5]
     with pytest.raises(ValueError, match="'Regime' is not a level of wall_law; the levels are regime, Dittus"):
-        sweep.select(dict(wall_law="Regime"))
+        sweep._select(dict(wall_law="Regime"))
     with pytest.raises(ValueError, match="'Regime' is not a level of wall_law"):
-        sweep.select(dict(wall_law="Regime"), nearest=True)
+        sweep._select(dict(wall_law="Regime"), nearest=True)
 
 
 def test_string_parameter_colours_and_titles(agr):
@@ -376,7 +376,7 @@ def test_fill_holes_interpolates_a_bracketed_hole(agr, grid_cases):
     assert "filled unsolved case(s) by interpolation:\n  case 3 (power=4e+06, mdot=0.3): along power between case 1 and case 5" in [
         str(w.message) for w in record
     ]
-    assert sweep.filled == {3: {"power": (1, 5)}} and sweep.is_hole(3)
+    assert sweep.filled == {3: {"power": (1, 5)}} and sweep._is_hole(3)
     t = sweep.table
     assert "filled" in t.columns and t.filled.sum() == len(t[t.case == 3])
     lo = t[(t.case == 1) & (t.variable == "CHFR")].sort_values("j").value.to_numpy()
@@ -399,7 +399,7 @@ def test_fill_holes_averages_two_bracketing_parameters(agr):
 
 def test_fill_holes_leaves_edge_and_adjacent_holes(agr, grid_cases):
     sweep = holed(agr, grid_cases, 0)
-    assert sweep.filled == {} and sweep.is_hole(0)
+    assert sweep.filled == {} and sweep._is_hole(0)
     sweep = holed(agr, grid_cases, 3, 5)
     assert sweep.filled == {}
     assert not sweep.table.filled.any()

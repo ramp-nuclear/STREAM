@@ -144,7 +144,7 @@ def required(
         if name not in sweep.parameters:
             raise ValueError(f"{role}={name!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
     for name in (solve_for, versus, *at):
-        if name in sweep.categorical:
+        if name in sweep._categorical:
             raise ValueError(f"{name} is categorical; it can colour, style or panel a figure, not be an axis")
     if solve_for == versus:
         raise ValueError(f"solve_for and versus are both {solve_for!r}; they must be different parameters")
@@ -156,10 +156,10 @@ def required(
     twice = [name for name in at if where and name in where]
     if twice:
         raise ValueError(f"{', '.join(twice)} is fixed in both where= and at=; pass it in one of them")
-    quantities, ofs = sweep.names(quantity, of)
+    quantities, ofs = sweep._names(quantity, of)
     targets = _per_quantity(equals, quantities, "equals", _default_target(sweep))
     reducers = _per_quantity(reducer, quantities, "reduce", _default_reducer(sweep))
-    resolved = sweep.resolve(where, nearest)
+    resolved = sweep._resolve(where, nearest)
     free = [p for p in sweep.parameters if p != solve_for]
     group_cols = ["quantity", "calculation", *free]
     rows = []
@@ -167,7 +167,7 @@ def required(
         target = targets[q]
         target_name = target if isinstance(target, str) else None
         if target_name is not None:
-            sweep.names(target_name, ofs)
+            sweep._names(target_name, ofs)
             check_units(sweep.labels, [q, target_name])
         reduced = reduce(
             sweep, [q] + ([target_name] if target_name else []), reducers[q], versus=solve_for, of=ofs,
@@ -212,7 +212,7 @@ def required(
             + f"; nothing to walk along {solve_for}"
         )
     frame = DataFrame(rows)[["quantity", "calculation", *free, *COLUMNS, "safe", "filled"]]
-    indices = [k for k in sweep.select(resolved) if not sweep.is_hole(k) or k in sweep.filled]
+    indices = [k for k in sweep._select(resolved) if not sweep._is_hole(k) or k in sweep.filled]
     at_values = {k: float(v) for k, v in at.items()}
     dims, fixed, single = _dims(sweep, quantities, ofs, {**resolved, **at_values}, indices, exclude=(solve_for, versus))
     sides = set(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "safe"])
@@ -293,15 +293,15 @@ def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_h
     on_grid = {}
     for k, v in fixed_here.items():
         levels = sweep.levels(k)
-        if k in sweep.categorical:
+        if k in sweep._categorical:
             if v in levels:
                 on_grid[k] = v
         elif np.isclose(levels, v, rtol=1e-9, atol=0.0).any():
             on_grid[k] = v
     if len(on_grid) != len(fixed_here):
         return
-    for k in sweep.select(on_grid):
-        if not sweep.is_hole(k):
+    for k in sweep._select(on_grid):
+        if not sweep._is_hole(k):
             continue
         v = sweep.cases[k][solve_for]
         if k in sweep.filled:

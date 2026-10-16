@@ -144,7 +144,7 @@ class Sweep:
     """
 
     def __init__(self, cases, frames, agr, labels=None, limits=None, fill_holes=False):
-        self.cases, self.categorical = _check_cases(cases)
+        self.cases, self._categorical = _check_cases(cases)
         self.parameters: tuple[str, ...] = tuple(self.cases[0]) if self.cases else ()
         if len(self.cases) != len(frames):
             raise ValueError(f"{len(self.cases)} cases but {len(frames)} frames; the two lists must align")
@@ -158,11 +158,11 @@ class Sweep:
             warnings.warn("holes in the sweep:\n  " + "\n  ".join(lines), stacklevel=2)
         checked = {k: _check_frame(k, f) for k, f in enumerate(self.frames) if f is not None}
         self.banded = any(_has_band(f) for f in checked.values())
-        self.bad_rows: dict[int, list[int]] = {}
+        self._bad_rows: dict[int, list[int]] = {}
         self.table = self._stack(checked)
-        self.fill_holes = bool(fill_holes)
+        self._fill_holes = bool(fill_holes)
         self.filled: dict[int, dict[str, tuple[int, int]]] = {}
-        if self.fill_holes:
+        if self._fill_holes:
             self.table = self._fill(self.table)
         self.limits = MappingProxyType(_check_limits(limits, self.table))
         self._coords_cache: dict[str, object] = {}
@@ -170,7 +170,7 @@ class Sweep:
     def __repr__(self) -> str:
         n_holes, n_filled = len(self.holes), len(self.filled)
         head = f"Sweep: {self.n_cases} case{'s' if self.n_cases != 1 else ''}, {n_holes} hole{'s' if n_holes != 1 else ''}"
-        head += f" ({n_filled} filled)" if n_holes and self.fill_holes else ""
+        head += f" ({n_filled} filled)" if n_holes and self._fill_holes else ""
         head += ", uncertainty bands" if self.banded else ", no uncertainty"
         lines = [head]
         if self.parameters:
@@ -178,7 +178,7 @@ class Sweep:
             lines.append(f"  parameters: {params}")
         for calc in sorted(self.table.calculation.unique().tolist()) if len(self.table) else []:
             names = sorted(self.table.variable[self.table.calculation == calc].unique().tolist())
-            lines.append(f"  {calc}: " + ", ".join(f"{q} ({RANKS[self.rank(q, calc)]})" for q in names))
+            lines.append(f"  {calc}: " + ", ".join(f"{q} ({RANKS[self._rank(q, calc)]})" for q in names))
         if self.limits:
             lines.append("  limits: " + ", ".join(f"{q} {lim.text()}" for q, lim in self.limits.items()))
         for k, message in self.holes.items():
@@ -215,7 +215,7 @@ class Sweep:
         if parameter not in self.parameters:
             raise ValueError(f"{parameter!r} is not a sweep parameter; the parameters are {', '.join(self.parameters)}")
         values = [c[parameter] for c in self.cases]
-        if parameter in self.categorical:
+        if parameter in self._categorical:
             return np.asarray(list(dict.fromkeys(values)), dtype=object)
         return np.unique(values)
 
@@ -238,10 +238,10 @@ class Sweep:
                 f = f.drop(columns=[c for c in BAND_COLUMNS if c in f.columns])
                 bad = ~np.isfinite(f["value"])
             if bad.any():
-                self.bad_rows[k] = list(f.index[bad])
+                self._bad_rows[k] = list(f.index[bad])
                 non_finite_lines.append(
                     f"case {k} ({_case_text(self.cases[k])}) has non-finite values in row "
-                    f"{', '.join(map(str, self.bad_rows[k]))}; treated as missing"
+                    f"{', '.join(map(str, self._bad_rows[k]))}; treated as missing"
                 )
                 f = f[~bad]
             front = {"case": k, **self.cases[k]}
@@ -260,7 +260,7 @@ class Sweep:
         return table
 
     def _fill(self, table: DataFrame) -> DataFrame:
-        numeric = [p for p in self.parameters if p not in self.categorical]
+        numeric = [p for p in self.parameters if p not in self._categorical]
         keys = ["calculation", "variable", "i", "j"]
         columns = ["value"] + (list(BAND_COLUMNS) if self.banded else [])
         pieces, lines = [], []
@@ -310,17 +310,17 @@ class Sweep:
         return out
 
     def _equal(self, name: str, a, b) -> bool:
-        return a == b if name in self.categorical else bool(np.isclose(a, b, rtol=1e-9, atol=0.0))
+        return a == b if name in self._categorical else bool(np.isclose(a, b, rtol=1e-9, atol=0.0))
 
-    def is_hole(self, index: int) -> bool:
+    def _is_hole(self, index: int) -> bool:
         return index in self.holes
 
-    def resolve(self, where: Mapping[str, float | str] | None, nearest: bool = False) -> dict[str, float | str]:
+    def _resolve(self, where: Mapping[str, float | str] | None, nearest: bool = False) -> dict[str, float | str]:
         """``where`` with each value snapped to the grid, or raised on."""
         out = {}
         for name, wanted in (where or {}).items():
             levels = self.levels(name)
-            if name in self.categorical:
+            if name in self._categorical:
                 if wanted not in levels:
                     raise ValueError(f"{wanted!r} is not a level of {name}; the levels are {', '.join(levels)}")
                 out[name] = wanted
@@ -341,16 +341,16 @@ class Sweep:
             out[name] = used
         return out
 
-    def select(self, where: Mapping[str, float | str] | None = None, nearest: bool = False) -> np.ndarray:
+    def _select(self, where: Mapping[str, float | str] | None = None, nearest: bool = False) -> np.ndarray:
         """Indices of the cases matching ``where``; every case when ``where`` is empty."""
-        wanted = self.resolve(where, nearest)
+        wanted = self._resolve(where, nearest)
         keep = [k for k, case in enumerate(self.cases) if self._matches(case, wanted)]
         return np.asarray(keep, dtype=int)
 
     def _matches(self, case: Mapping, wanted: Mapping) -> bool:
         return all(self._equal(n, case[n], v) for n, v in wanted.items())
 
-    def rank(self, quantity: str, calculation: str) -> int:
+    def _rank(self, quantity: str, calculation: str) -> int:
         """0, 1 or 2 from the index layout of the quantity's rows.
 
         A profile stored in a single cell is indistinguishable from a scalar and reads as rank 0.
@@ -362,7 +362,7 @@ class Sweep:
             return 2
         return 1 if rows.j.max() > 0 else 0
 
-    def names(self, quantity=None, of=None) -> tuple[list[str], list[str]]:
+    def _names(self, quantity=None, of=None) -> tuple[list[str], list[str]]:
         """Resolve ``quantity`` and ``of`` to lists, defaulting when unambiguous."""
         calcs = sorted(self.table.calculation.unique().tolist())
         quantities = [quantity] if isinstance(quantity, str) else list(quantity or [])
@@ -386,7 +386,7 @@ class Sweep:
                     raise ValueError(f"{q!r} is not a variable of {c}; it has {', '.join(have)}")
         return quantities, ofs
 
-    def coords(self, calculation: str) -> _Coords | None:
+    def _coords(self, calculation: str) -> _Coords | None:
         """The mesh of ``calculation`` from the aggregator, or ``None`` when it has none."""
         if calculation not in self._coords_cache:
             try:

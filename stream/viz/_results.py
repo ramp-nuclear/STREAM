@@ -194,20 +194,20 @@ class Field(Result):
 
 
 def _selection(sweep: Sweep, where, nearest):
-    resolved = sweep.resolve(where, nearest)
-    indices = sweep.select(resolved)
-    holes = [k for k in indices if sweep.is_hole(k) and k not in sweep.filled]
+    resolved = sweep._resolve(where, nearest)
+    indices = sweep._select(resolved)
+    holes = [k for k in indices if sweep._is_hole(k) and k not in sweep.filled]
     if holes:
         lines = [
             f"case {k} ({_case_text(sweep.case_of(k))})" + (f": {sweep.holes[k]}" if sweep.holes[k] else "")
             for k in holes
         ]
         warnings.warn("skipping unsolved case(s):\n  " + "\n  ".join(lines), stacklevel=4)
-    return resolved, [k for k in indices if not sweep.is_hole(k) or k in sweep.filled]
+    return resolved, [k for k in indices if not sweep._is_hole(k) or k in sweep.filled]
 
 
 def _unfilled_holes(sweep: Sweep, resolved) -> list[dict]:
-    return [sweep.case_of(k) for k in sweep.select(resolved) if sweep.is_hole(k) and k not in sweep.filled]
+    return [sweep.case_of(k) for k in sweep._select(resolved) if sweep._is_hole(k) and k not in sweep.filled]
 
 
 def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple[dict, dict, str | None]:
@@ -230,7 +230,7 @@ def _dims(sweep: Sweep, quantities, ofs, resolved, indices, exclude=()) -> tuple
 
 
 def _numeric(sweep: Sweep, dims) -> frozenset[str]:
-    return frozenset(d for d in dims if d in sweep.parameters and d not in sweep.categorical)
+    return frozenset(d for d in dims if d in sweep.parameters and d not in sweep._categorical)
 
 
 def _level_space(sweep: Sweep) -> dict[str, list]:
@@ -305,15 +305,15 @@ def _x_clash(xnames: dict[str, str]) -> ValueError:
 
 def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Result:
     """A rank-1 quantity against its coordinate for every selected case."""
-    quantities, ofs = sweep.names(quantity, of)
+    quantities, ofs = sweep._names(quantity, of)
     check_units(sweep.labels, quantities)
     resolved, indices = _selection(sweep, where, nearest)
     table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
     pieces, xnames = [], {}
     for calc in ofs:
-        coords = sweep.coords(calc)
+        coords = sweep._coords(calc)
         for q in quantities:
-            rank = sweep.rank(q, calc)
+            rank = sweep._rank(q, calc)
             if rank == 0:
                 raise ValueError(f"{q!r} of {calc} is a scalar; use reduce() to plot it against a parameter")
             if rank == 2:
@@ -360,7 +360,7 @@ def profile(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.
 
 def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0, uncertainty=True) -> Field:
     """A rank-2 quantity of exactly one case with its mesh."""
-    quantities, ofs = sweep.names(quantity, of)
+    quantities, ofs = sweep._names(quantity, of)
     if len(quantities) != 1 or len(ofs) != 1:
         raise ValueError(
             "field() takes one quantity of one calculation; got "
@@ -373,12 +373,12 @@ def field(sweep: Sweep, quantity, of=None, where=None, nearest=False, sigma=1.0,
             f"field() draws one case and the selection holds {len(indices)} cases of {q!r}; "
             "add keys to where= to pick one"
         )
-    if sweep.rank(q, calc) != 2:
+    if sweep._rank(q, calc) != 2:
         raise ValueError(f"{q!r} of {calc} is not a field; use profile() or reduce()")
     k = indices[0]
     table = with_envelopes(sweep.table, sweep.banded, sigma, uncertainty)
     rows = _rows(sweep, table, k, calc, q)
-    coords = sweep.coords(calc)
+    coords = sweep._coords(calc)
     m, n = mesh_shape(rows, 2, coords)
     if not rows.empty:
         if int(rows.i.max()) >= m:
@@ -480,7 +480,7 @@ def reduce(
     limiting=False,
 ) -> Result:
     """Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis; see :meth:`Sweep.reduce`."""
-    quantities, ofs = sweep.names(quantity, of)
+    quantities, ofs = sweep._names(quantity, of)
     check_units(sweep.labels, quantities)
     if axis is not None and versus is not None:
         raise ValueError("reduce() takes versus= or axis=, not both: axis= leaves a profile, versus= a curve")
@@ -497,7 +497,7 @@ def reduce(
     for name in axes_:
         if name not in sweep.parameters:
             raise ValueError(f"{name!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
-        if name in sweep.categorical:
+        if name in sweep._categorical:
             raise ValueError(f"{name} is categorical; it can colour, style or panel a figure, not be an axis")
         if where and name in where:
             raise ValueError(f"{name} is {'a map' if pair else 'the x'} axis and cannot also be fixed in where=")
@@ -508,9 +508,9 @@ def reduce(
     name = reducer_name(reducer)
     pieces, xname, coordinate = [], axes_[0] if axes_ else "cell", None
     for calc in ofs:
-        coords = sweep.coords(calc)
+        coords = sweep._coords(calc)
         for q in quantities:
-            rank = sweep.rank(q, calc)
+            rank = sweep._rank(q, calc)
             for k in indices:
                 rows = _rows(sweep, table, k, calc, q)
                 base = {"quantity": q, "calculation": calc, **{p: sweep.cases[k][p] for p in sweep.parameters}, "case": k}
@@ -538,7 +538,7 @@ def reduce(
                     pieces.append(DataFrame({**base, **out, "filled": filled}, index=[0]))
     if not pieces:
         raise _nothing_selected(resolved, quantities)
-    scalar = all(sweep.rank(q, c) == 0 for c in ofs for q in quantities)
+    scalar = all(sweep._rank(q, c) == 0 for c in ofs for q in quantities)
     if axis is not None:
         dims, fixed, single = _dims(sweep, quantities, ofs, resolved, indices)
         kind = "profile"
