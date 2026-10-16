@@ -1,57 +1,48 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from conftest import make_case_frame
+from conftest import FakeChannel, channel_rows, frame, make_case_frame
 
 from stream.viz import Sweep, at, at_least, at_most
-from stream.viz._inverse import crossings, first_crossing, slice_at
 
 
-def test_crossings_linear():
-    x = np.array([1.0, 2.0, 3.0, 4.0])
-    y = np.array([4.0, 2.0, 1.0, 0.5])
-    assert crossings(x, y, 1.5) == [pytest.approx(2.5)]
-    assert crossings(x, y, 4.0) == [pytest.approx(1.0)]
-    assert crossings(x, y, 5.0) == []
-    assert crossings(x, np.array([1.0, 3.0, 1.0, 3.0]), 2.0) == [pytest.approx(v) for v in (1.5, 2.5, 3.5)]
+def scalar_sweep(agr, values, depths=(1.0,)):
+    cs = [{"power": float(p), "mdot": m, "depth": d} for p in range(1, len(values) + 1) for m in (0.2, 0.3) for d in depths]
+    return Sweep(cs, [frame([("CC", "q", 0, 0, values[int(c["power"]) - 1] * c["depth"])]) for c in cs], agr)
 
 
-def test_crossings_pchip_is_monotone_between_points():
-    x = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
-    y = 8.0 / x
-    (c,) = crossings(x, y, 3.0, method="pchip")
-    assert 2.0 < c < 3.0
-    assert abs(c - 8.0 / 3.0) < abs(crossings(x, y, 3.0)[0] - 8.0 / 3.0)
+def test_required_interpolates_linearly_between_grid_points(agr):
+    r = scalar_sweep(agr, [4.0, 2.0, 1.0, 0.5]).required("q", equals=1.5, solve_for="power", versus="mdot")
+    np.testing.assert_allclose(r.frame.value, 2.5)
 
 
-def test_first_crossing_warnings():
-    x = np.array([1.0, 2.0, 3.0])
-    with pytest.warns(UserWarning, match="CHFR at mdot=0.3.*2 crossings.*1.5"):
-        assert first_crossing(x, np.array([1.0, 3.0, 1.0]), 2.0, "linear", "CHFR at mdot=0.3") == pytest.approx(1.5)
-    with pytest.warns(UserWarning, match="CHFR at mdot=0.3.*never reaches 9.*1 to 3"):
-        assert np.isnan(first_crossing(x, np.array([1.0, 3.0, 1.0]), 9.0, "linear", "CHFR at mdot=0.3"))
+def test_required_pchip_follows_a_curved_walk_closer(agr):
+    s = scalar_sweep(agr, [8.0 / x for x in (1.0, 2.0, 3.0, 4.0, 5.0)])
+    linear = s.required("q", equals=3.0, solve_for="power", versus="mdot").frame.value.iloc[0]
+    pchip = s.required("q", equals=3.0, solve_for="power", versus="mdot", method="pchip").frame.value.iloc[0]
+    assert 2.0 < pchip < 3.0
+    assert abs(pchip - 8.0 / 3.0) < abs(linear - 8.0 / 3.0)
 
 
-def test_slice_at_on_grid_filters(sweep):
-    curve = sweep.reduce("CHFR", "min", versus="power").frame
-    out = slice_at(curve, "mdot", 0.3, sweep)
-    assert set(out.mdot) == {0.3} and len(out) == 4
+def test_required_warns_on_several_crossings_and_on_none(agr):
+    s = scalar_sweep(agr, [1.0, 3.0, 1.0, 3.0])
+    with pytest.warns(UserWarning, match=r"q at mdot=0\.[23], depth=1: 3 crossings of 2 at 1.5, 2.5, 3.5; using the first"):
+        r = s.required("q", equals=2.0, solve_for="power", versus="mdot")
+    np.testing.assert_allclose(r.frame.value, 1.5)
+    with pytest.warns(UserWarning, match=r"q at mdot=0\.[23], depth=1: the curve never reaches 9 over 1 to 4"):
+        r = s.required("q", equals=9.0, solve_for="power", versus="mdot")
+    assert np.isnan(r.frame.value).all()
 
 
-def test_slice_at_off_grid_blends_and_warns(sweep):
-    curve = sweep.reduce("CHFR", "min", versus="power").frame
-    with pytest.warns(UserWarning, match="mdot=0.25.*0.2.*0.3"):
-        out = slice_at(curve, "mdot", 0.25, sweep)
-    lo = curve[curve.mdot == 0.2].sort_values("power").value.to_numpy()
-    hi = curve[curve.mdot == 0.3].sort_values("power").value.to_numpy()
-    np.testing.assert_allclose(out.sort_values("power").value, 0.5 * (lo + hi))
-    assert set(out.mdot) == {0.25}
-
-
-def test_slice_at_outside_grid_raises(sweep):
-    curve = sweep.reduce("CHFR", "min", versus="power").frame
-    with pytest.raises(ValueError, match="mdot=0.5.*0.2.*0.3"):
-        slice_at(curve, "mdot", 0.5, sweep)
+def test_required_at_a_parameter_on_and_off_the_grid(agr):
+    s = scalar_sweep(agr, [1.0, 2.0, 3.0, 4.0], depths=(1.0, 2.0))
+    np.testing.assert_allclose(s.required("q", equals=3.0, solve_for="power", versus="mdot", at={"depth": 2.0}).frame.value, 1.5)
+    with pytest.warns(UserWarning, match="depth=1.5 is not on the grid; interpolating between 1 and 2"):
+        r = s.required("q", equals=3.0, solve_for="power", versus="mdot", at={"depth": 1.5})
+    np.testing.assert_allclose(r.frame.value, 2.0)
+    assert r.fixed == {"depth": 1.5}
+    with pytest.raises(ValueError, match="depth=3 is outside the grid; the values of depth are 1, 2"):
+        s.required("q", equals=3.0, solve_for="power", versus="mdot", at={"depth": 3.0})
 
 
 def test_required_power_for_min_chfr(sweep):
@@ -61,8 +52,7 @@ def test_required_power_for_min_chfr(sweep):
     np.testing.assert_allclose(r.frame.mdot, [0.2, 0.3])
     np.testing.assert_allclose(r.frame.value, [3e6, 4e6], rtol=1e-6)
     assert r.ylabel == "Power [W]"
-    assert r._shown_reducer is None and r.question.reducer == "min"
-    assert r._y_names == ("power",)
+    assert r.question.reducer == "min"
     assert r.dims == {} and r.fixed == {}
     assert r.question.targets == {"CHFR": 1.5} and r.question.quantities == ("CHFR",)
     assert r.subtitle == "min CHFR = 1.5, CC"
@@ -72,10 +62,6 @@ def test_required_power_for_min_chfr(sweep):
 
 
 def test_required_with_free_dimension_and_at(agr):
-    from conftest import make_case_frame
-
-    from stream.viz.sweep import Sweep
-
     cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     r = s.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot")
@@ -97,8 +83,6 @@ def test_required_role_conflicts(sweep):
 def test_required_needs_two_points(holed_sweep):
     cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
     frames = [holed_sweep.frames[1], None]
-    from stream.viz.sweep import Sweep
-
     with pytest.warns(UserWarning):
         s = Sweep(cases, frames, holed_sweep.agr)
     with pytest.warns(UserWarning, match="skipping unsolved"), pytest.raises(ValueError, match="power.*1 solved point"):
@@ -114,10 +98,6 @@ def test_required_bracket_over_hole_warns(holed_sweep):
 
 
 def test_required_bracket_spanning_a_hole_names_the_case(agr):
-    from conftest import make_case_frame
-
-    from stream.viz.sweep import Sweep
-
     cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6, 6e6)]
     frames = [make_case_frame(c["power"], c["mdot"]) for c in cases]
     frames[1] = None
@@ -130,10 +110,6 @@ def test_required_bracket_spanning_a_hole_names_the_case(agr):
 
 
 def test_required_quantity_target(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     def rows(power):
         rising = [("CC", "hot", 0, j, power / 1e6 + j) for j in range(4)]
         falling = [("CC", "cold", 0, j, 10.0 - power / 1e6 + j) for j in range(4)]
@@ -154,10 +130,6 @@ def test_required_rejects_an_unknown_method(sweep):
 
 
 def test_required_rejects_a_parameter_fixed_twice(agr):
-    from conftest import make_case_frame
-
-    from stream.viz.sweep import Sweep
-
     cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     with pytest.raises(ValueError, match="depth.*where.*at"):
@@ -274,8 +246,6 @@ def test_required_limiting_with_disagreeing_sides_raises(agr, grid_cases):
 
 
 def two_channel_sweep(agr, grid_cases, **limits):
-    from conftest import FakeChannel, channel_rows, frame
-
     def make(power, mdot):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -320,8 +290,6 @@ def test_required_limiting_across_calculations_names_the_calculation(agr, grid_c
 
 
 def test_required_quantity_target_with_a_limit_has_a_side(agr):
-    from conftest import frame
-
     def rows(power):
         rising = [("CC", "hot", 0, j, power / 1e6 + j) for j in range(4)]
         falling = [("CC", "cold", 0, j, 10.0 - power / 1e6 + j) for j in range(4)]

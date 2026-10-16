@@ -1,14 +1,17 @@
+import textwrap
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from conftest import frame, make_case_frame
 from networkx import DiGraph
 
-from stream import Aggregator, State
+from stream import Aggregator, State, viz
 from stream.calculations.channel import ChannelAndContacts
 from stream.pipe_geometry import EffectivePipe
 from stream.solvers import AlgRuntimeError
 from stream.substances import light_water
-from stream.viz import Sweep, at, run_cases
+from stream.viz import Sweep, at, at_least, cases, run_cases
 
 PIPE = EffectivePipe.rectangular(length=0.7, edge1=0.070, edge2=0.002, heated_edge=0.070)
 N = 6
@@ -71,10 +74,6 @@ def test_profile_reduce_and_required_run_on_a_real_channel(real_sweep):
 
 
 def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
-    from conftest import make_case_frame
-
-    from stream.viz import at_least, cases
-
     def model(power, mdot, wall_law):
         if power == 6e6 and mdot == 0.3 and wall_law == "regime":
             raise AlgRuntimeError("no convergence")
@@ -103,12 +102,6 @@ def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
 
 @pytest.mark.filterwarnings("error")
 def test_the_module_example_runs(agr):
-    import textwrap
-
-    from conftest import frame
-
-    import stream.viz as viz
-
     def model(power, mdot, shape):
         r = power / 20e3 * 0.2 / mdot
         q = r * (np.array([0.7, 1.0, 1.2, 0.9]) if shape == "cosine" else np.ones(4))
@@ -126,4 +119,4 @@ def test_the_module_example_runs(agr):
         if line and not line.startswith("    "):
             break
         code.append(line)
-    exec(textwrap.dedent("\n".join(code)), {**vars(viz), "model": model, "agr": agr})
+    exec(textwrap.dedent("\n".join(code)), {**{n: getattr(viz, n) for n in viz.__all__}, "model": model, "agr": agr})

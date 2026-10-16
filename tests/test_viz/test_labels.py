@@ -1,19 +1,24 @@
 import pytest
+from conftest import make_case_frame
 
-from stream.viz.labels import STREAM_LABELS, Label, Labels, _as_label
+from stream.viz import Label, Labels, Sweep
 
 
 def test_shorthands_become_labels():
-    assert _as_label("mdot", "Mass flow") == Label("Mass flow")
-    assert _as_label("mdot", ("Mass flow", "kg/s")) == Label("Mass flow", "kg/s")
-    assert _as_label("mdot", ("Mass flow", "g/s", 1e3)) == Label("Mass flow", "g/s", 1e3)
-    assert _as_label("band", None) == Label(None)
-    assert _as_label("x", Label("x", "mm", 1e3)) == Label("x", "mm", 1e3)
+    labels = Labels({"a": "Mass flow", "b": ("Mass flow", "kg/s"), "c": ("Mass flow", "g/s", 1e3), "band": None,
+                     "x": Label("x", "mm", 1e3)})
+    assert labels["a"] == Label("Mass flow")
+    assert labels["b"] == Label("Mass flow", "kg/s")
+    assert labels["c"] == Label("Mass flow", "g/s", 1e3)
+    assert labels["band"] == Label(None)
+    assert labels["x"] == Label("x", "mm", 1e3)
 
 
-def test_bad_shorthand_names_the_key():
+def test_bad_shorthand_names_the_key(agr, grid_cases):
     with pytest.raises(TypeError, match="power"):
-        _as_label("power", 3.0)
+        Labels({"power": 3.0})
+    with pytest.raises(TypeError, match="power"):
+        Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, labels={"power": 3.0})
 
 
 def test_unknown_name_displays_itself_without_unit():
@@ -61,17 +66,18 @@ def test_describe_lists_fixed_values_with_units():
     assert labels.describe({}) == ""
 
 
-def test_stream_defaults_cover_the_saved_keys():
+def test_stream_defaults_cover_the_saved_keys(sweep):
+    defaults = sweep.labels
     for name in ("T_cool", "q, left", "static_pressure", "h_left", "T_wall, right", "T", "z", "x"):
-        assert STREAM_LABELS.known(name), name
-    assert STREAM_LABELS.axis("q, left") == "Heat flux, left [W/m$^2$]"
-    assert STREAM_LABELS.axis("T_cool") == "Coolant temperature [°C]"
-    assert STREAM_LABELS.unit("Re") == ""
-    assert STREAM_LABELS["band"] == Label("uncertainty")
-    assert STREAM_LABELS["band_sys"] == Label("systematic")
-    assert STREAM_LABELS["band_total"] == Label("systematic + statistical")
-    assert STREAM_LABELS["quantity"] == Label("Quantity")
-    assert STREAM_LABELS["calculation"] == Label("Calculation")
+        assert defaults.known(name), name
+    assert defaults.axis("q, left") == "Heat flux, left [W/m$^2$]"
+    assert defaults.axis("T_cool") == "Coolant temperature [°C]"
+    assert defaults.unit("Re") == ""
+    assert defaults["band"] == Label("uncertainty")
+    assert defaults["band_sys"] == Label("systematic")
+    assert defaults["band_total"] == Label("systematic + statistical")
+    assert defaults["quantity"] == Label("Quantity")
+    assert defaults["calculation"] == Label("Calculation")
 
 
 def test_labels_is_a_mapping_in_insertion_order():
@@ -82,25 +88,23 @@ def test_labels_is_a_mapping_in_insertion_order():
 
 
 def test_value_and_describe_pass_strings_through():
-    from stream.viz.labels import Labels
-
     labels = Labels({"wall_law": "Wall law"})
     assert labels.value("wall_law", "regime") == "regime"
     assert labels.describe({"wall_law": "regime", "power": 4e6}) == "Wall law = regime, power = 4e+06"
 
 
 def test_four_tuple_carries_a_format_spec_or_a_callable():
-    assert _as_label("power", ("Power", "MW", 1e-6, ".1f")) == Label("Power", "MW", 1e-6, ".1f")
-
     def percent(y):
         return f"{y:.0%}"
 
-    assert _as_label("void", ("Void", "", 1.0, percent)).fmt is percent
+    labels = Labels({"power": ("Power", "MW", 1e-6, ".1f"), "void": ("Void", "", 1.0, percent)})
+    assert labels["power"] == Label("Power", "MW", 1e-6, ".1f")
+    assert labels["void"].fmt is percent
 
 
 def test_four_tuple_with_a_bad_format_raises_and_lists_the_forms():
     with pytest.raises(TypeError, match=r"\(display, unit, scale, fmt\)"):
-        _as_label("power", ("Power", "MW", 1e-6, 3))
+        Labels({"power": ("Power", "MW", 1e-6, 3)})
 
 
 def test_value_uses_the_label_format_before_the_registry_default():
@@ -135,9 +139,15 @@ def test_merged_takes_the_default_format_of_a_registry():
     assert merged.value("mdot", 0.3) == "0.30"
 
 
-def test_dimensionless_numbers_print_as_integers():
-    assert STREAM_LABELS.value("Re", 12345.6) == "12346"
-    assert STREAM_LABELS.value("Pe", 812.4) == "812"
-    assert STREAM_LABELS.value("Gr, left", 2.5e7) == "2.5e+07"
-    assert STREAM_LABELS["Gr, right"].fmt is None
-    assert STREAM_LABELS["Re"] == Label("Reynolds number", "", 1.0, ".0f")
+def test_dimensionless_numbers_print_as_integers(sweep):
+    defaults = sweep.labels
+    assert defaults.value("Re", 12345.6) == "12346"
+    assert defaults.value("Pe", 812.4) == "812"
+    assert defaults.value("Gr, left", 2.5e7) == "2.5e+07"
+    assert defaults["Gr, right"].fmt is None
+    assert defaults["Re"] == Label("Reynolds number", "", 1.0, ".0f")
+
+
+def test_a_result_reads_the_default_labels(sweep):
+    assert sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).ylabel == "Coolant temperature [°C]"
+    assert sweep.field("T", where={"power": 4e6, "mdot": 0.3}).ylabel == "z [m]"

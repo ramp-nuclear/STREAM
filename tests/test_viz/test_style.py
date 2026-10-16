@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 
-from stream.viz.style import DEFAULT_STYLE, Style
+from stream.viz import Style
+
+DEFAULT_STYLE = Style()
 
 
 def test_default_palette_is_the_six_house_colours():
@@ -45,16 +47,12 @@ def test_replace_returns_a_modified_copy():
 
 
 def test_limit_and_shade_fields():
-    from stream.viz import Style
-
     s = Style()
     assert (s.limit_linewidth, s.shade_alpha, s.shade_hatch) == (1.6, 0.55, "////")
     assert s.replace(shade_hatch="xx").shade_hatch == "xx"
 
 
 def test_map_fields():
-    from stream.viz import Style
-
     assert (Style().map_levels, Style().map_cases) == (12, False)
 
 

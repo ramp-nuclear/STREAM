@@ -1,11 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from conftest import make_case_frame
+from conftest import FakeChannel, channel_rows, frame, make_case_frame
 
-from stream.viz import Sweep, at
-from stream.viz._common import y_axis_text
-from stream.viz._results import Field, Result, check_units
-from stream.viz.labels import Labels
+from stream.viz import Result, Sweep, at, at_least, at_most
 
 
 def test_profile_single_case(sweep):
@@ -22,13 +20,11 @@ def test_profile_single_case(sweep):
     assert r.calculation == "CC"
     assert r.ylabel == "Coolant temperature [°C]"
     assert r.subtitle == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
-    assert not r._banded
 
 
 def test_profile_family_has_free_dimension(sweep):
     r = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3))
     assert r.dims == {"power": [2e6, 4e6, 6e6, 8e6]}
-    assert r._numeric == frozenset({"power"})
     assert r.fixed == dict(mdot=0.3)
     assert len(r.frame) == 16
 
@@ -49,10 +45,6 @@ def test_profile_rejects_rank_0_and_2(sweep):
 
 
 def test_profile_uses_cell_index_without_coordinates(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     agr["blob"] = object()
     s = Sweep.single(frame([("blob", "v", 0, j, float(j)) for j in range(3)]), agr)
     r = s.profile("v")
@@ -67,10 +59,6 @@ def test_profile_skips_holes_with_warning(holed_sweep):
 
 
 def test_profile_leaves_a_gap_for_a_dropped_cell(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     rows = [("CC", "T_cool", 0, j, 40.0 + 5 * j) for j in range(4)]
     rows[2] = ("CC", "T_cool", 0, 2, np.nan)
     with pytest.warns(UserWarning, match="non-finite"):
@@ -82,10 +70,6 @@ def test_profile_leaves_a_gap_for_a_dropped_cell(agr):
 
 
 def test_profile_of_calculations_with_different_x_names_raises(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     agr["blob"] = object()
     rows = [("CC", "v", 0, j, float(j)) for j in range(4)] + [("blob", "v", 0, j, float(j)) for j in range(3)]
     s = Sweep.single(frame(rows), agr)
@@ -101,15 +85,17 @@ def test_profile_without_a_solved_case_names_the_selection(holed_sweep):
 
 def test_profile_envelopes_from_bands(banded_sweep):
     r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0)
-    assert r._banded
     np.testing.assert_allclose(r.frame.upper - r.frame.value, 0.1 + 2 * 0.05)
+    np.testing.assert_allclose(r.frame.value - r.frame.lower, 0.1 + 2 * 0.05)
+    np.testing.assert_allclose(r.frame.inner_upper - r.frame.value, 0.1)
+    np.testing.assert_allclose(r.frame.value - r.frame.inner_lower, 0.1)
     r0 = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), uncertainty=False)
-    assert not r0._banded and (r0.frame.upper == r0.frame.value).all()
+    assert (r0.frame.upper == r0.frame.value).all() and (r0.frame.inner_lower == r0.frame.value).all()
 
 
 def test_field_single_case(sweep):
     f = sweep.field("T", where=dict(power=4e6, mdot=0.3))
-    assert isinstance(f, Field) and f.kind == "field"
+    assert isinstance(f, Result) and f.kind == "field"
     assert f.arrays["value"].shape == (2, 3)
     np.testing.assert_allclose(f.arrays["value"][1], [60.0, 61.0, 62.0])
     np.testing.assert_allclose(f.z_bounds, [0.0, 0.5, 1.0])
@@ -138,10 +124,6 @@ def test_field_takes_one_quantity_of_one_calculation(sweep):
 
 
 def test_field_fills_a_dropped_cell_with_nan(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     rows = [("plate", "T", i, j, 50.0 + 10 * i + j) for i in range(2) for j in range(3)]
     rows[4] = ("plate", "T", 1, 1, np.nan)
     with pytest.warns(UserWarning, match="non-finite"):
@@ -154,10 +136,6 @@ def test_field_fills_a_dropped_cell_with_nan(agr):
 
 
 def test_mesh_shorter_than_the_frame_is_named(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     channel = Sweep.single(frame([("CC", "T_cool", 0, j, float(j)) for j in range(5)]), agr)
     with pytest.raises(ValueError, match="'T_cool'.*cell 4.*4 cells"):
         channel.profile("T_cool")
@@ -173,16 +151,11 @@ def test_reduce_min_versus_power(sweep):
     np.testing.assert_allclose(r.frame.power, [2e6, 4e6, 6e6, 8e6])
     np.testing.assert_allclose(r.frame.value, 1.5 * 4e6 / np.array([2e6, 4e6, 6e6, 8e6]))
     assert r.dims == {} and r.fixed == dict(mdot=0.3)
-    assert r._shown_reducer == "min"
     assert r.ylabel == "min CHFR"
-    assert r._y_names == ("CHFR",) and r.question.sigma == 1.0
+    assert r.question.sigma == 1.0
 
 
 def test_reduce_keeps_values_on_their_own_coordinate_after_a_dropped_cell(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     rows = [("CC", "T_cool", 0, j, v) for j, v in enumerate((np.nan, 45.0, 50.0, 55.0))]
     cases = [dict(power=2e6), dict(power=4e6)]
     with pytest.warns(UserWarning, match="non-finite"):
@@ -195,10 +168,6 @@ def test_reduce_keeps_values_on_their_own_coordinate_after_a_dropped_cell(agr):
 
 
 def test_reduce_with_axis_survives_a_dropped_cell(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     rows = [("plate", "T", i, j, 50.0 + 10 * i + j) for i in range(2) for j in range(3)]
     rows[1] = ("plate", "T", 0, 1, np.nan)
     with pytest.warns(UserWarning, match="non-finite"):
@@ -209,10 +178,6 @@ def test_reduce_with_axis_survives_a_dropped_cell(agr):
 
 
 def test_a_quantity_missing_in_one_case_leaves_the_others_alone(agr):
-    from conftest import frame
-
-    from stream.viz.sweep import Sweep
-
     live = [("plate", "T", i, j, 50.0 + 10 * i + j) for i in range(2) for j in range(3)]
     dead = [("plate", "T", i, j, np.nan) for i in range(2) for j in range(3)]
     cases = [dict(power=2e6), dict(power=4e6)]
@@ -258,17 +223,10 @@ def test_reduce_where_min_and_at(sweep):
 
 def test_where_with_axis_reports_the_collapsed_coordinate(sweep):
     r = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
-    assert r._coordinate == "x"
     assert r.ylabel == "where_max Temperature [m]"
     sweep.labels = {"x": ("x", "mm", 1e3)}
     scaled = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
     assert scaled.ylabel == "where_max Temperature [mm]"
-
-
-def test_level_space_holds_every_parameter_of_the_sweep(sweep):
-    r = sweep.reduce("CHFR", "min", versus="power")
-    assert r._level_space == {"power": [2e6, 4e6, 6e6, 8e6], "mdot": [0.2, 0.3]}
-    assert sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))._level_space == r._level_space
 
 
 def test_reduce_with_axis_returns_profile(sweep):
@@ -296,10 +254,6 @@ def test_reduce_skips_holes(holed_sweep):
 
 
 def test_reduce_without_a_solved_case_names_the_selection(grid_cases, agr):
-    from conftest import make_case_frame
-
-    from stream.viz.sweep import Sweep
-
     frames = [None if case["mdot"] == 0.3 else make_case_frame(**case) for case in grid_cases]
     with pytest.warns(UserWarning, match="holes"):
         s = Sweep(grid_cases, frames, agr)
@@ -314,21 +268,10 @@ def test_reduce_envelopes(banded_sweep):
     np.testing.assert_allclose(r.frame.upper - r.frame.value, 0.15)
 
 
-def test_y_axis_text_and_check_units():
-    labels = Labels({"a": ("A", "K"), "b": ("B", "K"), "c": ("C", "")})
-    assert y_axis_text(labels, ["a"]) == "A [K]"
-    assert y_axis_text(labels, ["a", "b"], "min") == "min A, B [K]"
-    assert y_axis_text(labels, ["c"], "max") == "max C"
-    assert y_axis_text(labels, ["a", "zzz"]) == "A, zzz [K]"
-    check_units(labels, ["a", "zzz"])
-    with pytest.raises(ValueError, match="'a'.*K.*'c'.*dimensionless"):
-        check_units(labels, ["a", "c"])
-
-
-def test_check_units_refuses_two_scales_on_one_axis():
-    labels = Labels({"a": ("A", "W", 1.0), "b": ("B", "W", 1e-6)})
-    with pytest.raises(ValueError, match="'a'.*scaled by 1.*'b'.*1e-06"):
-        check_units(labels, ["a", "b"])
+def test_quantities_scaled_differently_cannot_share_an_axis(sweep):
+    sweep.labels = {"T_cool": ("Coolant", "°C", 1.0), "CHFR": ("CHF ratio", "°C", 10.0)}
+    with pytest.raises(ValueError, match="'CHFR'.*scaled by 10.*'T_cool' by 1"):
+        sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
 
 
 def test_reduce_with_two_parameters_is_a_map(sweep):
@@ -386,8 +329,6 @@ def test_filled_cases_are_selected_and_flagged(agr, grid_cases):
 
 
 def two_channel_sweep(agr, grid_cases, **limits):
-    from conftest import FakeChannel, channel_rows, frame
-
     def make(power, mdot):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -401,8 +342,6 @@ def two_channel_sweep(agr, grid_cases, **limits):
 
 
 def test_reduce_limiting_keeps_the_binding_calculation(agr, grid_cases):
-    from stream.viz import at_least
-
     sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
     both = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"])
     r = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"], limiting=True)
@@ -413,8 +352,6 @@ def test_reduce_limiting_keeps_the_binding_calculation(agr, grid_cases):
 
 
 def test_reduce_limiting_refusals(agr, grid_cases):
-    from stream.viz import at_least, at_most
-
     sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
     with pytest.raises(ValueError, match="limiting needs a limit for 'T_cool'; declare it in limits="):
         sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"], limiting=True)
@@ -432,10 +369,6 @@ def test_reduce_limiting_refusals(agr, grid_cases):
 
 
 def test_reduce_limiting_on_a_map(agr, grid_cases):
-    import matplotlib.pyplot as plt
-
-    from stream.viz import at_least
-
     sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
     r = sweep.reduce("CHFR", "min", versus=("power", "mdot"), of=["CC", "hot"], limiting=True)
     assert r.kind == "map" and len(r.frame) == 8 and set(r.frame.calculation) == {"hot"}
@@ -444,8 +377,6 @@ def test_reduce_limiting_on_a_map(agr, grid_cases):
 
 
 def test_reduce_limiting_refuses_a_where_reducer(agr, grid_cases):
-    from stream.viz import at_least
-
     sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
     with pytest.raises(
         ValueError, match=r"where_min gives a location, not a value of CHFR; use min, max, mean or at\(\) with limiting=True"
@@ -454,8 +385,6 @@ def test_reduce_limiting_refuses_a_where_reducer(agr, grid_cases):
 
 
 def test_reduce_limiting_at_most_keeps_the_largest(agr, grid_cases):
-    from stream.viz import at_most
-
     sweep = two_channel_sweep(agr, grid_cases, T_cool=at_most(100.0))
     both = sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"])
     r = sweep.reduce("T_cool", "max", versus="power", of=["CC", "hot"], limiting=True)
@@ -465,8 +394,6 @@ def test_reduce_limiting_at_most_keeps_the_largest(agr, grid_cases):
 
 
 def osvr_sweep(agr, grid_cases, **limits):
-    from conftest import channel_rows, frame
-
     def make(power, mdot):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -478,10 +405,6 @@ def osvr_sweep(agr, grid_cases, **limits):
 
 
 def test_reduce_limiting_across_quantities_needs_one_limit_value(agr, grid_cases):
-    import matplotlib.pyplot as plt
-
-    from stream.viz import at_least
-
     sweep = osvr_sweep(agr, grid_cases, CHFR=at_least(1.3), OSVR=at_least(1.1))
     with pytest.raises(
         ValueError,
@@ -515,3 +438,62 @@ def test_a_result_keeps_the_labels_it_was_asked_under(sweep):
     assert sweep.profile("T_cool", where=where).ylabel == "Bulk temperature [K]"
     _, ax = r.plot()
     assert ax.get_ylabel() == "Coolant temperature [°C]"
+
+
+def chfr_at(result, power):
+    return result.frame[result.frame.power == power].value.iloc[0]
+
+
+def test_named_reducers_collapse_a_profile(sweep):
+    where = {"mdot": 0.3}
+    assert chfr_at(sweep.reduce("CHFR", "min", versus="power", where=where), 4e6) == pytest.approx(1.5)
+    assert chfr_at(sweep.reduce("CHFR", "max", versus="power", where=where), 4e6) == pytest.approx(3.0)
+    assert chfr_at(sweep.reduce("CHFR", "mean", versus="power", where=where), 4e6) == pytest.approx(2.075)
+    assert chfr_at(sweep.reduce("CHFR", "where_min", versus="power", where=where), 4e6) == pytest.approx(0.25)
+    assert chfr_at(sweep.reduce("CHFR", "where_max", versus="power", where=where), 4e6) == pytest.approx(0.05)
+
+
+def test_mean_is_weighted_by_cell_length(agr):
+    agr["uneven"] = FakeChannel([0.0, 0.2, 0.6])
+    agr["blob"] = object()
+    rows = [("uneven", "v", 0, 0, 1.0), ("uneven", "v", 0, 1, 4.0), ("blob", "w", 0, 0, 1.0), ("blob", "w", 0, 1, 4.0)]
+    s = Sweep([{"power": 1.0}, {"power": 2.0}], [frame(rows), frame(rows)], agr)
+    assert s.reduce("v", "mean", versus="power").frame.value.iloc[0] == pytest.approx(3.0)
+    assert s.reduce("w", "mean", versus="power").frame.value.iloc[0] == pytest.approx(2.5)
+
+
+def test_at_picks_the_nearest_cell_or_the_named_one(sweep, agr):
+    where = {"mdot": 0.3}
+    assert chfr_at(sweep.reduce("CHFR", at(z=0.26), versus="power", where=where), 4e6) == pytest.approx(1.5)
+    assert chfr_at(sweep.reduce("CHFR", at(cell=3), versus="power", where=where), 4e6) == pytest.approx(1.8)
+    with pytest.raises(ValueError, match="cell 9 is outside the 4 cells"):
+        sweep.reduce("CHFR", at(cell=9), versus="power", where=where)
+    agr["blob"] = object()
+    blob = Sweep([{"power": 1.0}, {"power": 2.0}], [frame([("blob", "v", 0, j, 1.0) for j in range(3)])] * 2, agr)
+    with pytest.raises(ValueError, match=r"at\(z=...\) needs z coordinates"):
+        blob.reduce("v", at(z=0.1), versus="power")
+
+
+def test_a_callable_reducer_gives_its_value_and_its_name(sweep):
+    def span(values, coords):
+        return float(values[-1] - values[0])
+
+    r = sweep.reduce("CHFR", span, versus="power", where={"mdot": 0.3})
+    assert chfr_at(r, 4e6) == pytest.approx(-1.2)
+    assert r.ylabel == "span CHFR"
+
+
+def test_a_field_collapses_along_one_axis(sweep):
+    where = {"power": 4e6, "mdot": 0.3}
+    r = sweep.reduce("T", "min", axis="z", where=where)
+    assert r.x == "x"
+    np.testing.assert_allclose(r.frame.value, [50.0, 51.0, 52.0])
+    with pytest.raises(ValueError, match="where_max on a field needs an axis; pass axis='z' or axis='x'"):
+        sweep.reduce("T", "where_max", versus="power", where={"mdot": 0.3})
+    with pytest.raises(ValueError, match="axis 'y' is not one of z, x"):
+        sweep.reduce("T", "max", axis="y", where=where)
+
+
+def test_an_unknown_reducer_raises(sweep):
+    with pytest.raises(ValueError, match="unknown reducer 'median'; use one of min, max, mean"):
+        sweep.reduce("CHFR", "median", versus="power")

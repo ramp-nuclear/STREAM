@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from stream.viz.sweep import Sweep
+from stream.viz import Sweep
 
 
 @pytest.fixture(autouse=True)

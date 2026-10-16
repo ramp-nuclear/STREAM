@@ -1,13 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from conftest import make_case_frame
+from conftest import FakeChannel, channel_rows, frame, make_case_frame
 from matplotlib.collections import LineCollection, PolyCollection
 from matplotlib.colors import to_hex
 from matplotlib.contour import QuadContourSet
+from matplotlib.figure import Figure
 
-from stream.viz import Labels, Style, Sweep, at, at_least, at_most
-from stream.viz._inverse import crossings
+from stream.viz import Label, Labels, Style, Sweep, at, at_least, at_most
 
 
 def legend_texts(ax):
@@ -74,7 +74,7 @@ def test_subtitle_follows_the_labels_given_to_plot(sweep):
     plt.close(fig)
     fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot", labels={"mdot": ("Flow", "g/s", 1e3)})
     assert [a.get_title() for a in axes.ravel()] == ["Flow = 200 g/s", "Flow = 300 g/s"]
-    assert fig._suptitle.get_text() == "CC"
+    assert fig.get_suptitle() == "CC"
     plt.close(fig)
 
 
@@ -122,10 +122,6 @@ def test_bound_draws_envelope_without_band(banded_sweep):
 
 
 def test_split_band_with_no_systematic_width(agr):
-    from conftest import channel_rows, frame
-
-    from stream.viz.sweep import Sweep
-
     rows = channel_rows(np.array([40.0, 45.0, 50.0, 55.0]), np.array([3.0, 2.0, 1.5, 1.8]), 4e6)
     only = frame(rows, sys=np.zeros(len(rows)), stat=np.full(len(rows), 0.05))
     fig, ax = Sweep([{}], [only], agr).profile("T_cool").plot(band="split")
@@ -141,10 +137,6 @@ def test_band_legend_hidden_through_labels(banded_sweep):
 
 
 def test_curve_three_channels_and_legend_blocks(agr):
-    from conftest import make_case_frame
-
-    from stream.viz.sweep import Sweep
-
     cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     s.labels = {"CHFR": ("CHF ratio", ""), "T_cool": ("Bulk", "°C")}
@@ -170,7 +162,7 @@ def test_panel_titles_take_categorical_level_names(sweep):
     fig, axes = r.plot(col="quantity")
     assert axes.shape == (1, 2)
     assert [a.get_title() for a in axes.ravel()] == ["Coolant temperature", "CHFR"]
-    assert fig._suptitle.get_text() == r.subtitle
+    assert fig.get_suptitle() == r.subtitle
     plt.close(fig)
 
 
@@ -178,7 +170,7 @@ def test_grid_panels(sweep):
     fig, axes = sweep.reduce("CHFR", "min", versus="power").plot(col="mdot")
     assert axes.shape == (1, 2)
     assert [a.get_title() for a in axes.ravel()] == ["Mass flow = 0.2 kg/s", "Mass flow = 0.3 kg/s"]
-    assert fig._suptitle.get_text() == "CC"
+    assert fig.get_suptitle() == "CC"
     assert axes[0, 1].get_ylabel() == ""
     plt.close(fig)
     fig, ax = plt.subplots()
@@ -234,10 +226,6 @@ def test_required_curve_plot(sweep):
 
 
 def test_binding_markers_and_legend(agr, grid_cases):
-    from conftest import make_case_frame
-
-    from stream.viz import Sweep, at_least, at_most
-
     sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr,
                   limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
     r = sweep.required(["CHFR", "T_cool"], equals={"CHFR": 1.5, "T_cool": 60.0}, solve_for="power", versus="mdot", limiting=True)
@@ -251,23 +239,15 @@ def test_binding_markers_and_legend(agr, grid_cases):
 
 
 def _marker_colors(ax):
-    from matplotlib.colors import to_hex
-
     return [to_hex(line.get_color()) for line in ax.get_lines() if line.get_marker() == "o" and line.get_linestyle() == "None"]
 
 
 def _legend_marker_colors(ax):
-    from matplotlib.colors import to_hex
-
     leg = ax.get_legend()
     return {t.get_text(): to_hex(h.get_color()) for t, h in zip(leg.get_texts(), leg.legend_handles)}
 
 
 def test_binding_markers_match_the_legend_colours(agr, grid_cases):
-    from conftest import make_case_frame
-
-    from stream.viz import Sweep, at_least, at_most
-
     sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr,
                   limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
     r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
@@ -277,10 +257,6 @@ def test_binding_markers_match_the_legend_colours(agr, grid_cases):
 
 
 def test_binding_markers_on_errorbars(agr, grid_cases):
-    from conftest import make_case_frame
-
-    from stream.viz import Sweep, at_least, at_most
-
     sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr,
                   limits={"CHFR": at_least(1.5), "T_cool": at_most(60.0)})
     r = sweep.required(["CHFR", "T_cool"], solve_for="power", versus="mdot", limiting=True)
@@ -290,10 +266,6 @@ def test_binding_markers_on_errorbars(agr, grid_cases):
 
 
 def test_binding_marker_colours_agree_across_panels(agr):
-    from conftest import FakeChannel, channel_rows, frame
-
-    from stream.viz import Sweep, at_least
-
     def make(power, mdot, peak):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -316,8 +288,6 @@ def test_binding_marker_colours_agree_across_panels(agr):
 
 
 def _two_binder_sweep(agr, labels=None):
-    from conftest import channel_rows, frame
-
     def make(power, mdot, shape):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -507,8 +477,6 @@ def test_limit_shade_on_panels_keeps_every_limit_in_view(agr, grid_cases):
 
 
 def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
-    from conftest import FakeChannel, channel_rows, frame
-
     def make(power, mdot, peak):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -756,17 +724,6 @@ def test_levels_printing_alike_warn_at_the_plot_call(agr):
     plt.close(fig)
 
 
-def test_levels_printing_alike_warn_at_a_direct_plot_call(agr):
-    from stream.viz._draw import plot
-
-    cases = [dict(power=p, mdot=0.3) for p in (1.0e6, 1.04e6)]
-    sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr)
-    with pytest.warns(UserWarning, match="both print as") as record:
-        fig, ax = plot(sweep.reduce("CHFR", "min", versus="mdot"), labels={"power": ("Power", "MW", 1e-6, ".1f")})
-    assert record[0].filename == __file__
-    plt.close(fig)
-
-
 def drop_lines(ax):
     return [c for c in ax.collections if isinstance(c, LineCollection)]
 
@@ -786,8 +743,7 @@ def foot_texts(ax):
 def test_crossing_mark_draws_a_drop_line_a_marker_and_the_value(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
     r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
-    (xc,) = crossings(r.frame.power, r.frame.value, 1.3)
-    assert xc == pytest.approx(4.8e6)
+    xc = 4.8e6
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
     (segment,) = drop.get_segments()
@@ -820,8 +776,6 @@ def test_crossing_mark_twice_on_one_axes_keeps_the_label_pad(agr, grid_cases):
 
 
 def test_crossing_mark_draws_on_a_figure_without_pyplot(agr, grid_cases):
-    from matplotlib.figure import Figure
-
     fig = Figure()
     ax = fig.subplots()
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
@@ -896,12 +850,11 @@ def test_crossing_skips_a_curve_that_never_reaches_the_limit(agr, grid_cases):
 def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.7))
     r = sweep.profile("CHFR", of="CC", where=dict(power=4e6, mdot=0.3))
-    found = crossings(r.frame.z, r.frame.value, 1.7)
-    assert len(found) == 2
+    assert np.count_nonzero(np.diff(np.sign(r.frame.value.to_numpy() - 1.7))) == 2
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
     (segment,) = drop.get_segments()
-    assert segment[0][0] == pytest.approx(found[0])
+    assert segment[0][0] == pytest.approx(0.21)
     assert foot_texts(ax) == ["0.21"]
     plt.close(fig)
 
@@ -909,12 +862,16 @@ def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
 def test_crossing_follows_the_drawn_bound(agr, grid_cases):
     sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"CHFR": at_least(1.3)})
     r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
-    (lower,) = crossings(r.frame.power, r.frame.lower, 1.3)
-    (nominal,) = crossings(r.frame.power, r.frame.value, 1.3)
-    assert lower != pytest.approx(nominal)
+    fig, ax = r.plot(crossing="mark")
+    (nominal,) = crossing_markers(ax)
+    plt.close(fig)
     fig, ax = r.plot(bound="lower", crossing="mark")
-    (marker,) = crossing_markers(ax)
-    assert marker.get_xdata()[0] == pytest.approx(lower)
+    (lower,) = crossing_markers(ax)
+    assert lower.get_xdata()[0] < nominal.get_xdata()[0]
+    lows = r.frame.sort_values("power").lower.to_numpy()
+    k = np.flatnonzero(lows < 1.3)[0]
+    x0, x1 = r.frame.sort_values("power").power.to_numpy()[k - 1:k + 1]
+    assert x0 < lower.get_xdata()[0] < x1
     plt.close(fig)
 
 
@@ -993,8 +950,6 @@ def test_crossing_legend_leaves_curves_that_never_cross_unchanged(agr, grid_case
 
 
 def test_crossing_mark_on_a_binding_result(agr):
-    from conftest import FakeChannel, channel_rows, frame
-
     def make(power, mdot):
         T = np.array([40.0, 45.0, 50.0, 55.0]) + power / 1e6
         chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
@@ -1006,7 +961,7 @@ def test_crossing_mark_on_a_binding_result(agr):
     cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6, 6e6, 8e6)]
     sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.3)})
     r = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"], limiting=True)
-    (xc,) = crossings(r.frame.power, r.frame.value, 1.3)
+    xc = 4e6 + 2e6 * 0.2 / 0.7
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
     assert drop.get_segments()[0][0][0] == pytest.approx(xc)
@@ -1058,3 +1013,79 @@ def test_limit_color_reaches_the_field_contour_and_hatch(agr, grid_cases):
     (cells,) = hatched(ax)
     assert to_hex(np.atleast_2d(cells.get_edgecolor())[0]) == "#123456"
     plt.close(fig)
+
+
+def ratio_sweep(agr, cases, labels=None):
+    def make(power, mdot, **_):
+        chfr = np.array([3.0, 2.0, 1.5, 1.8]) * mdot / 0.3 * (4e6 / power)
+        rows = channel_rows(np.array([40.0, 45.0, 50.0, 55.0]), chfr, power)
+        return frame(rows + [("CC", "OSVR", 0, j, 0.9 * chfr[j]) for j in range(4)])
+
+    return Sweep(cases, [make(**c) for c in cases], agr, labels=labels)
+
+
+def legend_colors(ax):
+    leg = ax.get_legend()
+    return {t.get_text(): to_hex(h.get_color()) for t, h in zip(leg.get_texts(), leg.legend_handles)}
+
+
+def test_quantities_take_their_label_colour_then_the_palette_in_registry_order(agr, grid_cases):
+    palette = Style().palette
+    fixed = ratio_sweep(agr, grid_cases, {"OSVR": ("OSV ratio", ""), "CHFR": Label("CHF ratio", "", color="#123456")})
+    fig, ax = fixed.reduce(["CHFR", "OSVR"], "min", versus="power", where={"mdot": 0.3}).plot()
+    assert ax.get_legend().get_title().get_text() == "Quantity"
+    assert legend_colors(ax) == {"CHF ratio": "#123456", "OSV ratio": palette[0]}
+    plt.close(fig)
+    ordered = ratio_sweep(agr, grid_cases, {"OSVR": ("OSV ratio", ""), "CHFR": ("CHF ratio", "")})
+    fig, ax = ordered.reduce(["CHFR", "OSVR"], "min", versus="power", where={"mdot": 0.3}).plot()
+    assert legend_colors(ax) == {"CHF ratio": palette[1], "OSV ratio": palette[0]}
+    plt.close(fig)
+
+
+def test_a_level_keeps_its_ramp_colour_when_a_case_is_missing(holed_sweep):
+    fig, ax = holed_sweep.profile("CHFR", of="CC", where={"mdot": 0.2}).plot()
+    whole = legend_colors(ax)
+    plt.close(fig)
+    with pytest.warns(UserWarning, match="skipping unsolved"):
+        fig, ax = holed_sweep.profile("CHFR", of="CC", where={"mdot": 0.3}).plot()
+    gapped = legend_colors(ax)
+    assert list(whole) == ["2e+06", "4e+06", "6e+06", "8e+06"] and list(gapped) == ["2e+06", "4e+06", "6e+06"]
+    assert all(gapped[k] == whole[k] for k in gapped)
+    assert list(whole.values()) == Style().ramp_colors(4)
+    plt.close(fig)
+
+
+def test_dimensions_fill_colour_then_style_then_marker(agr):
+    cases = [{"power": p, "mdot": m, "depth": d} for p in (2e6, 4e6) for m in (0.2, 0.3) for d in (1.0, 2.0, 3.0)]
+    r = ratio_sweep(agr, cases).reduce(["CHFR", "OSVR"], "min", versus="power")
+    fig, ax = r.plot()
+    texts = legend_texts(ax)
+    assert [t for t in texts if not t.startswith(" ")] == ["Quantity", "mdot", "depth"]
+    assert {ln.get_linestyle() for ln in ax.get_lines()} == {"-", "--"}
+    assert {ln.get_marker() for ln in ax.get_lines()} == {"o", "s", "^"}
+    assert len({to_hex(ln.get_color()) for ln in ax.get_lines()}) == 2
+    plt.close(fig)
+    fig, ax = r.plot(color="mdot", style="quantity")
+    assert {ln.get_linestyle() for ln in ax.get_lines()} == {"-", "--"}
+    assert [t for t in legend_texts(ax) if not t.startswith(" ")] == ["mdot", "Quantity", "depth"]
+    plt.close(fig)
+
+
+def test_encoding_refusals(agr):
+    cases = [{"power": p, "mdot": m, "depth": d, "peak": k} for p in (2e6, 4e6) for m in (0.2, 0.3) for d in (1.0, 2.0)
+             for k in (1.0, 1.2)]
+    r = ratio_sweep(agr, cases).reduce(["CHFR", "OSVR"], "min", versus="power")
+    with pytest.raises(ValueError, match="'peak' varies but colour, line style and marker are all taken; put it on a panel grid"):
+        r.plot()
+    fig, axes = r.plot(row="peak")
+    assert axes.shape == (2, 1)
+    plt.close(fig)
+    one = ratio_sweep(agr, [{"power": p, "mdot": m} for p in (2e6, 4e6) for m in (0.2, 0.3)])
+    curve = one.reduce("CHFR", "min", versus="power")
+    with pytest.raises(ValueError, match="marker='depth' does not vary in this result; the varying dimensions are mdot"):
+        curve.plot(marker="depth")
+    with pytest.raises(ValueError, match="'mdot' is assigned to both color and style"):
+        curve.plot(color="mdot", style="mdot")
+    five = ratio_sweep(agr, [{"power": p, "mdot": m} for p in (1e6, 2e6, 3e6, 4e6, 5e6) for m in (0.2, 0.3)])
+    with pytest.raises(ValueError, match="'power' has 5 levels, more than style can show \\(4\\)"):
+        five.reduce("CHFR", "min", versus="mdot").plot(style="power")
