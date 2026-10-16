@@ -8,7 +8,7 @@ stages:
    :class:`~stream.calculations.Kirchhoff` and everything on its flow graph), one
    thermal cluster per group of wall-coupled :class:`~stream.calculations.Fuel` plates
    and :class:`~stream.calculations.ChannelAndContacts` channels, and the point-kinetics
-   nodes that supply fuel power.
+   node that supplies fuel power.
 2. :func:`seed_steady_state` seeds every block in closed form, without solving: flows
    from what is known and the current law, temperatures by walking the network in flow
    direction with each heated channel adding its power, pressures from
@@ -19,10 +19,6 @@ stages:
    frozen (:func:`solve_block`): the thermal clusters, then the hydraulics, a few times
    over.
 
-The blocks are read from the aggregator's own wiring, so any plate layout made with the
-helpers in :mod:`stream.composition.mtr_geometry`, or by hand with the same variable
-names, is handled the same way.
-
 Use this module for a system that couples a flow network to heated plates, where the
 flows set the temperatures and the temperatures feed back into the pressure drops.
 :meth:`~stream.composition.cycle.FlowGraph.guess_steady_state` covers the hydraulic part
@@ -30,6 +26,29 @@ alone and needs every flow and one temperature from the caller; the helpers in
 :mod:`stream.composition.subsystems` cover a single plate or a single kinetics node.
 :func:`guess_steady_state` combines them, completes the flows it is not given, and
 reconciles the blocks with each other.
+
+For a loop of one heated plate, where ``channel`` is a
+:class:`~stream.calculations.ChannelAndContacts`, ``fuel`` its
+:class:`~stream.calculations.Fuel` and ``top``, ``bottom`` two
+:class:`~stream.calculations.Junction` nodes:
+
+.. code-block:: python
+
+    fg = FlowGraph(
+        flow_edge((top, bottom), channel),
+        flow_edge((bottom, top), Pump(mdot0=0.5, name="Pump"), HeatExchanger(outlet=40.0, name="HX")),
+        abs_pressure_comps=[channel],
+        reference_node=(top, 2e5),
+    )
+    agr = fg.aggregator + symmetric_plate(channel, fuel, {fuel: {"power": 1e3}}).to_aggregator()
+    y = agr.solve_steady(guess_steady_state(agr))
+
+Limitations: an aggregator holds at most one Kirchhoff (with any number of loops on it)
+and at most one kinetics node. Fuels are heated through the ``T_left`` and ``T_right``
+walls of a :class:`~stream.calculations.Channel` only. A fuel driven by a kinetics node
+needs its power in ``powers``. A heated channel on a loop that nothing drives needs a
+signed flow in ``flows``. Calculations the seed does not recognise go through
+``overrides``.
 """
 
 import warnings
@@ -82,6 +101,18 @@ THERMAL_VARIABLES = frozenset(
 
 class MissingPowerError(ValueError):
     """A fuel's steady power is unknown: it has no ``power`` func and no ``powers`` entry."""
+
+
+@dataclass(frozen=True)
+class SidePowers:
+    """Power per cell a channel receives through its left and right walls."""
+
+    left: np.ndarray
+    right: np.ndarray
+
+    @property
+    def total(self) -> np.ndarray:
+        return self.left + self.right
 
 
 @dataclass(frozen=True)
@@ -303,7 +334,7 @@ def _complete_flows(k: Kirchhoff, known: dict[str, float]) -> dict[str, float]:
     return dict(zip(names, x))
 
 
-def _check_heated_legs(k: Kirchhoff, blocks: Blocks, flows: dict[str, float]) -> None:
+def _check_heated_legs_not_stalled(k: Kirchhoff, blocks: Blocks, flows: dict[str, float]) -> None:
     heated = [c for cluster in blocks.thermal for c in cluster if isinstance(c, Channel)]
     stalled = sorted(c.name for c in heated if flows[k.component_edge(c)] == 0.0)
     if stalled:
@@ -320,10 +351,10 @@ def _row_power(fuel: Fuel, power: Watt) -> np.ndarray:
 
 
 def _fuel_powers(agr: Aggregator, blocks: Blocks, powers: dict, t: Second) -> dict:
-    out = {}
+    powers_by_fuel = {}
     for fuel in (n for cluster in blocks.thermal for n in cluster if isinstance(n, Fuel)):
         if fuel in powers:
-            out[fuel] = float(powers[fuel])
+            powers_by_fuel[fuel] = float(powers[fuel])
             continue
         value = _func(agr, fuel, "power", t)
         if value is None:
@@ -332,13 +363,13 @@ def _fuel_powers(agr: Aggregator, blocks: Blocks, powers: dict, t: Second) -> di
                 f"read from the system (a kinetics node supplies it at run time). Pass "
                 f"powers={{{fuel.name!r}: <Watt>}}."
             )
-        out[fuel] = float(np.asarray(value).item())
-    return out
+        powers_by_fuel[fuel] = float(np.asarray(value).item())
+    return powers_by_fuel
 
 
-def _side_powers(agr: Aggregator, blocks: Blocks, fuel_powers: dict) -> dict:
+def _side_powers(agr: Aggregator, blocks: Blocks, fuel_powers: dict) -> dict[Channel, SidePowers]:
     sides = {
-        n: dict(left=np.zeros(n.n), right=np.zeros(n.n))
+        n: {"left": np.zeros(n.n), "right": np.zeros(n.n)}
         for cluster in blocks.thermal
         for n in cluster
         if isinstance(n, Channel)
@@ -349,9 +380,9 @@ def _side_powers(agr: Aggregator, blocks: Blocks, fuel_powers: dict) -> dict:
             for side in ("left", "right"):
                 if f"T_{side}" in names:
                     wired.setdefault(u, []).append((v, side))
-    for fuel, targets in wired.items():
-        rows = _row_power(fuel, fuel_powers[fuel]) / len(targets)
-        for channel, side in targets:
+    for fuel, heated_sides in wired.items():
+        rows = _row_power(fuel, fuel_powers[fuel]) / len(heated_sides)
+        for channel, side in heated_sides:
             if len(rows) == channel.n:
                 sides[channel][side] += rows
             else:
@@ -360,7 +391,7 @@ def _side_powers(agr: Aggregator, blocks: Blocks, fuel_powers: dict) -> dict:
                     f"spread uniformly over the channel for the seed."
                 )
                 sides[channel][side] += np.full(channel.n, rows.sum() / channel.n)
-    return sides
+    return {c: SidePowers(left=s["left"], right=s["right"]) for c, s in sides.items()}
 
 
 def _outlet(comp: Calculation, inlet: float, mdot: float, row_power) -> tuple[float, np.ndarray | None]:
@@ -382,6 +413,21 @@ def _mixing_eps(node) -> float:
     return eps if eps is not None else smoothing.DEFAULT_MDOT_EPS
 
 
+def _mix_at_node(k: Kirchhoff, node, flows: dict, outlets: dict, current: float) -> float:
+    eps = _mixing_eps(node)
+    weights = getattr(node, "weights", {})
+    N = D = 0.0
+    for _, _, comps in k.g.in_edges(node, data=COMPS):
+        mdot = flows[k.component_edge(comps[0])]
+        w = weights.get(comps[-1], 1.0) * soft_pos(mdot, eps)
+        N, D = N + w * outlets[comps[-1]], D + w
+    for _, _, comps in k.g.out_edges(node, data=COMPS):
+        mdot = flows[k.component_edge(comps[0])]
+        w = weights.get(comps[0], 1.0) * soft_pos(-mdot, eps)
+        N, D = N + w * outlets[comps[0]], D + w
+    return N / D if D > 0 else current
+
+
 def _walk_temperatures(
     agr: Aggregator,
     k: Kirchhoff,
@@ -392,6 +438,12 @@ def _walk_temperatures(
     passes: int = 50,
     tolerance: Celsius = 1e-6,
 ):
+    """Walk the flow network in flow direction until the temperatures settle.
+
+    Each pass carries every edge's inlet through its components and mixes the arrivals
+    at every node. Returns the outlet temperature per component, the coolant profile
+    per channel, and the temperature per junction.
+    """
     sources = [comp.T for comp in k.components if isinstance(comp, HeatExchanger)]
     for comp in k.components:
         for name in ("Tin", "Tin_minus"):
@@ -425,18 +477,7 @@ def _walk_temperatures(
                 change = max(change, abs(T - outlets[comp]))
                 outlets[comp] = T
         for node in k.g.nodes:
-            eps = _mixing_eps(node)
-            weights = getattr(node, "weights", {})
-            N = D = 0.0
-            for _, _, comps in k.g.in_edges(node, data=COMPS):
-                mdot = flows[k.component_edge(comps[0])]
-                w = weights.get(comps[-1], 1.0) * soft_pos(mdot, eps)
-                N, D = N + w * outlets[comps[-1]], D + w
-            for _, _, comps in k.g.out_edges(node, data=COMPS):
-                mdot = flows[k.component_edge(comps[0])]
-                w = weights.get(comps[0], 1.0) * soft_pos(-mdot, eps)
-                N, D = N + w * outlets[comps[0]], D + w
-            mixed = N / D if D > 0 else nodes[node]
+            mixed = _mix_at_node(k, node, flows, outlets, nodes[node])
             change = max(change, abs(mixed - nodes[node]))
             nodes[node] = mixed
         if change < tolerance:
@@ -483,6 +524,15 @@ def _cluster_seed(
     T0: float,
     seed_coolant: bool = False,
 ) -> State:
+    """Seed the walls, heat transfer coefficients and fuel interiors of one cluster.
+
+    Each channel side's h comes from ``h_wall`` at the coolant temperature, floored at
+    the coolant conductivity over the hydraulic diameter; its wall sits at coolant plus
+    heat flux over h, updated over two passes. A fuel interior is the mean of its two
+    walls tiled across the plate, and a fuel with one heated side gets that wall on both
+    sides. With ``seed_coolant``, each channel also gets its coolant profile and its own
+    pressure drop.
+    """
     state = {}
     walls = {}
     if seed_coolant:
@@ -493,7 +543,7 @@ def _cluster_seed(
         h_floor = c.fluid.conductivity(tc) / c.pipe.hydraulic_diameter
         h_sides = {}
         for side, width in zip(("left", "right"), c.pipe.heated_parts):
-            q = sides[c][side] / (c.dz * width) if width > 0 else np.zeros(c.n)
+            q = getattr(sides[c], side) / (c.dz * width) if width > 0 else np.zeros(c.n)
             tw = tc.copy()
             for _ in range(2):
                 h = np.maximum(c.h_wall(T_wall=tw, T_cool=tc, mdot=mdot, pressure=p_abs_c), h_floor)
@@ -613,16 +663,16 @@ def seed_steady_state(
     if k is None:
         fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
         sides = _side_powers(agr, blocks, fuel_powers)
-        channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
+        channel_powers = {c: s.total for c, s in sides.items()}
         mdots, p_abs, profiles = _standalone_channels(agr, blocks, _resolve(agr, flows), channel_powers, temperature, t)
         hydraulic = State({})
         T0 = float(np.mean([np.mean(p) for p in profiles.values()])) if profiles else temperature
     else:
         flows = _complete_flows(k, _known_flows(k, _resolve(agr, flows), t))
-        _check_heated_legs(k, blocks, flows)
+        _check_heated_legs_not_stalled(k, blocks, flows)
         fuel_powers = _fuel_powers(agr, blocks, _resolve(agr, powers), t)
         sides = _side_powers(agr, blocks, fuel_powers)
-        channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
+        channel_powers = {c: s.total for c, s in sides.items()}
         outlets, profiles, nodes = _walk_temperatures(
             agr, k, flows, channel_powers, temperature, t, walk_passes, walk_tolerance
         )

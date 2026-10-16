@@ -418,18 +418,18 @@ def test_side_powers_symmetric_plate_heats_both_sides_with_half_each():
     agr, _, r = _forced_plate_loop()
     blocks = decompose(agr)
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})[r["channel"]]
-    assert np.allclose(sides["left"], sides["right"])
-    assert np.sum(sides["left"] + sides["right"]) == pytest.approx(POWER)
+    assert np.allclose(sides.left, sides.right)
+    assert np.sum(sides.total) == pytest.approx(POWER)
 
 
 def test_side_powers_chain_splits_the_fuel_between_its_two_channels():
     agr, _, r = _chain_loop()
     blocks = decompose(agr)
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})
-    assert np.sum(sides[r["c1"]]["right"]) == pytest.approx(POWER / 2)
-    assert np.all(sides[r["c1"]]["left"] == 0.0)
-    assert np.sum(sides[r["c2"]]["left"]) == pytest.approx(POWER / 2)
-    assert np.all(sides[r["c2"]]["right"] == 0.0)
+    assert np.sum(sides[r["c1"]].right) == pytest.approx(POWER / 2)
+    assert np.all(sides[r["c1"]].left == 0.0)
+    assert np.sum(sides[r["c2"]].left) == pytest.approx(POWER / 2)
+    assert np.all(sides[r["c2"]].right == 0.0)
 
 
 def test_walk_heated_channel_outlet_is_inlet_plus_power_over_flow_cp():
@@ -438,7 +438,7 @@ def test_walk_heated_channel_outlet_is_inlet_plus_power_over_flow_cp():
     blocks = decompose(agr)
     flows = {k.component_edge(c): MDOT for c in k.components}
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})
-    channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
+    channel_powers = {c: s.total for c, s in sides.items()}
     outlets, profiles, nodes = _walk_temperatures(agr, k, flows, channel_powers, None, 0.0)
     cp = light_water.specific_heat(TIN)
     assert profiles[r["channel"]][0] > TIN

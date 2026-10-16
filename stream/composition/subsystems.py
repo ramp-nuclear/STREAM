@@ -203,7 +203,7 @@ def _float_values(d: dict[str, Value], keys: Iterable[str], inner_key: str = "pr
         yield y if isinstance(y, (float, int)) else y.item()
 
 
-def _temperatures(k: Kirchhoff, temperature: Celsius | Mapping[Calculation, Value]) -> dict[Calculation, Value]:
+def _temperatures(k: Kirchhoff, temperature: Celsius | Mapping[Calculation, Celsius]) -> dict[Calculation, Celsius]:
     junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
     calculations = list(k.components) + junctions
     if not isinstance(temperature, Mapping):
@@ -218,7 +218,7 @@ def _temperatures(k: Kirchhoff, temperature: Celsius | Mapping[Calculation, Valu
 
 
 def _scalar(value: Value) -> float:
-    return float(np.mean(value))
+    return np.mean(value).item()
 
 
 def _copied_value(v: Value) -> Value:
@@ -228,7 +228,7 @@ def _copied_value(v: Value) -> Value:
 def guess_hydraulic_steady_state(
     k: Kirchhoff,
     mdots: dict[Calculation, KgPerS],
-    temperature: Celsius | Mapping[Calculation, Value],
+    temperature: Celsius | Mapping[Calculation, Celsius],
     strategy: HydraulicStrategyMap | None = None,
 ) -> State:
     r"""A guess for a :class:`.Kirchhoff` derived system, in which the flows are known
@@ -244,7 +244,7 @@ def guess_hydraulic_steady_state(
     mdots : dict[Calculation, KgPerS]
         Known mass flows :math:`\dot{m}` for components in the hydraulic system.
         Supported Calculations are :class:`.DPCalculation` and :class:`.Channel`.
-    temperature : Celsius or Mapping[Calculation, Value]
+    temperature : Celsius or Mapping[Calculation, Celsius]
         Assumed temperature for hydraulic calculations. A scalar is used everywhere. A mapping
         gives each component and junction its own value: a scalar outlet temperature for a
         lumped component or junction, and for a :class:`.Channel` either a scalar or a
