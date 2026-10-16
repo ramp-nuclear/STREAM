@@ -91,35 +91,53 @@ class Blocks:
     Attributes
     ----------
     hydraulic: frozenset[Calculation]
-        The Kirchhoff, every component on its flow graph, and every junction.
+        The Kirchhoff, every component on its flow graph, and every junction. Empty
+        when the system has no Kirchhoff.
     thermal: tuple[frozenset[Calculation], ...]
         One set per wall-coupled cluster of fuels and channels. Channels belong to
         their cluster and to the hydraulic block.
-    kinetics: tuple[Calculation, ...]
-        Point-kinetics nodes that supply ``power`` to a fuel.
+    kinetics: PointKinetics or None
+        The point-kinetics node that supplies ``power`` to the fuels, if any. Its seed
+        power is the sum of the steady powers of the fuels it feeds.
     unassigned: tuple[Calculation, ...]
         Every other node; the seed leaves these to the caller.
     """
 
     hydraulic: frozenset[Calculation]
     thermal: tuple[frozenset[Calculation], ...]
-    kinetics: tuple[Calculation, ...]
+    kinetics: PointKinetics | None
     unassigned: tuple[Calculation, ...]
 
 
-def decompose(agr: Aggregator, k: Kirchhoff) -> Blocks:
+def _find_kirchhoff(agr: Aggregator, k: Kirchhoff | None) -> Kirchhoff | None:
+    if k is not None:
+        if k not in agr.graph:
+            raise ValueError(
+                f"{k} is not a Calculation of this Aggregator; pass the Kirchhoff that sits in agr.graph."
+            )
+        return k
+    found = [n for n in agr.graph if isinstance(n, Kirchhoff)]
+    if len(found) > 1:
+        raise ValueError(
+            f"The Aggregator holds {len(found)} Kirchhoffs {sorted(n.name for n in found)}; pass the one to use as k."
+        )
+    return found[0] if found else None
+
+
+def decompose(agr: Aggregator, k: Kirchhoff | None = None) -> Blocks:
     """Split an aggregator into its hydraulic block and its thermal clusters.
 
     Thermal clusters are the connected components of the edges that route only wall
-    variables (``T_left``, ``h_left`` and their family). Kinetics nodes are those
-    that route ``power`` into a fuel.
+    variables (``T_left``, ``h_left`` and their family). The kinetics node is the one
+    that routes ``power`` into a fuel.
 
     Parameters
     ----------
     agr: Aggregator
         The full system.
-    k: Kirchhoff
-        The flow solver that sits in ``agr``.
+    k: Kirchhoff or None
+        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used,
+        and a system without one has an empty hydraulic block.
 
     Returns
     -------
@@ -128,25 +146,27 @@ def decompose(agr: Aggregator, k: Kirchhoff) -> Blocks:
     Raises
     ------
     ValueError
-        If ``k`` is not a node of ``agr``.
+        If ``k`` is not a node of ``agr``, ``k`` is None and ``agr`` holds more than one
+        Kirchhoff, or more than one kinetics node routes ``power`` into a fuel.
     """
-    if k not in agr.graph:
-        raise ValueError(
-            f"{k} is not a Calculation of this Aggregator; pass the Kirchhoff that sits in agr.graph."
-        )
+    k = _find_kirchhoff(agr, k)
     order = {node: i for i, node in enumerate(agr.graph)}
-    hydraulic = {k, *k.components, *(n for n in k.g.nodes if isinstance(n, Calculation))}
+    hydraulic = set() if k is None else {k, *k.components, *(n for n in k.g.nodes if isinstance(n, Calculation))}
     wall_edges = [(u, v) for u, v, names in agr.graph.edges(data=VARS) if names and set(names) <= THERMAL_VARIABLES]
     clusters = sorted((frozenset(c) for c in connected_components(Graph(wall_edges))), key=lambda c: min(order[n] for n in c))
-    kinetics = [
+    kinetics = {
         u
         for u, v, names in agr.graph.edges(data=VARS)
         if isinstance(u, PointKinetics) and isinstance(v, Fuel) and "power" in names
-    ]
-    kinetics = sorted(set(kinetics), key=order.__getitem__)
-    assigned = hydraulic | set().union(*clusters) | set(kinetics)
+    }
+    if len(kinetics) > 1:
+        raise ValueError(
+            f"More than one kinetics node routes power into a fuel: {sorted(n.name for n in kinetics)}; "
+            f"the seed handles one."
+        )
+    assigned = hydraulic | set().union(*clusters) | kinetics
     unassigned = tuple(n for n in agr.graph if n not in assigned)
-    return Blocks(frozenset(hydraulic), tuple(clusters), tuple(kinetics), unassigned)
+    return Blocks(frozenset(hydraulic), tuple(clusters), next(iter(kinetics), None), unassigned)
 
 
 def _frozen_inputs(agr: Aggregator, block: set, y: np.ndarray, t: Second) -> dict:
@@ -454,18 +474,18 @@ def _cluster_seed(agr: Aggregator, k: Kirchhoff, cluster, hydraulic: State, prof
 
 
 def _kinetics_seed(agr: Aggregator, blocks: Blocks, fuel_powers: dict, t: Second) -> State:
-    state = {}
-    for pk in blocks.kinetics:
-        fed = [v for u, v, names in agr.graph.out_edges(pk, data=VARS) if isinstance(v, Fuel) and "power" in names]
-        power = sum(fuel_powers[f] for f in fed)
-        power_input = _func(agr, pk, "power_input", t) if isinstance(pk, PointKineticsWInput) else None
-        state |= point_kinetics_steady_state(pk, power, power_input)
-    return State(state)
+    pk = blocks.kinetics
+    if pk is None:
+        return State({})
+    fed = [v for u, v, names in agr.graph.out_edges(pk, data=VARS) if isinstance(v, Fuel) and "power" in names]
+    power = sum(fuel_powers[f] for f in fed)
+    power_input = _func(agr, pk, "power_input", t) if isinstance(pk, PointKineticsWInput) else None
+    return point_kinetics_steady_state(pk, power, power_input)
 
 
 def seed_steady_state(
     agr: Aggregator,
-    k: Kirchhoff,
+    k: Kirchhoff | None = None,
     *,
     flows: Mapping[Calculation | str, KgPerS] | None = None,
     temperature: Celsius | None = None,
@@ -489,8 +509,8 @@ def seed_steady_state(
     ----------
     agr: Aggregator
         The full system.
-    k: Kirchhoff
-        The flow solver that sits in ``agr``.
+    k: Kirchhoff or None
+        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used.
     flows: Mapping[Calculation | str, KgPerS] or None
         Known flows by component or name. Needed only where the network cannot fix a
         flow itself: a head-driven pump, or a pump-free loop (pass a small signed flow).
@@ -519,8 +539,10 @@ def seed_steady_state(
     MissingPowerError
         A fuel whose steady power is unknown.
     ValueError
-        Two known flows on one edge disagree, or no temperature source and no ``temperature``.
+        Two known flows on one edge disagree, no temperature source and no
+        ``temperature``, or the Kirchhoff or the kinetics node is ambiguous.
     """
+    k = _find_kirchhoff(agr, k)
     blocks = decompose(agr, k)
     flows = _complete_flows(k, _known_flows(k, _resolve(agr, flows), t))
     _check_heated_legs(k, blocks, flows)
@@ -547,7 +569,7 @@ def seed_steady_state(
 
 def guess_steady_state(
     agr: Aggregator,
-    k: Kirchhoff,
+    k: Kirchhoff | None = None,
     *,
     flows: Mapping[Calculation | str, KgPerS] | None = None,
     temperature: Celsius | None = None,
@@ -572,8 +594,8 @@ def guess_steady_state(
     ----------
     agr: Aggregator
         The full system.
-    k: Kirchhoff
-        The flow solver that sits in ``agr``.
+    k: Kirchhoff or None
+        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used.
     flows, temperature, powers, overrides, t, strategy:
         As in :func:`seed_steady_state`.
     refine: bool
@@ -599,6 +621,7 @@ def guess_steady_state(
     """
     if sweeps < 1:
         raise ValueError(f"sweeps must be at least 1, was {sweeps}")
+    k = _find_kirchhoff(agr, k)
     blocks = decompose(agr, k)
     state = seed_steady_state(
         agr, k, flows=flows, temperature=temperature, powers=powers, overrides=overrides, t=t, strategy=strategy

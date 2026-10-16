@@ -168,44 +168,48 @@ def test_decompose_symmetric_plate_loop():
     assert isinstance(blocks, Blocks)
     assert blocks.hydraulic == {fg.kirchhoff, r["channel"], r["pump"], r["hx"], r["j_top"], r["j_bot"]}
     assert blocks.thermal == (frozenset({r["channel"], r["fuel"]}),)
-    assert blocks.kinetics == ()
+    assert blocks.kinetics is None
     assert blocks.unassigned == ()
 
 
 def test_decompose_chain_puts_both_channels_in_one_cluster():
-    agr, fg, r = _chain_loop()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _chain_loop()
+    blocks = decompose(agr)
     assert blocks.thermal == (frozenset({r["c1"], r["c2"], r["fuel"]}),)
     assert r["c1"] in blocks.hydraulic and r["c2"] in blocks.hydraulic
 
 
 def test_decompose_parallel_core_finds_two_clusters():
-    agr, fg, r = _parallel_core()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _parallel_core()
+    blocks = decompose(agr)
     assert set(blocks.thermal) == {frozenset({r["c1"], r["f1"]}), frozenset({r["c2"], r["f2"]})}
 
 
 def test_decompose_loop_without_fuel_has_no_clusters():
-    agr, fg, _ = _resistor_loop()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, _ = _resistor_loop()
+    blocks = decompose(agr)
     assert blocks.thermal == ()
     assert blocks.hydraulic == set(agr.graph.nodes)
 
 
-def test_decompose_reports_kinetics_and_strays():
-    agr, fg, r = _forced_plate_loop()
-    pk = PointKinetics(
+def _point_kinetics(name="PK"):
+    return PointKinetics(
         generation_time=1e-5,
         delayed_neutron_fractions=np.full(6, 700 * pcm / 6),
         delayed_groups_decay_rates=np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01]),
-        name="PK",
+        name=name,
     )
+
+
+def test_decompose_reports_kinetics_and_strays():
+    agr, _, r = _forced_plate_loop()
+    pk = _point_kinetics()
     stray = HeatExchanger(outlet=TIN, name="Stray")
     extra = CalculationGraph(DiGraph([(pk, r["fuel"], vars_("power"))]))
     extra.graph.add_node(stray)
     full = agr + extra.to_aggregator()
-    blocks = decompose(full, fg.kirchhoff)
-    assert blocks.kinetics == (pk,)
+    blocks = decompose(full)
+    assert blocks.kinetics == pk
     assert blocks.unassigned == (stray,)
 
 
@@ -214,6 +218,25 @@ def test_decompose_rejects_a_kirchhoff_not_in_the_graph():
     _, other, _ = _resistor_loop()
     with pytest.raises(ValueError):
         decompose(agr, other.kirchhoff)
+
+
+def test_decompose_rejects_two_kirchhoffs():
+    agr, _, _ = _forced_plate_loop()
+    other = FlowGraph(
+        flow_edge(("A", "B"), Pump(pressure=1e4, name="OtherPump")),
+        flow_edge(("B", "A"), Resistor(resistance=2e4, name="OtherR")),
+    )
+    other.kirchhoff.name = "OtherKirchhoff"
+    with pytest.raises(ValueError, match="OtherKirchhoff"):
+        decompose(agr + other.aggregator)
+
+
+def test_decompose_rejects_two_kinetics_nodes():
+    agr, _, r = _parallel_core()
+    pks = [_point_kinetics(name) for name in ("PK1", "PK2")]
+    extra = CalculationGraph(DiGraph([(pks[0], r["f1"], vars_("power")), (pks[1], r["f2"], vars_("power"))]))
+    with pytest.raises(ValueError, match="PK1"):
+        decompose(agr + extra.to_aggregator())
 
 
 def _merged_guess(fg, r, mdot=MDOT, power=POWER):
@@ -237,7 +260,7 @@ def test_solve_block_of_the_plate_reproduces_the_plate_seeder():
 def test_solve_block_of_the_hydraulics_freezes_the_walls():
     agr, fg, r = _forced_plate_loop()
     guess = _merged_guess(fg, r)
-    blocks = decompose(agr, fg.kirchhoff)
+    blocks = decompose(agr)
     block = solve_block(agr, blocks.hydraulic, guess)
     k = fg.kirchhoff
     assert k.name in block and r["fuel"].name not in block
@@ -343,9 +366,9 @@ def test_complete_flows_keeps_a_closed_flapper_leg_at_zero():
 
 
 def test_seed_pump_free_heated_loop_asks_for_a_signed_flow():
-    agr, fg, r = _forced_plate_loop(pump=Pump(pressure=0.0, name="Pump"))
+    agr, _, r = _forced_plate_loop(pump=Pump(pressure=0.0, name="Pump"))
     with pytest.raises(MissingFlowError, match="Channel"):
-        seed_steady_state(agr, fg.kirchhoff)
+        seed_steady_state(agr)
 
 
 def test_seed_rejects_a_stagnant_heated_leg_completed_by_least_squares():
@@ -357,25 +380,20 @@ def test_seed_rejects_a_stagnant_heated_leg_completed_by_least_squares():
 
 
 def test_fuel_power_comes_from_the_func_and_powers_overrides_it():
-    agr, fg, r = _forced_plate_loop()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _forced_plate_loop()
+    blocks = decompose(agr)
     assert _fuel_powers(agr, blocks, {}, 0.0) == {r["fuel"]: POWER}
     assert _fuel_powers(agr, blocks, {r["fuel"]: 3.0}, 0.0) == {r["fuel"]: 3.0}
 
 
 def test_fuel_power_is_read_at_time_t():
-    agr, fg, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
+    blocks = decompose(agr)
     assert _fuel_powers(agr, blocks, {}, 1.0) == {r["fuel"]: 2 * POWER}
 
 
 def _kinetics_loop():
-    pk = PointKinetics(
-        generation_time=1e-5,
-        delayed_neutron_fractions=np.full(6, 700 * pcm / 6),
-        delayed_groups_decay_rates=np.array([0.0124, 0.0305, 0.111, 0.301, 1.14, 3.01]),
-        name="PK",
-    )
+    pk = _point_kinetics()
     fuel, channel = _pair("Fuel", "Channel")
     j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
     fg = FlowGraph(
@@ -389,24 +407,24 @@ def _kinetics_loop():
 
 
 def test_kinetics_driven_fuel_without_powers_is_an_error():
-    full, fg, r = _kinetics_loop()
-    blocks = decompose(full, fg.kirchhoff)
+    full, _, r = _kinetics_loop()
+    blocks = decompose(full)
     with pytest.raises(MissingPowerError, match="Fuel"):
         _fuel_powers(full, blocks, {}, 0.0)
     assert _fuel_powers(full, blocks, {r["fuel"]: POWER}, 0.0) == {r["fuel"]: POWER}
 
 
 def test_side_powers_symmetric_plate_heats_both_sides_with_half_each():
-    agr, fg, r = _forced_plate_loop()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _forced_plate_loop()
+    blocks = decompose(agr)
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})[r["channel"]]
     assert np.allclose(sides["left"], sides["right"])
     assert np.sum(sides["left"] + sides["right"]) == pytest.approx(POWER)
 
 
 def test_side_powers_chain_splits_the_fuel_between_its_two_channels():
-    agr, fg, r = _chain_loop()
-    blocks = decompose(agr, fg.kirchhoff)
+    agr, _, r = _chain_loop()
+    blocks = decompose(agr)
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})
     assert np.sum(sides[r["c1"]]["right"]) == pytest.approx(POWER / 2)
     assert np.all(sides[r["c1"]]["left"] == 0.0)
@@ -417,7 +435,7 @@ def test_side_powers_chain_splits_the_fuel_between_its_two_channels():
 def test_walk_heated_channel_outlet_is_inlet_plus_power_over_flow_cp():
     agr, fg, r = _forced_plate_loop()
     k = fg.kirchhoff
-    blocks = decompose(agr, k)
+    blocks = decompose(agr)
     flows = {k.component_edge(c): MDOT for c in k.components}
     sides = _side_powers(agr, blocks, {r["fuel"]: POWER})
     channel_powers = {c: s["left"] + s["right"] for c, s in sides.items()}
@@ -462,8 +480,8 @@ def test_walk_without_a_sink_needs_a_temperature():
 
 
 def test_seed_of_a_symmetric_plate_equals_the_plate_seed():
-    agr, fg, r = _forced_plate_loop()
-    seed = seed_steady_state(agr, fg.kirchhoff)
+    agr, _, r = _forced_plate_loop()
+    seed = seed_steady_state(agr)
     channel, fuel = r["channel"].name, r["fuel"].name
     plate = symmetric_plate_seed(r["channel"], r["fuel"], mdot=MDOT, p_abs=P_REF, power=POWER, Tin=TIN)
     assert np.allclose(seed[channel]["T_cool"], plate[channel]["T_cool"])
@@ -479,23 +497,23 @@ def test_seed_of_a_symmetric_plate_equals_the_plate_seed():
 
 def test_seed_loads_and_seeds_every_calculation():
     for build in (_forced_plate_loop, _chain_loop, _parallel_core):
-        agr, fg, _ = build()
-        seed = seed_steady_state(agr, fg.kirchhoff)
+        agr, _, _ = build()
+        seed = seed_steady_state(agr)
         y = agr.load(seed)
         assert np.all(np.isfinite(y))
 
 
 def test_seed_chain_gives_each_channel_side_its_own_wall():
-    agr, fg, r = _chain_loop()
-    seed = seed_steady_state(agr, fg.kirchhoff)
+    agr, _, r = _chain_loop()
+    seed = seed_steady_state(agr)
     c1, fuel = r["c1"], r["fuel"]
     assert np.allclose(seed[fuel.name]["T_wall_left"], seed[fuel.name]["T_wall_right"])
     assert np.all(seed[fuel.name]["T_wall_left"] > seed[c1.name]["T_cool"])
 
 
 def test_seed_gives_an_outer_plate_the_same_wall_on_both_sides():
-    agr, fg, r = _chain_with_outer_plates()
-    seed = seed_steady_state(agr, fg.kirchhoff)
+    agr, _, r = _chain_with_outer_plates()
+    seed = seed_steady_state(agr)
     outer, interior = seed[r["f0"].name], seed[r["f1"].name]
     assert np.allclose(outer["T_wall_left"], outer["T_wall_right"])
     assert np.all(outer["T_wall_left"] > seed[r["c0"].name]["T_cool"])
@@ -504,43 +522,43 @@ def test_seed_gives_an_outer_plate_the_same_wall_on_both_sides():
 
 def test_seed_isothermal_resistor_loop_is_a_root():
     dp, r_ = 1e4, 2e4
-    agr, fg, r = _resistor_loop(dp, r_)
+    agr, _, r = _resistor_loop(dp, r_)
     with pytest.warns(UserWarning, match="sink"):
-        seed = seed_steady_state(agr, fg.kirchhoff, flows={r["pump"]: dp / r_}, temperature=25.0)
+        seed = seed_steady_state(agr, flows={r["pump"]: dp / r_}, temperature=25.0)
     assert np.allclose(agr.compute(agr.load(seed)), 0.0, atol=1e-9)
 
 
 def test_seed_reports_unassigned_and_merges_overrides_last():
-    agr, fg, r = _forced_plate_loop()
+    agr, _, r = _forced_plate_loop()
     stray = HeatExchanger(outlet=TIN, name="Stray")
     extra = CalculationGraph(DiGraph())
     extra.graph.add_node(stray)
     full = agr + extra.to_aggregator()
     with pytest.warns(UserWarning, match="Stray"):
-        seed = seed_steady_state(full, fg.kirchhoff)
+        seed = seed_steady_state(full)
     assert stray.name not in seed
     with pytest.raises(KeyError, match="Stray"):
         full.load(seed)
-    seed = seed_steady_state(full, fg.kirchhoff, overrides={stray.name: dict(Tin=TIN, pressure=0.0), r["hx"].name: dict(Tin=99.0)})
+    seed = seed_steady_state(full, overrides={stray.name: dict(Tin=TIN, pressure=0.0), r["hx"].name: dict(Tin=99.0)})
     assert seed[r["hx"].name]["Tin"] == 99.0
     full.load(seed)
 
 
 def test_seed_does_not_warn_about_a_node_the_overrides_cover():
-    agr, fg, r = _forced_plate_loop()
+    agr, _, r = _forced_plate_loop()
     stray = HeatExchanger(outlet=TIN, name="Stray")
     extra = CalculationGraph(DiGraph())
     extra.graph.add_node(stray)
     full = agr + extra.to_aggregator()
     with warnings.catch_warnings():
         warnings.simplefilter("error")
-        seed = seed_steady_state(full, fg.kirchhoff, overrides={stray.name: dict(Tin=TIN, pressure=0.0)})
+        seed = seed_steady_state(full, overrides={stray.name: dict(Tin=TIN, pressure=0.0)})
     full.load(seed)
 
 
 def test_seed_kinetics_from_powers():
-    full, fg, r = _kinetics_loop()
-    seed = seed_steady_state(full, fg.kirchhoff, powers={r["fuel"]: POWER})
+    full, _, r = _kinetics_loop()
+    seed = seed_steady_state(full, powers={r["fuel"]: POWER})
     assert seed[r["pk"].name]["power"] == POWER
     full.load(seed)
 
@@ -550,40 +568,40 @@ def _solve_without_globalization(agr, guess):
 
 
 def test_guess_refine_false_returns_the_seed():
-    agr, fg, _ = _forced_plate_loop()
-    seed = seed_steady_state(agr, fg.kirchhoff)
-    guess = guess_steady_state(agr, fg.kirchhoff, refine=False)
+    agr, _, _ = _forced_plate_loop()
+    seed = seed_steady_state(agr)
+    guess = guess_steady_state(agr, refine=False)
     assert np.allclose(agr.load(seed), agr.load(guess))
 
 
 def test_guess_forced_plate_loop_converges_without_globalization():
-    agr, fg, r = _forced_plate_loop()
-    guess = guess_steady_state(agr, fg.kirchhoff)
+    agr, _, r = _forced_plate_loop()
+    guess = guess_steady_state(agr)
     y = _solve_without_globalization(agr, guess)
     st = agr.save(y)
     cp = light_water.specific_heat(TIN)
     assert st[r["channel"].name]["T_cool"][-1] == pytest.approx(TIN + POWER / (MDOT * cp), rel=1e-2)
-    assert np.linalg.norm(agr.compute(agr.load(guess))) < np.linalg.norm(agr.compute(agr.load(seed_steady_state(agr, fg.kirchhoff))))
+    assert np.linalg.norm(agr.compute(agr.load(guess))) < np.linalg.norm(agr.compute(agr.load(seed_steady_state(agr))))
 
 
 def test_guess_refines_a_blocks_own_func_at_time_t():
-    agr, fg, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
-    guess = guess_steady_state(agr, fg.kirchhoff, t=1.0)
+    agr, _, r = _forced_plate_loop(power=lambda t: POWER * (1.0 + t))
+    guess = guess_steady_state(agr, t=1.0)
     cp = light_water.specific_heat(TIN)
     rise = guess[r["channel"].name]["T_cool"][-1] - TIN
     assert rise == pytest.approx(2 * POWER / (MDOT * cp), rel=1e-2)
 
 
 def test_guess_chain_loop_converges_without_globalization():
-    agr, fg, _ = _chain_loop()
-    y = _solve_without_globalization(agr, guess_steady_state(agr, fg.kirchhoff))
+    agr, _, _ = _chain_loop()
+    y = _solve_without_globalization(agr, guess_steady_state(agr))
     assert np.linalg.norm(agr.compute(y)) < 1e-6
 
 
 @pytest.mark.slow
 def test_guess_natural_convection_loop_converges_without_globalization():
     agr, fg, channel, fuel, pump = _nc_build(0.0, "regime_dependent")
-    guess = guess_steady_state(agr, fg.kirchhoff, flows={channel: -0.01})
+    guess = guess_steady_state(agr, flows={channel: -0.01})
     y = _solve_without_globalization(agr, guess)
     K = fg.kirchhoff
     mdot = float(np.asarray(y)[agr.sections[K]][K.variables_by_type["mdot"]][0])
@@ -594,7 +612,7 @@ def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
     import stream.composition.steady_state as module
 
     agr, fg, r = _forced_plate_loop()
-    seed = seed_steady_state(agr, fg.kirchhoff)
+    seed = seed_steady_state(agr)
     real = module.solve_block
 
     def failing(agr_, nodes, state, t=0.0, **options):
@@ -604,7 +622,7 @@ def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
 
     monkeypatch.setattr(module, "solve_block", failing)
     with pytest.warns(UserWarning, match="hydraulic"):
-        guess = guess_steady_state(agr, fg.kirchhoff)
+        guess = guess_steady_state(agr)
     k = fg.kirchhoff
     assert guess[k.name][k.component_edge(r["channel"])] == seed[k.name][k.component_edge(r["channel"])]
     assert not np.allclose(guess[r["fuel"].name]["T"], seed[r["fuel"].name]["T"])
@@ -612,15 +630,15 @@ def test_guess_warns_and_keeps_the_seed_when_a_block_fails(monkeypatch):
 
 
 def test_guess_rejects_zero_sweeps():
-    agr, fg, _ = _forced_plate_loop()
+    agr, _, _ = _forced_plate_loop()
     with pytest.raises(ValueError):
-        guess_steady_state(agr, fg.kirchhoff, sweeps=0)
+        guess_steady_state(agr, sweeps=0)
 
 
 def test_guess_parallel_core_needs_only_the_pump_flow():
     agr, fg, r = _parallel_core()
     k = fg.kirchhoff
-    seed = seed_steady_state(agr, k)
+    seed = seed_steady_state(agr)
     assert seed[k.name][k.component_edge(r["c1"])] == pytest.approx(seed[k.name][k.component_edge(r["c2"])])
     guess = guess_steady_state(agr, k)
     st = agr.save(_solve_without_globalization(agr, guess))
