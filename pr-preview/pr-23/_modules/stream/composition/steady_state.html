@@ -87,7 +87,7 @@
 <span class="sd">   :class:`~stream.calculations.Kirchhoff` and everything on its flow graph), one</span>
 <span class="sd">   thermal cluster per group of wall-coupled :class:`~stream.calculations.Fuel` plates</span>
 <span class="sd">   and :class:`~stream.calculations.ChannelAndContacts` channels, and the point-kinetics</span>
-<span class="sd">   nodes that supply fuel power.</span>
+<span class="sd">   node that supplies fuel power.</span>
 <span class="sd">2. :func:`seed_steady_state` seeds every block in closed form, without solving: flows</span>
 <span class="sd">   from what is known and the current law, temperatures by walking the network in flow</span>
 <span class="sd">   direction with each heated channel adding its power, pressures from</span>
@@ -98,10 +98,6 @@
 <span class="sd">   frozen (:func:`solve_block`): the thermal clusters, then the hydraulics, a few times</span>
 <span class="sd">   over.</span>
 
-<span class="sd">The blocks are read from the aggregator's own wiring, so any plate layout made with the</span>
-<span class="sd">helpers in :mod:`stream.composition.mtr_geometry`, or by hand with the same variable</span>
-<span class="sd">names, is handled the same way.</span>
-
 <span class="sd">Use this module for a system that couples a flow network to heated plates, where the</span>
 <span class="sd">flows set the temperatures and the temperatures feed back into the pressure drops.</span>
 <span class="sd">:meth:`~stream.composition.cycle.FlowGraph.guess_steady_state` covers the hydraulic part</span>
@@ -109,6 +105,29 @@
 <span class="sd">:mod:`stream.composition.subsystems` cover a single plate or a single kinetics node.</span>
 <span class="sd">:func:`guess_steady_state` combines them, completes the flows it is not given, and</span>
 <span class="sd">reconciles the blocks with each other.</span>
+
+<span class="sd">For a loop of one heated plate, where ``channel`` is a</span>
+<span class="sd">:class:`~stream.calculations.ChannelAndContacts`, ``fuel`` its</span>
+<span class="sd">:class:`~stream.calculations.Fuel` and ``top``, ``bottom`` two</span>
+<span class="sd">:class:`~stream.calculations.Junction` nodes:</span>
+
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    fg = FlowGraph(</span>
+<span class="sd">        flow_edge((top, bottom), channel),</span>
+<span class="sd">        flow_edge((bottom, top), Pump(mdot0=0.5, name="Pump"), HeatExchanger(outlet=40.0, name="HX")),</span>
+<span class="sd">        abs_pressure_comps=[channel],</span>
+<span class="sd">        reference_node=(top, 2e5),</span>
+<span class="sd">    )</span>
+<span class="sd">    agr = fg.aggregator + symmetric_plate(channel, fuel, {fuel: {"power": 1e3}}).to_aggregator()</span>
+<span class="sd">    y = agr.solve_steady(guess_steady_state(agr))</span>
+
+<span class="sd">Limitations: an aggregator holds at most one Kirchhoff (with any number of loops on it)</span>
+<span class="sd">and at most one kinetics node. Fuels are heated through the ``T_left`` and ``T_right``</span>
+<span class="sd">walls of a :class:`~stream.calculations.Channel` only. A fuel driven by a kinetics node</span>
+<span class="sd">needs its power in ``powers``. A heated channel on a loop that nothing drives needs a</span>
+<span class="sd">signed flow in ``flows``. Calculations the seed does not recognise go through</span>
+<span class="sd">``overrides``.</span>
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
@@ -166,6 +185,18 @@
 
 
 
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SidePowers</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Power per cell a channel receives through its left and right walls."""</span>
+
+    <span class="n">left</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">right</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span>
+
+
 <div class="viewcode-block" id="Blocks">
 <a class="viewcode-back" href="../../../stream.composition.html#stream.composition.steady_state.Blocks">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -175,38 +206,56 @@
 <span class="sd">    Attributes</span>
 <span class="sd">    ----------</span>
 <span class="sd">    hydraulic: frozenset[Calculation]</span>
-<span class="sd">        The Kirchhoff, every component on its flow graph, and every junction.</span>
+<span class="sd">        The Kirchhoff, every component on its flow graph, and every junction. Empty</span>
+<span class="sd">        when the system has no Kirchhoff.</span>
 <span class="sd">    thermal: tuple[frozenset[Calculation], ...]</span>
 <span class="sd">        One set per wall-coupled cluster of fuels and channels. Channels belong to</span>
 <span class="sd">        their cluster and to the hydraulic block.</span>
-<span class="sd">    kinetics: tuple[Calculation, ...]</span>
-<span class="sd">        Point-kinetics nodes that supply ``power`` to a fuel.</span>
+<span class="sd">    kinetics: PointKinetics or None</span>
+<span class="sd">        The point-kinetics node that supplies ``power`` to the fuels, if any. Its seed</span>
+<span class="sd">        power is the sum of the steady powers of the fuels it feeds.</span>
 <span class="sd">    unassigned: tuple[Calculation, ...]</span>
 <span class="sd">        Every other node; the seed leaves these to the caller.</span>
 <span class="sd">    """</span>
 
     <span class="n">hydraulic</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span>
     <span class="n">thermal</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="n">Calculation</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
-    <span class="n">kinetics</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">kinetics</span><span class="p">:</span> <span class="n">PointKinetics</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">unassigned</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span></div>
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_find_kirchhoff</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Kirchhoff</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> is not a Calculation of this Aggregator; pass the Kirchhoff that sits in agr.graph."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">k</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Kirchhoff</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"The Aggregator holds </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="si">}</span><span class="s2"> Kirchhoffs </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">found</span><span class="p">)</span><span class="si">}</span><span class="s2">; pass the one to use as k."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">found</span> <span class="k">else</span> <span class="kc">None</span>
+
+
 <div class="viewcode-block" id="decompose">
 <a class="viewcode-back" href="../../../stream.composition.html#stream.composition.steady_state.decompose">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Blocks</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">decompose</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Blocks</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Split an aggregator into its hydraulic block and its thermal clusters.</span>
 
 <span class="sd">    Thermal clusters are the connected components of the edges that route only wall</span>
-<span class="sd">    variables (``T_left``, ``h_left`` and their family). Kinetics nodes are those</span>
-<span class="sd">    that route ``power`` into a fuel.</span>
+<span class="sd">    variables (``T_left``, ``h_left`` and their family). The kinetics node is the one</span>
+<span class="sd">    that routes ``power`` into a fuel.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    agr: Aggregator</span>
 <span class="sd">        The full system.</span>
-<span class="sd">    k: Kirchhoff</span>
-<span class="sd">        The flow solver that sits in ``agr``.</span>
+<span class="sd">    k: Kirchhoff or None</span>
+<span class="sd">        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used,</span>
+<span class="sd">        and a system without one has an empty hydraulic block.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -215,25 +264,27 @@
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If ``k`` is not a node of ``agr``.</span>
+<span class="sd">        If ``k`` is not a node of ``agr``, ``k`` is None and ``agr`` holds more than one</span>
+<span class="sd">        Kirchhoff, or more than one kinetics node routes ``power`` into a fuel.</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> is not a Calculation of this Aggregator; pass the Kirchhoff that sits in agr.graph."</span>
-        <span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">_find_kirchhoff</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
     <span class="n">order</span> <span class="o">=</span> <span class="p">{</span><span class="n">node</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">)}</span>
-    <span class="n">hydraulic</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">,</span> <span class="o">*</span><span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">))}</span>
+    <span class="n">hydraulic</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="n">k</span><span class="p">,</span> <span class="o">*</span><span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">))}</span>
     <span class="n">wall_edges</span> <span class="o">=</span> <span class="p">[(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">VARS</span><span class="p">)</span> <span class="k">if</span> <span class="n">names</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">THERMAL_VARIABLES</span><span class="p">]</span>
     <span class="n">clusters</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">((</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">connected_components</span><span class="p">(</span><span class="n">Graph</span><span class="p">(</span><span class="n">wall_edges</span><span class="p">))),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">order</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">c</span><span class="p">))</span>
-    <span class="n">kinetics</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">kinetics</span> <span class="o">=</span> <span class="p">{</span>
         <span class="n">u</span>
         <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">VARS</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">PointKinetics</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"power"</span> <span class="ow">in</span> <span class="n">names</span>
-    <span class="p">]</span>
-    <span class="n">kinetics</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">kinetics</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">)</span>
-    <span class="n">assigned</span> <span class="o">=</span> <span class="n">hydraulic</span> <span class="o">|</span> <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">clusters</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">kinetics</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kinetics</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"More than one kinetics node routes power into a fuel: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">kinetics</span><span class="p">)</span><span class="si">}</span><span class="s2">; "</span>
+            <span class="sa">f</span><span class="s2">"the seed handles one."</span>
+        <span class="p">)</span>
+    <span class="n">assigned</span> <span class="o">=</span> <span class="n">hydraulic</span> <span class="o">|</span> <span class="nb">set</span><span class="p">()</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="o">*</span><span class="n">clusters</span><span class="p">)</span> <span class="o">|</span> <span class="n">kinetics</span>
     <span class="n">unassigned</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">assigned</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">Blocks</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">hydraulic</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">clusters</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">kinetics</span><span class="p">),</span> <span class="n">unassigned</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">Blocks</span><span class="p">(</span><span class="nb">frozenset</span><span class="p">(</span><span class="n">hydraulic</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">clusters</span><span class="p">),</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">kinetics</span><span class="p">),</span> <span class="kc">None</span><span class="p">),</span> <span class="n">unassigned</span><span class="p">)</span></div>
 
 
 
@@ -374,7 +425,7 @@
     <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_check_heated_legs</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_heated_legs_not_stalled</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">heated</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)]</span>
     <span class="n">stalled</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">heated</span> <span class="k">if</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">stalled</span><span class="p">:</span>
@@ -391,10 +442,10 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_fuel_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">powers_by_fuel</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">fuel</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">)):</span>
         <span class="k">if</span> <span class="n">fuel</span> <span class="ow">in</span> <span class="n">powers</span><span class="p">:</span>
-            <span class="n">out</span><span class="p">[</span><span class="n">fuel</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">powers</span><span class="p">[</span><span class="n">fuel</span><span class="p">])</span>
+            <span class="n">powers_by_fuel</span><span class="p">[</span><span class="n">fuel</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">powers</span><span class="p">[</span><span class="n">fuel</span><span class="p">])</span>
             <span class="k">continue</span>
         <span class="n">value</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="s2">"power"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -403,13 +454,13 @@
                 <span class="sa">f</span><span class="s2">"read from the system (a kinetics node supplies it at run time). Pass "</span>
                 <span class="sa">f</span><span class="s2">"powers=</span><span class="se">{{</span><span class="si">{</span><span class="n">fuel</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: &lt;Watt&gt;</span><span class="se">}}</span><span class="s2">."</span>
             <span class="p">)</span>
-        <span class="n">out</span><span class="p">[</span><span class="n">fuel</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
-    <span class="k">return</span> <span class="n">out</span>
+        <span class="n">powers_by_fuel</span><span class="p">[</span><span class="n">fuel</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">powers_by_fuel</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_side_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_side_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Channel</span><span class="p">,</span> <span class="n">SidePowers</span><span class="p">]:</span>
     <span class="n">sides</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">n</span><span class="p">),</span> <span class="n">right</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+        <span class="n">n</span><span class="p">:</span> <span class="p">{</span><span class="s2">"left"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">n</span><span class="p">),</span> <span class="s2">"right"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">n</span><span class="p">)}</span>
         <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span>
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)</span>
@@ -420,9 +471,9 @@
             <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">):</span>
                 <span class="k">if</span> <span class="sa">f</span><span class="s2">"T_</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
                     <span class="n">wired</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">v</span><span class="p">,</span> <span class="n">side</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">targets</span> <span class="ow">in</span> <span class="n">wired</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="n">_row_power</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">[</span><span class="n">fuel</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">side</span> <span class="ow">in</span> <span class="n">targets</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">heated_sides</span> <span class="ow">in</span> <span class="n">wired</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="n">_row_power</span><span class="p">(</span><span class="n">fuel</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">[</span><span class="n">fuel</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">heated_sides</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">channel</span><span class="p">,</span> <span class="n">side</span> <span class="ow">in</span> <span class="n">heated_sides</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">==</span> <span class="n">channel</span><span class="o">.</span><span class="n">n</span><span class="p">:</span>
                 <span class="n">sides</span><span class="p">[</span><span class="n">channel</span><span class="p">][</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="n">rows</span>
             <span class="k">else</span><span class="p">:</span>
@@ -431,7 +482,7 @@
                     <span class="sa">f</span><span class="s2">"spread uniformly over the channel for the seed."</span>
                 <span class="p">)</span>
                 <span class="n">sides</span><span class="p">[</span><span class="n">channel</span><span class="p">][</span><span class="n">side</span><span class="p">]</span> <span class="o">+=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">rows</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="n">channel</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">sides</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">SidePowers</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s2">"left"</span><span class="p">],</span> <span class="n">right</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="s2">"right"</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sides</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_outlet</span><span class="p">(</span><span class="n">comp</span><span class="p">:</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">inlet</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">mdot</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">row_power</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
@@ -453,7 +504,37 @@
     <span class="k">return</span> <span class="n">eps</span> <span class="k">if</span> <span class="n">eps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">smoothing</span><span class="o">.</span><span class="n">DEFAULT_MDOT_EPS</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_walk_temperatures</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">channel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_mix_at_node</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">outlets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">current</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="n">eps</span> <span class="o">=</span> <span class="n">_mixing_eps</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">"weights"</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">D</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">):</span>
+        <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_pos</span><span class="p">(</span><span class="n">mdot</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="n">outlets</span><span class="p">[</span><span class="n">comps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">D</span> <span class="o">+</span> <span class="n">w</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">out_edges</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">):</span>
+        <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_pos</span><span class="p">(</span><span class="o">-</span><span class="n">mdot</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
+        <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="n">outlets</span><span class="p">[</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">D</span> <span class="o">+</span> <span class="n">w</span>
+    <span class="k">return</span> <span class="n">N</span> <span class="o">/</span> <span class="n">D</span> <span class="k">if</span> <span class="n">D</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">current</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_walk_temperatures</span><span class="p">(</span>
+    <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">channel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">temperature</span><span class="p">,</span>
+    <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span>
+    <span class="n">passes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Walk the flow network in flow direction until the temperatures settle.</span>
+
+<span class="sd">    Each pass carries every edge's inlet through its components and mixes the arrivals</span>
+<span class="sd">    at every node. Returns the outlet temperature per component, the coolant profile</span>
+<span class="sd">    per channel, and the temperature per junction.</span>
+<span class="sd">    """</span>
     <span class="n">sources</span> <span class="o">=</span> <span class="p">[</span><span class="n">comp</span><span class="o">.</span><span class="n">T</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">comp</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">)]</span>
     <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">):</span>
@@ -471,7 +552,7 @@
     <span class="n">outlets</span> <span class="o">=</span> <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">T0</span><span class="p">)</span>
     <span class="n">profiles</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">edges</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">))</span>
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">passes</span><span class="p">):</span>
         <span class="n">change</span> <span class="o">=</span> <span class="mf">0.0</span>
         <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
             <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
@@ -487,21 +568,10 @@
                 <span class="n">change</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">T</span> <span class="o">-</span> <span class="n">outlets</span><span class="p">[</span><span class="n">comp</span><span class="p">]))</span>
                 <span class="n">outlets</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="o">=</span> <span class="n">T</span>
         <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span><span class="p">:</span>
-            <span class="n">eps</span> <span class="o">=</span> <span class="n">_mixing_eps</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
-            <span class="n">weights</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">"weights"</span><span class="p">,</span> <span class="p">{})</span>
-            <span class="n">N</span> <span class="o">=</span> <span class="n">D</span> <span class="o">=</span> <span class="mf">0.0</span>
-            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">):</span>
-                <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-                <span class="n">w</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_pos</span><span class="p">(</span><span class="n">mdot</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
-                <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="n">outlets</span><span class="p">[</span><span class="n">comps</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span> <span class="n">D</span> <span class="o">+</span> <span class="n">w</span>
-            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">out_edges</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">):</span>
-                <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-                <span class="n">w</span> <span class="o">=</span> <span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_pos</span><span class="p">(</span><span class="o">-</span><span class="n">mdot</span><span class="p">,</span> <span class="n">eps</span><span class="p">)</span>
-                <span class="n">N</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">N</span> <span class="o">+</span> <span class="n">w</span> <span class="o">*</span> <span class="n">outlets</span><span class="p">[</span><span class="n">comps</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">D</span> <span class="o">+</span> <span class="n">w</span>
-            <span class="n">mixed</span> <span class="o">=</span> <span class="n">N</span> <span class="o">/</span> <span class="n">D</span> <span class="k">if</span> <span class="n">D</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+            <span class="n">mixed</span> <span class="o">=</span> <span class="n">_mix_at_node</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">node</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span> <span class="n">outlets</span><span class="p">,</span> <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">])</span>
             <span class="n">change</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">change</span><span class="p">,</span> <span class="nb">abs</span><span class="p">(</span><span class="n">mixed</span> <span class="o">-</span> <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]))</span>
             <span class="n">nodes</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">mixed</span>
-        <span class="k">if</span> <span class="n">change</span> <span class="o">&lt;</span> <span class="mf">1e-6</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">change</span> <span class="o">&lt;</span> <span class="n">tolerance</span><span class="p">:</span>
             <span class="k">break</span>
     <span class="k">return</span> <span class="n">outlets</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">nodes</span>
 
@@ -513,21 +583,69 @@
     <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">ref_pressure</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">ref_pressure</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="mf">1e5</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_cluster_seed</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">hydraulic</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">profiles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">sides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">T0</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_standalone_channels</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">flows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">channel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">):</span>
+    <span class="n">mdots</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">profiles</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{},</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)):</span>
+        <span class="n">mdot</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">flows</span> <span class="k">else</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="s2">"mdot"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">mdot</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingFlowError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> has no flow: there is no Kirchhoff, no 'mdot' func and no entry in flows. Pass "</span>
+                <span class="sa">f</span><span class="s2">"flows=</span><span class="se">{{</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">: &lt;KgPerS&gt;</span><span class="se">}}</span><span class="s2"> or give the channel an 'mdot' func."</span>
+            <span class="p">)</span>
+        <span class="n">mdot</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">first</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">)</span> <span class="k">if</span> <span class="n">mdot</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,</span> <span class="s2">"Tin"</span><span class="p">)</span>
+        <span class="n">inlet</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">first</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">inlet</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">second</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="n">inlet</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">inlet</span>
+        <span class="n">inlet</span> <span class="o">=</span> <span class="n">temperature</span> <span class="k">if</span> <span class="n">inlet</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">inlet</span>
+        <span class="k">if</span> <span class="n">inlet</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> has no 'Tin' or 'Tin_minus' func; pass temperature=&lt;Celsius&gt;."</span><span class="p">)</span>
+        <span class="n">pressure</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="s2">"p_abs"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">mdots</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">p_abs</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">mdot</span><span class="p">,</span> <span class="mf">1e5</span> <span class="k">if</span> <span class="n">pressure</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">pressure</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">())</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">_outlet</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">inlet</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()),</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">channel_powers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">mdots</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">profiles</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_cluster_seed</span><span class="p">(</span>
+    <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
+    <span class="n">cluster</span><span class="p">,</span>
+    <span class="n">mdots</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">p_abs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">profiles</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">sides</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+    <span class="n">T0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">seed_coolant</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Seed the walls, heat transfer coefficients and fuel interiors of one cluster.</span>
+
+<span class="sd">    Each channel side's h comes from ``h_wall`` at the coolant temperature, floored at</span>
+<span class="sd">    the coolant conductivity over the hydraulic diameter; its wall sits at coolant plus</span>
+<span class="sd">    heat flux over h, updated over two passes. A fuel interior is the mean of its two</span>
+<span class="sd">    walls tiled across the plate, and a fuel with one heated side gets that wall on both</span>
+<span class="sd">    sides. With ``seed_coolant``, each channel also gets its coolant profile and its own</span>
+<span class="sd">    pressure drop.</span>
+<span class="sd">    """</span>
     <span class="n">state</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="n">walls</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">seed_coolant</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)):</span>
+            <span class="n">state</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">]}</span>
     <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">ChannelAndContacts</span><span class="p">)):</span>
-        <span class="n">mdot</span><span class="p">,</span> <span class="n">tc</span><span class="p">,</span> <span class="n">p_abs</span> <span class="o">=</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)],</span> <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">_abs_pressure</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">hydraulic</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+        <span class="n">mdot</span><span class="p">,</span> <span class="n">tc</span><span class="p">,</span> <span class="n">p_abs_c</span> <span class="o">=</span> <span class="n">mdots</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">p_abs</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
         <span class="n">h_floor</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">fluid</span><span class="o">.</span><span class="n">conductivity</span><span class="p">(</span><span class="n">tc</span><span class="p">)</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span>
         <span class="n">h_sides</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">side</span><span class="p">,</span> <span class="n">width</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">),</span> <span class="n">c</span><span class="o">.</span><span class="n">pipe</span><span class="o">.</span><span class="n">heated_parts</span><span class="p">):</span>
-            <span class="n">q</span> <span class="o">=</span> <span class="n">sides</span><span class="p">[</span><span class="n">c</span><span class="p">][</span><span class="n">side</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">dz</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span> <span class="k">if</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+            <span class="n">q</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sides</span><span class="p">[</span><span class="n">c</span><span class="p">],</span> <span class="n">side</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">dz</span> <span class="o">*</span> <span class="n">width</span><span class="p">)</span> <span class="k">if</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
             <span class="n">tw</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
-                <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">h_wall</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="n">tw</span><span class="p">,</span> <span class="n">T_cool</span><span class="o">=</span><span class="n">tc</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">p_abs</span><span class="p">),</span> <span class="n">h_floor</span><span class="p">)</span>
+                <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">h_wall</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="n">tw</span><span class="p">,</span> <span class="n">T_cool</span><span class="o">=</span><span class="n">tc</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">p_abs_c</span><span class="p">),</span> <span class="n">h_floor</span><span class="p">)</span>
                 <span class="n">tw</span> <span class="o">=</span> <span class="n">tc</span> <span class="o">+</span> <span class="n">q</span> <span class="o">/</span> <span class="n">h</span>
             <span class="n">walls</span><span class="p">[(</span><span class="n">c</span><span class="p">,</span> <span class="n">side</span><span class="p">)],</span> <span class="n">h_sides</span><span class="p">[</span><span class="n">side</span><span class="p">]</span> <span class="o">=</span> <span class="n">tw</span><span class="p">,</span> <span class="n">h</span>
-        <span class="n">state</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">h_left</span><span class="o">=</span><span class="n">h_sides</span><span class="p">[</span><span class="s2">"left"</span><span class="p">],</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h_sides</span><span class="p">[</span><span class="s2">"right"</span><span class="p">])</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">h_left</span><span class="o">=</span><span class="n">h_sides</span><span class="p">[</span><span class="s2">"left"</span><span class="p">],</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h_sides</span><span class="p">[</span><span class="s2">"right"</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">seed_coolant</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)):</span>
+            <span class="n">tc</span> <span class="o">=</span> <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+            <span class="n">tw</span> <span class="o">=</span> <span class="p">(</span><span class="n">walls</span><span class="p">[(</span><span class="n">c</span><span class="p">,</span> <span class="s2">"left"</span><span class="p">)]</span> <span class="o">+</span> <span class="n">walls</span><span class="p">[(</span><span class="n">c</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">)])</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="k">if</span> <span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="s2">"left"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">walls</span> <span class="k">else</span> <span class="n">tc</span>
+            <span class="n">state</span><span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">pressure</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">tc</span><span class="p">,</span> <span class="n">Tw</span><span class="o">=</span><span class="n">tw</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdots</span><span class="p">[</span><span class="n">c</span><span class="p">]))</span>
     <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="p">(</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">cluster</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">)):</span>
         <span class="n">fed</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">in_edges</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">VARS</span><span class="p">):</span>
@@ -545,20 +663,20 @@
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_kinetics_seed</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">blocks</span><span class="p">:</span> <span class="n">Blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
-    <span class="n">state</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">for</span> <span class="n">pk</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">kinetics</span><span class="p">:</span>
-        <span class="n">fed</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">out_edges</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">VARS</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"power"</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
-        <span class="n">power</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">fuel_powers</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fed</span><span class="p">)</span>
-        <span class="n">power_input</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="s2">"power_input"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">PointKineticsWInput</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">state</span> <span class="o">|=</span> <span class="n">point_kinetics_steady_state</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">power_input</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">State</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+    <span class="n">pk</span> <span class="o">=</span> <span class="n">blocks</span><span class="o">.</span><span class="n">kinetics</span>
+    <span class="k">if</span> <span class="n">pk</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">State</span><span class="p">({})</span>
+    <span class="n">fed</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">names</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">out_edges</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">VARS</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">"power"</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+    <span class="n">power</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">fuel_powers</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fed</span><span class="p">)</span>
+    <span class="n">power_input</span> <span class="o">=</span> <span class="n">_func</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">pk</span><span class="p">,</span> <span class="s2">"power_input"</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">PointKineticsWInput</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">point_kinetics_steady_state</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">power_input</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="seed_steady_state">
 <a class="viewcode-back" href="../../../stream.composition.html#stream.composition.steady_state.seed_steady_state">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">seed_steady_state</span><span class="p">(</span>
     <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
-    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">flows</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Calculation</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">temperature</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -566,6 +684,8 @@
     <span class="n">overrides</span><span class="p">:</span> <span class="n">DictState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">t</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">strategy</span><span class="p">:</span> <span class="n">HydraulicStrategyMap</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">walk_passes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">walk_tolerance</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A closed-form steady-state guess for a flow network wall-coupled to fuel plates.</span>
 
@@ -578,18 +698,27 @@
 <span class="sd">    coefficient, and fuel interiors are tiled from their walls. Funcs win over walked</span>
 <span class="sd">    values, as they do in the Aggregator.</span>
 
+<span class="sd">    A system without a Kirchhoff (plates that take their coolant from funcs, as</span>
+<span class="sd">    :func:`~stream.composition.mtr_geometry.symmetric_plate` builds them) is seeded channel by</span>
+<span class="sd">    channel: the flow from ``flows`` or the channel's ``mdot`` func, the inlet from its</span>
+<span class="sd">    ``Tin`` func (``Tin_minus`` for reversed flow), the absolute pressure from its</span>
+<span class="sd">    ``p_abs`` func (1e5 Pa without one), and the channel's own ``pressure`` from its</span>
+<span class="sd">    pressure drop at the seeded temperatures.</span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    agr: Aggregator</span>
 <span class="sd">        The full system.</span>
-<span class="sd">    k: Kirchhoff</span>
-<span class="sd">        The flow solver that sits in ``agr``.</span>
+<span class="sd">    k: Kirchhoff or None</span>
+<span class="sd">        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used.</span>
 <span class="sd">    flows: Mapping[Calculation | str, KgPerS] or None</span>
 <span class="sd">        Known flows by component or name. Needed only where the network cannot fix a</span>
 <span class="sd">        flow itself: a head-driven pump, or a pump-free loop (pass a small signed flow).</span>
+<span class="sd">        Without a Kirchhoff, a channel's entry here wins over its ``mdot`` func.</span>
 <span class="sd">    temperature: Celsius or None</span>
 <span class="sd">        Reference temperature. Required when the network has no heat exchanger and no</span>
-<span class="sd">        pinned inlet; otherwise it only sets the walk's start.</span>
+<span class="sd">        pinned inlet; otherwise it only sets the walk's start. Without a Kirchhoff, it</span>
+<span class="sd">        is the inlet of a channel that has no ``Tin`` or ``Tin_minus`` func.</span>
 <span class="sd">    powers: Mapping[Calculation | str, Watt] or None</span>
 <span class="sd">        Fuel powers by fuel or name. Override a fuel's ``power`` func; required for a</span>
 <span class="sd">        fuel driven by a kinetics node.</span>
@@ -600,6 +729,13 @@
 <span class="sd">        Time at which funcs are evaluated.</span>
 <span class="sd">    strategy: HydraulicStrategyMap or None</span>
 <span class="sd">        Per-component pressure-drop laws for components the hydraulic guesser does not know.</span>
+<span class="sd">    walk_passes: int</span>
+<span class="sd">        The seed walks the network in flow direction, computing each component's outlet</span>
+<span class="sd">        from its inlet and mixing the arrivals at every junction, and repeats the pass</span>
+<span class="sd">        until no temperature moves by more than ``walk_tolerance``, at most</span>
+<span class="sd">        ``walk_passes`` times. A loop settles in a few passes. Default 50.</span>
+<span class="sd">    walk_tolerance: Celsius</span>
+<span class="sd">        The largest temperature change that ends the walk. Default 1e-6.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -612,23 +748,40 @@
 <span class="sd">    MissingPowerError</span>
 <span class="sd">        A fuel whose steady power is unknown.</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        Two known flows on one edge disagree, or no temperature source and no ``temperature``.</span>
+<span class="sd">        Two known flows on one edge disagree, no temperature source and no</span>
+<span class="sd">        ``temperature``, or the Kirchhoff or the kinetics node is ambiguous.</span>
 <span class="sd">    """</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">_find_kirchhoff</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
     <span class="n">blocks</span> <span class="o">=</span> <span class="n">decompose</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
-    <span class="n">flows</span> <span class="o">=</span> <span class="n">_complete_flows</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">_known_flows</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">flows</span><span class="p">),</span> <span class="n">t</span><span class="p">))</span>
-    <span class="n">_check_heated_legs</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">flows</span><span class="p">)</span>
-    <span class="n">fuel_powers</span> <span class="o">=</span> <span class="n">_fuel_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">powers</span><span class="p">),</span> <span class="n">t</span><span class="p">)</span>
-    <span class="n">sides</span> <span class="o">=</span> <span class="n">_side_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">)</span>
-    <span class="n">channel_powers</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="p">[</span><span class="s2">"left"</span><span class="p">]</span> <span class="o">+</span> <span class="n">s</span><span class="p">[</span><span class="s2">"right"</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sides</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
-    <span class="n">outlets</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">nodes</span> <span class="o">=</span> <span class="n">_walk_temperatures</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span> <span class="n">channel_powers</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
-    <span class="n">temperatures</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">outlets</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
-    <span class="n">temperatures</span> <span class="o">|=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">)}</span>
-    <span class="n">hydraulic</span> <span class="o">=</span> <span class="n">guess_hydraulic_steady_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">},</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span>
-    <span class="n">T0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
-    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">:</span>
-            <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">outlets</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
-    <span class="n">clusters</span> <span class="o">=</span> <span class="p">[</span><span class="n">_cluster_seed</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">hydraulic</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span> <span class="n">sides</span><span class="p">,</span> <span class="n">T0</span><span class="p">)</span> <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">fuel_powers</span> <span class="o">=</span> <span class="n">_fuel_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">powers</span><span class="p">),</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">sides</span> <span class="o">=</span> <span class="n">_side_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">)</span>
+        <span class="n">channel_powers</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">total</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sides</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">mdots</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">profiles</span> <span class="o">=</span> <span class="n">_standalone_channels</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">flows</span><span class="p">),</span> <span class="n">channel_powers</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">hydraulic</span> <span class="o">=</span> <span class="n">State</span><span class="p">({})</span>
+        <span class="n">T0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">profiles</span><span class="o">.</span><span class="n">values</span><span class="p">()]))</span> <span class="k">if</span> <span class="n">profiles</span> <span class="k">else</span> <span class="n">temperature</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">flows</span> <span class="o">=</span> <span class="n">_complete_flows</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">_known_flows</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">flows</span><span class="p">),</span> <span class="n">t</span><span class="p">))</span>
+        <span class="n">_check_heated_legs_not_stalled</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">flows</span><span class="p">)</span>
+        <span class="n">fuel_powers</span> <span class="o">=</span> <span class="n">_fuel_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">powers</span><span class="p">),</span> <span class="n">t</span><span class="p">)</span>
+        <span class="n">sides</span> <span class="o">=</span> <span class="n">_side_powers</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="p">,</span> <span class="n">fuel_powers</span><span class="p">)</span>
+        <span class="n">channel_powers</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">total</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sides</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">outlets</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">nodes</span> <span class="o">=</span> <span class="n">_walk_temperatures</span><span class="p">(</span>
+            <span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">flows</span><span class="p">,</span> <span class="n">channel_powers</span><span class="p">,</span> <span class="n">temperature</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">walk_passes</span><span class="p">,</span> <span class="n">walk_tolerance</span>
+        <span class="p">)</span>
+        <span class="n">temperatures</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">profiles</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">outlets</span><span class="p">[</span><span class="n">c</span><span class="p">])</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
+        <span class="n">temperatures</span> <span class="o">|=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span> <span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">nodes</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">)}</span>
+        <span class="n">hydraulic</span> <span class="o">=</span> <span class="n">guess_hydraulic_steady_state</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">},</span> <span class="n">temperatures</span><span class="p">,</span> <span class="n">strategy</span><span class="p">)</span>
+        <span class="n">T0</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">nodes</span><span class="o">.</span><span class="n">values</span><span class="p">())))</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">Channel</span><span class="p">)</span> <span class="ow">and</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">profiles</span><span class="p">:</span>
+                <span class="n">profiles</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="n">outlets</span><span class="p">[</span><span class="n">c</span><span class="p">])</span>
+        <span class="n">mdots</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span><span class="p">}</span>
+        <span class="n">p_abs</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="n">_abs_pressure</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">hydraulic</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">k</span><span class="o">.</span><span class="n">components</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">ChannelAndContacts</span><span class="p">)}</span>
+    <span class="n">clusters</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">_cluster_seed</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">mdots</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">profiles</span><span class="p">,</span> <span class="n">sides</span><span class="p">,</span> <span class="n">T0</span><span class="p">,</span> <span class="n">seed_coolant</span><span class="o">=</span><span class="n">k</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span>
+    <span class="p">]</span>
     <span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">blocks</span><span class="o">.</span><span class="n">unassigned</span><span class="p">)</span>
     <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">overrides</span> <span class="ow">or</span> <span class="p">{})]</span>
     <span class="k">if</span> <span class="n">names</span><span class="p">:</span>
@@ -639,11 +792,20 @@
 
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_attempt</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">State</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">solve_block</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">))</span>
+    <span class="k">except</span> <span class="n">AlgRuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">)</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> block </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2"> did not solve from the seed and keeps its seed values: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span>
+
+
 <div class="viewcode-block" id="guess_steady_state">
 <a class="viewcode-back" href="../../../stream.composition.html#stream.composition.steady_state.guess_steady_state">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">guess_steady_state</span><span class="p">(</span>
     <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span>
-    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">flows</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="n">Calculation</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">temperature</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -651,31 +813,34 @@
     <span class="n">overrides</span><span class="p">:</span> <span class="n">DictState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">t</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="n">strategy</span><span class="p">:</span> <span class="n">HydraulicStrategyMap</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">refine</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">sweeps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">walk_passes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">walk_tolerance</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
     <span class="o">**</span><span class="n">solver_options</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">State</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A steady-state guess for a flow network wall-coupled to fuel plates.</span>
 
-<span class="sd">    Seeds with :func:`seed_steady_state`, then, unless ``refine`` is off, sweeps the</span>
-<span class="sd">    system block by block with :func:`solve_block`: every thermal cluster with its</span>
-<span class="sd">    hydraulics frozen, then the hydraulic block with its walls frozen, ``sweeps``</span>
-<span class="sd">    times, and the clusters once more so the returned walls match the returned flows.</span>
-<span class="sd">    A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its seed</span>
-<span class="sd">    values and is named in a warning.</span>
+<span class="sd">    Seeds with :func:`seed_steady_state`, then refines the seed block by block with</span>
+<span class="sd">    :func:`solve_block`. Every thermal cluster is solved first with its hydraulics</span>
+<span class="sd">    frozen. Each sweep then solves the hydraulic block with its walls frozen, and every</span>
+<span class="sd">    cluster again, so the walls are solved last, against the final flows. A system</span>
+<span class="sd">    without a Kirchhoff has no hydraulic block, and a sweep solves its clusters only.</span>
+<span class="sd">    A block whose solve raises :class:`~stream.solvers.AlgRuntimeError` keeps its</span>
+<span class="sd">    previous values and is named in a warning.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    agr: Aggregator</span>
 <span class="sd">        The full system.</span>
-<span class="sd">    k: Kirchhoff</span>
-<span class="sd">        The flow solver that sits in ``agr``.</span>
-<span class="sd">    flows, temperature, powers, overrides, t, strategy:</span>
+<span class="sd">    k: Kirchhoff or None</span>
+<span class="sd">        The flow solver that sits in ``agr``. If None, the Kirchhoff of ``agr`` is used.</span>
+<span class="sd">    flows, temperature, powers, overrides, t, strategy, walk_passes, walk_tolerance:</span>
 <span class="sd">        As in :func:`seed_steady_state`.</span>
-<span class="sd">    refine: bool</span>
-<span class="sd">        Sweep the blocks after seeding. Default ``True``.</span>
 <span class="sd">    sweeps: int</span>
-<span class="sd">        Number of cluster-then-hydraulic sweeps. One is enough for forced flow.</span>
+<span class="sd">        Number of hydraulic-then-clusters sweeps after the first cluster solves. Zero</span>
+<span class="sd">        or less returns the seed. One sweep is enough on a single forced loop; two are</span>
+<span class="sd">        worth it where the flows feed back on the walls (parallel channels, natural</span>
+<span class="sd">        convection). Default 2.</span>
 <span class="sd">    solver_options:</span>
 <span class="sd">        Forwarded to every block's :meth:`~stream.aggregator.Aggregator.solve_steady`.</span>
 
@@ -687,38 +852,36 @@
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
 <span class="sd">    ValueError</span>
-<span class="sd">        If ``sweeps`` is less than one, or as in :func:`seed_steady_state`.</span>
+<span class="sd">        An error raised by :func:`seed_steady_state` (also when the Kirchhoff or the</span>
+<span class="sd">        kinetics node is ambiguous).</span>
 <span class="sd">    ~stream.composition.subsystems.MissingFlowError</span>
 <span class="sd">        A heated channel whose flow nothing fixes.</span>
 <span class="sd">    MissingPowerError</span>
 <span class="sd">        A fuel whose steady power is unknown.</span>
 <span class="sd">    """</span>
-    <span class="k">if</span> <span class="n">sweeps</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"sweeps must be at least 1, was </span><span class="si">{</span><span class="n">sweeps</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">_find_kirchhoff</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
     <span class="n">blocks</span> <span class="o">=</span> <span class="n">decompose</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">seed_steady_state</span><span class="p">(</span>
-        <span class="n">agr</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="n">flows</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span> <span class="n">powers</span><span class="o">=</span><span class="n">powers</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span>
+        <span class="n">agr</span><span class="p">,</span>
+        <span class="n">k</span><span class="p">,</span>
+        <span class="n">flows</span><span class="o">=</span><span class="n">flows</span><span class="p">,</span>
+        <span class="n">temperature</span><span class="o">=</span><span class="n">temperature</span><span class="p">,</span>
+        <span class="n">powers</span><span class="o">=</span><span class="n">powers</span><span class="p">,</span>
+        <span class="n">overrides</span><span class="o">=</span><span class="n">overrides</span><span class="p">,</span>
+        <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span>
+        <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span>
+        <span class="n">walk_passes</span><span class="o">=</span><span class="n">walk_passes</span><span class="p">,</span>
+        <span class="n">walk_tolerance</span><span class="o">=</span><span class="n">walk_tolerance</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">refine</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">sweeps</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">state</span>
-    <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">attempt</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">label</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">nonlocal</span> <span class="n">state</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">state</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">solve_block</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">))</span>
-        <span class="k">except</span> <span class="n">AlgRuntimeError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
-            <span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">)</span>
-            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"The </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> block </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2"> did not solve from the seed and keeps its seed values: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-
-    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sweeps</span><span class="p">):</span>
-        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span><span class="p">):</span>
-            <span class="n">attempt</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"thermal cluster </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">attempt</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">hydraulic</span><span class="p">,</span> <span class="s2">"hydraulic"</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span><span class="p">):</span>
-        <span class="n">attempt</span><span class="p">(</span><span class="n">cluster</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"thermal cluster </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="n">_attempt</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"thermal cluster </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">sweeps</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">blocks</span><span class="o">.</span><span class="n">hydraulic</span><span class="p">:</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_attempt</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">blocks</span><span class="o">.</span><span class="n">hydraulic</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="s2">"hydraulic"</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">blocks</span><span class="o">.</span><span class="n">thermal</span><span class="p">):</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="n">_attempt</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"thermal cluster </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">solver_options</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">state</span></div>
 
 </pre></div>
@@ -731,7 +894,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 14, 2026.
+      <span class="lastupdated">Last updated on Oct 16, 2026.
       </span></p>
   </div>
 
