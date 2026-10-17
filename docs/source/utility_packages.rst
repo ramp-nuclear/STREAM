@@ -56,3 +56,15 @@ Utilities
    :members:
    :undoc-members:
    :show-inheritance:
+
+Scales
+------
+
+.. automodule:: stream.scales
+   :members:
+
+Smoothing
+---------
+
+.. automodule:: stream.smoothing
+   :members:

@@ -13,9 +13,12 @@ Calculation
     Calculation.variables
     Calculation.load
     Calculation.save
+    Calculation.strict_save
     Calculation.__repr__
-    Calculation.should_continue
+    Calculation.event_margin
     Calculation.change_state
+    Calculation.should_continue
+    Calculation.has_event
 
 .. automodule:: stream.calculation
    :members:

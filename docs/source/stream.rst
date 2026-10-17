@@ -6,9 +6,6 @@ Documentation
    :undoc-members:
    :show-inheritance:
 
-As the in-depth documentation is read, one should imagine the following scheme:
-
-
 .. toctree::
    :hidden:
    :maxdepth: 2
@@ -21,3 +18,4 @@ As the in-depth documentation is read, one should imagine the following scheme:
    analysis
    viz
    utility_packages
+   stream.examples
