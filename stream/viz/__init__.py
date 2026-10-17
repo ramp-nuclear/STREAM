@@ -43,6 +43,13 @@ the reducer, ``versus``, ``limiting`` and the target. :meth:`Result.plot` holds 
 the answer is drawn: the encodings, bands, how the limit and its crossing are
 shown, the style sheet and label overrides. A declared limit is drawn on every
 figure that shows its quantity.
+
+.. warning::
+
+   This sub-package was written by an AI assistant, and it is a large amount of intricately interwoven code.
+   Reading it, changing it or fixing it will not feel like the rest of STREAM. Before a change is safe, expect
+   to spend real time tracing how :class:`Sweep`, its questions and :class:`Result` hand data to each other,
+   and lean on the tests in ``tests/test_viz``.
 """
 
 from ._envelope import at as at
