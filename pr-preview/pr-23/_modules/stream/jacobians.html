@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.jacobians &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.jacobians</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.jacobians</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">:class:`.Aggregator` solvers can greatly benefit from calculated Jacobians. The following</span>
+<span class="sd">are some implementations for the ``DAE`` (Differential-Algebraic Equations) form and</span>
+<span class="sd">the ``ALG`` (Algebraic) form.</span>
+
+<span class="sd">The main idea behind these implementations is that the graphical structure of an</span>
+<span class="sd">:class:`.Aggregator` object can be utilized to deduce the Jacobian sparsity, at least</span>
+<span class="sd">across :class:`.Calculation` boundaries.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">Calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Array2D</span><span class="p">,</span> <span class="n">Value</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DAE_jacobian"</span><span class="p">,</span> <span class="s2">"ALG_jacobian"</span><span class="p">,</span> <span class="s2">"scaled_step"</span><span class="p">]</span>
+
+<span class="n">StepStrategyWithydot</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Array1D</span><span class="p">,</span> <span class="n">Array1D</span><span class="p">],</span> <span class="n">Array1D</span><span class="p">]</span>
+<span class="n">StepStrategy</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Array1D</span><span class="p">],</span> <span class="n">Array1D</span><span class="p">]</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Value</span><span class="p">)</span>
+
+
+<span class="n">_STEP_FLOOR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">eps</span><span class="p">)</span>
+<span class="n">_STEP_RELATIVE</span> <span class="o">=</span> <span class="mf">1e-6</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_default_step_strategy</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_STEP_FLOOR</span> <span class="o">+</span> <span class="n">_STEP_RELATIVE</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="scaled_step">
+<a class="viewcode-back" href="../../aggregator.html#stream.jacobians.scaled_step">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scaled_step</span><span class="p">(</span><span class="n">typ</span><span class="p">:</span> <span class="n">Array1D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StepStrategyWithydot</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Scale-aware finite-difference step strategy.</span>
+
+<span class="sd">    Builds the per-variable FD step :math:`h_j = \sqrt{\epsilon}\,</span>
+<span class="sd">    \max(|y_j|, \text{typ}_j)`, which keeps steps above the rounding noise of</span>
+<span class="sd">    high-scale variables that pass near zero (e.g. a reversing ``mdot`` column)</span>
+<span class="sd">    instead of quantizing their column to zero.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    typ : Array1D</span>
+<span class="sd">        Per-variable nominal magnitudes, typically :func:`~stream.scales.scale_vector`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    StepStrategyWithydot</span>
+<span class="sd">        A ``step(y, *_) -&gt; h`` closure. The trailing ``*_`` absorbs the ``ydot``</span>
+<span class="sd">        argument, so the same closure serves both the ALG (``y``-only) and DAE</span>
+<span class="sd">        (``y, ydot``) step-strategy signatures.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span><span class="p">:</span> <span class="n">_STEP_FLOOR</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">typ</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_associated_calculations</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]]:</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="p">{</span><span class="n">i</span><span class="p">:</span> <span class="p">[</span><span class="n">calculation</span><span class="p">]</span> <span class="k">for</span> <span class="n">calculation</span><span class="p">,</span> <span class="n">section</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">[</span><span class="n">section</span><span class="p">]}</span>
+    <span class="k">for</span> <span class="n">v</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">external</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">ud</span> <span class="ow">in</span> <span class="n">d</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">place</span> <span class="ow">in</span> <span class="n">ud</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">indices</span><span class="p">[</span><span class="n">place</span><span class="p">]):</span>
+                    <span class="n">a</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_inner</span><span class="p">(</span><span class="n">fy</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">yh</span><span class="p">,</span> <span class="n">associated_calculations</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span> <span class="n">jac</span><span class="p">,</span> <span class="n">cj</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">hj</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">h</span><span class="p">):</span>
+        <span class="n">yh</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="n">hj</span>
+        <span class="n">fyh</span> <span class="o">=</span> <span class="n">fy</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">associated_calculations</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
+            <span class="n">fyh</span><span class="p">[</span><span class="n">agr</span><span class="o">.</span><span class="n">sections</span><span class="p">[</span><span class="n">c</span><span class="p">]]</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">_op</span><span class="p">(</span><span class="s2">"calculate"</span><span class="p">,</span> <span class="n">yh</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span>
+
+        <span class="n">jac</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">fyh</span> <span class="o">-</span> <span class="n">fy</span><span class="p">)</span> <span class="o">/</span> <span class="n">hj</span>
+        <span class="k">if</span> <span class="n">cj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">jac</span><span class="p">[</span><span class="n">j</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-=</span> <span class="n">cj</span> <span class="o">*</span> <span class="n">agr</span><span class="o">.</span><span class="n">mass</span><span class="p">[</span><span class="n">j</span><span class="p">]</span>
+        <span class="n">yh</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">-=</span> <span class="n">hj</span>
+    <span class="k">return</span> <span class="n">jac</span> <span class="k">if</span> <span class="n">cj</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JacFuncDAE</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Protocol for the signature one should expect from the returned function."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ydot</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Gy</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">cj</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">J</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""A function that edits the Jacobian J as its output using the current solver values.</span>
+<span class="sd">        This signature is required by the DAE solver and not of our choice.</span>
+<span class="sd">        """</span>
+        <span class="o">...</span>
+
+
+<div class="viewcode-block" id="DAE_jacobian">
+<a class="viewcode-back" href="../../aggregator.html#stream.jacobians.DAE_jacobian">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">step_strategy</span><span class="p">:</span> <span class="n">StepStrategyWithydot</span> <span class="o">=</span> <span class="n">_default_step_strategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JacFuncDAE</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    A function for creating a one-sided approximation of the Jacobian of</span>
+<span class="sd">    an :class:`Aggregator` functional. The Jacobian is defined as follows:</span>
+
+<span class="sd">    .. math:: J_{ij} = \frac{dF_i}{dy_j}</span>
+<span class="sd">        \approx \frac{F_i(y + h_j) - F_i(y)}{h_j}</span>
+
+<span class="sd">    Where :math:`h_j` is the ``jth`` step size and :math:`y + h_j` simply means</span>
+<span class="sd">    the ``jth`` component is :math:`y_j + h_j`. This is however a bit</span>
+<span class="sd">    simplistic, since the actual required Jacobian is of the full functional:</span>
+
+<span class="sd">    .. math:: G(t, y, \dot{y}) = F(y, t) - M\dot{y}</span>
+
+<span class="sd">    Meaning the Jacobian is actually</span>
+
+<span class="sd">    .. math:: \frac{dG}{dy}=\frac{\partial G}{\partial\dot{y}}</span>
+<span class="sd">        \frac{\partial\dot{y}}{\partial y} + \frac{\partial G}{\partial y}</span>
+
+<span class="sd">    Since :math:`\dot{y}` is approximated linearly,</span>
+<span class="sd">    :math:`\partial_y\dot{y}\equiv\sigma` does not depend</span>
+<span class="sd">    on the functions considered above, only on the approximation scheme and</span>
+<span class="sd">    time step.</span>
+
+<span class="sd">    In our case, :math:`\partial_{\dot{y}_j} G_i=-M_{ij} = -m_i \delta_{i,j}`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    agr : Aggregator</span>
+<span class="sd">        The Aggregator whose functional is desired</span>
+<span class="sd">    step_strategy: Callable or None</span>
+<span class="sd">        A function for the step vector :math:`h = f(y, \dot{y})`</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    J_func: Callable</span>
+<span class="sd">        A function whose signature is</span>
+<span class="sd">        :math:`J(t, y, \dot{y}, G(t, y, \dot{y}), \sigma, \text{result})`,</span>
+<span class="sd">        matching the required SUNDIALS format.</span>
+<span class="sd">    """</span>
+    <span class="n">associated_calculations</span> <span class="o">=</span> <span class="n">_associated_calculations</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_jac_func</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">ydot</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">Gy</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">cj</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">J</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">step_strategy</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ydot</span><span class="p">)</span>
+        <span class="n">Fy</span> <span class="o">=</span> <span class="n">Gy</span> <span class="o">+</span> <span class="n">agr</span><span class="o">.</span><span class="n">mass</span> <span class="o">*</span> <span class="n">ydot</span>
+        <span class="n">_inner</span><span class="p">(</span><span class="n">Fy</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">associated_calculations</span><span class="p">,</span> <span class="n">agr</span><span class="o">=</span><span class="n">agr</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="n">J</span><span class="p">,</span> <span class="n">cj</span><span class="o">=</span><span class="n">cj</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># This function edits J which is how the data actually comes out.</span>
+
+    <span class="k">return</span> <span class="n">_jac_func</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JacFuncALG</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Protocol for the jacobian calculation function used in the algebraic solver.</span>
+<span class="sd">    It computes the jacobian at a given time and a given state, with the aggregator baked in."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array2D</span><span class="p">:</span> <span class="o">...</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">ALG_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">step_strategy</span><span class="p">:</span> <span class="n">StepStrategy</span> <span class="o">=</span> <span class="n">_default_step_strategy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JacFuncALG</span><span class="p">:</span>
+    <span class="n">associated_calculations</span> <span class="o">=</span> <span class="n">_associated_calculations</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+    <span class="n">jac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">)))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_jac_func</span><span class="p">(</span><span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array2D</span><span class="p">:</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">step_strategy</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">Fy</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_inner</span><span class="p">(</span><span class="n">Fy</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">associated_calculations</span><span class="p">,</span> <span class="n">agr</span><span class="o">=</span><span class="n">agr</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="n">jac</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_jac_func</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

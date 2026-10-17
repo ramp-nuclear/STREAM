@@ -1,0 +1,525 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Cube Problem &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Building the Pool Reactor Loop" href="LOFABuildingTheLoop.html" />
+    <link rel="prev" title="Multiple Plates In a Fuel Rod" href="MultiplePlatesInRod.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l3"><a class="reference internal" href="SampleFuelPlateAndChannel.html">Plates and Channels, an MTR Love Story</a></li>
+<li class="toctree-l3"><a class="reference internal" href="MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="Examples.html#kirchhoff-specific-examples">Kirchhoff Specific Examples</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">The Cube Problem</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">The Cube Problem</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/TheCubeProblem.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="The-Cube-Problem">
+<h1>The Cube Problem<a class="headerlink" href="#The-Cube-Problem" title="Link to this heading"></a></h1>
+<p>In this example we wish to take a look at a simple problem in order to demonstrate some of Kirchhoff’s abilities. The problem involves a cube, where each one of the 12 edges is a pipe with resistance 1, and we wish to find the equivalent resistance of the entire cube between two opposing vertices.</p>
+<p>There are no nuclear components involved in this question. The graph includes only two parts:</p>
+<ol class="arabic simple">
+<li><p>A Pump</p></li>
+<li><p>A cube of 12 pipes, acting as resistors.</p></li>
+</ol>
+<p>We will solve the problem here numerically with Kirchhoff. It is not hard to solve by hand and discover the equivalent resistance of the cube is 5/6 of the resistance of each pipe (so the flow is 6/5 and their product is the pressure difference).</p>
+<p>Therefore, we will use <span class="math notranslate nohighlight">\(\Delta p = 5\)</span>, which means the total flow should amount to 6.</p>
+<p>The cube is described by the following image, where the pump generates a potential difference on an additional pipe from node <code class="docutils literal notranslate"><span class="pre">H</span></code> to node <code class="docutils literal notranslate"><span class="pre">A</span></code>:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Resistor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.kirchhoff</span><span class="w"> </span><span class="kn">import</span> <span class="n">Junction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span>
+</pre></div>
+</div>
+</div>
+<section id="Components">
+<h2>Components<a class="headerlink" href="#Components" title="Link to this heading"></a></h2>
+<section id="Pump">
+<h3>Pump<a class="headerlink" href="#Pump" title="Link to this heading"></a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dp0</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="n">dp0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Junctions">
+<h3>Junctions<a class="headerlink" href="#Junctions" title="Link to this heading"></a></h3>
+<p>We define each vertex of the cube as a Junction which is necessary as multiple entries are involved.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">A</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"A"</span><span class="p">)</span>
+<span class="n">B</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"B"</span><span class="p">)</span>
+<span class="n">C</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"C"</span><span class="p">)</span>
+<span class="n">D</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"D"</span><span class="p">)</span>
+<span class="n">E</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"E"</span><span class="p">)</span>
+<span class="n">F</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"F"</span><span class="p">)</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"G"</span><span class="p">)</span>
+<span class="n">H</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="s2">"H"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>We also need to define the 12 different resistors, as each edge is a distinct object with identical properties. This is done directly at the subsequent <code class="docutils literal notranslate"><span class="pre">flow_graph</span></code></p>
+</section>
+</section>
+<section id="Assembling-a-Simulation">
+<h2>Assembling a Simulation<a class="headerlink" href="#Assembling-a-Simulation" title="Link to this heading"></a></h2>
+<p>We create the graph that represents the cube:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">A</span><span class="p">,</span> <span class="n">B</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"AB"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">A</span><span class="p">,</span> <span class="n">C</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"AC"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">A</span><span class="p">,</span> <span class="n">E</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"AE"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"BD"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">B</span><span class="p">,</span> <span class="n">F</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"BF"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">C</span><span class="p">,</span> <span class="n">D</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"CD"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">C</span><span class="p">,</span> <span class="n">G</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"CG"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">D</span><span class="p">,</span> <span class="n">H</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"DH"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">E</span><span class="p">,</span> <span class="n">F</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"EF"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">E</span><span class="p">,</span> <span class="n">G</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"EG"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">F</span><span class="p">,</span> <span class="n">H</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"FH"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">G</span><span class="p">,</span> <span class="n">H</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">"GH"</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">H</span><span class="p">,</span> <span class="n">A</span><span class="p">),</span> <span class="n">pump</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="The-solution">
+<h2>The solution<a class="headerlink" href="#The-solution" title="Link to this heading"></a></h2>
+<p>Now we can solve the problem. We will use a vector of 1’s as the initial guess for the solver.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span>
+<span class="n">steady</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agr</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<p>The total flow from <code class="docutils literal notranslate"><span class="pre">H</span></code> back to <code class="docutils literal notranslate"><span class="pre">A</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">steady</span><span class="p">[</span><span class="s2">"Kirchhoff"</span><span class="p">][</span><span class="s2">"(H -&gt; A, 0)"</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+np.float64(6.0)
+</pre></div></div>
+</div>
+<p>Just like we calculated!</p>
+<p>We can also look at the flow in different pipes inside the cube:</p>
+<p>From symmetry, the flow should be equal for the three pipes leaving the entry node (A), or the three pipes entering the exit node (H), so 1/3 for each. For the rest, the flow should be 1/6. Let’s check if it is indeed so:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">total_flow</span> <span class="o">=</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Kirchhoff"</span><span class="p">][</span><span class="s2">"(H -&gt; A, 0)"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Exiting A: </span><span class="si">{</span><span class="n">steady</span><span class="p">[</span><span class="s1">'Kirchhoff'</span><span class="p">][</span><span class="s1">'(A -&gt; B, 0)'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Entering H: </span><span class="si">{</span><span class="n">steady</span><span class="p">[</span><span class="s1">'Kirchhoff'</span><span class="p">][</span><span class="s1">'(F -&gt; H, 0)'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"A middle pipe: </span><span class="si">{</span><span class="n">steady</span><span class="p">[</span><span class="s1">'Kirchhoff'</span><span class="p">][</span><span class="s1">'(E -&gt; G, 0)'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Exiting A: 2.00
+Entering H: 2.00
+A middle pipe: 1.00
+</pre></div></div>
+</div>
+<p>Again, just like we calculated.</p>
+<p>The entire hydarulic solution is summed up nicely here:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">df</span> <span class="o">=</span> <span class="n">steady</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+<span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">variable</span> <span class="o">!=</span> <span class="s2">"Tin"</span><span class="p">]</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>calculation</th>
+      <th>variable</th>
+      <th>i</th>
+      <th>j</th>
+      <th>value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>AB</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>AC</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>AE</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>BD</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>BF</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>CD</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>CG</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>EF</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>EG</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-1.0</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>DH</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>FH</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>GH</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>-2.0</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>Pump</td>
+      <td>pressure</td>
+      <td>0</td>
+      <td>0</td>
+      <td>5.0</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>Kirchhoff</td>
+      <td>(A -&gt; B, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>Kirchhoff</td>
+      <td>(A -&gt; C, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>Kirchhoff</td>
+      <td>(A -&gt; E, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>Kirchhoff</td>
+      <td>(B -&gt; D, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>Kirchhoff</td>
+      <td>(B -&gt; F, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>Kirchhoff</td>
+      <td>(C -&gt; D, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>19</th>
+      <td>Kirchhoff</td>
+      <td>(C -&gt; G, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>20</th>
+      <td>Kirchhoff</td>
+      <td>(E -&gt; F, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>21</th>
+      <td>Kirchhoff</td>
+      <td>(E -&gt; G, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>1.0</td>
+    </tr>
+    <tr>
+      <th>22</th>
+      <td>Kirchhoff</td>
+      <td>(D -&gt; H, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>23</th>
+      <td>Kirchhoff</td>
+      <td>(F -&gt; H, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>24</th>
+      <td>Kirchhoff</td>
+      <td>(G -&gt; H, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>2.0</td>
+    </tr>
+    <tr>
+      <th>25</th>
+      <td>Kirchhoff</td>
+      <td>(H -&gt; A, 0)</td>
+      <td>0</td>
+      <td>0</td>
+      <td>6.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="MultiplePlatesInRod.html" class="btn btn-neutral float-left" title="Multiple Plates In a Fuel Rod" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LOFABuildingTheLoop.html" class="btn btn-neutral float-right" title="Building the Pool Reactor Loop" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

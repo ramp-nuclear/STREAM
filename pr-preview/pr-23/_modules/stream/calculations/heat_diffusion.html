@@ -1,0 +1,1015 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.calculations.heat_diffusion &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.calculations.heat_diffusion</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.calculations.heat_diffusion</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">A calculation depicting heat diffusion in a solid</span>
+<span class="sd">(supposedly material or cladding).</span>
+
+
+<span class="sd">Discretizing the Heat Equation</span>
+<span class="sd">==============================</span>
+
+<span class="sd">Calculate the temporal derivative of temperatures</span>
+<span class="sd">according to the heat equation, which is, in this case:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">    \rho c_p \frac{\partial T}{\partial t} - \nabla\cdot(k\nabla T) = q'''</span>
+
+<span class="sd">The medium is considered 2D in both the Cartesian and the Polar case.</span>
+
+<span class="sd">Cartesian Discretization:</span>
+<span class="sd">-------------------------</span>
+
+<span class="sd">Integrating and writing the terms, while assuming y-symmetry.</span>
+<span class="sd">Cell :math:`(i,j)` reads :math:`i` th cell from the top and</span>
+<span class="sd">:math:`j` th cell from the left.</span>
+
+<span class="sd">1. Temporal derivative</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \int_{V_{ij}} \rho c_p\frac{\partial T}{\partial t} dV</span>
+<span class="sd">        = \rho_{ij} c_{p,ij}\frac{\partial T_{ij}}{\partial t} V_{ij}</span>
+
+<span class="sd">2. Power Source</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \int_{V_{ij}} q'''dV = P_{ij}</span>
+
+<span class="sd">3. Diffusive Term</span>
+<span class="sd">    .. math::</span>
+<span class="sd">        \int_{V_{ij}} \nabla\cdot(k\nabla T)dV</span>
+<span class="sd">        = \oint_{\partial V_{ij}}(k\nabla T)\cdot dA</span>
+
+<span class="sd">    Cells are boxes, so in the x-direction:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        = \left[(k\nabla T)_{i,j+1/2} - (k\nabla T)_{i,j-1/2}\right]A_i</span>
+
+<span class="sd">    The thermal resistance going from one cell center to the other is just</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        r_{ij, i(j+1)} = \frac{\Delta x_{ij}}{2k_{ij}}</span>
+<span class="sd">        + \frac{\Delta x_{i(j+1)}}{2k_{i(j+1)}} + 1 / h_{ij, i(j+1)}</span>
+
+<span class="sd">    Where :math:`h` is contact conductance.</span>
+<span class="sd">    Then, the flux is taken as:</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        (k\nabla T)_{i,j+1/2} = (T_{i,j+1} - T_{i,j}) / r_{ij, i(j+1)}</span>
+
+<span class="sd">    At the boundaries, the wall temperatures are used in a similar fashion,</span>
+<span class="sd">    such that the temperature gradient is taken as one-sided.</span>
+
+<span class="sd">Polar Discretization:</span>
+<span class="sd">---------------------</span>
+
+<span class="sd">For the polar case, azimuthal symmetry is assumed, and the temperature is a function</span>
+<span class="sd">of the radius :math:`r` and height :math:`z`. Similar to the Cartesian case,</span>
+<span class="sd">here cell :math:`(i,j)` reads :math:`i` th cell from the top and :math:`j` th cell</span>
+<span class="sd">from the smallest radius (0 for a cylinder). The integration is the same (since the</span>
+<span class="sd">:math:`\nabla_\hat{r}` and :math:`\nabla_\hat{z}` components are just</span>
+<span class="sd">:math:`\partial_r` and :math:`\partial_z`, respectively), but the volumes and cell areas</span>
+<span class="sd">are :math:`r`-dependent. Specifically:</span>
+
+<span class="sd">.. math::</span>
+<span class="sd">    \begin{align}</span>
+<span class="sd">    A_{i, j-1/2} &amp;= 2\pi r_{j-1/2}\Delta z_i \\</span>
+<span class="sd">    A_{i-1/2, j} = A_{i+1/2, j} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2) \\</span>
+<span class="sd">    V_{ij} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2)\Delta z_i \\</span>
+<span class="sd">    \end{align}</span>
+
+<span class="sd">The thermal resistance is then computed in the same manner using the distances</span>
+<span class="sd">between cell centers :math:`\Delta r, \Delta z`.</span>
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">astuple</span><span class="p">,</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Type</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cachetools</span><span class="w"> </span><span class="kn">import</span> <span class="n">cached</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">more_itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chunked</span><span class="p">,</span> <span class="n">interleave</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculation</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalcState</span><span class="p">,</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">unpacked</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">wall_temperature</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Array1D</span><span class="p">,</span>
+    <span class="n">Array2D</span><span class="p">,</span>
+    <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">CPerS</span><span class="p">,</span>
+    <span class="n">JPerKgK</span><span class="p">,</span>
+    <span class="n">KgPerM3</span><span class="p">,</span>
+    <span class="n">M2KPerW</span><span class="p">,</span>
+    <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">Meter3</span><span class="p">,</span>
+    <span class="n">Name</span><span class="p">,</span>
+    <span class="n">Place</span><span class="p">,</span>
+    <span class="n">Value</span><span class="p">,</span>
+    <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">WPerM2</span><span class="p">,</span>
+    <span class="n">WPerM2K</span><span class="p">,</span>
+    <span class="n">WPerMK</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">STREAM_DEBUG</span><span class="p">,</span>
+    <span class="n">dataclass_map</span><span class="p">,</span>
+    <span class="n">if_is</span><span class="p">,</span>
+    <span class="n">pair_mean</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">harmonic_mean</span> <span class="k">as</span> <span class="n">in_parallel</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"stream.fuel"</span><span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"cylindrical_areas_volumes"</span><span class="p">,</span>
+    <span class="s2">"Fuel"</span><span class="p">,</span>
+    <span class="s2">"r_diffusion"</span><span class="p">,</span>
+    <span class="s2">"rz_diffusion"</span><span class="p">,</span>
+    <span class="s2">"x_diffusion"</span><span class="p">,</span>
+    <span class="s2">"xz_diffusion"</span><span class="p">,</span>
+    <span class="s2">"Solid"</span><span class="p">,</span>
+    <span class="s2">"Walls"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Walls">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Walls">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Walls</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Simple 2D walls container</span>
+<span class="sd">    """</span>
+
+    <span class="n">left</span><span class="p">:</span> <span class="n">Value</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">right</span><span class="p">:</span> <span class="n">Value</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">top</span><span class="p">:</span> <span class="n">Value</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bottom</span><span class="p">:</span> <span class="n">Value</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">x</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The x (lateral) values of the walls"""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">left</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">right</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">z</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""The z (axial) values of the walls."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">top</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">bottom</span></div>
+
+
+
+<span class="n">_T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">"_T"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Solid">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Solid">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Solid</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Simple bulk properties of a material</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    density: KgPerM3</span>
+<span class="sd">    specific_heat: JPerKgK</span>
+<span class="sd">    conductivity: WPerMK</span>
+<span class="sd">    """</span>
+
+    <span class="n">density</span><span class="p">:</span> <span class="n">KgPerM3</span>
+    <span class="n">specific_heat</span><span class="p">:</span> <span class="n">JPerKgK</span>
+    <span class="n">conductivity</span><span class="p">:</span> <span class="n">WPerMK</span>
+
+<div class="viewcode-block" id="Solid.from_array">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Solid.from_array">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_array</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">_T</span><span class="p">],</span> <span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_T</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Create a Solid from an array of Solid scalars</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        array: np.array</span>
+<span class="sd">            An array of Solid objects, where each instance has scalar values</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Solid</span>
+<span class="sd">            An instance with array-shaped fields.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; Solid.from_array(np.array([Solid(1, 2, 3), Solid(4, 5, 6)]))</span>
+<span class="sd">        Solid(density=array([1, 4]), specific_heat=array([2, 5]), conductivity=array([3, 6]))</span>
+<span class="sd">        """</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="n">astuple</span><span class="p">,</span> <span class="n">array</span><span class="o">.</span><span class="n">flat</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">array</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">))</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="x_diffusion">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.x_diffusion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">x_diffusion</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">material</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">z</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""1D heat diffusion (`x`) in a 2D mesh (`x`, `z`)</span>
+
+<span class="sd">    Calculates the temporal derivative of temperatures</span>
+<span class="sd">    according to the heat equation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Material temperature</span>
+<span class="sd">    T_walls: Walls</span>
+<span class="sd">        Wall temperatures, left and right</span>
+<span class="sd">        (in the case of polar coordinates, inner and outer radii)</span>
+<span class="sd">    material: Solid</span>
+<span class="sd">        a Solid object for thermal properties</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Power, a source term.</span>
+<span class="sd">    x: Meter</span>
+<span class="sd">        Boundaries crossing the x-axis.</span>
+<span class="sd">    z: Meter</span>
+<span class="sd">        Boundaries crossing the z-axis.</span>
+<span class="sd">    y: Meter</span>
+<span class="sd">        In the Cartesian case, the length of the non-described</span>
+<span class="sd">        (meaning symmetric) dimension.</span>
+<span class="sd">    contacts: Sequence[WPerM2K]</span>
+<span class="sd">        indices and transfer coefficients for Fuel-Clad contacts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dT/dt: CPerS</span>
+<span class="sd">        for the heat equation in the material. Only x-diffusion</span>
+<span class="sd">        is assumed.</span>
+<span class="sd">    """</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">x_areas</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">generic_2d_diffusion</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span>
+        <span class="n">dr</span><span class="o">=</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">),</span>
+        <span class="n">areas</span><span class="o">=</span><span class="p">(</span><span class="n">x_areas</span><span class="p">,),</span>
+        <span class="n">volumes</span><span class="o">=</span><span class="n">volumes</span><span class="p">,</span>
+        <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="xz_diffusion">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.xz_diffusion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">xz_diffusion</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">material</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">z</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span>
+    <span class="n">y</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""2D heat diffusion in a 2D mesh (`x`, `z`)</span>
+
+<span class="sd">    Calculates the temporal derivative of temperatures</span>
+<span class="sd">    according to the heat equation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Material temperature</span>
+<span class="sd">    T_walls: Walls</span>
+<span class="sd">        Wall temperatures, left and right</span>
+<span class="sd">        (in the case of polar coordinates, inner and outer radii)</span>
+<span class="sd">    material: Solid</span>
+<span class="sd">        a Solid object for thermal properties</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Power, a source term.</span>
+<span class="sd">    x: Meter</span>
+<span class="sd">        Boundaries crossing the x-axis.</span>
+<span class="sd">    z: Meter</span>
+<span class="sd">        Boundaries crossing the z-axis.</span>
+<span class="sd">    y: Meter</span>
+<span class="sd">        In the Cartesian case, the length of the non-described</span>
+<span class="sd">        (meaning symmetric) dimension.</span>
+<span class="sd">    contacts: Sequence[WPerM2K]</span>
+<span class="sd">        indices and transfer coefficients for Fuel-Clad contacts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dT/dt: CPerS</span>
+<span class="sd">        for the heat equation in the material. xz-diffusion is assumed.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    x_diffusion</span>
+<span class="sd">    """</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">x_areas</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+    <span class="n">z_areas</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)),</span> <span class="n">dx</span><span class="p">)</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">y</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">generic_2d_diffusion</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span>
+        <span class="n">dr</span><span class="o">=</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">),</span>
+        <span class="n">areas</span><span class="o">=</span><span class="p">(</span><span class="n">x_areas</span><span class="p">,</span> <span class="n">z_areas</span><span class="p">),</span>
+        <span class="n">volumes</span><span class="o">=</span><span class="n">volumes</span><span class="p">,</span>
+        <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="cylindrical_areas_volumes">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.cylindrical_areas_volumes">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cylindrical_areas_volumes</span><span class="p">(</span><span class="n">r</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">z</span><span class="p">:</span> <span class="n">Meter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Meter2</span><span class="p">,</span> <span class="n">Meter2</span><span class="p">,</span> <span class="n">Meter3</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Calculate areas and cell volumes for a cylindrical mesh</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r: Meter</span>
+<span class="sd">        Boundaries crossing the r-axis.</span>
+<span class="sd">    z: Meter</span>
+<span class="sd">        Boundaries crossing the z-axis.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        Areas and volumes for rz diffusion</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; r = np.array([0, 1, 4, 14]); z = np.array([0, 3, 5, 15])</span>
+<span class="sd">    &gt;&gt;&gt; r_areas, z_areas, volumes = cylindrical_areas_volumes(r=r, z=z)</span>
+<span class="sd">    &gt;&gt;&gt; r_areas / (2 * np.pi)</span>
+<span class="sd">    array([[  0.,   3.,  12.,  42.],</span>
+<span class="sd">           [  0.,   2.,   8.,  28.],</span>
+<span class="sd">           [  0.,  10.,  40., 140.]])</span>
+<span class="sd">    &gt;&gt;&gt; z_areas / np.pi</span>
+<span class="sd">    array([[  1.,  15., 180.],</span>
+<span class="sd">           [  1.,  15., 180.],</span>
+<span class="sd">           [  1.,  15., 180.],</span>
+<span class="sd">           [  1.,  15., 180.]])</span>
+<span class="sd">    &gt;&gt;&gt; volumes / np.pi</span>
+<span class="sd">    array([[   3.,   45.,  540.],</span>
+<span class="sd">           [   2.,   30.,  360.],</span>
+<span class="sd">           [  10.,  150., 1800.]])</span>
+<span class="sd">    """</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">cum_areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">r_areas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+    <span class="n">z_areas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)),</span> <span class="n">cum_areas</span><span class="p">)</span>
+    <span class="n">volumes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">dz</span><span class="p">,</span> <span class="n">cum_areas</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">r_areas</span><span class="p">,</span> <span class="n">z_areas</span><span class="p">,</span> <span class="n">volumes</span></div>
+
+
+
+<div class="viewcode-block" id="rz_diffusion">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.rz_diffusion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rz_diffusion</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">material</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">z</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""2D heat diffusion in a 2D cylindrical mesh (`r`, `z`).</span>
+<span class="sd">    Assumes azimuthal symmetry.</span>
+
+<span class="sd">    Calculates the temporal derivative of temperatures</span>
+<span class="sd">    according to the heat equation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Material temperature</span>
+<span class="sd">    T_walls: Walls</span>
+<span class="sd">        Wall temperatures, inner and outer radii.</span>
+<span class="sd">    material: Solid</span>
+<span class="sd">        a Solid object for thermal properties</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Power, a source term.</span>
+<span class="sd">    x: Meter</span>
+<span class="sd">        Boundaries crossing the r-axis.</span>
+<span class="sd">    z: Meter</span>
+<span class="sd">        Boundaries crossing the z-axis.</span>
+<span class="sd">    contacts: Sequence[WPerM2K]</span>
+<span class="sd">        indices and transfer coefficients for Fuel-Clad contacts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dT/dt: CPerS</span>
+<span class="sd">        for the heat equation in the material. rz diffusion is assumed.</span>
+<span class="sd">    """</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">r_areas</span><span class="p">,</span> <span class="n">z_areas</span><span class="p">,</span> <span class="n">volumes</span> <span class="o">=</span> <span class="n">cylindrical_areas_volumes</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">generic_2d_diffusion</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span>
+        <span class="n">dr</span><span class="o">=</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">),</span>
+        <span class="n">areas</span><span class="o">=</span><span class="p">(</span><span class="n">r_areas</span><span class="p">,</span> <span class="n">z_areas</span><span class="p">),</span>
+        <span class="n">volumes</span><span class="o">=</span><span class="n">volumes</span><span class="p">,</span>
+        <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="r_diffusion">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.r_diffusion">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">r_diffusion</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">material</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">z</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""1D heat diffusion (`r`) in a 2D cylindrical mesh (`r`, `z`).</span>
+<span class="sd">    Assumes azimuthal symmetry.</span>
+
+<span class="sd">    Calculates the temporal derivative of temperatures</span>
+<span class="sd">    according to the heat equation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Material temperature</span>
+<span class="sd">    T_walls: Walls</span>
+<span class="sd">        Wall temperatures, inner and outer radii.</span>
+<span class="sd">    material: Solid</span>
+<span class="sd">        a Solid object for thermal properties</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">        Power, a source term.</span>
+<span class="sd">    x: Meter</span>
+<span class="sd">        Boundaries crossing the r-axis.</span>
+<span class="sd">    z: Meter</span>
+<span class="sd">        Boundaries crossing the z-axis.</span>
+<span class="sd">    contacts: Sequence[WPerM2K]</span>
+<span class="sd">        indices and transfer coefficients for Fuel-Clad contacts</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dT/dt: CPerS</span>
+<span class="sd">        for the heat equation in the material. r diffusion is assumed.</span>
+<span class="sd">    """</span>
+    <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+    <span class="n">r_areas</span><span class="p">,</span> <span class="n">z_areas</span><span class="p">,</span> <span class="n">volumes</span> <span class="o">=</span> <span class="n">cylindrical_areas_volumes</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">z</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">generic_2d_diffusion</span><span class="p">(</span>
+        <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+        <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span>
+        <span class="n">s</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
+        <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span>
+        <span class="n">dr</span><span class="o">=</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dz</span><span class="p">),</span>
+        <span class="n">areas</span><span class="o">=</span><span class="p">(</span><span class="n">r_areas</span><span class="p">,),</span>
+        <span class="n">volumes</span><span class="o">=</span><span class="n">volumes</span><span class="p">,</span>
+        <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">generic_2d_diffusion</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span>
+    <span class="n">s</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+    <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+    <span class="n">dr</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Meter</span><span class="p">],</span>
+    <span class="n">areas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Meter2</span><span class="p">],</span>
+    <span class="n">volumes</span><span class="p">:</span> <span class="n">Meter3</span><span class="p">,</span>
+    <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CPerS</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Calculate the temporal derivative of temperatures</span>
+<span class="sd">    according to the heat equation.</span>
+
+<span class="sd">    .. note:: This is the generic 2D function. Given correct areas and volumes,</span>
+<span class="sd">        An azimuthal symmetry is also possibly portrayed, albeit still using a</span>
+<span class="sd">        cartesian version of the heat equation.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">    T_walls: Walls</span>
+<span class="sd">        Left, Right, Top, Bottom walls</span>
+<span class="sd">    s: Solid</span>
+<span class="sd">    power: Watt</span>
+<span class="sd">    dr: Sequence[Meter]</span>
+<span class="sd">    areas: Sequence[Meter2]</span>
+<span class="sd">    volumes: Meter3</span>
+<span class="sd">    contacts: WPerM2K</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dT/dt: CPerS</span>
+<span class="sd">    """</span>
+    <span class="c1"># noinspection PyCallingNonCallable</span>
+    <span class="n">resistances</span> <span class="o">=</span> <span class="n">_resistances</span><span class="p">(</span><span class="n">dr</span><span class="o">=</span><span class="n">dr</span><span class="p">,</span> <span class="n">contacts</span><span class="o">=</span><span class="n">contacts</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">conductivity</span><span class="p">)</span>
+    <span class="n">fluxes</span> <span class="o">=</span> <span class="n">_fluxes</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span> <span class="n">resistances</span><span class="o">=</span><span class="n">resistances</span><span class="p">)</span>
+    <span class="n">flow</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">_flows</span><span class="p">(</span><span class="n">fluxes</span><span class="p">,</span> <span class="n">areas</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">flow</span> <span class="o">+</span> <span class="n">power</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">density</span> <span class="o">*</span> <span class="n">s</span><span class="o">.</span><span class="n">specific_heat</span> <span class="o">*</span> <span class="n">volumes</span><span class="p">)</span>
+
+
+<span class="n">stacks</span> <span class="o">=</span> <span class="n">x_stack</span><span class="p">,</span> <span class="n">z_stack</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span>
+<span class="n">diffs</span> <span class="o">=</span> <span class="n">x_diff</span><span class="p">,</span> <span class="n">z_diff</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">pair_means</span> <span class="o">=</span> <span class="n">x_pair_mean</span><span class="p">,</span> <span class="n">z_pair_mean</span> <span class="o">=</span> <span class="n">pair_mean</span><span class="p">,</span> <span class="n">partial</span><span class="p">(</span><span class="n">pair_mean</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_x_bulk</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_z_bulk</span><span class="p">(</span><span class="n">a</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span>
+
+
+<span class="n">bulks</span> <span class="o">=</span> <span class="n">_x_bulk</span><span class="p">,</span> <span class="n">_z_bulk</span>
+<span class="n">left</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">right</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">indices</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">top</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">bottom</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">indices</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">edges</span> <span class="o">=</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">,</span> <span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">)</span>
+
+
+<span class="nd">@cached</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="p">{},</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">((</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_resistances</span><span class="p">(</span><span class="n">dr</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Meter</span><span class="p">],</span> <span class="n">contacts</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2K</span><span class="p">],</span> <span class="n">k</span><span class="p">:</span> <span class="n">WPerMK</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">M2KPerW</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Compute heat resistance at each cell face, given medium conductivity</span>
+<span class="sd">    at each cell and contact heat transfer coefficient at each cell face.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    dr: Sequence[Meter]</span>
+<span class="sd">        Distances in the problem dimensionality (probably (dx, dz))</span>
+<span class="sd">    contacts: Sequence[WPerM2K]</span>
+<span class="sd">        Local heat transfer coefficient at each cell face ("contact")</span>
+<span class="sd">    k: WPerMK</span>
+<span class="sd">        Material conductivity</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    r: Sequence[M2KPerW]</span>
+<span class="sd">        Heat transfer resistance at each cell face, divided into directions.</span>
+<span class="sd">    """</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">rs</span> <span class="o">=</span> <span class="p">[</span><span class="n">ds</span> <span class="o">/</span> <span class="n">k</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="o">*</span><span class="n">dr</span><span class="p">)]</span>
+    <span class="n">cs</span> <span class="o">=</span> <span class="n">contacts</span>
+
+    <span class="n">faces</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="o">**</span><span class="n">edge</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">c</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="o">**</span><span class="n">edge</span><span class="p">)</span> <span class="k">for</span> <span class="n">edge</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">edges</span><span class="p">,</span> <span class="n">interleave</span><span class="p">(</span><span class="n">rs</span><span class="p">,</span> <span class="n">rs</span><span class="p">),</span> <span class="n">interleave</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="n">cs</span><span class="p">))</span>
+    <span class="p">)</span>
+
+    <span class="n">edges_in_bulk</span> <span class="o">=</span> <span class="p">(</span><span class="n">p_mean</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">bulk</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">p_mean</span><span class="p">,</span> <span class="n">bulk</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">rs</span><span class="p">,</span> <span class="n">cs</span><span class="p">,</span> <span class="n">pair_means</span><span class="p">,</span> <span class="n">bulks</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">stack</span><span class="p">((</span><span class="n">face1</span><span class="p">,</span> <span class="n">bulk_faces</span><span class="p">,</span> <span class="n">face2</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">bulk_faces</span><span class="p">,</span> <span class="p">(</span><span class="n">face1</span><span class="p">,</span> <span class="n">face2</span><span class="p">),</span> <span class="n">stack</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">edges_in_bulk</span><span class="p">,</span> <span class="n">chunked</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">stacks</span><span class="p">)</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fluxes</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_walls</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span> <span class="n">resistances</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">M2KPerW</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given Temperatures at medium and boundaries, and resistances</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Medium temperatures.</span>
+<span class="sd">    T_walls: Walls (Celsius)</span>
+<span class="sd">        Wall temperatures.</span>
+<span class="sd">    resistances: Sequence[M2KPerW]</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fluxes: Sequence[WPerM2]</span>
+<span class="sd">        Heat flux at each cell face, divided into directions (x, z)</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">diff</span><span class="p">(</span><span class="n">stack</span><span class="p">((</span><span class="n">wall1</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">wall2</span><span class="p">)))</span> <span class="o">/</span> <span class="n">r</span>
+        <span class="k">for</span> <span class="n">diff</span><span class="p">,</span> <span class="n">stack</span><span class="p">,</span> <span class="p">(</span><span class="n">wall1</span><span class="p">,</span> <span class="n">wall2</span><span class="p">),</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">diffs</span><span class="p">,</span> <span class="n">stacks</span><span class="p">,</span> <span class="p">(</span><span class="n">T_walls</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">T_walls</span><span class="o">.</span><span class="n">z</span><span class="p">),</span> <span class="n">resistances</span><span class="p">)</span>
+    <span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_flows</span><span class="p">(</span><span class="n">fluxes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">WPerM2</span><span class="p">],</span> <span class="n">areas</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Meter2</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Watt</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Given fluxes and cross-sections of cell faces (assumed same lengths,</span>
+<span class="sd">    normals align with fluxes), compute the overall flow into the cell.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fluxes: Sequence[WPerM2]</span>
+<span class="sd">        flux (WPerM2) in each direction. Each entry in the sequence</span>
+<span class="sd">        should be an array_like of all cells in the direction matching areas.</span>
+<span class="sd">    areas: Sequence[Meter2]</span>
+<span class="sd">        areas of cell faces in each direction.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    flows: Sequence[Watt]</span>
+<span class="sd">        Energy flow (Watt) in each direction (same length as inputs),</span>
+<span class="sd">        where each entry's length is the number of cells in that dimension</span>
+<span class="sd">        (that is, 1 less than areas' entries).</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">diff</span><span class="p">(</span><span class="n">flux</span> <span class="o">*</span> <span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">diff</span><span class="p">,</span> <span class="n">flux</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">diffs</span><span class="p">,</span> <span class="n">fluxes</span><span class="p">,</span> <span class="n">areas</span><span class="p">)]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fill</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+
+
+<span class="n">wall_or_default</span> <span class="o">=</span> <span class="n">dataclass_map</span><span class="p">(</span><span class="n">Walls</span><span class="p">,</span> <span class="n">if_is</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_require_conductance_where_temperature</span><span class="p">(</span><span class="n">T</span><span class="p">:</span> <span class="n">Walls</span><span class="p">,</span> <span class="n">h</span><span class="p">:</span> <span class="n">Walls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">side</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"left"</span><span class="p">,</span> <span class="s2">"right"</span><span class="p">,</span> <span class="s2">"top"</span><span class="p">,</span> <span class="s2">"bottom"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">side</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">side</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"T_</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> is wired but h_</span><span class="si">{</span><span class="n">side</span><span class="si">}</span><span class="s2"> is not; wire both or neither"</span><span class="p">)</span>
+
+
+<span class="n">in_par_walls</span> <span class="o">=</span> <span class="n">dataclass_map</span><span class="p">(</span><span class="n">Walls</span><span class="p">,</span> <span class="n">in_parallel</span><span class="p">)</span>
+<span class="n">fill_solid</span> <span class="o">=</span> <span class="n">dataclass_map</span><span class="p">(</span><span class="n">Solid</span><span class="p">,</span> <span class="n">_fill</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Fuel">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Fuel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Fuel</span><span class="p">(</span><span class="n">Calculation</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Represents a solid component in which heat is generated and/or transferred.</span>
+<span class="sd">    An internal volumetric heat source may be supplied and heat is conducted in up to</span>
+<span class="sd">    two dimensions.</span>
+
+<span class="sd">    Geometry is introduced through 2 explicit dimensions, termed :math:`x` and :math:`z`</span>
+<span class="sd">    and an auxiliary dimension termed :math:`y` in which symmetry is assumed. Providing</span>
+<span class="sd">    ``heat_func`` may allow one to support generally many continuous 2D structures.</span>
+<span class="sd">    Explicitly supported geometries are:</span>
+
+<span class="sd">    - Rectangular (:func:`x_diffusion` or :func:`xz_diffusion`).</span>
+<span class="sd">    - Cylindrical (:func:`r_diffusion` or :func:`rz_diffusion`) - in this case</span>
+<span class="sd">      the radial dimension is :math:`x`, and :math:`y` represents an azimuthal symmetry.</span>
+
+<span class="sd">    See more in :ref:`Discretizing the Heat Equation` for the according Cartesian and</span>
+<span class="sd">    Polar discretizations of the heat equation.</span>
+
+<span class="sd">    Boundary conditions are supplied through extraneous temperature and conductance</span>
+<span class="sd">    pairs, which are termed ``left``, ``right``, ``top``, and ``bottom``, and couple</span>
+<span class="sd">    to the 2D mesh :math:`z \times x` accordingly. Be aware that there is an</span>
+<span class="sd">    inherent difference between (``left``, ``right``) and (``top``, ``bottom``).</span>
+<span class="sd">    While this calculation provides its calculated wall temperatures at the</span>
+<span class="sd">    (``left``, ``right``) walls (so that other calculations may transfer heat from it),</span>
+<span class="sd">    the (``top``, ``bottom``) wall temperatures are calculated but not provided.</span>
+
+<span class="sd">    **Defaults:**</span>
+
+<span class="sd">    - Geometry is rectangular</span>
+<span class="sd">    - ``Contacts`` are assumed infinitely conductive.</span>
+<span class="sd">    - ``Meat_indices`` describes the entire plate as meat.</span>
+<span class="sd">    - ``heat_func`` describes x-diffusion only.</span>
+<span class="sd">    - ``T_wall_func`` assumes zero-inertia at wall.</span>
+<span class="sd">    - ``power_shape`` is assumed uniform.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">z_boundaries</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">x_boundaries</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">material</span><span class="p">:</span> <span class="n">Solid</span><span class="p">,</span>
+        <span class="n">y_length</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="p">:</span> <span class="n">Array2D</span><span class="p">,</span>
+        <span class="n">heat_func</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">x_diffusion</span><span class="p">,</span>
+        <span class="n">T_wall_func</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">wall_temperature</span><span class="p">,</span>
+        <span class="n">x_contacts</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">z_contacts</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">meat_indices</span><span class="p">:</span> <span class="n">Array2D</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Fuel"</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        z_boundaries: Meter</span>
+<span class="sd">            Boundaries crossing the z-axis</span>
+<span class="sd">        x_boundaries: Meter</span>
+<span class="sd">            Boundaries crossing the x-axis</span>
+<span class="sd">        material: Solid</span>
+<span class="sd">            Bulk properties. Can be of shape: (z_cells, x_cells) matrix</span>
+<span class="sd">        y_length: Meter</span>
+<span class="sd">            Length of the symmetric dimension.</span>
+<span class="sd">        power_shape: Array2D</span>
+<span class="sd">            Shape of power distribution over the fuel meat.</span>
+<span class="sd">            Should have the same shape as the fuel meat.</span>
+<span class="sd">        heat_func: Callable</span>
+<span class="sd">            A function computing the temporal derivative of bulk temperatures.</span>
+<span class="sd">        T_wall_func: Callable</span>
+<span class="sd">            A function computing wall temperatures.</span>
+<span class="sd">        x_contacts: WPerM2K</span>
+<span class="sd">            Contact conductivity of x_axis contacts. This means its shape</span>
+<span class="sd">            should be (z_cells, x_cells + 1), i.e. including outer boundaries.</span>
+<span class="sd">        z_contacts: WPerM2K</span>
+<span class="sd">            Contact conductivity of z_axis contacts. This means its shape</span>
+<span class="sd">            should be (z_cells + 1, x_cells), i.e. including outer boundaries.</span>
+<span class="sd">        meat_indices: Array2D</span>
+<span class="sd">            Meat placements, specifically where power would be</span>
+<span class="sd">            deposited (at meat_indices = 1).</span>
+<span class="sd">        name: str</span>
+<span class="sd">            Name of the calculation.</span>
+
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="c1"># Geometry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_bounds</span> <span class="o">=</span> <span class="n">x_boundaries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_length</span> <span class="o">=</span> <span class="n">y_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_bounds</span> <span class="o">=</span> <span class="n">z_boundaries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x_boundaries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dz</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">z_boundaries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_centers</span> <span class="o">=</span> <span class="n">pair_mean</span><span class="p">(</span><span class="n">x_boundaries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_centers</span> <span class="o">=</span> <span class="n">pair_mean</span><span class="p">(</span><span class="n">z_boundaries</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="n">n</span><span class="p">,</span> <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dz</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">m</span><span class="p">,</span> <span class="n">n</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># Physical Properties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">material</span> <span class="o">=</span> <span class="n">fill_solid</span><span class="p">(</span><span class="n">material</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_contacts</span> <span class="o">=</span> <span class="n">if_is</span><span class="p">(</span><span class="n">x_contacts</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">z_contacts</span> <span class="o">=</span> <span class="n">if_is</span><span class="p">(</span><span class="n">z_contacts</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">shape</span> <span class="o">+</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meat</span> <span class="o">=</span> <span class="n">if_is</span><span class="p">(</span><span class="n">meat_indices</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="n">last_contacts</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span>
+            <span class="n">left</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_contacts</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_contacts</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">top</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z_contacts</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span>
+            <span class="n">bottom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z_contacts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span>
+        <span class="p">)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">material</span><span class="o">.</span><span class="n">conductivity</span>
+        <span class="n">to_walls_conductivity</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span>
+            <span class="n">left</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">right</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dx</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">top</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">bottom</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">k</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:]</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">dz</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">h_to_wall</span> <span class="o">=</span> <span class="n">in_par_walls</span><span class="p">(</span><span class="n">to_walls_conductivity</span><span class="p">,</span> <span class="n">last_contacts</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">power_shape</span> <span class="o">=</span> <span class="n">power_shape</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+        <span class="c1"># Equations</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">heat_eq</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="n">heat_func</span><span class="p">,</span>
+            <span class="n">material</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">material</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x_bounds</span><span class="p">,</span>
+            <span class="n">z</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">z_bounds</span><span class="p">,</span>
+            <span class="n">contacts</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x_contacts</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z_contacts</span><span class="p">),</span>
+            <span class="n">y</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">y_length</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">walls_eq</span> <span class="o">=</span> <span class="n">dataclass_map</span><span class="p">(</span><span class="n">Walls</span><span class="p">,</span> <span class="n">T_wall_func</span><span class="p">)</span>
+
+        <span class="c1"># Variables</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">T</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">*</span> <span class="n">m</span><span class="p">),</span>
+            <span class="n">T_wall_left</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">),</span>
+            <span class="n">T_wall_right</span><span class="o">=</span><span class="nb">slice</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="mi">2</span> <span class="o">+</span> <span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">STREAM_DEBUG</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"New </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2"> by </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Fuel.calculate">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Fuel.calculate">[docs]</a>
+    <span class="nd">@unpacked</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">variables</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">power</span><span class="p">:</span> <span class="n">Watt</span><span class="p">,</span>
+        <span class="n">T_left</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">T_right</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">T_top</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">T_bottom</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">h_left</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">h_right</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">h_top</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">h_bottom</span><span class="p">:</span> <span class="n">WPerM2K</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">        Calculating temperatures inside fuel and at the edges.</span>
+<span class="sd">        If wall temperatures are not given</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variables: Celsius</span>
+<span class="sd">            Temperatures inside (and on edges) of Fuel element</span>
+<span class="sd">        power: Watt</span>
+<span class="sd">            Generated power at meat.</span>
+<span class="sd">        T_left: Celsius</span>
+<span class="sd">            Temperature just outside the left edge</span>
+<span class="sd">        T_right: Celsius</span>
+<span class="sd">            Temperature just outside the right edge</span>
+<span class="sd">        T_top: Celsius</span>
+<span class="sd">            Temperature just outside the top edge</span>
+<span class="sd">        T_bottom: Celsius</span>
+<span class="sd">            Temperature just outside the bottom edge</span>
+<span class="sd">        h_left: WPerM2K</span>
+<span class="sd">            Left wall conductance</span>
+<span class="sd">        h_right: WPerM2K</span>
+<span class="sd">            Right wall conductance</span>
+<span class="sd">        h_top: WPerM2K</span>
+<span class="sd">            Top wall conductance</span>
+<span class="sd">        h_bottom: WPerM2K</span>
+<span class="sd">            Bottom wall conductance</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Functional output: CPerS or C</span>
+<span class="sd">            Temporal derivative (for inner temperatures) and error for walls</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If a wall's temperature is given without its conductance. A wall given</span>
+<span class="sd">            neither takes a conductance of 1.0 and the temperature of its edge cells.</span>
+<span class="sd">        """</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+        <span class="n">_v</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T"</span><span class="p">]]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">power_mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">power_mat</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">meat</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">power</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">power_shape</span>
+
+        <span class="n">T_last_cell</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">T</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">right</span><span class="o">=</span><span class="n">T</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">top</span><span class="o">=</span><span class="n">T</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span> <span class="n">bottom</span><span class="o">=</span><span class="n">T</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:])</span>
+        <span class="n">T_given</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">T_left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">T_right</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="n">T_top</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="n">T_bottom</span><span class="p">)</span>
+        <span class="n">h_given</span> <span class="o">=</span> <span class="n">Walls</span><span class="p">(</span><span class="n">left</span><span class="o">=</span><span class="n">h_left</span><span class="p">,</span> <span class="n">right</span><span class="o">=</span><span class="n">h_right</span><span class="p">,</span> <span class="n">top</span><span class="o">=</span><span class="n">h_top</span><span class="p">,</span> <span class="n">bottom</span><span class="o">=</span><span class="n">h_bottom</span><span class="p">)</span>
+        <span class="n">_require_conductance_where_temperature</span><span class="p">(</span><span class="n">T_given</span><span class="p">,</span> <span class="n">h_given</span><span class="p">)</span>
+        <span class="n">h_extraneous</span> <span class="o">=</span> <span class="n">wall_or_default</span><span class="p">(</span><span class="n">h_given</span><span class="p">)</span>
+        <span class="n">T_extraneous</span> <span class="o">=</span> <span class="n">wall_or_default</span><span class="p">(</span><span class="n">T_given</span><span class="p">,</span> <span class="n">T_last_cell</span><span class="p">)</span>
+
+        <span class="n">T_walls</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">walls_eq</span><span class="p">(</span><span class="n">T_extraneous</span><span class="p">,</span> <span class="n">T_last_cell</span><span class="p">,</span> <span class="n">h_extraneous</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">h_to_wall</span><span class="p">)</span>
+
+        <span class="n">out</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T"</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">heat_eq</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">T_walls</span><span class="o">=</span><span class="n">T_walls</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">power_mat</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">T_walls</span><span class="o">.</span><span class="n">left</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">]]</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">T_walls</span><span class="o">.</span><span class="n">right</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="n">_v</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">]]</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+
+<div class="viewcode-block" id="Fuel.indices">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Fuel.indices">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">T_left</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="s2">"T_wall_right"</span><span class="p">],</span>
+            <span class="n">T_right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="s2">"T_wall_left"</span><span class="p">],</span>
+            <span class="n">T_top</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:],</span>
+            <span class="n">T_bottom</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:],</span>
+            <span class="n">T</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_indices</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">meat</span> <span class="o">==</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">)[</span><span class="n">variable</span><span class="p">]</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="n">mass</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">mass</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="p">:]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">mass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""N (columns) by M (rows) temperature cells + 2*M wall temperatures"""</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span>
+
+<div class="viewcode-block" id="Fuel.save">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Fuel.save">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalcState</span><span class="p">:</span>
+        <span class="n">state</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">)</span>
+        <span class="n">state</span><span class="p">[</span><span class="s2">"T"</span><span class="p">]</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">"T"</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+
+
+<div class="viewcode-block" id="Fuel.load">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.heat_diffusion.Fuel.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">state</span><span class="p">:</span> <span class="n">CalcState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="n">state</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"T"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">"T"</span><span class="p">])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()})</span></div>
+
+
+    <span class="n">load</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Calculation</span><span class="o">.</span><span class="n">load</span><span class="o">.</span><span class="vm">__doc__</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

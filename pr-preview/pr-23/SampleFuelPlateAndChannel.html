@@ -1,0 +1,421 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plates and Channels, an MTR Love Story &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Multiple Plates In a Fuel Rod" href="MultiplePlatesInRod.html" />
+    <link rel="prev" title="Primary Cooling System Coastdown" href="PCSCoastdown.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Plates and Channels, an MTR Love Story</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Entering-data-for-fuel-plate-modeling">Entering data for fuel plate modeling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-a-model-of-the-fuel-plate">Creating a model of the fuel plate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Defining-the-fuel-plate-using-the-defined-values-and-inputs">Defining the fuel plate using the defined values and inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Creating-a-model-of-the-channel">Creating a model of the channel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Defining-the-channel-using-the-defined-values-and-inputs">Defining the channel using the defined values and inputs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Coupling-Fuel-and-Channel">Coupling Fuel and Channel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Let-us-define-some-approximate-parameters-of-IRR-1:">Let us define some approximate parameters of IRR-1:</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Examples.html#kirchhoff-specific-examples">Kirchhoff Specific Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Plates and Channels, an MTR Love Story</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/SampleFuelPlateAndChannel.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Plates-and-Channels,-an-MTR-Love-Story">
+<h1>Plates and Channels, an MTR Love Story<a class="headerlink" href="#Plates-and-Channels,-an-MTR-Love-Story" title="Link to this heading"></a></h1>
+<p>In the following example, we will construct a channel and a fuel plate based on IRR-1 (MAMAG) reactor specifications.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"savefig"</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"figure"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"mathtext"</span><span class="p">,</span> <span class="n">fontset</span><span class="o">=</span><span class="s2">"dejavuserif"</span><span class="p">)</span>
+<span class="n">rc</span><span class="p">(</span><span class="s2">"lines"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.heat_diffusion</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">symmetric_plate_steady_state</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition.mtr_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">regime_dependent_q_scb</span><span class="p">,</span>
+    <span class="n">spl_htc</span><span class="p">,</span>
+    <span class="n">wall_heat_transfer_coeff</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">friction_factor</span><span class="p">,</span>
+    <span class="n">pressure_diff</span><span class="p">,</span>
+    <span class="n">rectangular_laminar_correction</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">cm</span><span class="p">,</span> <span class="n">mm</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">cosine_shape</span>
+</pre></div>
+</div>
+</div>
+<section id="Entering-data-for-fuel-plate-modeling">
+<h2>Entering data for fuel plate modeling<a class="headerlink" href="#Entering-data-for-fuel-plate-modeling" title="Link to this heading"></a></h2>
+<p>We need to specify the discretization, dimensions and properties of the plate - both fuel and cladding:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">z_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_N</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span>
+<span class="n">meat_height</span> <span class="o">=</span> <span class="mf">60.4</span> <span class="o">*</span> <span class="n">cm</span>
+<span class="n">meat_width</span> <span class="o">=</span> <span class="mi">63</span> <span class="o">*</span> <span class="n">mm</span>
+<span class="n">meat_depth</span> <span class="o">=</span> <span class="mf">0.51</span> <span class="o">*</span> <span class="n">mm</span>
+<span class="n">clad_depth</span> <span class="o">=</span> <span class="mf">0.38</span> <span class="o">*</span> <span class="n">mm</span>
+<span class="n">clad</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">2700</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">250</span><span class="p">)</span>  <span class="c1"># numbers are approximate</span>
+<span class="n">fuel</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">3500</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">750</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>  <span class="c1"># numbers are approximate</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Creating-a-model-of-the-fuel-plate">
+<h2>Creating a model of the fuel plate<a class="headerlink" href="#Creating-a-model-of-the-fuel-plate" title="Link to this heading"></a></h2>
+<p>We set the power distribution along the plate to be cosine-shaped in the xz plane, and fixed throughout the depth of the plate and its width (along the x-axis and y-axis):</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">((</span><span class="n">z_N</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_N</span><span class="p">))</span>
+<span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">meat</span><span class="p">[:,</span> <span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">materials</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<span class="n">materials</span><span class="p">[</span><span class="n">meat</span><span class="p">]</span> <span class="o">=</span> <span class="n">fuel</span>
+<span class="n">materials</span><span class="p">[</span><span class="o">~</span><span class="n">meat</span><span class="p">]</span> <span class="o">=</span> <span class="n">clad</span>
+<span class="n">material</span> <span class="o">=</span> <span class="n">Solid</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">materials</span><span class="p">)</span>
+
+<span class="n">power_shape_in_rod</span> <span class="o">=</span> <span class="n">cosine_shape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">meat_height</span><span class="p">,</span> <span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+<span class="n">dx_meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_depth</span><span class="p">,</span> <span class="n">meat_depth</span><span class="p">))[</span><span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span>
+<span class="n">area_fraction</span> <span class="o">=</span> <span class="n">dx_meat</span> <span class="o">/</span> <span class="n">meat_depth</span>
+<span class="n">plate_power_shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">outer</span><span class="p">(</span><span class="n">power_shape_in_rod</span><span class="p">,</span> <span class="n">area_fraction</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Defining-the-fuel-plate-using-the-defined-values-and-inputs">
+<h2>Defining the fuel plate using the defined values and inputs<a class="headerlink" href="#Defining-the-fuel-plate-using-the-defined-values-and-inputs" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">F</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">meat_height</span><span class="p">,</span> <span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">x_boundaries</span><span class="o">=</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="o">=</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="o">=</span><span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="o">=</span><span class="n">clad_depth</span><span class="p">,</span> <span class="n">meat_w</span><span class="o">=</span><span class="n">meat_depth</span><span class="p">),</span>
+    <span class="n">material</span><span class="o">=</span><span class="n">material</span><span class="p">,</span>
+    <span class="n">y_length</span><span class="o">=</span><span class="n">meat_width</span><span class="p">,</span>
+    <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+    <span class="n">power_shape</span><span class="o">=</span><span class="n">plate_power_shape</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Creating-a-model-of-the-channel">
+<h2>Creating a model of the channel<a class="headerlink" href="#Creating-a-model-of-the-channel" title="Link to this heading"></a></h2>
+<p>we enter inputs defining the dimensions of the channel (between two already-defined plates, coupled with periodic boundary conditions), and properties of the flow in the channel:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">channel_width</span> <span class="o">=</span> <span class="mf">66.6</span> <span class="o">*</span> <span class="n">mm</span>
+<span class="n">channel_depth</span> <span class="o">=</span> <span class="mf">2.1</span> <span class="o">*</span> <span class="n">mm</span>
+
+<span class="n">re_bounds</span> <span class="o">=</span> <span class="n">laminar_re_max</span><span class="p">,</span> <span class="n">turbulent_re_min</span> <span class="o">=</span> <span class="mi">2500</span><span class="p">,</span> <span class="mi">4000</span>
+<span class="n">a_dp</span> <span class="o">=</span> <span class="n">channel_depth</span> <span class="o">/</span> <span class="n">channel_width</span>
+<span class="n">k_R</span> <span class="o">=</span> <span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="n">a_dp</span><span class="p">)</span>
+
+<span class="n">comp_friction</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">k_R</span><span class="o">=</span><span class="n">k_R</span><span class="p">)</span>
+
+<span class="n">pressure_diff_func</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">pressure_diff</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">comp_friction</span><span class="p">)</span>
+
+<span class="n">comp_h_spl</span> <span class="o">=</span> <span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">a_dp</span><span class="o">=</span><span class="n">a_dp</span><span class="p">,</span> <span class="n">Lh</span><span class="o">=</span><span class="n">meat_height</span><span class="p">)</span>
+<span class="n">comp_scb</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">regime_dependent_q_scb</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">)</span>
+<span class="n">htc</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">wall_heat_transfer_coeff</span><span class="p">,</span> <span class="n">h_spl</span><span class="o">=</span><span class="n">comp_h_spl</span><span class="p">,</span> <span class="n">q_scb</span><span class="o">=</span><span class="n">comp_scb</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Defining-the-channel-using-the-defined-values-and-inputs">
+<h2>Defining the channel using the defined values and inputs<a class="headerlink" href="#Defining-the-channel-using-the-defined-values-and-inputs" title="Link to this heading"></a></h2>
+<p>Notice that for our coupled construction (which we will create in a moment), the <code class="docutils literal notranslate"><span class="pre">z_N</span></code> discretization of both fuel and channel must be the same.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">C</span> <span class="o">=</span> <span class="n">ChannelAndContacts</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">meat_height</span><span class="p">,</span> <span class="n">z_N</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">meat_height</span><span class="p">,</span>
+        <span class="n">edge1</span><span class="o">=</span><span class="n">channel_depth</span><span class="p">,</span>
+        <span class="n">edge2</span><span class="o">=</span><span class="n">channel_width</span><span class="p">,</span>
+        <span class="n">heated_edge</span><span class="o">=</span><span class="n">meat_width</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">h_wall_func</span><span class="o">=</span><span class="n">htc</span><span class="p">,</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">pressure_diff_func</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Channel"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Coupling-Fuel-and-Channel">
+<h2>Coupling Fuel and Channel<a class="headerlink" href="#Coupling-Fuel-and-Channel" title="Link to this heading"></a></h2>
+<p>Assuming symmetry, we will construct the fuel and channel as if they envelope each other simultaneously from both sides:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sys</span> <span class="o">=</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">C</span><span class="p">,</span> <span class="n">F</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
+
+<span class="n">report</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 476 Equations, 2 Nodes, 2 Edges.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Fuel</p></td>
+<td><p>Fuel</p></td>
+<td><p>0 - 400</p></td>
+<td><p>power, T_top, T_bottom, h_top, h_bottom</p></td>
+<td></td>
+<td><p>power</p></td>
+</tr>
+<tr class="row-odd"><td><p>Channel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>400 - 476</p></td>
+<td><p>Tin, Tin_minus, mdot, p_abs, mdot2</p></td>
+<td></td>
+<td><p>Tin, mdot, p_abs</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>The missing parameters must be provided, as shown below.</p>
+</section>
+<section id="Let-us-define-some-approximate-parameters-of-IRR-1:">
+<h2>Let us define some approximate parameters of IRR-1:<a class="headerlink" href="#Let-us-define-some-approximate-parameters-of-IRR-1:" title="Link to this heading"></a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">total_power</span> <span class="o">=</span> <span class="mf">5e6</span>
+<span class="n">FA_flow</span> <span class="o">=</span> <span class="mf">17.5</span>  <span class="c1"># in m3/h, in one fuel assembly</span>
+<span class="n">core_rods</span> <span class="o">=</span> <span class="mi">24</span>  <span class="c1"># a typical number</span>
+<span class="n">plates_per_rod</span> <span class="o">=</span> <span class="mi">23</span>
+<span class="n">plates_in_core</span> <span class="o">=</span> <span class="n">plates_per_rod</span> <span class="o">*</span> <span class="n">core_rods</span>
+</pre></div>
+</div>
+</div>
+<p>Now, we can run any simulation we want with this coupled system, or compose it into a larger system. Let’s say we only wish to know the steady state of this system given some obvious parameters. Easily enough, there’s already a function for that in STREAM, which employs <code class="docutils literal notranslate"><span class="pre">symmetric_plate</span></code> internally:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">state</span> <span class="o">=</span> <span class="n">symmetric_plate_steady_state</span><span class="p">(</span>
+    <span class="n">C</span><span class="p">,</span>
+    <span class="n">F</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="o">=</span><span class="n">FA_flow</span>
+    <span class="o">*</span> <span class="p">(</span><span class="mi">1000</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">)</span>
+    <span class="o">/</span> <span class="n">plates_per_rod</span><span class="p">,</span>  <span class="c1"># Coolant mass flow. A positive value indicates downward flow [KgPerS]</span>
+    <span class="n">p_abs</span><span class="o">=</span><span class="mf">1.67e5</span><span class="p">,</span>  <span class="c1"># Absolute pressure at the top of the channel [Pascal]</span>
+    <span class="n">power</span><span class="o">=</span><span class="n">total_power</span> <span class="o">/</span> <span class="n">plates_in_core</span><span class="p">,</span>  <span class="c1"># Total power generated by the fuel plate, averaged for the entire core [Watt]</span>
+    <span class="n">Tin</span><span class="o">=</span><span class="mf">35.0</span><span class="p">,</span>  <span class="c1"># Inlet coolant temperature [Celsius]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Here we will draw the temperature distribution along the channel (z-axis) of the coolant, the cladding and the fuel:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="n">C</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Coolant"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_wall_right"</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">C</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_wall_left"</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Wall"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span>
+    <span class="n">C</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T"</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">shape</span><span class="p">)[:,</span> <span class="n">clad_N</span> <span class="o">+</span> <span class="nb">int</span><span class="p">((</span><span class="n">fuel_N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)],</span>
+    <span class="n">label</span><span class="o">=</span><span class="s2">"Fuel Center"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"Distance from top [m]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Temperature [$\degree$C]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/SampleFuelPlateAndChannel_20_0.png" src="_images/SampleFuelPlateAndChannel_20_0.png" />
+</div>
+</div>
+<p>And here we will draw a color map of the temperature distribution of the fuel along the channel:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">F</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T"</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">cmap</span><span class="o">=</span><span class="s2">"jet"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"Fuel Temp. [C]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">yticks</span><span class="p">([])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/SampleFuelPlateAndChannel_22_0.png" src="_images/SampleFuelPlateAndChannel_22_0.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PCSCoastdown.html" class="btn btn-neutral float-left" title="Primary Cooling System Coastdown" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="MultiplePlatesInRod.html" class="btn btn-neutral float-right" title="Multiple Plates In a Fuel Rod" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

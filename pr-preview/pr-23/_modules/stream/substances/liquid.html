@@ -1,0 +1,257 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.substances.liquid &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.substances.liquid</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.substances.liquid</h1><div class="highlight"><pre>
+<span></span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">Liquid Properties and Interface</span>
+<span class="sd">===============================</span>
+
+<span class="sd">Two dataclasses are defined, which serve as an interface to the rest of the code whenever liquid properties such as</span>
+<span class="sd">coolant density, latent heat etc.</span>
+
+<span class="sd">These classes are :class:`LiquidFuncs`, which is a template for adding such properties as functions of the</span>
+<span class="sd">:math:`(T, p)`, phase space. Applying these functions for such a phase space point yields a :class:`Liquid` object,</span>
+<span class="sd">containing the same properties, actualized.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">atm</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">JPerKg</span><span class="p">,</span>
+    <span class="n">JPerKgK</span><span class="p">,</span>
+    <span class="n">KgPerM3</span><span class="p">,</span>
+    <span class="n">NPerM</span><span class="p">,</span>
+    <span class="n">PaS</span><span class="p">,</span>
+    <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">PerC</span><span class="p">,</span>
+    <span class="n">WPerMK</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Liquid"</span><span class="p">,</span> <span class="s2">"LiquidFuncs"</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Liquid">
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.Liquid">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Liquid</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    Bulk properties of a liquid.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    density: KgPerM3</span>
+<span class="sd">        Liquid density</span>
+<span class="sd">    specific_heat: JPerKgK</span>
+<span class="sd">        Liquid specific heat</span>
+<span class="sd">    viscosity: PaS</span>
+<span class="sd">        Liquid viscosity</span>
+<span class="sd">    conductivity: WPerMK</span>
+<span class="sd">        Liquid thermal conductivity</span>
+<span class="sd">    vapor_density: KgPerM3</span>
+<span class="sd">        Vapor density</span>
+<span class="sd">    sat_temperature: Celsius</span>
+<span class="sd">        Saturation (Boiling) temperature</span>
+<span class="sd">    surface_tension: NPerM</span>
+<span class="sd">        Liquid surface tension</span>
+<span class="sd">    latent_heat: JPerKg</span>
+<span class="sd">        Liquid-Vapor transition specific latent heat</span>
+<span class="sd">    thermal_expansion: PerC</span>
+<span class="sd">        Thermal volume expansion coefficient</span>
+<span class="sd">    """</span>
+
+    <span class="n">density</span><span class="p">:</span> <span class="n">KgPerM3</span>
+    <span class="n">vapor_density</span><span class="p">:</span> <span class="n">KgPerM3</span>
+    <span class="n">specific_heat</span><span class="p">:</span> <span class="n">JPerKgK</span>
+    <span class="n">viscosity</span><span class="p">:</span> <span class="n">PaS</span>
+    <span class="n">sat_temperature</span><span class="p">:</span> <span class="n">Celsius</span>
+    <span class="n">surface_tension</span><span class="p">:</span> <span class="n">NPerM</span>
+    <span class="n">latent_heat</span><span class="p">:</span> <span class="n">JPerKg</span>
+    <span class="n">conductivity</span><span class="p">:</span> <span class="n">WPerMK</span>
+    <span class="n">thermal_expansion</span><span class="p">:</span> <span class="n">PerC</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Liquid"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Liquid</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr</span><span class="p">)[</span><span class="n">item</span><span class="p">]</span> <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__slots__</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="LiquidFuncs">
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.LiquidFuncs">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LiquidFuncs</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A dataclass containing functions of temperature and pressure depicting several properties of a liquid</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    density: Callable[[Celsius], KgPerM3]</span>
+<span class="sd">        Liquid density</span>
+<span class="sd">    specific_heat: Callable[[Celsius], JPerKgK]</span>
+<span class="sd">        Liquid specific heat</span>
+<span class="sd">    viscosity: Callable[[Celsius], PaS]</span>
+<span class="sd">        Liquid viscosity</span>
+<span class="sd">    conductivity: Callable[[Celsius], WPerMK]</span>
+<span class="sd">        Liquid thermal conductivity</span>
+<span class="sd">    vapor_density: Callable[[Celsius], KgPerM3]</span>
+<span class="sd">        Vapor density</span>
+<span class="sd">    sat_temperature: Callable[[Pascal], Celsius]</span>
+<span class="sd">        Saturation (Boiling) temperature. Note the pressure dependence</span>
+<span class="sd">    surface_tension: Callable[[Celsius], NPerM]</span>
+<span class="sd">        Liquid surface tension</span>
+<span class="sd">    latent_heat: Callable[[Celsius], JPerKg]</span>
+<span class="sd">        Liquid-Vapor transition specific latent heat</span>
+<span class="sd">    thermal_expansion: Callable[[Celsius], PerC]</span>
+<span class="sd">        Thermal volume expansion coefficient</span>
+<span class="sd">    """</span>
+
+    <span class="n">density</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">KgPerM3</span><span class="p">]</span>
+    <span class="n">vapor_density</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">KgPerM3</span><span class="p">]</span>
+    <span class="n">specific_heat</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">JPerKgK</span><span class="p">]</span>
+    <span class="n">viscosity</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">PaS</span><span class="p">]</span>
+    <span class="n">sat_temperature</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Pascal</span><span class="p">],</span> <span class="n">Celsius</span><span class="p">]</span>
+    <span class="n">surface_tension</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">NPerM</span><span class="p">]</span>
+    <span class="n">latent_heat</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">JPerKg</span><span class="p">]</span>
+    <span class="n">conductivity</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">WPerMK</span><span class="p">]</span>
+    <span class="n">thermal_expansion</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">PerC</span><span class="p">]</span>
+
+<div class="viewcode-block" id="LiquidFuncs.to_properties">
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.LiquidFuncs.to_properties">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Pascal</span> <span class="o">=</span> <span class="n">atm</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Liquid</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Apply T, p once to receive every property of the liquid at the</span>
+<span class="sd">        given phase space point.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        T: Celsius</span>
+<span class="sd">            Temperature</span>
+<span class="sd">        p: Pascal</span>
+<span class="sd">            Pressure. Specifically used only for the saturation temperature,</span>
+<span class="sd">            so it is optional and 1 Atmosphere (101,325 Pa) by default.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        liquid: Liquid</span>
+<span class="sd">            A Liquid Dataclass containing the aforementioned properties.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">Liquid</span><span class="p">(</span>
+            <span class="n">density</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">vapor_density</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vapor_density</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">specific_heat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">viscosity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">sat_temperature</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">p</span><span class="p">),</span>
+            <span class="n">surface_tension</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">surface_tension</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">latent_heat</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">latent_heat</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">conductivity</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conductivity</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+            <span class="n">thermal_expansion</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">thermal_expansion</span><span class="p">(</span><span class="n">T</span><span class="p">),</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
