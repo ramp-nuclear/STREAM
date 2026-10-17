@@ -1,0 +1,272 @@
+"""The inverse question: the parameter value at which a quantity meets a target."""
+
+from __future__ import annotations
+
+import warnings
+from collections.abc import Mapping
+from dataclasses import replace
+from typing import TYPE_CHECKING
+
+import numpy as np
+from pandas import DataFrame
+
+from ._common import _case_text, crossings
+from ._envelope import ENVELOPES, INNER
+from ._results import Result, _dims, _limits_of, _Question, check_units, keep_binding, reduce
+
+if TYPE_CHECKING:
+    from .sweep import Sweep
+
+COLUMNS = ENVELOPES + INNER
+METHODS = ("linear", "pchip")
+
+
+def first_crossing(x, y, target: float, method: str, context: str) -> float:
+    """The lowest crossing, warning when there are several or none."""
+    found = crossings(x, y, target, method)
+    if not found:
+        x = np.asarray(x, float)[np.isfinite(np.asarray(y, float))]
+        rng = f"{x.min():g} to {x.max():g}" if len(x) else "no solved points"
+        warnings.warn(f"{context}: the curve never reaches {target:g} over {rng}", stacklevel=4)
+        return float("nan")
+    if len(found) > 1:
+        warnings.warn(
+            f"{context}: {len(found)} crossings of {target:g} at {', '.join(f'{v:g}' for v in found)}; using the first",
+            stacklevel=4,
+        )
+    return found[0]
+
+
+def slice_at(curve: DataFrame, parameter: str, value: float, sweep: Sweep) -> DataFrame:
+    """``curve`` at ``parameter == value``, blended between grid levels when off the grid."""
+    levels = sweep.levels(parameter)
+    hits = np.isclose(levels, value, rtol=1e-9, atol=0.0)
+    if hits.any():
+        return curve[np.isclose(curve[parameter], levels[hits][0], rtol=1e-9, atol=0.0)].copy()
+    if not levels.min() < value < levels.max():
+        raise ValueError(
+            f"{parameter}={value:g} is outside the grid; the values of {parameter} are {', '.join(f'{v:g}' for v in levels)}"
+        )
+    lo, hi = levels[levels < value].max(), levels[levels > value].min()
+    warnings.warn(f"{parameter}={value:g} is not on the grid; interpolating between {lo:g} and {hi:g}", stacklevel=4)
+    keys = [c for c in curve.columns if c not in (parameter, "case", "filled", "safe", *COLUMNS)]
+    a = curve[np.isclose(curve[parameter], lo)].drop(columns=["case"], errors="ignore").set_index(keys)
+    b = curve[np.isclose(curve[parameter], hi)].drop(columns=["case"], errors="ignore").set_index(keys)
+    w = (value - lo) / (hi - lo)
+    joined = a.join(b, lsuffix="_a", rsuffix="_b", how="inner")
+    out = DataFrame({c: (1 - w) * joined[f"{c}_a"] + w * joined[f"{c}_b"] for c in COLUMNS}, index=joined.index)
+    if "filled" in curve.columns:
+        out["filled"] = (joined["filled_a"] | joined["filled_b"]).to_numpy(dtype=bool)
+    out[parameter] = value
+    return out.reset_index()
+
+
+def _per_quantity(spec, quantities: list[str], name: str, default) -> dict:
+    if isinstance(spec, Mapping):
+        if set(spec) != set(quantities):
+            raise ValueError(
+                f"{name}= has keys {', '.join(spec)} but the quantities are {', '.join(quantities)}; "
+                "give one entry per quantity"
+            )
+        return {q: spec[q] for q in quantities}
+    return {q: default(q) if spec is None else spec for q in quantities}
+
+
+def _default_target(sweep: Sweep):
+    def pick(q: str):
+        if q not in sweep.limits:
+            raise ValueError(f"no limit declared for {q!r}; pass equals= or declare it in limits=")
+        return sweep.limits[q].value
+
+    return pick
+
+
+def _default_reducer(sweep: Sweep):
+    return lambda q: sweep.limits[q].reducer if q in sweep.limits else "min"
+
+
+def _safe_side(sweep: Sweep, q: str, g: DataFrame, solve_for: str, crossing: float, target) -> str | None:
+    if q not in sweep.limits:
+        return None
+    limit = sweep.limits[q]
+    level = 0.0 if isinstance(target, str) else float(target)
+    xs, ys = g[solve_for].to_numpy(float), g["value"].to_numpy(float)
+    finite = np.isfinite(ys)
+
+    def ok(y):
+        return y >= level if limit.side == "above" else y <= level
+
+    if np.isnan(crossing):
+        return "everywhere" if finite.any() and ok(ys[finite]).all() else "nowhere"
+    before = np.flatnonzero((xs < crossing) & finite)
+    if before.size:
+        return "below" if ok(ys[before[-1]]) else "above"
+    after = np.flatnonzero((xs > crossing) & finite)
+    return "above" if ok(ys[after[0]]) else "below"
+
+
+def required(sweep: Sweep, question: _Question) -> Result:
+    """The implementation of :meth:`Sweep.required`."""
+    solve_for, versus, where, method = question.solve_for, question.versus, question.where, question.method
+    at = dict(question.at)
+    if method not in METHODS:
+        raise ValueError(f"unknown method {method!r}; use {' or '.join(map(repr, METHODS))}")
+    for role, name in (("solve_for", solve_for), ("versus", versus)):
+        if name is None:
+            raise ValueError(f"required() needs {role}=, a sweep parameter")
+        if name not in sweep.parameters:
+            raise ValueError(f"{role}={name!r} is not a sweep parameter; the parameters are {', '.join(sweep.parameters)}")
+    for name in (solve_for, versus, *at):
+        if name in sweep._categorical:
+            raise ValueError(f"{name} is categorical; it can colour, style or panel a figure, not be an axis")
+    if solve_for == versus:
+        raise ValueError(f"solve_for and versus are both {solve_for!r}; they must be different parameters")
+    for name in (solve_for, versus):
+        if where and name in where:
+            raise ValueError(f"{name} is a query axis and cannot also be fixed in where=")
+        if name in at:
+            raise ValueError(f"{name} is a query axis and cannot also be fixed in at=")
+    twice = [name for name in at if where and name in where]
+    if twice:
+        raise ValueError(f"{', '.join(twice)} is fixed in both where= and at=; pass it in one of them")
+    quantities, ofs = sweep._names(question.quantities, question.of)
+    targets = _per_quantity(question.targets, quantities, "equals", _default_target(sweep))
+    reducers = _per_quantity(question.reducer, quantities, "reduce", _default_reducer(sweep))
+    resolved = sweep._resolve(where, question.nearest)
+    free = [p for p in sweep.parameters if p != solve_for]
+    group_cols = ["quantity", "calculation", *free]
+    rows = []
+    for q in quantities:
+        target = targets[q]
+        target_name = target if isinstance(target, str) else None
+        if target_name is not None:
+            sweep._names(target_name, ofs)
+            check_units(sweep.labels, [q, target_name])
+        reduced = reduce(sweep, _Question(
+            "curve", (q, target_name) if target_name else (q,), tuple(ofs), resolved, sigma=question.sigma,
+            uncertainty=question.uncertainty, reducer=reducers[q], versus=solve_for,
+        ))
+        curve = reduced.frame
+        for p, v in at.items():
+            curve = slice_at(curve, p, float(v), sweep)
+        if target_name is not None:
+            others = [c for c in curve.columns if c not in ("quantity", "case", "filled", *COLUMNS)]
+            t = curve[curve.quantity == target_name].set_index(others)
+            a = curve[curve.quantity == q].set_index(others)
+            diff = DataFrame({c: a[c] - t[c] for c in COLUMNS}, index=a.index)
+            diff["quantity"] = q
+            if "filled" in a.columns:
+                diff["filled"] = a["filled"] | t["filled"]
+            curve, level = diff.reset_index(), 0.0
+        else:
+            level = float(target)
+        for key, g in curve.groupby(group_cols, sort=True, observed=True):
+            g = g.sort_values(solve_for)
+            fixed_here = dict(zip(free, key[2:]))
+            context = f"{key[0]} at {_case_text(fixed_here)}"
+            n_solved = int(np.isfinite(g["value"]).sum())
+            if n_solved < 2:
+                raise ValueError(
+                    f"{context}: the walk along {solve_for} has {n_solved} solved point(s); at least two are needed"
+                )
+            out = dict(zip(group_cols, key))
+            for c in COLUMNS:
+                out[c] = first_crossing(g[solve_for], g[c], level, method, context)
+            _order_envelopes(out)
+            out["safe"] = _safe_side(sweep, q, g, solve_for, out["value"], target)
+            out["filled"] = _rests_on_filled(g, solve_for, out["value"])
+            _warn_hole_in_bracket(sweep, g[solve_for].to_numpy(), out["value"], fixed_here, solve_for, context)
+            rows.append(out)
+    if not rows:
+        picked = _case_text({**(where or {}), **at})
+        raise ValueError(
+            f"no solved cases of {', '.join(quantities)}"
+            + (f" at {picked}" if picked else "")
+            + f"; nothing to walk along {solve_for}"
+        )
+    frame = DataFrame(rows)[["quantity", "calculation", *free, *COLUMNS, "safe", "filled"]]
+    indices = [k for k in sweep._select(resolved) if not sweep._is_hole(k) or k in sweep.filled]
+    at_values = {k: float(v) for k, v in at.items()}
+    dims, fixed, single = _dims(sweep, quantities, ofs, {**resolved, **at_values}, indices, exclude=(solve_for, versus))
+    sides = set(frame.loc[np.isfinite(frame["value"].to_numpy(float)), "safe"])
+    if question.limiting:
+        frame, dims = _collapse_required(frame, dims, quantities, ofs, free, solve_for)
+    shared = all(reducers[q] == reducers[quantities[0]] for q in quantities)
+    question = replace(question, quantities=tuple(quantities), of=tuple(ofs), where=resolved, at=at_values,
+                       targets=targets, reducer=reducers[quantities[0]] if shared else reducers)
+    return Result(frame, versus, dims, fixed, single, question, sweep, sweep.labels,
+                  limits=_limits_of(sweep, quantities),
+                  safe_side=sides.pop() if len(sides) == 1 and sides <= {"below", "above"} else None)
+
+
+def _collapse_required(frame: DataFrame, dims: dict, quantities, ofs, free, solve_for: str) -> tuple[DataFrame, dict]:
+    if "quantity" not in dims and "calculation" not in dims:
+        raise ValueError(f"limiting=True but only {quantities[0]} of {ofs[0]} is walked; nothing to collapse")
+    missing = sorted(set(frame.loc[frame["safe"].isna(), "quantity"]))
+    if missing:
+        raise ValueError(f"limiting needs the side of every limit; declare {', '.join(missing)} in limits=")
+    candidates = []
+    for _, g in frame.groupby(free, sort=True, observed=True) if free else [((), frame)]:
+        live = g[g["safe"] != "everywhere"]
+        finite = live[np.isfinite(live["value"])]
+        if finite["safe"].nunique() > 1:
+            below = finite.loc[finite["safe"] == "below", "quantity"].iloc[0]
+            above = finite.loc[finite["safe"] == "above", "quantity"].iloc[0]
+            raise ValueError(
+                f"{below} is safe below the required {solve_for} and {above} above it; "
+                "the feasible region is an interval, not one curve"
+            )
+        blocked = live[live["safe"] == "nowhere"]
+        candidates.extend(blocked.index[:1] if not blocked.empty else (live.index if not live.empty else g.index))
+    return keep_binding(frame.loc[sorted(candidates)], dims, list(free), lambda rows: rows["safe"].iloc[0] == "below")
+
+
+def _order_envelopes(out: dict) -> None:
+    for low, high in (("lower", "upper"), ("inner_lower", "inner_upper")):
+        a, b = out[low], out[high]
+        if np.isnan(a) or np.isnan(b):
+            out[low] = out[high] = float("nan")
+        else:
+            out[low], out[high] = min(a, b), max(a, b)
+
+
+def _bracket(xs: np.ndarray, crossing: float) -> list[int]:
+    before, after = np.flatnonzero(xs <= crossing), np.flatnonzero(xs >= crossing)
+    return [i for i in (before[-1] if before.size else None, after[0] if after.size else None) if i is not None]
+
+
+def _rests_on_filled(g: DataFrame, solve_for: str, crossing: float) -> bool:
+    if np.isnan(crossing) or "filled" not in g.columns:
+        return False
+    return bool(g["filled"].to_numpy()[_bracket(g[solve_for].to_numpy(float), crossing)].any())
+
+
+def _warn_hole_in_bracket(sweep: Sweep, xs: np.ndarray, crossing: float, fixed_here: dict, solve_for: str, context: str) -> None:
+    if np.isnan(crossing) or any(k not in sweep.parameters for k in fixed_here):
+        return
+    on_grid = {}
+    for k, v in fixed_here.items():
+        levels = sweep.levels(k)
+        if k in sweep._categorical:
+            if v in levels:
+                on_grid[k] = v
+        elif np.isclose(levels, v, rtol=1e-9, atol=0.0).any():
+            on_grid[k] = v
+    if len(on_grid) != len(fixed_here):
+        return
+    for k in sweep._select(on_grid):
+        if not sweep._is_hole(k):
+            continue
+        v = sweep.cases[k][solve_for]
+        if k in sweep.filled:
+            if np.isclose(np.asarray(xs, float)[_bracket(np.asarray(xs, float), crossing)], v, rtol=1e-9, atol=0.0).any():
+                warnings.warn(
+                    f"{context}: the crossing at {crossing:g} rests on interpolated case {k} ({_case_text(sweep.case_of(k))})",
+                    stacklevel=4,
+                )
+            continue
+        if (xs < v).any() and (xs > v).any() and xs[xs < v].max() <= crossing <= xs[xs > v].min():
+            warnings.warn(
+                f"{context}: the crossing is interpolated across missing case {k} ({_case_text(sweep.case_of(k))})",
+                stacklevel=4,
+            )
