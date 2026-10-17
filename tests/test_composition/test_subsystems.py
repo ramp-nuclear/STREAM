@@ -291,7 +291,7 @@ def _gravity_loop():
         flow_edge((j_bot, j_top), pump, hx, cold),
         reference_node=(j_top, 2e5),
     )
-    return fg, dict(j_top=j_top, j_bot=j_bot, pump=pump, hx=hx, hot=hot, cold=cold)
+    return fg, {"j_top": j_top, "j_bot": j_bot, "pump": pump, "hx": hx, "hot": hot, "cold": cold}
 
 
 def test_hydraulic_guess_scalar_temperature_matches_uniform_mapping():
@@ -318,7 +318,7 @@ def test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density():
 
 
 def test_hydraulic_guess_mapping_puts_a_profile_into_the_channel():
-    f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
+    _f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
     j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
     pump = Pump(mdot0=0.5, name="Pump")
     fg = FlowGraph(flow_edge((j_top, j_bot), c), flow_edge((j_bot, j_top), pump), reference_node=(j_top, 2e5))

@@ -567,7 +567,7 @@ def _cluster_seed(
         left = fed.get("left", fed.get("right", np.full(f.m, T0)))
         right = fed.get("right", left)
         interior = np.tile(((left + right) / 2.0)[:, None], (1, f.n))
-        state[f.name] = dict(T=interior, T_wall_left=left, T_wall_right=right)
+        state[f.name] = {"T": interior, "T_wall_left": left, "T_wall_right": right}
     return State(state)
 
 

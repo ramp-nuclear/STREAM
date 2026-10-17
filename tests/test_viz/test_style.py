@@ -68,7 +68,7 @@ def test_style_limit_color_defaults_to_the_accent():
 def test_plot_inside_with_style_draws_with_it(sweep):
     wide = Style(linewidth=5.0)
     with wide:
-        fig, ax = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+        fig, ax = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot()
     assert ax.get_lines()[0].get_linewidth() == 5.0
-    fig, ax = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+    _fig, ax = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot()
     assert ax.get_lines()[0].get_linewidth() == DEFAULT_STYLE.linewidth

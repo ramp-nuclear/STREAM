@@ -152,7 +152,7 @@ def symmetric_plate_steady_state(
     steady: State
     """
     seed = symmetric_plate_seed(c, f, mdot, p_abs, power, Tin, initial_guess_iterations)
-    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin, Tin_minus=Tin), f: dict(power=power)}).to_aggregator()
+    plate = symmetric_plate(c, f, {c: {"mdot": mdot, "p_abs": p_abs, "Tin": Tin, "Tin_minus": Tin}, f: {"power": power}}).to_aggregator()
     return plate.save(plate.solve_steady(plate.load(seed), **solver_options))
 
 
