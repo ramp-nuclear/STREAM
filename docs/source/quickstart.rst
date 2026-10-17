@@ -10,7 +10,7 @@ Consider the physical system you would like to simulate, and look at the :ref:`C
 creating a custom component.
 If all you want is a simple component, consider using :func:`~stream.composition.constructors.Calculation_factory`.
 
-Composing Calculations
+Composing Systems of Calculations
 ~~~~~~~~~~~~~~~~~~~~~~
 Assuming you have all of your calculations instantiated, the next step is combining these interdependent
 calculations, usually with the end result being an :class:`~stream.aggregator.CalculationGraph`. Aptly named, the
