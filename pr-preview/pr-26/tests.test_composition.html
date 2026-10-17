@@ -89,6 +89,10 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#subsystems-tests">Subsystems Tests</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_guess_includes_channel_htc_so_it_loads"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_guess_includes_channel_htc_so_it_loads</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_missing_a_calculation_names_it"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_guess_mapping_missing_a_calculation_names_it</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_puts_a_profile_into_the_channel"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_guess_mapping_puts_a_profile_into_the_channel</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_guess_scalar_temperature_matches_uniform_mapping"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_guess_scalar_temperature_matches_uniform_mapping</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_hydraulic_steady_state_is_a_root_for_a_single_loop_case"><code class="docutils literal notranslate"><span class="pre">test_hydraulic_steady_state_is_a_root_for_a_single_loop_case</span></code></a></li>
@@ -98,6 +102,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_point_kinetics_w_input_steady_state_follows_analytic_formula"><code class="docutils literal notranslate"><span class="pre">test_point_kinetics_w_input_steady_state_follows_analytic_formula</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_reversed_flow_temperature_guess_heats_most_where_the_power_is"><code class="docutils literal notranslate"><span class="pre">test_reversed_flow_temperature_guess_heats_most_where_the_power_is</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_accepts_negative_flow_rate"><code class="docutils literal notranslate"><span class="pre">test_symmetric_plate_steady_state_accepts_negative_flow_rate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_builds_its_plate_without_warnings"><code class="docutils literal notranslate"><span class="pre">test_symmetric_plate_steady_state_builds_its_plate_without_warnings</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_has_zero_diff_in_low_mdot"><code class="docutils literal notranslate"><span class="pre">test_symmetric_plate_steady_state_has_zero_diff_in_low_mdot</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_has_zero_diff_in_power"><code class="docutils literal notranslate"><span class="pre">test_symmetric_plate_steady_state_has_zero_diff_in_power</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_solves_negative_flow_rate"><code class="docutils literal notranslate"><span class="pre">test_symmetric_plate_steady_state_solves_negative_flow_rate</span></code></a></li>
@@ -416,6 +421,26 @@ guess must supply them so the returned State loads instead of a bare KeyError.</
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="test_composition.test_subsystems.test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density">
+<span class="sig-name descname"><span class="pre">test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_composition.test_subsystems.test_hydraulic_guess_mapping_missing_a_calculation_names_it">
+<span class="sig-name descname"><span class="pre">test_hydraulic_guess_mapping_missing_a_calculation_names_it</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_hydraulic_guess_mapping_missing_a_calculation_names_it"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_missing_a_calculation_names_it" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_composition.test_subsystems.test_hydraulic_guess_mapping_puts_a_profile_into_the_channel">
+<span class="sig-name descname"><span class="pre">test_hydraulic_guess_mapping_puts_a_profile_into_the_channel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_hydraulic_guess_mapping_puts_a_profile_into_the_channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_hydraulic_guess_mapping_puts_a_profile_into_the_channel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_composition.test_subsystems.test_hydraulic_guess_scalar_temperature_matches_uniform_mapping">
+<span class="sig-name descname"><span class="pre">test_hydraulic_guess_scalar_temperature_matches_uniform_mapping</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_hydraulic_guess_scalar_temperature_matches_uniform_mapping"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_hydraulic_guess_scalar_temperature_matches_uniform_mapping" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="test_composition.test_subsystems.test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations">
 <span class="sig-name descname"><span class="pre">test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations" title="Link to this definition"></a></dt>
 <dd></dd></dl>
@@ -475,6 +500,11 @@ where the power is larger. The power shape here peaks at the bottom.</p>
 <span class="sig-name descname"><span class="pre">test_symmetric_plate_steady_state_accepts_negative_flow_rate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_symmetric_plate_steady_state_accepts_negative_flow_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_accepts_negative_flow_rate" title="Link to this definition"></a></dt>
 <dd><p>Tests whether the function accepts negative flow rate</p>
 </dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_composition.test_subsystems.test_symmetric_plate_steady_state_builds_its_plate_without_warnings">
+<span class="sig-name descname"><span class="pre">test_symmetric_plate_steady_state_builds_its_plate_without_warnings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_composition/test_subsystems.html#test_symmetric_plate_steady_state_builds_its_plate_without_warnings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_composition.test_subsystems.test_symmetric_plate_steady_state_builds_its_plate_without_warnings" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="test_composition.test_subsystems.test_symmetric_plate_steady_state_has_zero_diff_in_low_mdot">

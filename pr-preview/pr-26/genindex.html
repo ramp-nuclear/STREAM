@@ -179,6 +179,8 @@
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pressure_drop.html#stream.physical_models.pressure_drop.friction.Blasius_friction">Blasius_friction() (in module stream.physical_models.pressure_drop.friction)</a>
 </li>
+      <li><a href="stream.composition.html#stream.composition.steady_state.Blocks">Blocks (class in stream.composition.steady_state)</a>
+</li>
       <li><a href="analysis.html#stream.analysis.thresholds.boiling_power">boiling_power() (in module stream.analysis.thresholds)</a>
 
       <ul>
@@ -339,6 +341,8 @@
 </li>
       <li><a href="analysis.html#stream.analysis.debugging.debug_guess_variables">debug_guess_variables() (in module stream.analysis.debugging)</a>
 </li>
+      <li><a href="stream.composition.html#stream.composition.steady_state.decompose">decompose() (in module stream.composition.steady_state)</a>
+</li>
       <li><a href="utility_packages.html#stream.substances.Liquid.density">density (Liquid attribute)</a>
 
       <ul>
@@ -363,10 +367,10 @@
 </li>
       <li><a href="stream.calculations.html#stream.calculations.channel.ChannelAndContacts.dist_from_edge">dist_from_edge() (ChannelAndContacts method)</a>
 </li>
-      <li><a href="heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.turbulent.Dittus_Boelter">Dittus_Boelter() (in module stream.physical_models.heat_transfer_coefficient.turbulent)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.turbulent.Dittus_Boelter">Dittus_Boelter() (in module stream.physical_models.heat_transfer_coefficient.turbulent)</a>
+</li>
       <li><a href="heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.turbulent.Dittus_Boelter_h_spl">Dittus_Boelter_h_spl() (in module stream.physical_models.heat_transfer_coefficient.turbulent)</a>
 </li>
       <li><a href="decay_heat.html#stream.physical_models.decay_heat.activation.double_decay_profile">double_decay_profile() (in module stream.physical_models.decay_heat.activation)</a>
@@ -531,10 +535,10 @@
 </li>
       <li><a href="stream.calculations.html#stream.calculations.channel.ChannelVar.gr_right">gr_right (ChannelVar attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="stream.calculations.html#stream.calculations.ideal.resistors.Gravity">Gravity (class in stream.calculations.ideal.resistors)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="pressure_drop.html#stream.physical_models.pressure_drop.gravity_pressure">gravity_pressure() (in module stream.physical_models.pressure_drop)</a>
 </li>
       <li><a href="stream.composition.html#stream.composition.subsystems.GravityMismatchError">GravityMismatchError</a>
@@ -542,7 +546,11 @@
       <li><a href="stream.composition.html#stream.composition.subsystems.guess_hydraulic_steady_state">guess_hydraulic_steady_state() (in module stream.composition.subsystems)</a>
 </li>
       <li><a href="stream.composition.html#stream.composition.cycle.FlowGraph.guess_steady_state">guess_steady_state() (FlowGraph method)</a>
+
+      <ul>
+        <li><a href="stream.composition.html#stream.composition.steady_state.guess_steady_state">(in module stream.composition.steady_state)</a>
 </li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -578,6 +586,8 @@
       <li><a href="stream.calculations.html#stream.calculations.channel.ChannelVar.heatflux_left">heatflux_left (ChannelVar attribute)</a>
 </li>
       <li><a href="stream.calculations.html#stream.calculations.channel.ChannelVar.heatflux_right">heatflux_right (ChannelVar attribute)</a>
+</li>
+      <li><a href="stream.composition.html#id0">hydraulic (Blocks attribute)</a>, <a href="stream.composition.html#stream.composition.steady_state.Blocks.hydraulic">[1]</a>
 </li>
       <li><a href="utility_packages.html#stream.pipe_geometry.EffectivePipe.hydraulic_diameter">hydraulic_diameter (EffectivePipe attribute)</a>
 </li>
@@ -657,10 +667,12 @@
 </li>
       <li><a href="stream.calculations.html#stream.calculations.ideal.resistors.RegimeDependentFriction.k">k() (RegimeDependentFriction method)</a>
 </li>
-      <li><a href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff">Kirchhoff (class in stream.calculations.kirchhoff)</a>
+      <li><a href="stream.composition.html#id1">kinetics (Blocks attribute)</a>, <a href="stream.composition.html#stream.composition.steady_state.Blocks.kinetics">[1]</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff">Kirchhoff (class in stream.calculations.kirchhoff)</a>
+</li>
       <li><a href="stream.composition.html#stream.composition.cycle.kirchhoffify">kirchhoffify() (in module stream.composition.cycle)</a>
 </li>
       <li><a href="stream.calculations.html#stream.calculations.kirchhoff.KirchhoffWDerivatives">KirchhoffWDerivatives (class in stream.calculations.kirchhoff)</a>
@@ -789,6 +801,8 @@
       </ul></li>
       <li><a href="stream.composition.html#stream.composition.subsystems.MissingFlowError">MissingFlowError</a>
 </li>
+      <li><a href="stream.composition.html#stream.composition.steady_state.MissingPowerError">MissingPowerError</a>
+</li>
       <li><a href="tests.test_general.html#test_general.test_aggregator.mock_agr">mock_agr() (in module test_general.test_aggregator)</a>
 
       <ul>
@@ -856,6 +870,8 @@
         <li><a href="stream.composition.html#module-stream.composition.maximal_coupling">stream.composition.maximal_coupling</a>
 </li>
         <li><a href="stream.composition.html#module-stream.composition.mtr_geometry">stream.composition.mtr_geometry</a>
+</li>
+        <li><a href="stream.composition.html#module-stream.composition.steady_state">stream.composition.steady_state</a>
 </li>
         <li><a href="stream.composition.html#module-stream.composition.subsystems">stream.composition.subsystems</a>
 </li>
@@ -1173,6 +1189,8 @@
 </li>
       <li><a href="aggregator.html#stream.aggregator.Aggregator.sections">sections (Aggregator attribute)</a>
 </li>
+      <li><a href="stream.composition.html#stream.composition.steady_state.seed_steady_state">seed_steady_state() (in module stream.composition.steady_state)</a>
+</li>
       <li><a href="calculation.html#stream.calculation.Calculation.should_continue">should_continue() (Calculation method)</a>
 
       <ul>
@@ -1196,6 +1214,8 @@
       <li><a href="aggregator.html#stream.aggregator.solution.Solution">Solution (class in stream.aggregator.solution)</a>
 </li>
       <li><a href="aggregator.html#stream.aggregator.Aggregator.solve">solve() (Aggregator method)</a>
+</li>
+      <li><a href="stream.composition.html#stream.composition.steady_state.solve_block">solve_block() (in module stream.composition.steady_state)</a>
 </li>
       <li><a href="aggregator.html#stream.aggregator.Aggregator.solve_steady">solve_steady() (Aggregator method)</a>
 </li>
@@ -1337,8 +1357,6 @@
         <li><a href="stream.calculations.html#module-stream.calculations.ideal.heat_exchangers">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     stream.calculations.ideal.ideal
 
@@ -1346,6 +1364,8 @@
         <li><a href="stream.calculations.html#module-stream.calculations.ideal.ideal">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     stream.calculations.ideal.inertia
 
@@ -1414,6 +1434,13 @@
 
       <ul>
         <li><a href="stream.composition.html#module-stream.composition.mtr_geometry">module</a>
+</li>
+      </ul></li>
+      <li>
+    stream.composition.steady_state
+
+      <ul>
+        <li><a href="stream.composition.html#module-stream.composition.steady_state">module</a>
 </li>
       </ul></li>
       <li>
@@ -1593,6 +1620,8 @@
       <li><a href="viz.html#stream.viz.Sweep">Sweep (class in stream.viz)</a>
 </li>
       <li><a href="stream.composition.html#stream.composition.mtr_geometry.symmetric_plate">symmetric_plate() (in module stream.composition.mtr_geometry)</a>
+</li>
+      <li><a href="stream.composition.html#stream.composition.subsystems.symmetric_plate_seed">symmetric_plate_seed() (in module stream.composition.subsystems)</a>
 </li>
       <li><a href="stream.composition.html#stream.composition.subsystems.symmetric_plate_steady_state">symmetric_plate_steady_state() (in module stream.composition.subsystems)</a>
 </li>
@@ -1955,6 +1984,14 @@
 </li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_guess_includes_channel_htc_so_it_loads">test_hydraulic_guess_includes_channel_htc_so_it_loads() (in module test_composition.test_subsystems)</a>
 </li>
+      <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density">test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density() (in module test_composition.test_subsystems)</a>
+</li>
+      <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_guess_mapping_missing_a_calculation_names_it">test_hydraulic_guess_mapping_missing_a_calculation_names_it() (in module test_composition.test_subsystems)</a>
+</li>
+      <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_guess_mapping_puts_a_profile_into_the_channel">test_hydraulic_guess_mapping_puts_a_profile_into_the_channel() (in module test_composition.test_subsystems)</a>
+</li>
+      <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_guess_scalar_temperature_matches_uniform_mapping">test_hydraulic_guess_scalar_temperature_matches_uniform_mapping() (in module test_composition.test_subsystems)</a>
+</li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations">test_hydraulic_steady_state_assumes_0_pressure_drop_for_unsupported_calculations() (in module test_composition.test_subsystems)</a>
 </li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case">test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case() (in module test_composition.test_subsystems)</a>
@@ -1981,10 +2018,10 @@
 </li>
       <li><a href="tests.test_composition.html#test_composition.test_cycle.test_in_series_two_components_creates_a_graph_with_known_edges">test_in_series_two_components_creates_a_graph_with_known_edges() (in module test_composition.test_cycle)</a>
 </li>
-      <li><a href="tests.test_composition.html#test_composition.test_cycle.test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs">test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs() (in module test_composition.test_cycle)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="tests.test_composition.html#test_composition.test_cycle.test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs">test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs() (in module test_composition.test_cycle)</a>
+</li>
       <li><a href="tests.integration.html#test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution">test_inertia_through_RL_circuit_follows_analytic_solution() (in module test_general.test_integrations)</a>
 </li>
       <li><a href="tests.integration.html#test_general.test_integrations.test_inertia_with_flapper_in_PCS_coastdown">test_inertia_with_flapper_in_PCS_coastdown() (in module test_general.test_integrations)</a>
@@ -2239,6 +2276,8 @@
 </li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_symmetric_plate_steady_state_accepts_negative_flow_rate">test_symmetric_plate_steady_state_accepts_negative_flow_rate() (in module test_composition.test_subsystems)</a>
 </li>
+      <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_symmetric_plate_steady_state_builds_its_plate_without_warnings">test_symmetric_plate_steady_state_builds_its_plate_without_warnings() (in module test_composition.test_subsystems)</a>
+</li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_symmetric_plate_steady_state_has_zero_diff_in_low_mdot">test_symmetric_plate_steady_state_has_zero_diff_in_low_mdot() (in module test_composition.test_subsystems)</a>
 </li>
       <li><a href="tests.test_composition.html#test_composition.test_subsystems.test_symmetric_plate_steady_state_has_zero_diff_in_power">test_symmetric_plate_steady_state_has_zero_diff_in_power() (in module test_composition.test_subsystems)</a>
@@ -2278,6 +2317,8 @@
       <li><a href="tests.test_calculations.html#test_calculations.test_point_kinetics.test_winput_feeds_true_power_derivative_to_state_machine_and_save">test_winput_feeds_true_power_derivative_to_state_machine_and_save() (in module test_calculations.test_point_kinetics)</a>
 </li>
       <li><a href="tests.test_calculations.html#test_calculations.test_ideal.test_zero_bend_angle_returns_zero_pressure_drop">test_zero_bend_angle_returns_zero_pressure_drop() (in module test_calculations.test_ideal)</a>
+</li>
+      <li><a href="stream.composition.html#id2">thermal (Blocks attribute)</a>, <a href="stream.composition.html#stream.composition.steady_state.Blocks.thermal">[1]</a>
 </li>
       <li><a href="utility_packages.html#stream.substances.Liquid.thermal_expansion">thermal_expansion (Liquid attribute)</a>
 
@@ -2341,14 +2382,16 @@
 </li>
       <li><a href="decay_heat.html#stream.physical_models.decay_heat.fission_products.Source.U238_gamma">U238_gamma (Source attribute)</a>
 </li>
+      <li><a href="stream.composition.html#id3">unassigned (Blocks attribute)</a>, <a href="stream.composition.html#stream.composition.steady_state.Blocks.unassigned">[1]</a>
+</li>
       <li><a href="analysis.html#stream.analysis.UQ.Uncertainty">Uncertainty (class in stream.analysis.UQ)</a>
 </li>
       <li><a href="aggregator.html#stream.state.State.uniform">uniform() (State class method)</a>
 </li>
-      <li><a href="utility_packages.html#stream.utilities.uniform_dataclass">uniform_dataclass() (in module stream.utilities)</a>
-</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="utility_packages.html#stream.utilities.uniform_dataclass">uniform_dataclass() (in module stream.utilities)</a>
+</li>
       <li><a href="stream.composition.html#stream.composition.mtr_geometry.uniform_x_power_shape">uniform_x_power_shape() (in module stream.composition.mtr_geometry)</a>
 </li>
       <li><a href="calculation.html#stream.calculation.unpacked">unpacked() (in module stream.calculation)</a>

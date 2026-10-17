@@ -310,6 +310,13 @@ The sweep warns once with every hole, and each question warns again with the hol
 <li><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">sheet:</span></code> makes it the sheet of every <code class="docutils literal notranslate"><span class="pre">plot</span></code> call inside the block, and applies its matplotlib settings to your own figures drawn there, so they match.</p></li>
 </ul>
 <p>A frame with a <code class="docutils literal notranslate"><span class="pre">time</span></code> column is refused: the module draws steady states only.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="xref py py-mod docutils literal notranslate"><span class="pre">stream.viz</span></code> was written by an AI assistant, and it is a large amount of intricately interwoven code.
+Reading it, changing it or fixing it will not feel like the rest of STREAM. Before a change is safe, expect
+to spend real time tracing how <a class="reference internal" href="#stream.viz.Sweep" title="stream.viz.Sweep"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sweep</span></code></a>, its questions and <a class="reference internal" href="#stream.viz.Result" title="stream.viz.Result"><code class="xref py py-class docutils literal notranslate"><span class="pre">Result</span></code></a> hand data to each other,
+and lean on the tests in <code class="docutils literal notranslate"><span class="pre">tests/test_viz</span></code>.</p>
+</div>
 </section>
 <section id="reference">
 <h2>Reference<a class="headerlink" href="#reference" title="Link to this heading"></a></h2>

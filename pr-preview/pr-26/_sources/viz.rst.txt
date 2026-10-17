@@ -200,6 +200,13 @@ Change the look
 
 A frame with a ``time`` column is refused: the module draws steady states only.
 
+.. warning::
+
+   :mod:`stream.viz` was written by an AI assistant, and it is a large amount of intricately interwoven code.
+   Reading it, changing it or fixing it will not feel like the rest of STREAM. Before a change is safe, expect
+   to spend real time tracing how :class:`~stream.viz.Sweep`, its questions and :class:`~stream.viz.Result` hand data to each other,
+   and lean on the tests in ``tests/test_viz``.
+
 Reference
 ---------
 
