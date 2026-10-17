@@ -56,3 +56,14 @@ Reading
 
    read-results
    compute-margins
+
+Plotting
+========
+
+- :doc:`plot-a-sweep`: when the answer is a figure of a steady-state sweep over design parameters.
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   plot-a-sweep

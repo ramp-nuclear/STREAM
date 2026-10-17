@@ -45,6 +45,8 @@ Where to start
      - :doc:`Read results </howto/read-results>`
    * - add boiling limits to a solution, at steady state and over a transient
      - :doc:`Compute margins </howto/compute-margins>`
+   * - draw a sweep of steady states as profiles, curves, maps and required values
+     - :doc:`Plot a sweep </howto/plot-a-sweep>`
    * - see a whole reactor built and run through a loss of flow
      - :doc:`Building the Pool Reactor Loop </LOFABuildingTheLoop>` and the three pages after it, or
        :doc:`/Examples`

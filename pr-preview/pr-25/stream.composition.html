@@ -87,7 +87,17 @@
 <li class="toctree-l4"><a class="reference internal" href="#stream.composition.subsystems.check_gravity_mismatch"><code class="docutils literal notranslate"><span class="pre">check_gravity_mismatch</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#stream.composition.subsystems.guess_hydraulic_steady_state"><code class="docutils literal notranslate"><span class="pre">guess_hydraulic_steady_state</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#stream.composition.subsystems.point_kinetics_steady_state"><code class="docutils literal notranslate"><span class="pre">point_kinetics_steady_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.subsystems.symmetric_plate_seed"><code class="docutils literal notranslate"><span class="pre">symmetric_plate_seed</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#stream.composition.subsystems.symmetric_plate_steady_state"><code class="docutils literal notranslate"><span class="pre">symmetric_plate_steady_state</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-stream.composition.steady_state">Steady-state guesses</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.MissingPowerError"><code class="docutils literal notranslate"><span class="pre">MissingPowerError</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.Blocks"><code class="docutils literal notranslate"><span class="pre">Blocks</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.decompose"><code class="docutils literal notranslate"><span class="pre">decompose</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.guess_steady_state"><code class="docutils literal notranslate"><span class="pre">guess_steady_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.seed_steady_state"><code class="docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.composition.steady_state.solve_block"><code class="docutils literal notranslate"><span class="pre">solve_block</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#module-stream.composition.constructors">Calculation Constructors</a><ul>
@@ -103,6 +113,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="stream.physical_models.html">Physical Models</a></li>
 <li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">Visualization</a></li>
 <li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
 <li class="toctree-l2"><a class="reference internal" href="stream.examples.html">Examples package</a></li>
 </ul>
@@ -642,7 +653,10 @@ Prominent examples are ideal flow sources such as <a class="reference internal" 
 <li><p><strong>k</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff" title="stream.calculations.kirchhoff.Kirchhoff"><em>Kirchhoff</em></a>) – Kirchhoff Calculation</p></li>
 <li><p><strong>mdots</strong> (<em>dict</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>KgPerS</em><em>]</em>) – Known mass flows <span class="math notranslate nohighlight">\(\dot{m}\)</span> for components in the hydraulic system.
 Supported Calculations are <a class="reference internal" href="stream.calculations.html#stream.calculations.ideal.resistors.DPCalculation" title="stream.calculations.ideal.resistors.DPCalculation"><code class="xref py py-class docutils literal notranslate"><span class="pre">DPCalculation</span></code></a> and <a class="reference internal" href="stream.calculations.html#stream.calculations.channel.Channel" title="stream.calculations.channel.Channel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code></a>.</p></li>
-<li><p><strong>temperature</strong> (<em>Celsius</em>) – Assumed temperature for hydraulic calculations</p></li>
+<li><p><strong>temperature</strong> (<em>Celsius</em><em> or </em><em>Mapping</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>Celsius</em><em>]</em>) – Assumed temperature for hydraulic calculations. A scalar is used everywhere. A mapping
+gives each component and junction its own value: a scalar outlet temperature for a
+lumped component or junction, and for a <a class="reference internal" href="stream.calculations.html#stream.calculations.channel.Channel" title="stream.calculations.channel.Channel"><code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code></a> either a scalar or a
+per-cell profile of length <code class="docutils literal notranslate"><span class="pre">n</span></code>. A mapping must cover every component and junction.</p></li>
 <li><p><strong>strategy</strong> (<em>dict</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>Callable</em><em>[</em><em>[</em><em>KgPerS</em><em>, </em><em>Celsius</em><em>]</em><em>, </em><em>Pascal</em><em>]</em><em>] </em><em>| </em><em>None</em>) – For unknown calculations, pressure drop functions <span class="math notranslate nohighlight">\(\Delta p(\dot{m}, T)\)</span>
 may be provided. These are used when the Calculation isn’t identified as
 known types or protocols, and failing that, the guess is <code class="docutils literal notranslate"><span class="pre">0.0</span></code>.</p></li>
@@ -681,9 +695,12 @@ Note this only applies to <a class="reference internal" href="stream.calculation
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="stream.composition.subsystems.symmetric_plate_steady_state">
-<span class="sig-name descname"><span class="pre">symmetric_plate_steady_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_abs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_guess_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">solver_options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/subsystems.html#symmetric_plate_steady_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.subsystems.symmetric_plate_steady_state" title="Link to this definition"></a></dt>
-<dd><p>Steady state for a <a class="reference internal" href="#stream.composition.mtr_geometry.symmetric_plate" title="stream.composition.mtr_geometry.symmetric_plate"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate</span></code></a> system</p>
+<dt class="sig sig-object py" id="stream.composition.subsystems.symmetric_plate_seed">
+<span class="sig-name descname"><span class="pre">symmetric_plate_seed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_abs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_guess_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/subsystems.html#symmetric_plate_seed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.subsystems.symmetric_plate_seed" title="Link to this definition"></a></dt>
+<dd><p>Closed-form steady-state seed for a <a class="reference internal" href="#stream.composition.mtr_geometry.symmetric_plate" title="stream.composition.mtr_geometry.symmetric_plate"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate</span></code></a> system, without solving</p>
+<p>The coolant heats up cell by cell by the plate’s power over flow times heat capacity,
+the walls sit at coolant plus heat flux over the wall heat transfer coefficient, and
+the fuel interior is tiled from its wall.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -694,12 +711,42 @@ Note this only applies to <a class="reference internal" href="stream.calculation
 <li><p><strong>power</strong> (<em>Watt</em>) – Desired power</p></li>
 <li><p><strong>Tin</strong> (<em>Celsius</em>) – Desired inlet temperature into the channel. Depending on the sign of <code class="docutils literal notranslate"><span class="pre">mdot</span></code> (+, -),
 the inlet temperature is a source term for the (first, last) cell.</p></li>
-<li><p><strong>initial_guess_iterations</strong> (<em>int</em>) – Before employing a solver, an initial educated guess is assumed. This
-guess should become better educated with each iteration controlled by
-<code class="docutils literal notranslate"><span class="pre">precondition</span></code>. The iteration floors the wall heat transfer
-coefficient at the conduction scale <code class="docutils literal notranslate"><span class="pre">k/Dh</span></code>, so correlations with no
-conduction floor (e.g. the Elenbaas natural-convection HTC, whose
-<code class="docutils literal notranslate"><span class="pre">h</span> <span class="pre">-&gt;</span> <span class="pre">0</span></code> at zero wall superheat) still yield a finite seed.</p></li>
+<li><p><strong>initial_guess_iterations</strong> (<em>int</em>) – Number of passes that update the wall temperature from the heat transfer
+coefficient and back. The iteration floors the wall heat transfer coefficient at
+the conduction scale <code class="docutils literal notranslate"><span class="pre">k/Dh</span></code>, so correlations with no conduction floor (e.g. the
+Elenbaas natural-convection HTC, whose <code class="docutils literal notranslate"><span class="pre">h</span> <span class="pre">-&gt;</span> <span class="pre">0</span></code> at zero wall superheat) still
+yield a finite seed.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>seed</strong> – <code class="docutils literal notranslate"><span class="pre">T</span></code>, <code class="docutils literal notranslate"><span class="pre">T_wall_left</span></code> and <code class="docutils literal notranslate"><span class="pre">T_wall_right</span></code> of the fuel, <code class="docutils literal notranslate"><span class="pre">T_cool</span></code>, <code class="docutils literal notranslate"><span class="pre">h_left</span></code>,
+<code class="docutils literal notranslate"><span class="pre">h_right</span></code> and <code class="docutils literal notranslate"><span class="pre">pressure</span></code> of the channel.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">initial_guess_iterations</span></code> is less than one.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.composition.subsystems.symmetric_plate_steady_state">
+<span class="sig-name descname"><span class="pre">symmetric_plate_steady_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_abs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">power</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Tin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_guess_iterations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">solver_options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/subsystems.html#symmetric_plate_steady_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.subsystems.symmetric_plate_steady_state" title="Link to this definition"></a></dt>
+<dd><p>Steady state for a <a class="reference internal" href="#stream.composition.mtr_geometry.symmetric_plate" title="stream.composition.mtr_geometry.symmetric_plate"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate</span></code></a> system</p>
+<p>Solves the plate from <a class="reference internal" href="#stream.composition.subsystems.symmetric_plate_seed" title="stream.composition.subsystems.symmetric_plate_seed"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate_seed</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.channel.ChannelAndContacts" title="stream.calculations.channel.ChannelAndContacts"><em>ChannelAndContacts</em></a>) – A channel (and contacts…) instance</p></li>
+<li><p><strong>f</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.heat_diffusion.Fuel" title="stream.calculations.heat_diffusion.Fuel"><em>Fuel</em></a>) – A fuel instance</p></li>
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – Desired mass current</p></li>
+<li><p><strong>p_abs</strong> (<em>Pascal</em>) – Desired absolute pressure at the top of the plate</p></li>
+<li><p><strong>power</strong> (<em>Watt</em>) – Desired power</p></li>
+<li><p><strong>Tin</strong> (<em>Celsius</em>) – Desired inlet temperature into the channel. Depending on the sign of <code class="docutils literal notranslate"><span class="pre">mdot</span></code> (+, -),
+the inlet temperature is a source term for the (first, last) cell.</p></li>
+<li><p><strong>initial_guess_iterations</strong> (<em>int</em>) – As in <a class="reference internal" href="#stream.composition.subsystems.symmetric_plate_seed" title="stream.composition.subsystems.symmetric_plate_seed"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate_seed</span></code></a>.</p></li>
 <li><p><strong>solver_options</strong> (<em>Dict</em>) – Keyword arguments to control steady state solver behavior</p></li>
 </ul>
 </dd>
@@ -708,6 +755,312 @@ conduction floor (e.g. the Elenbaas natural-convection HTC, whose
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-stream.composition.steady_state">
+<span id="steady-state-guesses"></span><h2>Steady-state guesses<a class="headerlink" href="#module-stream.composition.steady_state" title="Link to this heading"></a></h2>
+<p>Steady-state initial guesses for a flow network wall-coupled to fuel plates.</p>
+<p>One call, <a class="reference internal" href="#stream.composition.steady_state.guess_steady_state" title="stream.composition.steady_state.guess_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">guess_steady_state</span></code></a>, produces a guess for the whole system that
+<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a> can start from. It works in three
+stages:</p>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#stream.composition.steady_state.decompose" title="stream.composition.steady_state.decompose"><code class="xref py py-func docutils literal notranslate"><span class="pre">decompose</span></code></a> splits the aggregator into blocks: the hydraulic block (the
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Kirchhoff</span></code> and everything on its flow graph), one
+thermal cluster per group of wall-coupled <code class="xref py py-class docutils literal notranslate"><span class="pre">Fuel</span></code> plates
+and <code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> channels, and the point-kinetics
+node that supplies fuel power.</p></li>
+<li><p><a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a> seeds every block in closed form, without solving: flows
+from what is known and the current law, temperatures by walking the network in flow
+direction with each heated channel adding its power, pressures from
+<a class="reference internal" href="#stream.composition.subsystems.guess_hydraulic_steady_state" title="stream.composition.subsystems.guess_hydraulic_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">guess_hydraulic_steady_state</span></code></a>, walls and fuel
+interiors from the local heat flux, and kinetics from
+<a class="reference internal" href="#stream.composition.subsystems.point_kinetics_steady_state" title="stream.composition.subsystems.point_kinetics_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">point_kinetics_steady_state</span></code></a>.</p></li>
+<li><p>The seed is refined by solving one block at a time with the rest of the system
+frozen (<a class="reference internal" href="#stream.composition.steady_state.solve_block" title="stream.composition.steady_state.solve_block"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_block</span></code></a>): the thermal clusters, then the hydraulics, a few times
+over.</p></li>
+</ol>
+<p>Use this module for a system that couples a flow network to heated plates, where the
+flows set the temperatures and the temperatures feed back into the pressure drops.
+<a class="reference internal" href="#stream.composition.cycle.FlowGraph.guess_steady_state" title="stream.composition.cycle.FlowGraph.guess_steady_state"><code class="xref py py-meth docutils literal notranslate"><span class="pre">guess_steady_state</span></code></a> covers the hydraulic part
+alone and needs every flow and one temperature from the caller; the helpers in
+<a class="reference internal" href="#module-stream.composition.subsystems" title="stream.composition.subsystems"><code class="xref py py-mod docutils literal notranslate"><span class="pre">stream.composition.subsystems</span></code></a> cover a single plate or a single kinetics node.
+<a class="reference internal" href="#stream.composition.steady_state.guess_steady_state" title="stream.composition.steady_state.guess_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">guess_steady_state</span></code></a> combines them, completes the flows it is not given, and
+reconciles the blocks with each other.</p>
+<p>For a loop of one heated plate, where <code class="docutils literal notranslate"><span class="pre">channel</span></code> is a
+<code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code>, <code class="docutils literal notranslate"><span class="pre">fuel</span></code> its
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Fuel</span></code> and <code class="docutils literal notranslate"><span class="pre">top</span></code>, <code class="docutils literal notranslate"><span class="pre">bottom</span></code> two
+<code class="xref py py-class docutils literal notranslate"><span class="pre">Junction</span></code> nodes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">top</span><span class="p">,</span> <span class="n">bottom</span><span class="p">),</span> <span class="n">channel</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">bottom</span><span class="p">,</span> <span class="n">top</span><span class="p">),</span> <span class="n">Pump</span><span class="p">(</span><span class="n">mdot0</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">),</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HX"</span><span class="p">)),</span>
+    <span class="n">abs_pressure_comps</span><span class="o">=</span><span class="p">[</span><span class="n">channel</span><span class="p">],</span>
+    <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">top</span><span class="p">,</span> <span class="mf">2e5</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="mf">1e3</span><span class="p">}})</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">guess_steady_state</span><span class="p">(</span><span class="n">agr</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>Limitations: an aggregator holds at most one Kirchhoff (with any number of loops on it)
+and at most one kinetics node. Fuels are heated through the <code class="docutils literal notranslate"><span class="pre">T_left</span></code> and <code class="docutils literal notranslate"><span class="pre">T_right</span></code>
+walls of a <code class="xref py py-class docutils literal notranslate"><span class="pre">Channel</span></code> only. A fuel driven by a kinetics node
+needs its power in <code class="docutils literal notranslate"><span class="pre">powers</span></code>. A heated channel on a loop that nothing drives needs a
+signed flow in <code class="docutils literal notranslate"><span class="pre">flows</span></code>. Calculations the seed does not recognise go through
+<code class="docutils literal notranslate"><span class="pre">overrides</span></code>.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="stream.composition.steady_state.MissingPowerError">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">MissingPowerError</span></span><a class="reference internal" href="_modules/stream/composition/steady_state.html#MissingPowerError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.MissingPowerError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ValueError</span></code></p>
+<p>A fuel’s steady power is unknown: it has no <code class="docutils literal notranslate"><span class="pre">power</span></code> func and no <code class="docutils literal notranslate"><span class="pre">powers</span></code> entry.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.composition.steady_state.Blocks">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Blocks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hydraulic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kinetics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unassigned</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/steady_state.html#Blocks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.Blocks" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The partition <a class="reference internal" href="#stream.composition.steady_state.decompose" title="stream.composition.steady_state.decompose"><code class="xref py py-func docutils literal notranslate"><span class="pre">decompose</span></code></a> finds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hydraulic</strong> (<em>frozenset</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>]</em>)</p></li>
+<li><p><strong>thermal</strong> (<em>tuple</em><em>[</em><em>frozenset</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>]</em><em>, </em><em>...</em><em>]</em>)</p></li>
+<li><p><strong>kinetics</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.PointKinetics" title="stream.calculations.point_kinetics.PointKinetics"><em>PointKinetics</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>unassigned</strong> (<em>tuple</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>...</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.composition.steady_state.Blocks.hydraulic">
+<span class="sig-name descname"><span class="pre">hydraulic</span></span><a class="headerlink" href="#stream.composition.steady_state.Blocks.hydraulic" title="Link to this definition"></a></dt>
+<dd><p>The Kirchhoff, every component on its flow graph, and every junction. Empty
+when the system has no Kirchhoff.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>frozenset[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.composition.steady_state.Blocks.thermal">
+<span class="sig-name descname"><span class="pre">thermal</span></span><a class="headerlink" href="#stream.composition.steady_state.Blocks.thermal" title="Link to this definition"></a></dt>
+<dd><p>One set per wall-coupled cluster of fuels and channels. Channels belong to
+their cluster and to the hydraulic block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[frozenset[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>], …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.composition.steady_state.Blocks.kinetics">
+<span class="sig-name descname"><span class="pre">kinetics</span></span><a class="headerlink" href="#stream.composition.steady_state.Blocks.kinetics" title="Link to this definition"></a></dt>
+<dd><p>The point-kinetics node that supplies <code class="docutils literal notranslate"><span class="pre">power</span></code> to the fuels, if any. Its seed
+power is the sum of the steady powers of the fuels it feeds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.PointKinetics" title="stream.calculations.point_kinetics.PointKinetics">PointKinetics</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.composition.steady_state.Blocks.unassigned">
+<span class="sig-name descname"><span class="pre">unassigned</span></span><a class="headerlink" href="#stream.composition.steady_state.Blocks.unassigned" title="Link to this definition"></a></dt>
+<dd><p>Every other node; the seed leaves these to the caller.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[<a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation">Calculation</a>, …]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">hydraulic</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">frozenset</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><span class="pre">Calculation</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">kinetics</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.PointKinetics" title="stream.calculations.point_kinetics.PointKinetics"><span class="pre">PointKinetics</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">thermal</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">frozenset</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><span class="pre">Calculation</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-name descname"><span class="pre">unassigned</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><span class="pre">Calculation</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.composition.steady_state.decompose">
+<span class="sig-name descname"><span class="pre">decompose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/steady_state.html#decompose"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.decompose" title="Link to this definition"></a></dt>
+<dd><p>Split an aggregator into its hydraulic block and its thermal clusters.</p>
+<p>Thermal clusters are the connected components of the edges that route only wall
+variables (<code class="docutils literal notranslate"><span class="pre">T_left</span></code>, <code class="docutils literal notranslate"><span class="pre">h_left</span></code> and their family). The kinetics node is the one
+that routes <code class="docutils literal notranslate"><span class="pre">power</span></code> into a fuel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The full system.</p></li>
+<li><p><strong>k</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff" title="stream.calculations.kirchhoff.Kirchhoff"><em>Kirchhoff</em></a><em> or </em><em>None</em>) – The flow solver that sits in <code class="docutils literal notranslate"><span class="pre">agr</span></code>. If None, the Kirchhoff of <code class="docutils literal notranslate"><span class="pre">agr</span></code> is used,
+and a system without one has an empty hydraulic block.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#stream.composition.steady_state.Blocks" title="stream.composition.steady_state.Blocks">Blocks</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">k</span></code> is not a node of <code class="docutils literal notranslate"><span class="pre">agr</span></code>, <code class="docutils literal notranslate"><span class="pre">k</span></code> is None and <code class="docutils literal notranslate"><span class="pre">agr</span></code> holds more than one
+    Kirchhoff, or more than one kinetics node routes <code class="docutils literal notranslate"><span class="pre">power</span></code> into a fuel.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.composition.steady_state.guess_steady_state">
+<span class="sig-name descname"><span class="pre">guess_steady_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">flows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">powers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sweeps</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">walk_passes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">walk_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">solver_options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/steady_state.html#guess_steady_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.guess_steady_state" title="Link to this definition"></a></dt>
+<dd><p>A steady-state guess for a flow network wall-coupled to fuel plates.</p>
+<p>Seeds with <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>, then refines the seed block by block with
+<a class="reference internal" href="#stream.composition.steady_state.solve_block" title="stream.composition.steady_state.solve_block"><code class="xref py py-func docutils literal notranslate"><span class="pre">solve_block</span></code></a>. Every thermal cluster is solved first with its hydraulics
+frozen. Each sweep then solves the hydraulic block with its walls frozen, and every
+cluster again, so the walls are solved last, against the final flows. A system
+without a Kirchhoff has no hydraulic block, and a sweep solves its clusters only.
+A block whose solve raises <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code> keeps its
+previous values and is named in a warning.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The full system.</p></li>
+<li><p><strong>k</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff" title="stream.calculations.kirchhoff.Kirchhoff"><em>Kirchhoff</em></a><em> or </em><em>None</em>) – The flow solver that sits in <code class="docutils literal notranslate"><span class="pre">agr</span></code>. If None, the Kirchhoff of <code class="docutils literal notranslate"><span class="pre">agr</span></code> is used.</p></li>
+<li><p><strong>flows</strong> (<em>Mapping</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em> | </em><em>str</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>] </em><em>| </em><em>None</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>temperature</strong> (<em>float</em><em> | </em><em>ndarray</em><em> | </em><em>None</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>powers</strong> (<em>Mapping</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em> | </em><em>str</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>] </em><em>| </em><em>None</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>overrides</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>dict</em><em>[</em><em>str</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em><em>] </em><em>| </em><em>None</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>t</strong> (<em>float</em><em> | </em><em>ndarray</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>strategy</strong> (<em>dict</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>Callable</em><em>[</em><em>[</em><em>float</em><em> | </em><em>ndarray</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em><em>] </em><em>| </em><em>None</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>walk_passes</strong> (<em>int</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>walk_tolerance</strong> (<em>float</em><em> | </em><em>ndarray</em>) – As in <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a>.</p></li>
+<li><p><strong>sweeps</strong> (<em>int</em>) – Number of hydraulic-then-clusters sweeps after the first cluster solves. Zero
+or less returns the seed. One sweep is enough on a single forced loop; two are
+worth it where the flows feed back on the walls (parallel channels, natural
+convection). Default 2.</p></li>
+<li><p><strong>solver_options</strong> – Forwarded to every block’s <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loadable into <code class="docutils literal notranslate"><span class="pre">agr</span></code> and ready for <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – An error raised by <a class="reference internal" href="#stream.composition.steady_state.seed_steady_state" title="stream.composition.steady_state.seed_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">seed_steady_state</span></code></a> (also when the Kirchhoff or the
+    kinetics node is ambiguous).</p></li>
+<li><p><a class="reference internal" href="#stream.composition.subsystems.MissingFlowError" title="stream.composition.subsystems.MissingFlowError"><strong>MissingFlowError</strong></a> – A heated channel whose flow nothing fixes.</p></li>
+<li><p><a class="reference internal" href="#stream.composition.steady_state.MissingPowerError" title="stream.composition.steady_state.MissingPowerError"><strong>MissingPowerError</strong></a> – A fuel whose steady power is unknown.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.composition.steady_state.seed_steady_state">
+<span class="sig-name descname"><span class="pre">seed_steady_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">flows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">powers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overrides</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strategy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">walk_passes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">walk_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-06</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/steady_state.html#seed_steady_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.seed_steady_state" title="Link to this definition"></a></dt>
+<dd><p>A closed-form steady-state guess for a flow network wall-coupled to fuel plates.</p>
+<p>Nothing is solved. Flows come from what is known (<code class="docutils literal notranslate"><span class="pre">flows</span></code>, a pump’s fixed flow,
+a closed flapper) and a minimum-norm completion of the current
+law; temperatures are walked around the network in flow direction with each
+heated channel adding its power over flow times heat capacity; pressures come from
+<a class="reference internal" href="#stream.composition.subsystems.guess_hydraulic_steady_state" title="stream.composition.subsystems.guess_hydraulic_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">guess_hydraulic_steady_state</span></code></a> at those
+temperatures; walls sit at coolant plus flux over a floored heat transfer
+coefficient, and fuel interiors are tiled from their walls. Funcs win over walked
+values, as they do in the Aggregator.</p>
+<p>A system without a Kirchhoff (plates that take their coolant from funcs, as
+<a class="reference internal" href="#stream.composition.mtr_geometry.symmetric_plate" title="stream.composition.mtr_geometry.symmetric_plate"><code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate</span></code></a> builds them) is seeded channel by
+channel: the flow from <code class="docutils literal notranslate"><span class="pre">flows</span></code> or the channel’s <code class="docutils literal notranslate"><span class="pre">mdot</span></code> func, the inlet from its
+<code class="docutils literal notranslate"><span class="pre">Tin</span></code> func (<code class="docutils literal notranslate"><span class="pre">Tin_minus</span></code> for reversed flow), the absolute pressure from its
+<code class="docutils literal notranslate"><span class="pre">p_abs</span></code> func (1e5 Pa without one), and the channel’s own <code class="docutils literal notranslate"><span class="pre">pressure</span></code> from its
+pressure drop at the seeded temperatures.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The full system.</p></li>
+<li><p><strong>k</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff" title="stream.calculations.kirchhoff.Kirchhoff"><em>Kirchhoff</em></a><em> or </em><em>None</em>) – The flow solver that sits in <code class="docutils literal notranslate"><span class="pre">agr</span></code>. If None, the Kirchhoff of <code class="docutils literal notranslate"><span class="pre">agr</span></code> is used.</p></li>
+<li><p><strong>flows</strong> (<em>Mapping</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em> | </em><em>str</em><em>, </em><em>KgPerS</em><em>] or </em><em>None</em>) – Known flows by component or name. Needed only where the network cannot fix a
+flow itself: a head-driven pump, or a pump-free loop (pass a small signed flow).
+Without a Kirchhoff, a channel’s entry here wins over its <code class="docutils literal notranslate"><span class="pre">mdot</span></code> func.</p></li>
+<li><p><strong>temperature</strong> (<em>Celsius</em><em> or </em><em>None</em>) – Reference temperature. Required when the network has no heat exchanger and no
+pinned inlet; otherwise it only sets the walk’s start. Without a Kirchhoff, it
+is the inlet of a channel that has no <code class="docutils literal notranslate"><span class="pre">Tin</span></code> or <code class="docutils literal notranslate"><span class="pre">Tin_minus</span></code> func.</p></li>
+<li><p><strong>powers</strong> (<em>Mapping</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em> | </em><em>str</em><em>, </em><em>Watt</em><em>] or </em><em>None</em>) – Fuel powers by fuel or name. Override a fuel’s <code class="docutils literal notranslate"><span class="pre">power</span></code> func; required for a
+fuel driven by a kinetics node.</p></li>
+<li><p><strong>overrides</strong> (<em>DictState</em><em> or </em><em>None</em>) – Merged last, for calculations the seed does not recognise; a calculation named
+here is not reported as unrecognised.</p></li>
+<li><p><strong>t</strong> (<em>Second</em>) – Time at which funcs are evaluated.</p></li>
+<li><p><strong>strategy</strong> (<em>HydraulicStrategyMap</em><em> or </em><em>None</em>) – Per-component pressure-drop laws for components the hydraulic guesser does not know.</p></li>
+<li><p><strong>walk_passes</strong> (<em>int</em>) – The seed walks the network in flow direction, computing each component’s outlet
+from its inlet and mixing the arrivals at every junction, and repeats the pass
+until no temperature moves by more than <code class="docutils literal notranslate"><span class="pre">walk_tolerance</span></code>, at most
+<code class="docutils literal notranslate"><span class="pre">walk_passes</span></code> times. A loop settles in a few passes. Default 50.</p></li>
+<li><p><strong>walk_tolerance</strong> (<em>Celsius</em>) – The largest temperature change that ends the walk. Default 1e-6.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#stream.composition.subsystems.MissingFlowError" title="stream.composition.subsystems.MissingFlowError"><strong>MissingFlowError</strong></a> – A heated channel whose flow nothing fixes.</p></li>
+<li><p><a class="reference internal" href="#stream.composition.steady_state.MissingPowerError" title="stream.composition.steady_state.MissingPowerError"><strong>MissingPowerError</strong></a> – A fuel whose steady power is unknown.</p></li>
+<li><p><strong>ValueError</strong> – Two known flows on one edge disagree, no temperature source and no
+    <code class="docutils literal notranslate"><span class="pre">temperature</span></code>, or the Kirchhoff or the kinetics node is ambiguous.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.composition.steady_state.solve_block">
+<span class="sig-name descname"><span class="pre">solve_block</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nodes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">solver_options</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/composition/steady_state.html#solve_block"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.composition.steady_state.solve_block" title="Link to this definition"></a></dt>
+<dd><p>Solve a subset of an aggregator’s calculations with the rest of the system frozen.</p>
+<p>Every input a block calculation receives from outside the block is read from
+<code class="docutils literal notranslate"><span class="pre">state</span></code> and handed to a throwaway sub-aggregator as a constant func; the block’s
+own funcs are kept and take precedence. The sub-aggregator is solved with
+<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>agr</strong> (<a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator" title="stream.aggregator.Aggregator"><em>Aggregator</em></a>) – The full system.</p></li>
+<li><p><strong>nodes</strong> (<em>Iterable</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>]</em>) – The calculations to solve. Every other calculation is frozen.</p></li>
+<li><p><strong>state</strong> (<em>DictState</em><em> or </em><em>Array1D</em>) – The current state of the whole system; the block starts from its own part of it.</p></li>
+<li><p><strong>t</strong> (<em>Second</em>) – Time at which the block’s own funcs and the frozen boundary values are evaluated,
+and the time stamp of the returned State.</p></li>
+<li><p><strong>solver_options</strong> – Forwarded to <a class="reference internal" href="aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The solved block, calculations of the block only.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State">State</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If a block calculation takes one variable partly from inside and partly from
+    outside the block, or a Junction sits on the boundary.</p></li>
+<li><p><strong>KeyError</strong> – If <code class="docutils literal notranslate"><span class="pre">state</span></code> lacks a calculation of <code class="docutils literal notranslate"><span class="pre">agr</span></code>.</p></li>
+<li><p><strong>AlgRuntimeError</strong> – If the block does not solve.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
