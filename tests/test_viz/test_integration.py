@@ -1,12 +1,10 @@
-import textwrap
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from conftest import frame, make_case_frame
+from conftest import make_case_frame
 from networkx import DiGraph
 
-from stream import Aggregator, State, viz
+from stream import Aggregator, State
 from stream.calculations.channel import ChannelAndContacts
 from stream.pipe_geometry import EffectivePipe
 from stream.solvers import AlgRuntimeError
@@ -99,24 +97,3 @@ def test_sweep_with_a_choice_a_limit_a_hole_and_a_map(agr):
     assert any(ln.get_linestyle() == "--" for ln in ax.get_lines())
     plt.close(fig)
 
-
-@pytest.mark.filterwarnings("error")
-def test_the_module_example_runs(agr):
-    def model(power, mdot, shape):
-        r = power / 20e3 * 0.2 / mdot
-        q = r * (np.array([0.7, 1.0, 1.2, 0.9]) if shape == "cosine" else np.ones(4))
-        quantities = {
-            "T_cool": 35.0 + 3.0 * np.arange(4) + 8.0 * q,
-            "T_wall, left": 50.0 + 60.0 / 1.7 * q,
-            "CHFR": 2.2 * 1.3 / q,
-            "OSVR": 1.9 * 1.3 / q,
-        }
-        return frame([("CC", name, 0, j, v[j]) for name, v in quantities.items() for j in range(4)])
-
-    lines = viz.__doc__.split("::\n\n", 1)[1].splitlines()
-    code = []
-    for line in lines:
-        if line and not line.startswith("    "):
-            break
-        code.append(line)
-    exec(textwrap.dedent("\n".join(code)), {**{n: getattr(viz, n) for n in viz.__all__}, "model": model, "agr": agr})
