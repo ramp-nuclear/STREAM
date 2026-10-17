@@ -167,9 +167,6 @@
 
 
 
-<span class="n">_STATIC_MACHINE</span> <span class="o">=</span> <span class="n">just</span><span class="p">(</span><span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">)</span>
-
-
 <div class="viewcode-block" id="ReactivityController">
 <a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.point_kinetics.ReactivityController">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">ReactivityController</span><span class="p">:</span>
@@ -192,7 +189,8 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_reactivity</span><span class="p">:</span> <span class="n">InputReactivity</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">state_machine</span><span class="p">:</span> <span class="n">StateMachine</span> <span class="o">=</span> <span class="n">_STATIC_MACHINE</span><span class="p">,</span>
+        <span class="c1"># The function call here creates practically an immutable and is fine</span>
+        <span class="n">state_machine</span><span class="p">:</span> <span class="n">StateMachine</span> <span class="o">=</span> <span class="n">just</span><span class="p">(</span><span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">),</span>  <span class="c1"># ruff: ignore[B008]</span>
         <span class="n">initial_state</span><span class="p">:</span> <span class="n">S</span> <span class="o">=</span> <span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
         <span class="n">initial_time</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">abort_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">S</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -568,7 +566,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 14, 2026.
+      <span class="lastupdated">Last updated on Oct 17, 2026.
       </span></p>
   </div>
 

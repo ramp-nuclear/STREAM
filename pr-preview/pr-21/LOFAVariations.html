@@ -326,14 +326,14 @@ it. The cell below runs the first five minutes of the both-pumps case at 5, 10, 
 <div class="highlight"><pre>
           status  peak_max  margin  t_rev_hot  wall s
 cells
-5      completed     97.09   19.75      190.0     9.0
-10     completed    101.14   15.70      192.0    18.0
-20     completed    103.38   13.46      194.0    55.0
-40     completed    104.54   12.30      196.0   134.0
+5      completed     97.09   19.75      190.0    10.0
+10     completed    101.14   15.70      192.0    19.0
+20     completed    103.40   13.44      194.0    54.0
+40     completed    104.54   12.30      196.0   171.0
 
-margin lost per doubling [K]:  4.05, 2.24, 1.16
-ratio of successive losses:    0.55, 0.52
-margin if the losses keep shrinking by 0.52: 11.0 K
+margin lost per doubling [K]:  4.05, 2.25, 1.14
+ratio of successive losses:    0.56, 0.51
+margin if the losses keep shrinking by 0.51: 11.1 K
 </pre></div></div>
 </div>
 <p>Every run completes, the forty-cell one included. The margin falls with each refinement, from about 19.8 K at five cells to about 15.7 K at ten, 13.5 K at twenty and 12.3 K at forty, as the peak climbs from about 97.1 °C to about 104.5 °C. Each doubling of the cell count costs less margin than the one before, about 4.1, 2.3 and 1.2 K, each loss about 0.55 and then about 0.51 of the previous one. If the losses kept shrinking by that ratio, the margin would settle at roughly 11 K; three doublings
@@ -378,7 +378,7 @@ tolerance outputs
           601      completed  12.4948  38.8881      192.0   101.149
 
           between grids between tolerances
-t_trip          4.4e-12             0.0025
+t_trip          1.1e-10             0.0025
 t_open          0.00032             0.0025
 t_rev_hot             0                  0
 peak_max         0.0088             0.0057
@@ -451,7 +451,7 @@ so it is in the equations, and what differs between the runs is the sampling and
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 14, 2026.
+      <span class="lastupdated">Last updated on Oct 17, 2026.
       </span></p>
   </div>
 
