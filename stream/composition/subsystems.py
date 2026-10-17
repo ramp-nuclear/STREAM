@@ -1,6 +1,7 @@
 """Helper functions for creating steady state initial guesses for small and specific subsystems"""
 
 import logging
+from collections.abc import Mapping
 from typing import Callable, Iterable
 
 import numpy as np
@@ -29,6 +30,7 @@ __all__ = [
     "check_gravity_mismatch",
     "guess_hydraulic_steady_state",
     "point_kinetics_steady_state",
+    "symmetric_plate_seed",
     "symmetric_plate_steady_state",
     "HydraulicStrategy",
     "HydraulicStrategyMap",
@@ -39,7 +41,7 @@ __all__ = [
 logger = logging.getLogger("stream.subsystems")
 
 
-def symmetric_plate_steady_state(
+def symmetric_plate_seed(
     c: ChannelAndContacts,
     f: Fuel,
     mdot: KgPerS,
@@ -47,9 +49,12 @@ def symmetric_plate_steady_state(
     power: Watt,
     Tin: Celsius,
     initial_guess_iterations: int = 2,
-    **solver_options,
 ) -> State:
-    r"""Steady state for a :func:`.symmetric_plate` system
+    r"""Closed-form steady-state seed for a :func:`.symmetric_plate` system, without solving
+
+    The coolant heats up cell by cell by the plate's power over flow times heat capacity,
+    the walls sit at coolant plus heat flux over the wall heat transfer coefficient, and
+    the fuel interior is tiled from its wall.
 
     Parameters
     ----------
@@ -67,23 +72,25 @@ def symmetric_plate_steady_state(
          Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),
          the inlet temperature is a source term for the (first, last) cell.
     initial_guess_iterations: int
-        Before employing a solver, an initial educated guess is assumed. This
-        guess should become better educated with each iteration controlled by
-        ``precondition``. The iteration floors the wall heat transfer
-        coefficient at the conduction scale ``k/Dh``, so correlations with no
-        conduction floor (e.g. the Elenbaas natural-convection HTC, whose
-        ``h -> 0`` at zero wall superheat) still yield a finite seed.
-    solver_options: Dict
-        Keyword arguments to control steady state solver behavior
+        Number of passes that update the wall temperature from the heat transfer
+        coefficient and back. The iteration floors the wall heat transfer coefficient at
+        the conduction scale ``k/Dh``, so correlations with no conduction floor (e.g. the
+        Elenbaas natural-convection HTC, whose ``h -> 0`` at zero wall superheat) still
+        yield a finite seed.
 
     Returns
     -------
-    steady: State
+    seed: State
+        ``T``, ``T_wall_left`` and ``T_wall_right`` of the fuel, ``T_cool``, ``h_left``,
+        ``h_right`` and ``pressure`` of the channel.
+
+    Raises
+    ------
+    ValueError
+        If ``initial_guess_iterations`` is less than one.
     """
     if initial_guess_iterations < 1:
         raise ValueError(f"Must try at least once to obtain values. Was {initial_guess_iterations}")
-    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin), f: dict(power=power)}).to_aggregator()
-
     power_mat = np.zeros(f.shape)
     power_mat[f.meat == 1] = power * f.power_shape
     cp = c.fluid.specific_heat(Tin)
@@ -98,16 +105,56 @@ def symmetric_plate_steady_state(
         h0 = np.maximum(c.h_wall(T_wall=tw0, T_cool=tc0, mdot=mdot, pressure=p_abs - dp0), h_floor)
         tw0 = (q2t_z / h0) + tc0
     T0 = np.tile(tw0, f.shape[1]).reshape(f.shape[::-1]).T.flatten()
-    # Safe because the initial guess iterations are >= 1
     # noinspection PyUnboundLocalVariable
-    y0 = plate.load(
+    return State(
         {
-            f.name: dict(T=T0, T_wall_left=tw0, T_wall_right=tw0),
-            c.name: dict(T_cool=tc0, h_left=h0, h_right=h0, pressure=np.sum(dp0)),
+            f.name: {"T": T0, "T_wall_left": tw0, "T_wall_right": tw0},
+            c.name: {"T_cool": tc0, "h_left": h0, "h_right": h0, "pressure": np.sum(dp0)},
         }
     )
 
-    return plate.save(plate.solve_steady(y0, **solver_options))
+
+def symmetric_plate_steady_state(
+    c: ChannelAndContacts,
+    f: Fuel,
+    mdot: KgPerS,
+    p_abs: Pascal,
+    power: Watt,
+    Tin: Celsius,
+    initial_guess_iterations: int = 2,
+    **solver_options,
+) -> State:
+    r"""Steady state for a :func:`.symmetric_plate` system
+
+    Solves the plate from :func:`symmetric_plate_seed`.
+
+    Parameters
+    ----------
+    c: ChannelAndContacts
+        A channel (and contacts...) instance
+    f: Fuel
+        A fuel instance
+    mdot: KgPerS
+        Desired mass current
+    p_abs: Pascal
+        Desired absolute pressure at the top of the plate
+    power: Watt
+        Desired power
+    Tin: Celsius
+         Desired inlet temperature into the channel. Depending on the sign of ``mdot`` (+, -),
+         the inlet temperature is a source term for the (first, last) cell.
+    initial_guess_iterations: int
+        As in :func:`symmetric_plate_seed`.
+    solver_options: Dict
+        Keyword arguments to control steady state solver behavior
+
+    Returns
+    -------
+    steady: State
+    """
+    seed = symmetric_plate_seed(c, f, mdot, p_abs, power, Tin, initial_guess_iterations)
+    plate = symmetric_plate(c, f, {c: dict(mdot=mdot, p_abs=p_abs, Tin=Tin, Tin_minus=Tin), f: dict(power=power)}).to_aggregator()
+    return plate.save(plate.solve_steady(plate.load(seed), **solver_options))
 
 
 def point_kinetics_steady_state(pk: PointKinetics, power: Watt, power_input: Watt = None) -> State:
@@ -156,10 +203,32 @@ def _float_values(d: dict[str, Value], keys: Iterable[str], inner_key: str = "pr
         yield y if isinstance(y, (float, int)) else y.item()
 
 
+def _temperatures(k: Kirchhoff, temperature: Celsius | Mapping[Calculation, Celsius]) -> dict[Calculation, Celsius]:
+    junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
+    calculations = list(k.components) + junctions
+    if not isinstance(temperature, Mapping):
+        return dict.fromkeys(calculations, temperature)
+    missing = [getattr(c, "name", str(c)) for c in calculations if c not in temperature]
+    if missing:
+        raise KeyError(
+            f"temperature mapping has no entry for {missing}; a mapping must cover every "
+            "component and junction of the flow graph."
+        )
+    return {c: temperature[c] for c in calculations}
+
+
+def _scalar(value: Value) -> float:
+    return np.mean(value).item()
+
+
+def _copied_value(v: Value) -> Value:
+    return v.copy() if isinstance(v, np.ndarray) else v
+
+
 def guess_hydraulic_steady_state(
     k: Kirchhoff,
     mdots: dict[Calculation, KgPerS],
-    temperature: Celsius,
+    temperature: Celsius | Mapping[Calculation, Celsius],
     strategy: HydraulicStrategyMap | None = None,
 ) -> State:
     r"""A guess for a :class:`.Kirchhoff` derived system, in which the flows are known
@@ -175,8 +244,11 @@ def guess_hydraulic_steady_state(
     mdots : dict[Calculation, KgPerS]
         Known mass flows :math:`\dot{m}` for components in the hydraulic system.
         Supported Calculations are :class:`.DPCalculation` and :class:`.Channel`.
-    temperature : Celsius
-        Assumed temperature for hydraulic calculations
+    temperature : Celsius or Mapping[Calculation, Celsius]
+        Assumed temperature for hydraulic calculations. A scalar is used everywhere. A mapping
+        gives each component and junction its own value: a scalar outlet temperature for a
+        lumped component or junction, and for a :class:`.Channel` either a scalar or a
+        per-cell profile of length ``n``. A mapping must cover every component and junction.
     strategy : dict[Calculation, Callable[[KgPerS, Celsius], Pascal]] | None
         For unknown calculations, pressure drop functions :math:`\Delta p(\dot{m}, T)`
         may be provided. These are used when the Calculation isn't identified as
@@ -193,43 +265,42 @@ def guess_hydraulic_steady_state(
     if s != set(k_guess):
         raise MissingFlowError(f"Missing flow data in edges {s - set(k_guess)}")
 
+    temps = _temperatures(k, temperature)
     strategy = strategy or {}
 
     def _get_dp(x: Calculation) -> Pascal:
         m = k_guess[k.component_edge(x)]
+        T_x = temps[x]
 
         match x:
             case Pump():
-                # Safe because Pump has x.p.
                 # noinspection PyUnresolvedReferences
                 return x.p or 0.0
             case Flapper():
                 if np.isposinf(x.t_open):
                     return 0.0
-                return -local_pressure_by_mdot(m, x.fluid.density(temperature), x.f, x._A)
+                return -local_pressure_by_mdot(m, x.fluid.density(_scalar(T_x)), x.f, x._A)
             case DPCalculation():
-                # Safe because LumpedComponent has dp_out in its protocol.
                 # noinspection PyUnresolvedReferences
-                return np.asarray(x.dp_out(Tin=np.array([temperature]), mdot=m, mdot2=0.0)).item()
+                return np.asarray(x.dp_out(Tin=np.array([_scalar(T_x)]), mdot=m, mdot2=0.0)).item()
             case Channel():
-                # Safe because Channel has pressure.
                 # noinspection PyUnresolvedReferences
-                return np.sum(x.pressure(mdot=m, mdot2=0.0, T=(T := np.full(x.n, temperature)), Tw=T))
+                T = np.full(x.n, T_x) if np.ndim(T_x) == 0 else np.asarray(T_x, dtype=float)
+                return np.sum(x.pressure(mdot=m, mdot2=0.0, T=T, Tw=T))
             case _:
-                return strategy.get(x, just(0.0))(m, temperature)
+                return strategy.get(x, just(0.0))(m, _scalar(T_x))
 
     pressures = {x.name: dict(pressure=_get_dp(x)) for x in k.components}
 
     def _htc_guess(c: ChannelAndContacts) -> dict[str, Value]:
-        T = np.full(c.n, temperature)
+        T = np.full(c.n, temps[c]) if np.ndim(temps[c]) == 0 else np.asarray(temps[c], dtype=float)
         h0 = c.h_wall(T_wall=T, T_cool=T, mdot=k_guess[k.component_edge(c)], pressure=k.ref_pressure or 1e5)
         return dict(h_left=h0, h_right=h0)
 
     htc = {c.name: _htc_guess(c) for c in k.components if isinstance(c, ChannelAndContacts)}
 
-    junctions = [node for node in k.g.nodes if isinstance(node, Junction)]
-    T_vars = ["Tin", "T", "T_wall_left", "T_wall_right", "T_cool"]
-    Ts = State.uniform(list(k.components) + junctions, temperature, *T_vars)
+    T_vars = ("Tin", "T", "T_wall_left", "T_wall_right", "T_cool")
+    Ts = State({c.name: {var: _copied_value(temps[c]) for var in c.variables if var in T_vars} for c in temps})
     p = np.fromiter(
         _float_values(pressures, map(lambda x: x.name, k.components)),
         dtype=float,
