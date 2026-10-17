@@ -2,9 +2,6 @@
 Oh, how the turns have tabled...
 """
 
-import functools
-import operator
-
 import hypothesis.strategies as st
 import numpy as np
 import pytest
@@ -98,7 +95,9 @@ def _make_cycle(values: list[Edge]) -> MultiDiGraph:
 
 
 def _exclusive(edgelist: list[Edge]) -> bool:
-    return len(set(functools.reduce(operator.iadd, edgelist, []))) == sum(len(v) for v in edgelist)
+    # The lint here is about quadratic runtimes. This is a test on short things.
+    # The fix for Python <= 3.14 is ugly. When 3.15 lands, the fix there is nice.
+    return len(set(sum(edgelist, start=[]))) == sum(len(v) for v in edgelist)  # ruff: ignore[RUF017]
 
 
 graph_sizes = st.shared(st.integers(2, 20), key="size")
@@ -108,7 +107,7 @@ edges = st.shared(
     graph_sizes.flatmap(lambda n: st.lists(complists, min_size=n + 1, max_size=n + 1)).filter(_exclusive),
     key="edges",
 )
-comps = edges.map(lambda v: functools.reduce(operator.iadd, v, []))
+comps = edges.map(lambda v: sum(v, []))  # ruff: ignore[RUF017], See above
 graphs = edges.map(_make_cycle)
 subsets = comps.flatmap(lambda x: st.lists(st.sampled_from(x), unique=True))
 reference_nodes = st.tuples(graphs.flatmap(lambda x: st.sampled_from(list(x.nodes))), pos_medium_floats)

@@ -79,9 +79,6 @@ class OneWayToSCRAM(StrEnum):
     SCRAM = "SCRAM"
 
 
-_STATIC_MACHINE = just(OneWayToSCRAM.NORMAL)
-
-
 class ReactivityController:
     r"""Input to :class:`PointKinetics` which depicts the reactivity worth inserted
     due to the reactor control system or postulated events. The control system is
@@ -102,7 +99,8 @@ class ReactivityController:
     def __init__(
         self,
         input_reactivity: InputReactivity | None = None,
-        state_machine: StateMachine = _STATIC_MACHINE,
+        # The function call here creates practically an immutable and is fine
+        state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),  # ruff: ignore[B008]
         initial_state: S = OneWayToSCRAM.NORMAL,
         initial_time: Second = 0.0,
         abort_states: set[S] | None = None,
