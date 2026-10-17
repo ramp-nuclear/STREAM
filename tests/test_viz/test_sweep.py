@@ -209,7 +209,7 @@ def test_where_refusals(sweep):
         sweep.profile("T_cool", where={"depth": 1.0})
     with pytest.raises(ValueError, match="mdot=0.35.*0.2, 0.3"):
         sweep.profile("T_cool", where={"mdot": 0.35})
-    with pytest.raises(ValueError, match="power is a number; got 'x'"):
+    with pytest.raises(TypeError, match="power is a number; got 'x'"):
         sweep.profile("T_cool", where={"power": "x"})
 
 
