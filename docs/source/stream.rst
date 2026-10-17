@@ -16,5 +16,6 @@ Documentation
    stream.composition
    stream.physical_models
    analysis
+   viz
    utility_packages
    stream.examples
