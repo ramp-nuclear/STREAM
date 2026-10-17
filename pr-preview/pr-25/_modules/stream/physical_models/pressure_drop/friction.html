@@ -1,0 +1,532 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.pressure_drop.friction &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../pressure_drop.html">stream.physical_models.pressure_drop</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.pressure_drop.friction</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.pressure_drop.friction</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.dimensionless</span><span class="w"> </span><span class="kn">import</span> <span class="n">Re_mdot</span><span class="p">,</span> <span class="n">flow_regimes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiquidFuncs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">KgPerM3</span><span class="p">,</span>
+    <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">Pascal</span><span class="p">,</span>
+    <span class="n">Value</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">lin_interp</span>
+
+
+<div class="viewcode-block" id="turbulent_friction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.turbulent_friction">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">turbulent_friction</span><span class="p">(</span><span class="n">re</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">epsilon</span><span class="p">:</span> <span class="n">Value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""An approximation for the friction factor of the implicit Colebrook-White equation,</span>
+<span class="sd">    as written in RELAP and [#KAERI]_ page 3, chapter 2.1.2.</span>
+
+<span class="sd">    The result is floored by the laminar :math:`64/\text{Re}`. Below Re of about 7, where the</span>
+<span class="sd">    approximation is undefined, the laminar value is returned.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    re: Value</span>
+<span class="sd">        Reynolds Number.</span>
+<span class="sd">    epsilon: Value.</span>
+<span class="sd">        Relative roughness (roughness height / hydraulic diameter).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy friction factor</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; turbulent_friction(4e3)</span>
+<span class="sd">    0.039804935964641644</span>
+<span class="sd">    &gt;&gt;&gt; turbulent_friction(4e3, 0.1)</span>
+<span class="sd">    0.10560870441248855</span>
+<span class="sd">    &gt;&gt;&gt; turbulent_friction(1e6)</span>
+<span class="sd">    0.011649393290640643</span>
+<span class="sd">    &gt;&gt;&gt; turbulent_friction(1e4)</span>
+<span class="sd">    0.030874516278124504</span>
+
+<span class="sd">    At very low Reynolds numbers the laminar floor takes over:</span>
+
+<span class="sd">    &gt;&gt;&gt; turbulent_friction(5.0)</span>
+<span class="sd">    12.8</span>
+<span class="sd">    &gt;&gt;&gt; re = np.array([5.0, 7.0, 15.0, 30.0, 60.0])</span>
+<span class="sd">    &gt;&gt;&gt; bool(np.allclose(turbulent_friction(re), 64 / re))</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="n">inlog</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">epsilon</span> <span class="o">+</span> <span class="mf">21.25</span> <span class="o">/</span> <span class="n">re</span><span class="o">**</span><span class="mf">0.9</span><span class="p">)</span>
+    <span class="n">outlog</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">epsilon</span> <span class="o">/</span> <span class="mf">3.7</span> <span class="o">+</span> <span class="p">(</span><span class="mf">2.51</span> <span class="o">/</span> <span class="n">re</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.14</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">inlog</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nan_to_num</span><span class="p">((</span><span class="o">-</span><span class="mi">2</span> <span class="o">*</span> <span class="n">outlog</span><span class="p">)</span> <span class="o">**</span> <span class="o">-</span><span class="mi">2</span><span class="p">),</span> <span class="mf">64.0</span> <span class="o">/</span> <span class="n">re</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Blasius_friction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.Blasius_friction">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Blasius_friction</span><span class="p">(</span><span class="n">re</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""An early (1913) approximation by Blasius [#Blasius]_ for the turbulent pipe flow Darcy friction factor.</span>
+
+<span class="sd">    .. math:: f = \frac{0.3164}{\text{Re}^{0.25}}</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    re: Value</span>
+<span class="sd">        The Reynolds number.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy friction factor</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Blasius_friction(10_000)</span>
+<span class="sd">    0.03164</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">0.3164</span> <span class="o">/</span> <span class="n">re</span><span class="o">**</span><span class="mf">0.25</span></div>
+
+
+
+<div class="viewcode-block" id="Darcy_Weisbach_pressure_by_mdot">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.Darcy_Weisbach_pressure_by_mdot">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Darcy_Weisbach_pressure_by_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">rho</span><span class="p">:</span> <span class="n">KgPerM3</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">L</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">Dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    The Darcy-Weisbach equation relates pressure loss due to</span>
+<span class="sd">    friction in pipe flow to the average velocity of an incompressible fluid:</span>
+
+<span class="sd">    .. math:: \Delta p = f \frac{\rho u^2}{2}\frac{L}{D_h}</span>
+
+<span class="sd">    In this function, the velocity is replaced by :math:`\dot{m}=\rho u A`</span>
+<span class="sd">    where `u` is the average velocity and `A` the cross-section.</span>
+<span class="sd">    The pressure drop is sensitive to the flow's direction:</span>
+
+<span class="sd">    .. math:: \Delta p = f \frac{\dot{m}|\dot{m}|}{2\rho A^2}\frac{L}{D_h}</span>
+
+<span class="sd">    If :math:`\dot{m}&gt;0` then the pressure returned is positive.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Mass current.</span>
+<span class="sd">    rho: KgPerM3</span>
+<span class="sd">        Fluid density.</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy Friction Factor.</span>
+<span class="sd">    L: Meter</span>
+<span class="sd">        Pipe length.</span>
+<span class="sd">    Dh: Meter</span>
+<span class="sd">        Hydraulic diameter.</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Cross-sectional flow area.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop across the pipe.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Darcy_Weisbach_pressure_by_mdot(mdot=0., rho=1, f=1, L=1, Dh=1, A=1)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; Darcy_Weisbach_pressure_by_mdot(mdot=1., rho=1, f=1, L=1, Dh=1, A=1)</span>
+<span class="sd">    0.5</span>
+<span class="sd">    &gt;&gt;&gt; Darcy_Weisbach_pressure_by_mdot(mdot=-1., rho=1, f=1, L=1, Dh=1, A=1)</span>
+<span class="sd">    -0.5</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="n">mdot</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">A</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="n">L</span> <span class="o">/</span> <span class="n">Dh</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="viscosity_correction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.viscosity_correction">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">viscosity_correction</span><span class="p">(</span><span class="n">heat_wet_ratio</span><span class="p">:</span> <span class="n">Value</span><span class="p">,</span> <span class="n">mu_ratio</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Temperature differences yield varying viscosity, which affects friction.</span>
+<span class="sd">    Thus, a correction must be made.</span>
+
+<span class="sd">    In this function such a correction is returned as used in [#KAERI]_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    heat_wet_ratio: Value</span>
+<span class="sd">        Heated perimeter / Wet perimeter</span>
+<span class="sd">    mu_ratio: Value</span>
+<span class="sd">        Viscosity at wall / Viscosity at bulk.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    K_H: Value</span>
+<span class="sd">        viscosity correction coefficient</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; viscosity_correction(1., 1.)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; viscosity_correction(1., 0.)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; viscosity_correction(1., 2.)</span>
+<span class="sd">    1.4948492486349383</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">heat_wet_ratio</span> <span class="o">*</span> <span class="p">(</span><span class="n">mu_ratio</span><span class="o">**</span><span class="mf">0.58</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="rectangular_laminar_correction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.rectangular_laminar_correction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">rectangular_laminar_correction</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""For a circular pipe, the laminar Darcy friction factor is analytical.</span>
+<span class="sd">    For a rectangular pipe, corrections must be made.</span>
+
+<span class="sd">    In this function such a correction is returned as used in [#KAERI]_.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    aspect_ratio: float</span>
+<span class="sd">        channel_depth / channel_width (less than 1)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    K_R: float</span>
+<span class="sd">        geometric correction coefficient</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    laminar_friction</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; float(rectangular_laminar_correction(1.))</span>
+<span class="sd">    1.1246190353017915</span>
+<span class="sd">    &gt;&gt;&gt; float(rectangular_laminar_correction(0.))</span>
+<span class="sd">    0.6668484123609236</span>
+<span class="sd">    &gt;&gt;&gt; float(rectangular_laminar_correction(0.5))</span>
+<span class="sd">    1.0363896075094456</span>
+<span class="sd">    """</span>
+    <span class="k">assert</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">aspect_ratio</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">aspect_ratio</span><span class="w"> </span><span class="si">= }</span><span class="s2"> must be non-negative and less than 1"</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="mf">0.88919</span> <span class="o">+</span> <span class="mf">87.656</span> <span class="o">*</span> <span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">aspect_ratio</span> <span class="o">*</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span> <span class="o">/</span> <span class="p">(</span><span class="mi">4</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">aspect_ratio</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="mi">8</span><span class="p">)</span> <span class="o">**</span> <span class="mf">1.9</span>
+    <span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="laminar_friction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.laminar_friction">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">laminar_friction</span><span class="p">(</span><span class="n">re</span><span class="p">:</span> <span class="n">Value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Due to the Hagen-Poiseuille law, an incompressible Newtonian fluid in laminar flow through a long constant</span>
+<span class="sd">    cylindrical pipe yields an analytic Darcy friction factor: :math:`f=64/\text{Re}`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    re: Value</span>
+<span class="sd">        The Reynolds number.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy friction factor.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">64.0</span> <span class="o">/</span> <span class="n">re</span></div>
+
+
+
+<div class="viewcode-block" id="regime_dependent_friction">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.regime_dependent_friction">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">regime_dependent_friction</span><span class="p">(</span>
+    <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">re_bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="n">k_R</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">k_H</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">turbulent</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Value</span><span class="p">],</span> <span class="n">Value</span><span class="p">]</span> <span class="o">=</span> <span class="n">turbulent_friction</span><span class="p">,</span>
+    <span class="n">laminar</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Value</span><span class="p">],</span> <span class="n">Value</span><span class="p">]</span> <span class="o">=</span> <span class="n">laminar_friction</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A flow-regime-dependent friction coefficient function.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_cool: Celsius</span>
+<span class="sd">        Coolant bulk temperatures</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperatures</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Coolant mass flow rate</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        Coolant properties</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        Pipe geometry</span>
+<span class="sd">    re_bounds: tuple[float, float]</span>
+<span class="sd">        Flow regime (Re values) boundaries, see :func:`.flow_regimes`.</span>
+<span class="sd">    k_R: float</span>
+<span class="sd">        Geometrical factor. At laminar flow the Darcy coefficient is analytical (see :func:`laminar_friction`)</span>
+<span class="sd">        for a circular duct. ``k_R`` is a multiplicative factor such that</span>
+<span class="sd">        :math:`f_\text{laminar} = \frac{64}{\text{Re} k_R}`.</span>
+<span class="sd">        See for example, :func:`rectangular_laminar_correction`.</span>
+<span class="sd">        This correction is applied to all regimes.</span>
+<span class="sd">    k_H: Callable[[float, float], float] | None</span>
+<span class="sd">        Viscosity factor function, which takes as input</span>
+<span class="sd">        :math:`k_H(P_\text{heat}/P_\text{wet}, \mu_\text{wall} / \mu_\text{bulk})`.</span>
+<span class="sd">        By default, it is omitted.</span>
+<span class="sd">        See :func:`viscosity_correction`.</span>
+<span class="sd">    turbulent: Callable[[Value], Value]</span>
+<span class="sd">        Strategy for calculating the friction coefficient for turbulent flow.</span>
+<span class="sd">    laminar: Callable[[Value], Value]</span>
+<span class="sd">        Strategy for calculation the friction coefficient for laminar flow.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: Value</span>
+<span class="sd">        The Darcy friction factor.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">mdot</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mf">0.0</span>
+    <span class="n">Dh</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span>
+    <span class="n">A</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">mu_bulk</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T_cool</span><span class="p">)</span>
+    <span class="n">re_bulk</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">mu_bulk</span><span class="p">))</span>
+
+    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">re_bulk</span><span class="p">))</span>
+    <span class="n">lam</span><span class="p">,</span> <span class="n">inter</span><span class="p">,</span> <span class="n">turb</span> <span class="o">=</span> <span class="n">flow_regimes</span><span class="p">(</span><span class="n">re_bulk</span><span class="p">,</span> <span class="n">re_bounds</span><span class="p">)</span>
+    <span class="n">f_turb</span> <span class="o">=</span> <span class="n">turbulent</span><span class="p">(</span><span class="n">re_bulk</span> <span class="o">*</span> <span class="n">k_R</span><span class="p">)</span>
+    <span class="n">f_lam</span> <span class="o">=</span> <span class="n">laminar</span><span class="p">(</span><span class="n">re_bulk</span> <span class="o">*</span> <span class="n">k_R</span><span class="p">)</span>
+
+    <span class="n">f</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_lam</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span>
+    <span class="n">f</span><span class="p">[</span><span class="n">inter</span><span class="p">]</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span>
+        <span class="n">x1</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">x2</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">y1</span><span class="o">=</span><span class="n">f_lam</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span>
+        <span class="n">y2</span><span class="o">=</span><span class="n">f_turb</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">re_bulk</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="n">f</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_turb</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span>
+
+    <span class="n">heat_wet_ratio</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">heated_perimeter</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">wet_perimeter</span>
+    <span class="n">mu_ratio</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T_wall</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu_bulk</span>
+
+    <span class="k">return</span> <span class="n">f</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="k">if</span> <span class="n">k_H</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">k_H</span><span class="p">(</span><span class="n">heat_wet_ratio</span><span class="p">,</span> <span class="n">mu_ratio</span><span class="p">))</span></div>
+
+
+
+<span class="n">GeneralDarcyFactor</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">LiquidFuncs</span><span class="p">,</span> <span class="n">EffectivePipe</span><span class="p">],</span> <span class="n">Value</span><span class="p">]</span>
+<span class="n">_DARCY_NAMES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">(</span><span class="n">_REGIME</span> <span class="o">:=</span> <span class="s2">"regime_dependent"</span><span class="p">):</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"laminar"</span><span class="p">:</span> <span class="n">laminar_friction</span><span class="p">,</span>
+    <span class="s2">"turbulent"</span><span class="p">:</span> <span class="n">turbulent_friction</span><span class="p">,</span>
+    <span class="s2">"Blasius"</span><span class="p">:</span> <span class="n">Blasius_friction</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_re_friction</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">],</span> <span class="n">Value</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeneralDarcyFactor</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_f</span><span class="p">(</span>
+        <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+        <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+        <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+        <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T_cool</span><span class="p">)</span>
+        <span class="n">re</span> <span class="o">=</span> <span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">area</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">mu</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">f</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">_f</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="n">_f</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">+</span> <span class="p">(</span>
+<span class="w">        </span><span class="sd">"""</span>
+
+<span class="sd">    This function has been wrapped so that it has a</span>
+<span class="sd">    general friction factor signature:</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_cool: Celsius</span>
+<span class="sd">        Coolant bulk temperatures</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperatures</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Coolant mass flow rate</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        Coolant properties</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        Pipe geometry</span>
+<span class="sd">    """</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_f</span>
+
+
+<div class="viewcode-block" id="friction_factor">
+<a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.friction_factor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">friction_factor</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="s2">"laminar"</span><span class="p">,</span> <span class="s2">"turbulent"</span><span class="p">,</span> <span class="s2">"Blasius"</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeneralDarcyFactor</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Create a Darcy friction factor chosen from the list below with uniform signatures.</span>
+<span class="sd">    The main usage of this function is as input for :func:`pressure_diff`.</span>
+
+<span class="sd">    Available functions:</span>
+
+<span class="sd">    .. list-table::</span>
+<span class="sd">        :widths: 20, 80</span>
+
+<span class="sd">        * - **regime_dependent**</span>
+<span class="sd">          - :func:`regime_dependent_friction`, which depends on the :func:`~.Re` No., given ``re_bounds``.</span>
+<span class="sd">            Importantly, employs :func:`viscosity &lt;viscosity_correction&gt;` and geometry (e.g. :func:`rectangular</span>
+<span class="sd">            &lt;rectangular_laminar_correction&gt;`) corrections upon the laminar and turbulent factors.</span>
+<span class="sd">        * - **laminar**</span>
+<span class="sd">          - :func:`laminar_friction`. Does not employ corrections as described</span>
+<span class="sd">            above.</span>
+<span class="sd">        * - **turbulent**</span>
+<span class="sd">          - :func:`turbulent_friction`</span>
+<span class="sd">        * - **Blasius**</span>
+<span class="sd">          - :func:`Blasius_friction`</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    name: Literal['regime_dependent', 'laminar', 'turbulent', 'Blasius']</span>
+<span class="sd">        Method name</span>
+<span class="sd">    kwargs: Dict</span>
+<span class="sd">        Options to pass onto the given method</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    f: GeneralDarcyFactor</span>
+<span class="sd">        Darcy friction factor</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">_REGIME</span><span class="p">:</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_regime_dependent</span><span class="p">(</span>
+            <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+            <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+            <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+            <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+            <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">T_cool</span><span class="p">,</span> <span class="n">T_wall</span><span class="p">,</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">fluid</span><span class="p">,</span> <span class="n">pipe</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">_regime_dependent</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">regime_dependent_friction</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">_regime_dependent</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">regime_dependent_friction</span><span class="o">.</span><span class="vm">__doc__</span>
+
+        <span class="k">return</span> <span class="n">_regime_dependent</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_re_friction</span><span class="p">(</span><span class="n">_DARCY_NAMES</span><span class="p">[</span><span class="n">name</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">=}</span><span class="s2"> not found in </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">_DARCY_NAMES</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

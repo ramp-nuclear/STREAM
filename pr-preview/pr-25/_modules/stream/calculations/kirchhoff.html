@@ -1,0 +1,802 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.calculations.kirchhoff &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.calculations.kirchhoff</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.calculations.kirchhoff</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""</span>
+<span class="sd">In the case of incompressible flow, Kirchhoff's rules dictate flow behavior.</span>
+<span class="sd">This calculation receives a graph containing calculations representing real</span>
+<span class="sd">system objects as nodes, and connected by edges depicting the connected cycles.</span>
+
+<span class="sd">.. attention::</span>
+<span class="sd">    This module uses the assumption that "regular" Calculations lie on the</span>
+<span class="sd">    edges of a flow map (or electric circuit), whose nodes are</span>
+<span class="sd">    Junction Calculations.</span>
+
+<span class="sd">.. note::</span>
+<span class="sd">    Virtual (SISO) junctions may be created as needed, and may be any hashable.</span>
+
+<span class="sd">"""</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">chain</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">repeat</span><span class="p">,</span> <span class="n">takewhile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cytoolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">keymap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">Graph</span><span class="p">,</span> <span class="n">MultiDiGraph</span><span class="p">,</span> <span class="n">MultiGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">pairwise</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.sparse</span><span class="w"> </span><span class="kn">import</span> <span class="n">csr_matrix</span><span class="p">,</span> <span class="n">dok_matrix</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.smoothing</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_MDOT_EPS</span><span class="p">,</span> <span class="n">soft_pos</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">Name</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">Place</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">STREAM_DEBUG</span><span class="p">,</span> <span class="n">concat</span>
+
+<span class="n">COMPS</span> <span class="o">=</span> <span class="s2">"comps"</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"stream.kirchhoff"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Kirchhoff">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Kirchhoff</span><span class="p">(</span><span class="n">Calculation</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Dictates flow in a given circuit for an incompressible liquid"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">graph</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
+        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Kirchhoff"</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        graph: MultiDiGraph</span>
+<span class="sd">            Containing calculations representing real system objects as comps in edges, whose nodes are Junctions</span>
+<span class="sd">            (If multiple entries are involved) or junction-names which are strings.</span>
+<span class="sd">        abs_pressure_comps: Sequence[Hashable]</span>
+<span class="sd">            If a component needs to know the absolute pressure, such information may be provided</span>
+<span class="sd">            (abs. pressure at its set upwind end) by the Kirchhoff calculation. Such components must be given here.</span>
+<span class="sd">        reference_node: tuple[Hashable, Pascal]</span>
+<span class="sd">            For the absolute pressure to be computed, a reference pressure ("ground") must be provided.</span>
+<span class="sd">            This reference must be given at some node of the graph.</span>
+<span class="sd">        name: str or None</span>
+<span class="sd">            Calculation's name</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError : If the flow graph has a self-loop edge, is not strongly connected, or puts</span>
+<span class="sd">            the same component on more than one edge.</span>
+<span class="sd">        KeyError : If ``reference_node`` or one of ``abs_pressure_comps`` is not in the graph.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This object should be treated as frozen once initialized, because it performs some</span>
+<span class="sd">        pre-computation during initialization.</span>
+
+<span class="sd">        Also notice that the flow graph cannot be the same graph received by the Aggregator, for two reasons:</span>
+
+<span class="sd">        1. Kirchhoff is itself a calculation which should be present in The Aggregator graph, which is thus incomplete.</span>
+
+<span class="sd">        2. While this graph requires the calculations to be contained on the</span>
+<span class="sd">           edges, the Aggregator requires calculations as nodes to pass</span>
+<span class="sd">           variables to each other through the edges.</span>
+<span class="sd">           In the final Aggregator graph, Kirchhoff will itself point to all hydraulics-related nodes.</span>
+
+<span class="sd">        See Also</span>
+<span class="sd">        --------</span>
+<span class="sd">        Junction</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g</span> <span class="o">=</span> <span class="n">graph</span>
+
+        <span class="k">if</span> <span class="n">selfloops</span> <span class="o">:=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">selfloop_edges</span><span class="p">(</span><span class="n">graph</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Self-loop flow edges (an edge closed on one node) are not currently supported: </span><span class="si">{</span><span class="n">selfloops</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="s2">"Close a loop with at least two junctions (or a virtual node) instead."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">graph</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">nx</span><span class="o">.</span><span class="n">is_strongly_connected</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+            <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="nb">set</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">nx</span><span class="o">.</span><span class="n">strongly_connected_components</span><span class="p">(</span><span class="n">graph</span><span class="p">)]</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"The flow graph must be strongly connected (every node reachable from every other "</span>
+                <span class="sa">f</span><span class="s2">"along the edge orientations), but it splits into </span><span class="si">{</span><span class="n">parts</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="s2">"Close every branch into a loop, and model each hydraulically separate loop as its "</span>
+                <span class="s2">"own Kirchhoff calculation."</span>
+            <span class="p">)</span>
+
+        <span class="n">flat</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_components</span><span class="p">)</span>
+        <span class="n">seen</span><span class="p">,</span> <span class="n">dupes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">flat</span><span class="p">:</span>
+            <span class="p">(</span><span class="n">dupes</span> <span class="k">if</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">seen</span> <span class="k">else</span> <span class="n">seen</span><span class="p">)</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">comp</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dupes</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Each component may appear on only one flow edge, but these are reused: </span><span class="si">{</span><span class="n">dupes</span><span class="si">}</span><span class="s2">. "</span>
+                <span class="s2">"Put a separate instance (e.g. a deepcopy) on each edge."</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">reference_node</span> <span class="ow">and</span> <span class="n">reference_node</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">graph</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The reference node </span><span class="si">{</span><span class="n">reference_node</span><span class="si">}</span><span class="s2"> wasn't in the graph"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">difference</span> <span class="o">:=</span> <span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">abs_pressure_comps</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_components</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Some of the absolute pressure components were not in the graph: </span><span class="si">{</span><span class="n">difference</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">components</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_components</span><span class="p">,</span> <span class="n">count</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_var_book</span> <span class="o">=</span> <span class="p">{</span><span class="n">comp</span><span class="p">:</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_num_components</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_edge_book</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">keys</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">count</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_save_names</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="p">):</span> <span class="n">node</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">nodes_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_count</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">number_of_edges</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_edge_order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kcl</span> <span class="o">=</span> <span class="n">build_kcl_matrix</span><span class="p">(</span><span class="n">graph</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kvl</span> <span class="o">=</span> <span class="n">build_kvl_matrix</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">abs_pressure_comps</span> <span class="o">=</span> <span class="n">abs_pressure_comps</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_node</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_pressure</span> <span class="o">=</span> <span class="n">reference_node</span> <span class="ow">or</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_abs_pressure_book</span> <span class="o">=</span> <span class="p">{(</span><span class="s2">"p_abs"</span><span class="p">,</span> <span class="n">comp</span><span class="p">):</span> <span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abs_pressure_comps</span><span class="p">)}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_mdots</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">asks</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_book</span><span class="p">[(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span><span class="p">)]</span>
+            <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">asking</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"ref_mdot_for"</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">asking</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">asks</span> <span class="ow">in</span> <span class="n">asking</span>
+        <span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_abs_matrix</span> <span class="o">=</span> <span class="n">build_paths</span><span class="p">(</span>
+            <span class="n">graph</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ref_node</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_component_edge</span><span class="p">,</span>
+            <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span> <span class="o">=</span> <span class="n">keymap</span><span class="p">(</span><span class="n">to_str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_book</span> <span class="o">|</span> <span class="bp">self</span><span class="o">.</span><span class="n">_abs_pressure_book</span><span class="p">)</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span>
+            <span class="n">STREAM_DEBUG</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"New Kirchhoff with </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">nodes_count</span><span class="si">}</span><span class="s2"> nodes and </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">edges_count</span><span class="si">}</span><span class="s2"> edges"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_edge_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Iterable of the components on the edges in the graph."""</span>
+        <span class="k">yield from</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_num_components</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_edge_num_components</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Iterable of the edge numbers and their components."""</span>
+        <span class="n">view</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">comps</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">view</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">i</span><span class="p">,</span> <span class="n">comp</span>
+
+    <span class="c1"># noinspection PyMethodOverriding</span>
+<div class="viewcode-block" id="Kirchhoff.calculate">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.calculate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">KgPerS</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">pressure</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+        <span class="n">pressure</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fromiter</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">pressure</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">,</span>
+            <span class="n">count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="n">abs_eqs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_pressure</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_abs_matrix</span> <span class="o">@</span> <span class="n">pressure</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">concat</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kcl</span> <span class="o">@</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variables</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">]))[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_kvl</span> <span class="o">@</span> <span class="n">pressure</span><span class="p">,</span>
+            <span class="n">abs_eqs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Kirchhoff.indices">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.indices">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""For a given variable name, return its position in the vector.</span>
+
+<span class="sd">        - If the calculation asking is :class:`.Junction` which is present at</span>
+<span class="sd">          a node, then the :math:`\dot{m}` places of the closest components</span>
+<span class="sd">          on the connected edges are returned.</span>
+<span class="sd">        - If the variable requested is ``p_abs``, then the absolute pressure</span>
+<span class="sd">          place is returned for the asking calculation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variable: Name</span>
+<span class="sd">            Name of requested variable</span>
+<span class="sd">        asking: Calculation or None</span>
+<span class="sd">            What calculation is asking for the indices?</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        indices: Place or dict[Calculation, Place]</span>
+<span class="sd">            The place in which the calculation uses the variable, or a dictionary with variable names related to this</span>
+<span class="sd">            name and their places.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">asking</span><span class="p">,</span> <span class="n">Junction</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">_comps_closest</span><span class="p">(</span><span class="n">asking</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_var_book</span><span class="p">)</span>
+        <span class="k">match</span> <span class="n">variable</span><span class="p">:</span>
+            <span class="k">case</span> <span class="s2">"p_abs"</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_abs_pressure_book</span><span class="p">[(</span><span class="s2">"p_abs"</span><span class="p">,</span> <span class="n">asking</span><span class="p">)]</span>
+            <span class="k">case</span> <span class="s2">"ref_mdot"</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref_mdots</span><span class="p">[</span><span class="n">asking</span><span class="p">]</span>
+            <span class="k">case</span> <span class="s2">"mdot"</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_var_book</span><span class="p">[</span><span class="n">asking</span><span class="p">]</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2"> does not serve </span><span class="si">{</span><span class="n">variable</span><span class="si">!r}</span><span class="s2"> (only 'mdot', 'p_abs', 'ref_mdot')."</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        All edges in graph are needed for KCL, and Kirchhoff calculates E = N + L - 1 equations, where</span>
+<span class="sd">        E = Number of Edges</span>
+<span class="sd">        N = Number of Nodes</span>
+<span class="sd">        L = Number of Loops</span>
+<span class="sd">        Returns E</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">edges_count</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">abs_pressure_comps</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        The variables contained herein are currents at all edges and absolute pressures.</span>
+<span class="sd">        The currents are represented by a str of a  three-tuple: (u, v, k), where</span>
+<span class="sd">        (u, v) are the junctions (tail, head), and k the key depicting the specific</span>
+<span class="sd">        edge of (u, v), by default integers in order of creation.</span>
+<span class="sd">        Absolute pressures are two-tuples of 'p_abs' and the component name.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vars</span>
+
+<div class="viewcode-block" id="Kirchhoff.component_edge">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.component_edge">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">component_edge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Returns the edge in which ``component`` is embedded</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        component: Hashable</span>
+<span class="sd">            Requested component</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Edge in the flow graph, see :meth:`variables`</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">to_str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_component_edge</span><span class="p">(</span><span class="n">component</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_component_edge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_edge_book</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="bp">self</span><span class="o">.</span><span class="n">_var_book</span><span class="p">[</span><span class="n">component</span><span class="p">]]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span> <span class="n">abs_pressure</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
+
+<div class="viewcode-block" id="Kirchhoff.loop_components">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.loop_components">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">loop_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Return loop ``i``'s components"""</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kvl</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Kirchhoff.kvl_errors">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.kvl_errors">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kvl_errors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component_dps</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Returns loop summations (KVL) of pressure drops :math:`\sum_\text{loop}\Delta p`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        component_dps : Pascal</span>
+<span class="sd">            A vector of pressure drops per component, ordered as ``self.components``</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_kvl</span> <span class="o">@</span> <span class="n">component_dps</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span></div>
+</div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_VirtualNode</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+
+<div class="viewcode-block" id="to_graph_for_cycles">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.to_graph_for_cycles">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_graph_for_cycles</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="n">MultiGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Graph</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    A MultiGraph is not supported for the NetworkX cycle_basis function. Since</span>
+<span class="sd">    it is also the easiest interpretation of a circuit scheme, the need for</span>
+<span class="sd">    a transformation arises. The idea is that any MultiEdge may be split</span>
+<span class="sd">    without affecting the overall cycles:</span>
+
+<span class="sd">    Say this is the graph and transformation::</span>
+
+<span class="sd">        A ----(0)----- B    --&gt;    A ---- i ----- B</span>
+<span class="sd">        |_____(1)______|    --&gt;    |_____ j ______|</span>
+
+<span class="sd">    On the left, a MultiEdge, which has been split on the right into</span>
+<span class="sd">    two additional nodes, ``i, j``. The returned cycle would be</span>
+<span class="sd">    ``[A, i, B, j]``. Removing those new nodes yields the desired ``[A, B]``.</span>
+<span class="sd">    Note that ``i, j`` are _VirtualNodes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    g: MultiGraph</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    graph: Graph</span>
+<span class="sd">        object whose MultiEdges have been transformed as explained above</span>
+<span class="sd">    """</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">Graph</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">vn</span> <span class="o">:=</span> <span class="n">_VirtualNode</span><span class="p">(),</span> <span class="o">**</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">m</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">vn</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">m</span></div>
+
+
+
+<div class="viewcode-block" id="build_kvl_matrix">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.build_kvl_matrix">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_kvl_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span> <span class="n">comps_order</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csr_matrix</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Writing the KVL (Kirchhoff Voltage Law) equations such that the</span>
+<span class="sd">    equations are written as:</span>
+
+<span class="sd">    .. math:: \mathbf{M}\vec{\Delta p} = 0</span>
+
+<span class="sd">    Where M denotes which loops contain which nodes, pressure</span>
+<span class="sd">    is the vector of all pressures at nodes (dimension N). L equations are</span>
+<span class="sd">    given by KVL.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    An explanation of methodology is due. Say a multigraph has nodes junctions</span>
+<span class="sd">    A, B, and calculations C1, C2 which lie on the edges</span>
+<span class="sd">    s.t.::</span>
+
+<span class="sd">        A -&gt;- [C1] -&gt;- B -&gt;- [C2] -&gt;- A</span>
+
+<span class="sd">    Now, there is one loop, thus :math:`\Delta p_{C1}= - \Delta p_{C2}`, Where</span>
+<span class="sd">    the pressure difference is given in regard to the `positive flow</span>
+<span class="sd">    direction` (here, left-to-right).</span>
+
+<span class="sd">    A simple graph is produced, writing::</span>
+
+<span class="sd">        A -&gt;- [C1] -&gt;- i -&gt;- B -&gt;- [C2] -&gt;- j -&gt;- A</span>
+
+<span class="sd">    Where :math:`i,j` are _VirtualNodes. The edges [u, v, k]</span>
+<span class="sd">    (reads "an edge from node u to node v containing data k") and resultant</span>
+<span class="sd">    values in the [loops, components] matrix are then:</span>
+
+<span class="sd">    - [A, i, C1] - the sign of [loop 0, C1] will be +1</span>
+<span class="sd">    - [i, B]</span>
+<span class="sd">    - [B, j, C2] - the sign of [loop 0, C2] will be +1</span>
+<span class="sd">    - [j, A]</span>
+
+<span class="sd">    The resultant eq. is indeed :math:`\Delta p_{C1}+\Delta p_{C2}=0`</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    Let's see the above scenario in the "wild":</span>
+
+<span class="sd">    &gt;&gt;&gt; g = MultiDiGraph()</span>
+<span class="sd">    &gt;&gt;&gt; g.add_edge('A', 'B', comps=('C1',))</span>
+<span class="sd">    0</span>
+<span class="sd">    &gt;&gt;&gt; g.add_edge('B', 'A', comps=('C2',))</span>
+<span class="sd">    0</span>
+<span class="sd">    &gt;&gt;&gt; kvl = build_kvl_matrix(g, dict(C1=0, C2=1)).toarray()</span>
+<span class="sd">    &gt;&gt;&gt; kvl *= kvl[0, 0] # The answer is given up to a sign change</span>
+<span class="sd">    &gt;&gt;&gt; kvl</span>
+<span class="sd">    array([[1, 1]])</span>
+
+<span class="sd">    If the opposite positive direction is chosen for the second edge,</span>
+<span class="sd">    the value is flipped properly:</span>
+
+<span class="sd">    &gt;&gt;&gt; g = MultiDiGraph()</span>
+<span class="sd">    &gt;&gt;&gt; g.add_edge('A', 'B', comps=('C1',))</span>
+<span class="sd">    0</span>
+<span class="sd">    &gt;&gt;&gt; g.add_edge('A', 'B', comps=('C2',))</span>
+<span class="sd">    1</span>
+<span class="sd">    &gt;&gt;&gt; kvl = build_kvl_matrix(g, dict(C1=0, C2=1)).toarray()</span>
+<span class="sd">    &gt;&gt;&gt; kvl *= kvl[0, 0] # The answer is given up to a sign change</span>
+<span class="sd">    &gt;&gt;&gt; kvl</span>
+<span class="sd">    array([[ 1, -1]])</span>
+
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    to_graph_for_cycles</span>
+<span class="sd">    """</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">to_graph_for_cycles</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="n">loops</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">cycle_basis</span><span class="p">(</span><span class="n">h</span><span class="p">)</span>
+    <span class="n">mat</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">loops</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">comps_order</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">loop</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">loops</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">pairwise</span><span class="p">(</span><span class="n">loop</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+            <span class="n">comps</span> <span class="o">=</span> <span class="n">h</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">COMPS</span><span class="p">,</span> <span class="p">())</span>
+            <span class="n">sign</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">_VirtualNode</span><span class="p">)</span> <span class="o">-</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">_VirtualNode</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">:</span>
+                <span class="n">mat</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">comps_order</span><span class="p">[</span><span class="n">comp</span><span class="p">]]</span> <span class="o">=</span> <span class="n">sign</span>
+    <span class="k">return</span> <span class="n">mat</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="build_kcl_matrix">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.build_kcl_matrix">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_kcl_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csr_matrix</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Writing the KCL (Kirchhoff Current Law) equations such that the equations are written as:</span>
+
+<span class="sd">    .. math:: \mathbf{M}\vec{\dot{m}} = 0</span>
+
+<span class="sd">    Where M denotes which edges connect to which node (+1 for incoming, -1 for outgoing,</span>
+<span class="sd">    also called the incidence matrix), :math:`\vec{\dot{m}}` is the vector of all flows in edges (dimension E).</span>
+<span class="sd">    N equations are given by KCL.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The incidence matrix is weighted by the ``signify`` keyword in each edge.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">nx</span><span class="o">.</span><span class="n">incidence_matrix</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">oriented</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s2">"signify"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="build_paths">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.build_paths">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_paths</span><span class="p">(</span><span class="n">g</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span> <span class="n">comps_order</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">component_edge</span><span class="p">,</span> <span class="o">*</span><span class="n">targets</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">csr_matrix</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Building a matrix containing the path (by component) from a source node to target *components*."""</span>
+    <span class="n">m</span> <span class="o">=</span> <span class="n">dok_matrix</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">comps_order</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">target</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">targets</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">g</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">dijkstra_path</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">comps_in_edge</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">edge</span> <span class="o">=</span> <span class="n">component_edge</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="c1"># First, build the path to the u-node</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">dijkstra_path</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">u</span><span class="p">)</span>
+            <span class="c1"># Then, from u along edge, add components until target is reached</span>
+            <span class="n">comps_in_edge</span> <span class="o">=</span> <span class="n">takewhile</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">target</span><span class="p">,</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="n">COMPS</span><span class="p">])</span>
+
+        <span class="n">comps_from_path</span> <span class="o">=</span> <span class="p">(</span><span class="n">comp</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">pairwise</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">[(</span><span class="o">*</span><span class="n">edge</span><span class="p">,</span> <span class="mi">0</span><span class="p">)][</span><span class="n">COMPS</span><span class="p">])</span>
+
+        <span class="n">comps</span> <span class="o">=</span> <span class="n">chain</span><span class="p">(</span><span class="n">comps_from_path</span><span class="p">,</span> <span class="n">comps_in_edge</span><span class="p">)</span>
+        <span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="n">comps_order</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">comps</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">m</span><span class="o">.</span><span class="n">tocsr</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="Junction">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Junction">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Junction</span><span class="p">(</span><span class="n">Calculation</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""</span>
+<span class="sd">    A junction calculation should be used anywhere several hydraulic inputs and outputs meet.</span>
+<span class="sd">    Temperature is mixed according to incoming mass currents.</span>
+<span class="sd">    """</span>
+
+    <span class="n">_counter</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">weights</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mdot_eps</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        name : str</span>
+<span class="sd">         Calculation's name</span>
+<span class="sd">        weights : dict[Calculation, float] or None</span>
+<span class="sd">         Calculations which lie on edges whose weight (also known as the ``signify``</span>
+<span class="sd">         keyword, see :func:`~stream.composition.cycle.flow_edge`) differs from 1 must</span>
+<span class="sd">         be specified so that the correct total incoming mass flows are considered.</span>
+<span class="sd">        mdot_eps : KgPerS or None</span>
+<span class="sd">         Half-width of the direction-blending band around ``mdot = 0`` used when</span>
+<span class="sd">         soft-rectifying the incoming mass flows. ``None`` uses</span>
+<span class="sd">         ``stream.smoothing.DEFAULT_MDOT_EPS``.</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_i</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">Junction</span><span class="o">.</span><span class="n">_counter</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="k">if</span> <span class="n">weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"J</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_i</span><span class="si">}</span><span class="s2">"</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mdot_eps</span> <span class="o">=</span> <span class="n">mdot_eps</span>
+
+<div class="viewcode-block" id="Junction.indices">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Junction.indices">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span><span class="p">:</span>
+        <span class="n">allowed</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">variable</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Junction indices raise for everything but </span><span class="si">{</span><span class="n">allowed</span><span class="si">}</span><span class="s2">, which does not include the variable </span><span class="si">{</span><span class="n">variable</span><span class="si">}</span><span class="s2"> or the asking </span><span class="si">{</span><span class="n">asking</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">False</span><span class="p">,)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># noinspection PyMethodOverriding</span>
+<div class="viewcode-block" id="Junction.calculate">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Junction.calculate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Celsius</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">Tin</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">],</span>
+        <span class="n">Tin_minus</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mdot</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""Computes divergence from total mixing of temperatures in junction,</span>
+<span class="sd">        defined as</span>
+
+<span class="sd">        .. math::</span>
+<span class="sd">            T = \frac{\sum_k w_k\, p(\pm\dot{m}_k)\, T_k}{\sum_k w_k\, p(\pm\dot{m}_k)}</span>
+
+<span class="sd">        where :math:`p = \mathrm{soft\_pos}` is the strictly positive smooth</span>
+<span class="sd">        positive part (:func:`stream.smoothing.soft_pos`), the sign is ``+`` for</span>
+<span class="sd">        upstream (``Tin``) streams and ``-`` for downstream (``Tin_minus``)</span>
+<span class="sd">        streams, and :math:`w_k` is the ``signify`` weight.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        variables: Sequence[Celsius]</span>
+<span class="sd">            Inlet temperature variable</span>
+<span class="sd">        Tin, Tin_minus: dict[Calculation, Celsius]</span>
+<span class="sd">            Mapping from components on connected edges to inlet temperatures,</span>
+<span class="sd">            depending on :math:`\text{sign}(\dot{m})`</span>
+<span class="sd">        mdot: dict[Calculation, KgPerS]</span>
+<span class="sd">            Mapping from components on connected edges to associated mass</span>
+<span class="sd">            currents</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        out: Array1D</span>
+<span class="sd">            Divergence of ``variables`` from the computed total mixing</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Because ``soft_pos`` is strictly positive, the denominator never</span>
+<span class="sd">        vanishes, so the residual is smooth in ``mdot``; away from the</span>
+<span class="sd">        ``mdot_eps``-wide band it is close to the hard ``mdot &gt;= 0`` selection.</span>
+<span class="sd">        At total stagnation every weight collapses to ``eps/2`` and the target</span>
+<span class="sd">        becomes the weighted mean of all neighbour temperatures. Widen the band</span>
+<span class="sd">        per junction with ``mdot_eps``.</span>
+<span class="sd">        """</span>
+
+        <span class="n">eps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdot_eps</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mdot_eps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">DEFAULT_MDOT_EPS</span>
+
+        <span class="n">pT</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weights</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">soft_pos</span><span class="p">(</span><span class="n">sgn</span> <span class="o">*</span> <span class="n">mdot</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">eps</span><span class="p">),</span> <span class="n">T</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">sgn</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="ow">in</span> <span class="n">chain</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">Tin</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span> <span class="nb">zip</span><span class="p">(</span><span class="n">repeat</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">Tin_minus</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="p">]</span>
+        <span class="n">D</span><span class="p">,</span> <span class="n">N</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">pT</span><span class="p">),</span> <span class="nb">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="n">T</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="n">T</span> <span class="ow">in</span> <span class="n">pT</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">N</span> <span class="o">/</span> <span class="n">D</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="to_str">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.to_str">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_str</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Idempotent stringification of keys in a CalcState's keys.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    key: Named | tuple[Named, Named, int] | tuple[Named, Named, int, str]</span>
+<span class="sd">        Either something that can be str-ed or a triplet from Kirchoff, who always has to be special.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">match</span> <span class="n">key</span><span class="p">:</span>
+            <span class="k">case</span> <span class="n">var</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">var</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="k">case</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">i</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="k">case</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s2">"mdot2"</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">"(</span><span class="si">{</span><span class="n">a</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">b</span><span class="si">}</span><span class="s2">, mdot2 </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The tuple has to be of a very specific form. Not </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_comps_closest</span><span class="p">(</span><span class="n">j</span><span class="p">:</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">g</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span> <span class="n">var_book</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_filter</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">u</span> <span class="ow">is</span> <span class="n">j</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="n">j</span><span class="p">)</span>
+
+    <span class="n">sub</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">subgraph_view</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">filter_edge</span><span class="o">=</span><span class="n">_filter</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{(</span><span class="n">comp</span> <span class="o">:=</span> <span class="n">comps</span><span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">u</span> <span class="ow">is</span> <span class="n">j</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span><span class="p">]):</span> <span class="n">var_book</span><span class="p">[</span><span class="n">comp</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">comps</span> <span class="ow">in</span> <span class="n">sub</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">COMPS</span><span class="p">)}</span>
+
+
+<div class="viewcode-block" id="KirchhoffWDerivatives">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.KirchhoffWDerivatives">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">KirchhoffWDerivatives</span><span class="p">(</span><span class="n">Kirchhoff</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A Kirchhoff Calculation containing :math:`\ddot{m}`</span>
+
+<span class="sd">    While Kirchhoff contains the mass current :math:`\dot{m}`, this subclass</span>
+<span class="sd">    adds also the next derivative :math:`\ddot{m}`, which is useful for</span>
+<span class="sd">    calculations containing flow inertia terms.</span>
+
+<span class="sd">    The Kirchhoff equations are now solved along with</span>
+<span class="sd">    :math:`\frac{d\dot{m_i}}{dt} = \ddot{m_i}`</span>
+<span class="sd">    Where indices[:math:`\ddot{m_i}`] = indices[:math:`\dot{m_i}`] + :math:`n`.</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    ~stream.calculations.inertia.Inertia</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">graph</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
+        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Kirchhoff"</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">,</span> <span class="n">reference_node</span><span class="o">=</span><span class="n">reference_node</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+
+<div class="viewcode-block" id="KirchhoffWDerivatives.indices">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.KirchhoffWDerivatives.indices">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">variable</span> <span class="o">==</span> <span class="s2">"mdot2"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">asking</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">asking</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mass_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+        <span class="n">M</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">M</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+        <span class="n">mdots</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_edge_book</span>
+        <span class="n">mdots2</span> <span class="o">=</span> <span class="p">{(</span><span class="o">*</span><span class="n">k</span><span class="p">,</span> <span class="s2">"mdot2"</span><span class="p">):</span> <span class="n">v</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">mdots</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">variables</span> <span class="o">|</span> <span class="n">keymap</span><span class="p">(</span><span class="n">to_str</span><span class="p">,</span> <span class="n">mdots2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="KirchhoffWDerivatives.calculate">
+<a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.KirchhoffWDerivatives.calculate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">pressure</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
+        <span class="n">super_vars</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">]</span>
+        <span class="n">mdots2</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span> <span class="p">:]</span>
+        <span class="n">algebraic</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">calculate</span><span class="p">(</span><span class="n">super_vars</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">pressure</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">concat</span><span class="p">(</span><span class="n">mdots2</span><span class="p">,</span> <span class="n">algebraic</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">variables_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">mdot</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span>
+            <span class="n">abs_pressure</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">),</span>
+            <span class="n">mdot2</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,426 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Physical Models &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Heat Transfer Coefficient" href="heat_transfer_coefficient.html" />
+    <link rel="prev" title="Composition" href="stream.composition.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="stream.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="calculation.html">Calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.calculations.html">Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.composition.html">Composition</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Physical Models</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="decay_heat.html">Decay Heat</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-stream.physical_models.dimensionless">Dimensionless Numbers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Gr"><code class="docutils literal notranslate"><span class="pre">Gr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Nu"><code class="docutils literal notranslate"><span class="pre">Nu</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Pe"><code class="docutils literal notranslate"><span class="pre">Pe</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Pr"><code class="docutils literal notranslate"><span class="pre">Pr</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Ra"><code class="docutils literal notranslate"><span class="pre">Ra</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Re"><code class="docutils literal notranslate"><span class="pre">Re</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.Re_mdot"><code class="docutils literal notranslate"><span class="pre">Re_mdot</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stream.physical_models.dimensionless.flow_regimes"><code class="docutils literal notranslate"><span class="pre">flow_regimes</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.examples.html">Examples package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="stream.html">Documentation</a></li>
+      <li class="breadcrumb-item active">Physical Models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/stream.physical_models.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-stream.physical_models">
+<span id="physical-models"></span><h1>Physical Models<a class="headerlink" href="#module-stream.physical_models" title="Link to this heading"></a></h1>
+<p>Physical properties and correlations are the most variant and rapidly changing
+code chunks. This package contains different options for the following physical
+phenomena (and yielded parameters):</p>
+<ul class="simple">
+<li><p>Hydraulic Friction (friction coefficient, f)</p></li>
+<li><p>Single Phase Heat Transfer (heat transfer coefficient, htc)</p></li>
+<li><p>Reactor Safety Thermohydraulic Thresholds</p></li>
+<li><p>Residual Heat (power contributions, P)</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thresholds.html">Thresholds</a></li>
+<li class="toctree-l1"><a class="reference internal" href="decay_heat.html">Decay Heat</a></li>
+</ul>
+</div>
+<section id="module-stream.physical_models.dimensionless">
+<span id="dimensionless-numbers"></span><h2>Dimensionless Numbers<a class="headerlink" href="#module-stream.physical_models.dimensionless" title="Link to this heading"></a></h2>
+<p>Several flow properties and equations are given here, including
+dimensionless parameters and corresponding correlations</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Gr">
+<span class="sig-name descname"><span class="pre">Gr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Twall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Gr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Gr" title="Link to this definition"></a></dt>
+<dd><p>The Grashof number (Gr) is an approximation of the ratio of buoyancy to viscous
+forces.</p>
+<p>For vertical flat plates:</p>
+<div class="math notranslate nohighlight">
+\[\text{Gr} = \rho^2 g\beta (T_\text{wall}-T_\text{bulk})\frac{L_h^3}{\mu^2}\]</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – fluid density</p></li>
+<li><p><strong>mu</strong> (<em>PaS</em>) – dynamic viscosity of the fluid</p></li>
+<li><p><strong>beta</strong> (<em>PerC</em>) – fluid thermal expansion coefficient</p></li>
+<li><p><strong>T</strong> (<em>Celsius</em>) – fluid bulk temperature</p></li>
+<li><p><strong>Twall</strong> (<em>Celsius</em>) – wallsurface temperature</p></li>
+<li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
+<li><p><strong>g</strong> (<em>MPerS2</em>) – Gravitational acceleration constant</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Gr</strong> – The Grashof Number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Gr</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">Twall</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Nu">
+<span class="sig-name descname"><span class="pre">Nu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">h</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Nu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Nu" title="Link to this definition"></a></dt>
+<dd><p>The Nusselt number (Nu) is defined as the ratio between convective and
+conductive heat transfer across the boundary. <span class="math notranslate nohighlight">\(\text{Nu} = hL/k\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>h</strong> (<em>WPerM2K</em>) – heat transfer coefficient</p></li>
+<li><p><strong>L</strong> (<em>Meter</em>) – characteristic or equivalent length</p></li>
+<li><p><strong>k</strong> (<em>WPerMK</em>) – thermal conductivity of the fluid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Nu</strong> – The Nusselt number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Nu</span><span class="p">(</span><span class="n">h</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Pe">
+<span class="sig-name descname"><span class="pre">Pe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Pe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Pe" title="Link to this definition"></a></dt>
+<dd><p>The Peclet number (Pe) is defined as the ratio between advective and
+diffusive transport rates. For heat transfer, it is the product of
+<span class="math notranslate nohighlight">\(\text{Pe} = \text{Re}\text{Pr}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – fluid density</p></li>
+<li><p><strong>v</strong> (<em>MPerS</em>) – characteristic or equivalent velocity</p></li>
+<li><p><strong>L</strong> (<em>Meter</em>) – characteristic or equivalent length</p></li>
+<li><p><strong>cp</strong> (<em>JPerKgK</em>) – specific heat of the fluid</p></li>
+<li><p><strong>k</strong> (<em>WPerMK</em>) – thermal conductivity of the fluid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Pe</strong> – The Peclet Number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Pe</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">cp</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Pr">
+<span class="sig-name descname"><span class="pre">Pr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Pr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Pr" title="Link to this definition"></a></dt>
+<dd><p>The Prandtl number (Pr) is defined as the ratio between viscous
+diffusivity and thermal diffusivity. <span class="math notranslate nohighlight">\(\text{Pr} = c_p \mu / k\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cp</strong> (<em>JPerKgK</em>) – specific heat of the fluid</p></li>
+<li><p><strong>mu</strong> (<em>PaS</em>) – dynamic viscosity of the fluid</p></li>
+<li><p><strong>k</strong> (<em>WPerMK</em>) – thermal conductivity of the fluid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Pr</strong> – The Prandtl number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Pr</span><span class="p">(</span><span class="n">cp</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="go">0.001</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Ra">
+<span class="sig-name descname"><span class="pre">Ra</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">beta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Twall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Ra"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Ra" title="Link to this definition"></a></dt>
+<dd><p>The Rayleigh number (Ra) is associated with heat transfer for natural convection.
+At low values, heat transfer is primarily conductive, and at high values it is
+primarily convective. <span class="math notranslate nohighlight">\(\text{Ra} = \text{Gr}\text{Pr}\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – fluid density</p></li>
+<li><p><strong>mu</strong> (<em>PaS</em>) – dynamic viscosity of the fluid</p></li>
+<li><p><strong>cp</strong> (<em>JPerKgK</em>) – specific heat of the fluid</p></li>
+<li><p><strong>k</strong> (<em>WPerMK</em>) – thermal conductivity of the fluid</p></li>
+<li><p><strong>beta</strong> (<em>PerC</em>) – fluid thermal expansion coefficient</p></li>
+<li><p><strong>T</strong> (<em>Celsius</em>) – fluid bulk temperature</p></li>
+<li><p><strong>Twall</strong> (<em>Celsius</em>) – wallsurface temperature</p></li>
+<li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
+<li><p><strong>g</strong> (<em>MPerS2</em>) – Gravitational acceleration constant</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Ra</strong> – The Rayleigh Number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Ra</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cp</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">beta</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">Twall</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">Dh</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Re">
+<span class="sig-name descname"><span class="pre">Re</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rho</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">u</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Re"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Re" title="Link to this definition"></a></dt>
+<dd><p>The Reynolds number (Re) is defined as the ratio between inertial forces
+and viscous forces. <span class="math notranslate nohighlight">\(\text{Re} = \rho u L / \mu\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rho</strong> (<em>KgPerM3</em>) – fluid density</p></li>
+<li><p><strong>u</strong> (<em>MPerS</em>) – characteristic or equivalent velocity</p></li>
+<li><p><strong>L</strong> (<em>Meter</em>) – characteristic or equivalent length</p></li>
+<li><p><strong>mu</strong> (<em>PaS</em>) – dynamic viscosity of the fluid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Re</strong> – The Reynolds number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Re</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Re</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">array([2., 1., 0., 1., 2.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Re</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">u</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.Re_mdot">
+<span class="sig-name descname"><span class="pre">Re_mdot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">L</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mu</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#Re_mdot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.Re_mdot" title="Link to this definition"></a></dt>
+<dd><p>The Reynolds number (Re) is defined as the ratio between inertial forces
+and viscous forces. If <span class="math notranslate nohighlight">\(\dot{m} = \rho uA\)</span> is known,
+one may write <span class="math notranslate nohighlight">\(\text{Re} = \dot{m}(L / A) / \mu\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mdot</strong> (<em>KgPerS</em>) – fluid mass current</p></li>
+<li><p><strong>A</strong> (<em>Meter2</em>) – flow area</p></li>
+<li><p><strong>L</strong> (<em>Meter</em>) – characteristic or equivalent length</p></li>
+<li><p><strong>mu</strong> (<em>PaS</em>) – dynamic viscosity of the fluid</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Re</strong> – The Reynolds number</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=-</span><span class="mf">1.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">1.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Re_mdot</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">A</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">L</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">mu</span><span class="o">=</span><span class="mf">1.</span><span class="p">)</span>
+<span class="go">0.0</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.dimensionless.flow_regimes">
+<span class="sig-name descname"><span class="pre">flow_regimes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">re</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/dimensionless.html#flow_regimes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.dimensionless.flow_regimes" title="Link to this definition"></a></dt>
+<dd><p>Turbulent, Laminar and Interim regimes are determined by the Reynolds No.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>re</strong> (<em>np.ndarray</em>) – Reynolds numbers vector</p></li>
+<li><p><strong>bounds</strong> (<em>tuple</em><em>[</em><em>Value</em><em>, </em><em>Value</em><em>]</em>) – <p>boundaries depicting transition between the aforementioned regimes,
+such that:</p>
+<blockquote>
+<div><ul>
+<li><p>Re &lt;= bounds[0] is considered laminar.</p></li>
+<li><p>bounds[0] &lt; Re &lt;= bounds[1] is considered interim.</p></li>
+<li><p>bounds[1] &lt; Re is considered turbulent.</p></li>
+</ul>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Numpy masks</strong> – Laminar, Interim, Turbulent</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[np.ndarray, np.ndarray, np.ndarray]</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span> <span class="o">=</span> <span class="n">flow_regimes</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([ True,  True,  True, False, False])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span>
+<span class="go">array([False, False, False,  True, False])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span>
+<span class="go">array([False, False, False, False,  True])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="stream.composition.html" class="btn btn-neutral float-left" title="Composition" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="heat_transfer_coefficient.html" class="btn btn-neutral float-right" title="Heat Transfer Coefficient" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

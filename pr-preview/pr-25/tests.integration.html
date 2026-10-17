@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Integration Tests &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Libraries Tests" href="tests.test_libraries.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="tests.html">Tests</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Integration Tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal"><code class="docutils literal notranslate"><span class="pre">test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_channel_point_kinetics"><code class="docutils literal notranslate"><span class="pre">test_channel_point_kinetics</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_channel_stable_state_with_uniform_heating_increases_linearly"><code class="docutils literal notranslate"><span class="pre">test_channel_stable_state_with_uniform_heating_increases_linearly</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_flapper_opening_time_is_grid_and_tolerance_invariant"><code class="docutils literal notranslate"><span class="pre">test_flapper_opening_time_is_grid_and_tolerance_invariant</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution"><code class="docutils literal notranslate"><span class="pre">test_inertia_through_RL_circuit_follows_analytic_solution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_inertia_with_flapper_in_PCS_coastdown"><code class="docutils literal notranslate"><span class="pre">test_inertia_with_flapper_in_PCS_coastdown</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_inertia_with_friction_in_PCS_coastdown"><code class="docutils literal notranslate"><span class="pre">test_inertia_with_friction_in_PCS_coastdown</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_inertia_with_transistor_in_PCS_coastdown"><code class="docutils literal notranslate"><span class="pre">test_inertia_with_transistor_in_PCS_coastdown</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_inertia_with_two_parallel_resistors"><code class="docutils literal notranslate"><span class="pre">test_inertia_with_two_parallel_resistors</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_kirchhoff_significance_for_many_parallel_edges"><code class="docutils literal notranslate"><span class="pre">test_kirchhoff_significance_for_many_parallel_edges</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity"><code class="docutils literal notranslate"><span class="pre">test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_local_pressure_with_flow_reversal"><code class="docutils literal notranslate"><span class="pre">test_local_pressure_with_flow_reversal</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_parallel_resistors_with_pump_against_analytic_solution"><code class="docutils literal notranslate"><span class="pre">test_parallel_resistors_with_pump_against_analytic_solution</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet"><code class="docutils literal notranslate"><span class="pre">test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions"><code class="docutils literal notranslate"><span class="pre">test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_pump_coastdown_allows_channels_to_reverse_flow_direction"><code class="docutils literal notranslate"><span class="pre">test_pump_coastdown_allows_channels_to_reverse_flow_direction</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test_general.test_integrations.test_pump_resistor_in_series_follows_analytic_solution"><code class="docutils literal notranslate"><span class="pre">test_pump_resistor_in_series_follows_analytic_solution</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="tests.html#running-the-test-suite">Running the Test Suite</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="tests.html">Tests</a></li>
+      <li class="breadcrumb-item active">Integration Tests</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/tests.integration.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="integration-tests">
+<h1>Integration Tests<a class="headerlink" href="#integration-tests" title="Link to this heading"></a></h1>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_integrations.test_pump_resistor_in_series_follows_analytic_solution" title="test_general.test_integrations.test_pump_resistor_in_series_follows_analytic_solution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_pump_resistor_in_series_follows_analytic_solution</span></code></a></p></td>
+<td><p>A simple circuit of an ideal pump and an ideal resistor.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_parallel_resistors_with_pump_against_analytic_solution" title="test_general.test_integrations.test_parallel_resistors_with_pump_against_analytic_solution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_parallel_resistors_with_pump_against_analytic_solution</span></code></a></p></td>
+<td><p>A simple circuit of an ideal pump and two ideal resistors in parallel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_resistors_in_series_against_analytic_solution</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_channel_stable_state_with_uniform_heating_increases_linearly" title="test_general.test_integrations.test_channel_stable_state_with_uniform_heating_increases_linearly"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_channel_stable_state_with_uniform_heating_increases_linearly</span></code></a></p></td>
+<td><p>For uniform heat flux, the temperature should rise linearly in the simple channel model (T flow).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_integrations.test_channel_point_kinetics" title="test_general.test_integrations.test_channel_point_kinetics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_channel_point_kinetics</span></code></a></p></td>
+<td><p>Checking compatibility between channels and Point Kinetics through a simple, analytical case.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity" title="test_general.test_integrations.test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity</span></code></a></p></td>
+<td><p>Gravity induces pressure differences.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_integrations.test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal" title="test_general.test_integrations.test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal</span></code></a></p></td>
+<td><p>Circuit.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions" title="test_general.test_integrations.test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions</span></code></a></p></td>
+<td><p>This test checks whether negative feedback may be established between a Fuel calculation and Point Kinetics.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet" title="test_general.test_integrations.test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet</span></code></a></p></td>
+<td><p>This test checks whether negative feedback may be established between an MTR Channel calculation and Point Kinetics.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution" title="test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_inertia_through_RL_circuit_follows_analytic_solution</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_kirchhoff_significance_in_two_in_series_resistors</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_kirchhoff_significance_for_many_parallel_edges" title="test_general.test_integrations.test_kirchhoff_significance_for_many_parallel_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_kirchhoff_significance_for_many_parallel_edges</span></code></a></p></td>
+<td><p>Looking at <code class="xref py py-func docutils literal notranslate"><span class="pre">test_kirchhoff_significance_in_two_in_series_resistors</span></code>, for integer values of <code class="docutils literal notranslate"><span class="pre">signify</span></code> there should be an equivalent system in which <code class="docutils literal notranslate"><span class="pre">R1</span></code> is duplicated <code class="docutils literal notranslate"><span class="pre">signify</span></code> times.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_pump_and_current_source</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_flapper_opens_with_ref_mdot</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_flapper_and_pump</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_pump_coastdown_allows_channels_to_reverse_flow_direction" title="test_general.test_integrations.test_pump_coastdown_allows_channels_to_reverse_flow_direction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_pump_coastdown_allows_channels_to_reverse_flow_direction</span></code></a></p></td>
+<td><p>Let us assume the following system: two channels standing upright where one is hotter than the other, and a pump pumping water from the cold channel to the hot channel.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_integrations.test_inertia_with_friction_in_PCS_coastdown" title="test_general.test_integrations.test_inertia_with_friction_in_PCS_coastdown"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_inertia_with_friction_in_PCS_coastdown</span></code></a></p></td>
+<td><p>This test is equivalent to <a class="reference internal" href="PCSCoastdown.html#Primary-Cooling-System-Coastdown"><span class="std std-ref">Primary Cooling System Coastdown</span></a>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_integrations.test_local_pressure_with_flow_reversal" title="test_general.test_integrations.test_local_pressure_with_flow_reversal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_local_pressure_with_flow_reversal</span></code></a></p></td>
+<td><p>Testing a simple circuit in which a local pressure drop experiences flow reversal</p></td>
+</tr>
+</tbody>
+</table>
+<p id="module-test_general.test_integrations">Testing global, or integrative, arrangements.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal">
+<span class="sig-name descname"><span class="pre">test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_Tin_jumps_at_resistor_between_two_hxs_at_flow_reversal" title="Link to this definition"></a></dt>
+<dd><p>Circuit:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HX1</span> <span class="o">--&gt;--</span> <span class="n">R</span> <span class="o">--&gt;--</span> <span class="n">HX2</span>
+ <span class="o">|</span>                 <span class="o">|</span>
+ <span class="o">---&lt;---</span> <span class="n">P</span> <span class="o">---&lt;----</span>
+</pre></div>
+</div>
+<p>When flow direction is positive, the resistor’s temperature
+should be that of HX1. If it is reversed, the temperature should be
+that of HX2.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_channel_point_kinetics">
+<span class="sig-name descname"><span class="pre">test_channel_point_kinetics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_channel_point_kinetics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_channel_point_kinetics" title="Link to this definition"></a></dt>
+<dd><p>Checking compatibility between channels and Point Kinetics
+through a simple, analytical case.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_channel_stable_state_with_uniform_heating_increases_linearly">
+<span class="sig-name descname"><span class="pre">test_channel_stable_state_with_uniform_heating_increases_linearly</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_channel_stable_state_with_uniform_heating_increases_linearly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_channel_stable_state_with_uniform_heating_increases_linearly" title="Link to this definition"></a></dt>
+<dd><p>For uniform heat flux, the temperature should rise linearly in the
+simple channel model (T flow).
+Each fuel cell receives :param P power.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_flapper_opening_time_is_grid_and_tolerance_invariant">
+<span class="sig-name descname"><span class="pre">test_flapper_opening_time_is_grid_and_tolerance_invariant</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_flapper_opening_time_is_grid_and_tolerance_invariant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_flapper_opening_time_is_grid_and_tolerance_invariant" title="Link to this definition"></a></dt>
+<dd><p>With the continuous margin ref_mdot - mdot0, IDA localizes the true
+crossing: t_open equals the analytic log(10) and is invariant across output
+grids and tolerances, without a max_step_size. Restarting from the root keeps
+the requested grid intact and strictly increasing.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution">
+<span class="sig-name descname"><span class="pre">test_inertia_through_RL_circuit_follows_analytic_solution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_inertia_through_RL_circuit_follows_analytic_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_inertia_through_RL_circuit_follows_analytic_solution" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>float</em>) – Resistance</p></li>
+<li><p><strong>inertia</strong> (<em>float</em>) – Moment of inertia</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_inertia_with_flapper_in_PCS_coastdown">
+<span class="sig-name descname"><span class="pre">test_inertia_with_flapper_in_PCS_coastdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_inertia_with_flapper_in_PCS_coastdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_inertia_with_flapper_in_PCS_coastdown" title="Link to this definition"></a></dt>
+<dd><p>This test is conceptually equivalent
+to <a class="reference internal" href="PCSCoastdown.html#Primary-Cooling-System-Coastdown"><span class="std std-ref">Primary Cooling System Coastdown</span></a>, only this time another branch is added,
+hosting a <a class="reference internal" href="stream.calculations.html#stream.calculations.flapper.Flapper" title="stream.calculations.flapper.Flapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">Flapper</span></code></a>. The flapper is set to open at a specific time.</p>
+<p>Eventually, flow between the open flapper and the resistor should be equal.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_inertia_with_friction_in_PCS_coastdown">
+<span class="sig-name descname"><span class="pre">test_inertia_with_friction_in_PCS_coastdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_inertia_with_friction_in_PCS_coastdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_inertia_with_friction_in_PCS_coastdown" title="Link to this definition"></a></dt>
+<dd><p>This test is equivalent
+to <a class="reference internal" href="PCSCoastdown.html#Primary-Cooling-System-Coastdown"><span class="std std-ref">Primary Cooling System Coastdown</span></a>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_inertia_with_transistor_in_PCS_coastdown">
+<span class="sig-name descname"><span class="pre">test_inertia_with_transistor_in_PCS_coastdown</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_inertia_with_transistor_in_PCS_coastdown"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_inertia_with_transistor_in_PCS_coastdown" title="Link to this definition"></a></dt>
+<dd><p>This test is conceptually equivalent
+to <a class="reference internal" href="PCSCoastdown.html#Primary-Cooling-System-Coastdown"><span class="std std-ref">Primary Cooling System Coastdown</span></a>. This time another branch is added,
+hosting a time dependent parabolic resistor which starts at a large resistance,
+and decreases drastically at some point in time.
+We only check for convergence.</p>
+<p>Absolute tolerance (atol) in <span class="math notranslate nohighlight">\(\ddot{m}\)</span> eqs. should be noted.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_inertia_with_two_parallel_resistors">
+<span class="sig-name descname"><span class="pre">test_inertia_with_two_parallel_resistors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_inertia_with_two_parallel_resistors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_inertia_with_two_parallel_resistors" title="Link to this definition"></a></dt>
+<dd><p>This test is equivalent conceptually to <a class="reference internal" href="PCSCoastdown.html#Primary-Cooling-System-Coastdown"><span class="std std-ref">Primary Cooling System Coastdown</span></a>,
+but with two resistors in parallel instead of one. This test was added due to
+prove <a class="reference internal" href="stream.calculations.html#stream.calculations.kirchhoff.KirchhoffWDerivatives" title="stream.calculations.kirchhoff.KirchhoffWDerivatives"><code class="xref py py-class docutils literal notranslate"><span class="pre">KirchhoffWDerivatives</span></code></a>’s ability to handle more complex situations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_kirchhoff_significance_for_many_parallel_edges">
+<span class="sig-name descname"><span class="pre">test_kirchhoff_significance_for_many_parallel_edges</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_kirchhoff_significance_for_many_parallel_edges"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_kirchhoff_significance_for_many_parallel_edges" title="Link to this definition"></a></dt>
+<dd><p>Looking at <code class="xref py py-func docutils literal notranslate"><span class="pre">test_kirchhoff_significance_in_two_in_series_resistors</span></code>,
+for integer values of <code class="docutils literal notranslate"><span class="pre">signify</span></code> there should be an equivalent system in which
+<code class="docutils literal notranslate"><span class="pre">R1</span></code> is duplicated <code class="docutils literal notranslate"><span class="pre">signify</span></code> times.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity">
+<span class="sig-name descname"><span class="pre">test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_kirchhoff_with_decaying_pump_eventually_flips_flow_direction_gravity" title="Link to this definition"></a></dt>
+<dd><p>Gravity induces pressure differences. p1, p2 designate the uphill
+and downhill gravity differences, in a very crude model.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_local_pressure_with_flow_reversal">
+<span class="sig-name descname"><span class="pre">test_local_pressure_with_flow_reversal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_local_pressure_with_flow_reversal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_local_pressure_with_flow_reversal" title="Link to this definition"></a></dt>
+<dd><p>Testing a simple circuit in which a local pressure drop experiences flow
+reversal</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_parallel_resistors_with_pump_against_analytic_solution">
+<span class="sig-name descname"><span class="pre">test_parallel_resistors_with_pump_against_analytic_solution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_parallel_resistors_with_pump_against_analytic_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_parallel_resistors_with_pump_against_analytic_solution" title="Link to this definition"></a></dt>
+<dd><p>A simple circuit of an ideal pump and two ideal resistors in parallel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet">
+<span class="sig-name descname"><span class="pre">test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tcool_feedback_and_ref_temp_is_inlet" title="Link to this definition"></a></dt>
+<dd><p>This test checks whether negative feedback may be established between an MTR
+Channel calculation and Point Kinetics. In this setup, a fuel plate
+and channel represent the core. T0 is the critical reference
+temperature of the coolant. Thus, at steady state the power should be
+close to zero and all temperatures should be close to T0.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions">
+<span class="sig-name descname"><span class="pre">test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_power_is_negligible_for_negative_Tfuel_feedback_and_ref_temp_is_boundary_conditions" title="Link to this definition"></a></dt>
+<dd><p>This test checks whether negative feedback may be established between a
+Fuel calculation and Point Kinetics. In this setup, a fuel plate is tied to
+a thermal bath of temperature T0, which is also the critical reference
+temperature. Thus, at steady state the power should be close to zero and
+all temperatures should be T0.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_pump_coastdown_allows_channels_to_reverse_flow_direction">
+<span class="sig-name descname"><span class="pre">test_pump_coastdown_allows_channels_to_reverse_flow_direction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_pump_coastdown_allows_channels_to_reverse_flow_direction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_pump_coastdown_allows_channels_to_reverse_flow_direction" title="Link to this definition"></a></dt>
+<dd><p>Let us assume the following system: two channels standing upright where
+one is hotter than the other, and a pump pumping water from the cold
+channel to the hot channel. As the pump coasts down, the gravitational
+effect becomes more prominent until the flow is reversed.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_integrations.test_pump_resistor_in_series_follows_analytic_solution">
+<span class="sig-name descname"><span class="pre">test_pump_resistor_in_series_follows_analytic_solution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_integrations.html#test_pump_resistor_in_series_follows_analytic_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_integrations.test_pump_resistor_in_series_follows_analytic_solution" title="Link to this definition"></a></dt>
+<dd><p>A simple circuit of an ideal pump and an ideal resistor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="tests.test_libraries.html" class="btn btn-neutral float-left" title="Libraries Tests" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

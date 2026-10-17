@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.pressure_drop &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.pressure_drop</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.pressure_drop</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop.friction</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Darcy_Weisbach_pressure_by_mdot</span><span class="p">,</span>
+    <span class="n">GeneralDarcyFactor</span><span class="p">,</span>
+    <span class="n">friction_factor</span><span class="p">,</span>
+    <span class="n">Blasius_friction</span><span class="p">,</span>
+    <span class="n">laminar_friction</span><span class="p">,</span>
+    <span class="n">regime_dependent_friction</span><span class="p">,</span>
+    <span class="n">rectangular_laminar_correction</span><span class="p">,</span>
+    <span class="n">turbulent_friction</span><span class="p">,</span>
+    <span class="n">viscosity_correction</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop.local</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">contraction_factor</span><span class="p">,</span>
+    <span class="n">expansion_factor</span><span class="p">,</span>
+    <span class="n">local_pressure_by_mdot</span><span class="p">,</span>
+    <span class="n">local_pressure_factor</span><span class="p">,</span>
+    <span class="n">mdot_by_local_pressure</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">LiquidFuncs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">KgPerS2</span><span class="p">,</span>
+    <span class="n">Meter2</span><span class="p">,</span>
+    <span class="n">KgPerM3</span><span class="p">,</span>
+    <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">MPerS2</span><span class="p">,</span>
+    <span class="n">g</span> <span class="k">as</span> <span class="n">local_gravity</span><span class="p">,</span>
+    <span class="n">Pascal</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"Blasius_friction"</span><span class="p">,</span>
+    <span class="s2">"contraction_factor"</span><span class="p">,</span>
+    <span class="s2">"Darcy_Weisbach_pressure_by_mdot"</span><span class="p">,</span>
+    <span class="s2">"expansion_factor"</span><span class="p">,</span>
+    <span class="s2">"friction_factor"</span><span class="p">,</span>
+    <span class="s2">"gravity_pressure"</span><span class="p">,</span>
+    <span class="s2">"inertia_pressure"</span><span class="p">,</span>
+    <span class="s2">"laminar_friction"</span><span class="p">,</span>
+    <span class="s2">"local_pressure_by_mdot"</span><span class="p">,</span>
+    <span class="s2">"local_pressure_factor"</span><span class="p">,</span>
+    <span class="s2">"mdot_by_local_pressure"</span><span class="p">,</span>
+    <span class="s2">"pressure_diff"</span><span class="p">,</span>
+    <span class="s2">"rectangular_laminar_correction"</span><span class="p">,</span>
+    <span class="s2">"regime_dependent_friction"</span><span class="p">,</span>
+    <span class="s2">"turbulent_friction"</span><span class="p">,</span>
+    <span class="s2">"viscosity_correction"</span><span class="p">,</span>
+    <span class="s2">"static_pressure"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="gravity_pressure">
+<a class="viewcode-back" href="../../../pressure_drop.html#stream.physical_models.pressure_drop.gravity_pressure">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">gravity_pressure</span><span class="p">(</span><span class="n">rho</span><span class="p">:</span> <span class="n">KgPerM3</span><span class="p">,</span> <span class="n">dh</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">g</span><span class="p">:</span> <span class="n">MPerS2</span> <span class="o">=</span> <span class="n">local_gravity</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    In the case of an incompressible barotropic fluid at rest, the force exerted by gravity over a fluid column is</span>
+<span class="sd">    :math:`\Delta p=\rho g\Delta h`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rho: KgPerM3</span>
+<span class="sd">        Fluid density.</span>
+<span class="sd">    g: MPerS2</span>
+<span class="sd">        Gravitational acceleration.</span>
+<span class="sd">    dh: Meter</span>
+<span class="sd">        Height difference.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop due to gravity.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; gravity_pressure(1., 1.)</span>
+<span class="sd">    9.80665</span>
+<span class="sd">    &gt;&gt;&gt; gravity_pressure(1000, 0.)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; # What is the pressure head (for water) on the moon?</span>
+<span class="sd">    &gt;&gt;&gt; gravity_pressure(1000, 1, g=(moon := 1.62))</span>
+<span class="sd">    1620.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">rho</span> <span class="o">*</span> <span class="n">g</span> <span class="o">*</span> <span class="n">dh</span></div>
+
+
+
+<div class="viewcode-block" id="pressure_diff">
+<a class="viewcode-back" href="../../../pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pressure_diff</span><span class="p">(</span>
+    <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">Tw</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
+    <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
+    <span class="n">dz</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">GeneralDarcyFactor</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"Blasius"</span><span class="p">),</span>
+    <span class="n">g</span><span class="p">:</span> <span class="n">MPerS2</span> <span class="o">=</span> <span class="n">local_gravity</span><span class="p">,</span>
+    <span class="n">mdot2</span><span class="p">:</span> <span class="n">KgPerS2</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Returns pressure difference. Positive direction is assumed downward.</span>
+<span class="sd">    This function calculates frictional, inertial, and gravitational pressure drops.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T: Celsius</span>
+<span class="sd">        Bulk Coolant temperature</span>
+<span class="sd">    Tw: Celsius</span>
+<span class="sd">        Wall temperature</span>
+<span class="sd">    fluid: LiquidFuncs</span>
+<span class="sd">        Coolant properties</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        Coolant mass current</span>
+<span class="sd">    pipe: EffectivePipe</span>
+<span class="sd">        Channel geometry</span>
+<span class="sd">    dz: Meter</span>
+<span class="sd">        Cell sizes in the flow's direction</span>
+<span class="sd">    f: GeneralDarcyFactor | None</span>
+<span class="sd">        Darcy-Weisbach friction factor, default being :func:`friction.Blasius_friction`.</span>
+<span class="sd">    g: MPerS2</span>
+<span class="sd">        Gravitational acceleration.</span>
+<span class="sd">    mdot2: KgPerS2 | None</span>
+<span class="sd">        :math:`\ddot{m}`, time derivative of ``mdot``</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop at each cell</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    friction.Darcy_Weisbach_pressure_by_mdot, gravity_pressure</span>
+<span class="sd">    """</span>
+    <span class="n">gravity</span> <span class="o">=</span> <span class="n">gravity_pressure</span><span class="p">(</span><span class="n">rho</span><span class="o">=</span><span class="p">(</span><span class="n">rho</span> <span class="o">:=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">T</span><span class="p">)),</span> <span class="n">dh</span><span class="o">=</span><span class="n">dz</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="n">g</span><span class="p">)</span>
+    <span class="n">_friction</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">mdot</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="k">else</span> <span class="o">-</span><span class="n">Darcy_Weisbach_pressure_by_mdot</span><span class="p">(</span>
+            <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
+            <span class="n">rho</span><span class="o">=</span><span class="n">rho</span><span class="p">,</span>
+            <span class="n">L</span><span class="o">=</span><span class="n">dz</span><span class="p">,</span>
+            <span class="n">Dh</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">hydraulic_diameter</span><span class="p">,</span>
+            <span class="n">A</span><span class="o">=</span><span class="n">pipe</span><span class="o">.</span><span class="n">area</span><span class="p">,</span>
+            <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">Tw</span><span class="p">,</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">fluid</span><span class="p">,</span> <span class="n">pipe</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">inertia</span> <span class="o">=</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">mdot2</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="o">-</span><span class="n">inertia_pressure</span><span class="p">(</span><span class="n">mdot2</span><span class="p">,</span> <span class="n">dz</span><span class="p">,</span> <span class="n">pipe</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_friction</span> <span class="o">+</span> <span class="n">gravity</span> <span class="o">+</span> <span class="n">inertia</span></div>
+
+
+
+<div class="viewcode-block" id="inertia_pressure">
+<a class="viewcode-back" href="../../../pressure_drop.html#stream.physical_models.pressure_drop.inertia_pressure">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">inertia_pressure</span><span class="p">(</span><span class="n">mdot2</span><span class="p">:</span> <span class="n">KgPerS2</span><span class="p">,</span> <span class="n">dl</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span> <span class="n">A</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A change in flow along a streamline incurs a pressure drop.</span>
+<span class="sd">    See further explanation in :mod:`~stream.calculations.ideal.inertia`.</span>
+
+<span class="sd">    .. math:: \Delta p = \frac{dl}{A}\frac{d\dot{m}}{dt}</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    mdot2: KgPerS2</span>
+<span class="sd">         :math:`\ddot{m}`, time derivative of mass flow</span>
+<span class="sd">    dl: Meter</span>
+<span class="sd">        Length element along the streamline</span>
+<span class="sd">    A: Meter2</span>
+<span class="sd">        Area through which the liquid flows in ``dl``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dp: Pascal</span>
+<span class="sd">        Pressure drop (positive).</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">mdot2</span> <span class="o">*</span> <span class="n">dl</span> <span class="o">/</span> <span class="n">A</span></div>
+
+
+
+<div class="viewcode-block" id="static_pressure">
+<a class="viewcode-back" href="../../../pressure_drop.html#stream.physical_models.pressure_drop.static_pressure">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">static_pressure</span><span class="p">(</span><span class="n">pressure</span><span class="p">:</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">area</span><span class="p">:</span> <span class="n">Meter2</span><span class="p">,</span> <span class="n">density</span><span class="p">:</span> <span class="n">KgPerM3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pascal</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Calculates the static pressure from the total (static+dynamic) Bernoulli term.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pressure: Pascal</span>
+<span class="sd">        The total pressure (static+dynamic)</span>
+<span class="sd">    mdot: KgPerS</span>
+<span class="sd">        The mass flow rate</span>
+<span class="sd">    area: Meter2</span>
+<span class="sd">        The cross-section area of the pipe</span>
+<span class="sd">    density: KgPerM3</span>
+<span class="sd">        The fluid density</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; static_pressure(1., 1., 1., 1.)</span>
+<span class="sd">    0.5</span>
+<span class="sd">    &gt;&gt;&gt; static_pressure(1., 0., 1., 1.)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    &gt;&gt;&gt; static_pressure(1., -1., 1., 1.)</span>
+<span class="sd">    0.5</span>
+
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">pressure</span> <span class="o">-</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="n">mdot</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">density</span> <span class="o">*</span> <span class="n">area</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

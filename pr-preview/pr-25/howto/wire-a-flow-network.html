@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wire a flow network &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Choose a channel and its laws" href="choose-a-channel-and-its-laws.html" />
+    <link rel="prev" title="Write a calculation" href="write-a-calculation.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#building">Building</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Wire a flow network</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Junctions-and-edges">Junctions and edges</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Check-the-heights">Check the heights</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Solve-and-read-the-flows">Solve and read the flows</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Flywheels,-flappers-and-heated-channels">Flywheels, flappers and heated channels</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="choose-a-channel-and-its-laws.html">Choose a channel and its laws</a></li>
+<li class="toctree-l3"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Wire a flow network</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/wire-a-flow-network.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Wire-a-flow-network">
+<h1>Wire a flow network<a class="headerlink" href="#Wire-a-flow-network" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="write-a-calculation.html"><span class="doc">Write a calculation</span></a> feeds one calculation its inputs by hand. A loop of the library’s components is wired by <code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code>: it takes the edges, each a <code class="docutils literal notranslate"><span class="pre">flow_edge</span></code> between two junctions with its components in series, and builds the loop’s aggregator and the Kirchhoff calculation holding every edge’s flow.</p>
+<p>This page wires a loop small enough to check by hand: a pump, two resistances in parallel, one standing for three, and a return that drops 5 m to a heat exchanger and climbs back. It checks the heights, solves, reads the flows, then adds a flywheel.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Gravity</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Inertia</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Resistor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">g</span>
+</pre></div>
+</div>
+</div>
+<section id="Junctions-and-edges">
+<h2>Junctions and edges<a class="headerlink" href="#Junctions-and-edges" title="Link to this heading"></a></h2>
+<p>Name every junction: an unnamed <code class="docutils literal notranslate"><span class="pre">Junction</span></code> takes its name from a counter, and the Kirchhoff calculation spells its keys with junction names, so they change between runs.</p>
+<p>An edge’s direction is the direction of positive flow, and every component’s <code class="docutils literal notranslate"><span class="pre">pressure</span></code> is a gain along it: a <code class="docutils literal notranslate"><span class="pre">Pump</span></code> adds its head, a <code class="docutils literal notranslate"><span class="pre">Resistor</span></code> subtracts <span class="math notranslate nohighlight">\(R \dot m\)</span>, a <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> adds <span class="math notranslate nohighlight">\(\rho g \Delta h\)</span> for a <code class="docutils literal notranslate"><span class="pre">disposition</span></code> <span class="math notranslate nohighlight">\(\Delta h\)</span>, positive for a drop. Around a loop the gains cancel. A reversed edge that still closes its loop builds a different plant, and nothing complains: its pump and its <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> change sign. <code class="docutils literal notranslate"><span class="pre">signify=3.0</span></code> makes the second branch stand for
+three: its flow is one branch’s, and its junctions count it thrice. A graph that is not strongly connected raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> at construction, and so does a component on two edges of one graph; the same instances may sit in a second <code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code> asks for the absolute pressure at a component’s inlet; the heat exchanger ignores it and is listed only so the page can read a pressure there.</p>
+<p><img alt="The loop as a graph: junctions J_low, J_split and J_merge, a pump edge, two parallel branch edges, and a return edge that drops 5 m to the heat exchanger and climbs back." src="../_images/wire-a-flow-network.svg" /></p>
+<p><em>The loop the cell below wires: arrows give positive flow, orange labels the gains.</em></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">j_low</span><span class="p">,</span> <span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_low"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_split"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_merge"</span><span class="p">)</span>
+<span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">pressure</span><span class="o">=</span><span class="mf">6e4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">)</span>
+<span class="n">branch_a</span><span class="p">,</span> <span class="n">branch_b</span> <span class="o">=</span> <span class="n">Resistor</span><span class="p">(</span><span class="mf">200.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"BranchA"</span><span class="p">),</span> <span class="n">Resistor</span><span class="p">(</span><span class="mf">600.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"BranchB"</span><span class="p">)</span>
+<span class="n">down</span><span class="p">,</span> <span class="n">up</span> <span class="o">=</span> <span class="n">Gravity</span><span class="p">(</span><span class="n">light_water</span><span class="p">,</span> <span class="n">disposition</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Down"</span><span class="p">),</span> <span class="n">Gravity</span><span class="p">(</span><span class="n">light_water</span><span class="p">,</span> <span class="n">disposition</span><span class="o">=-</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Up"</span><span class="p">)</span>
+<span class="n">hx</span> <span class="o">=</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HX"</span><span class="p">)</span>
+<span class="n">ret</span> <span class="o">=</span> <span class="n">Resistor</span><span class="p">(</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Return"</span><span class="p">)</span>
+
+<span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_low</span><span class="p">,</span> <span class="n">j_split</span><span class="p">),</span> <span class="n">pump</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">branch_a</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">branch_b</span><span class="p">,</span> <span class="n">signify</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_merge</span><span class="p">,</span> <span class="n">j_low</span><span class="p">),</span> <span class="n">down</span><span class="p">,</span> <span class="n">hx</span><span class="p">,</span> <span class="n">up</span><span class="p">,</span> <span class="n">ret</span><span class="p">),</span>
+    <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">j_low</span><span class="p">,</span> <span class="mf">2e5</span><span class="p">),</span>
+    <span class="n">abs_pressure_comps</span><span class="o">=</span><span class="p">[</span><span class="n">hx</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">agr</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span><span class="p">,</span> <span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">variables</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;(J_low -&gt; J_split, 0)&#39;, &#39;(J_split -&gt; J_merge, 0)&#39;, &#39;(J_split -&gt; J_merge, 1)&#39;, &#39;(J_merge -&gt; J_low, 0)&#39;, &#39;(p_abs of HX)&#39;]
+</pre></div></div>
+</div>
+<p>The keys are the edges, <code class="docutils literal notranslate"><span class="pre">(tail</span> <span class="pre">-&gt;</span> <span class="pre">head,</span> <span class="pre">n)</span></code> with <code class="docutils literal notranslate"><span class="pre">n</span></code> counting parallel edges, and the heat exchanger’s inlet pressure, measured from <code class="docutils literal notranslate"><span class="pre">J_low</span></code>, pinned at 2 bar by <code class="docutils literal notranslate"><span class="pre">reference_node</span></code>.</p>
+</section>
+<section id="Check-the-heights">
+<h2>Check the heights<a class="headerlink" href="#Check-the-heights" title="Link to this heading"></a></h2>
+<p>A loop whose heights do not close at zero flow drives a flow nobody built, so run <code class="docutils literal notranslate"><span class="pre">check_gravity_mismatch</span></code> before the first solve; <a class="reference internal" href="../LOFABuildingTheLoop.html#The-flow-graph"><span class="std std-ref">Building the Pool Reactor Loop</span></a> describes what it sums.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fg</span><span class="o">.</span><span class="n">check_gravity_mismatch</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">"every loop closes at zero flow"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+every loop closes at zero flow
+</pre></div></div>
+</div>
+<p>The return’s two gravity heads cancel, and the check is silent.</p>
+</section>
+<section id="Solve-and-read-the-flows">
+<h2>Solve and read the flows<a class="headerlink" href="#Solve-and-read-the-flows" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">fg.guess_steady_state</span></code> takes a flow for one component on every edge and a temperature, and computes the pressures. By hand, the branches share one pressure difference and the return carries <span class="math notranslate nohighlight">\(\Delta p\,(1/R_A + 3/R_B)\)</span>, so with <span class="math notranslate nohighlight">\(H\)</span> the pump’s head</p>
+<div class="math notranslate nohighlight">
+\[\Delta p = \frac{H}{1 + R_{ret}\,(1/R_A + 3/R_B)}.\]</div>
+<p>Read each flow through <code class="docutils literal notranslate"><span class="pre">K.component_edge</span></code>, which returns the key of a component’s edge; a copied key breaks once a junction is renamed or an edge added.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">guess</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">guess_steady_state</span><span class="p">({</span><span class="n">pump</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">,</span> <span class="n">branch_a</span><span class="p">:</span> <span class="mf">50.0</span><span class="p">,</span> <span class="n">branch_b</span><span class="p">:</span> <span class="mf">20.0</span><span class="p">,</span> <span class="n">ret</span><span class="p">:</span> <span class="mf">100.0</span><span class="p">},</span> <span class="mf">40.0</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">guess</span><span class="p">))</span>
+<span class="n">flows</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">)]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="p">(</span><span class="n">pump</span><span class="p">,</span> <span class="n">branch_a</span><span class="p">,</span> <span class="n">branch_b</span><span class="p">,</span> <span class="n">ret</span><span class="p">)}</span>
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">mdot</span> <span class="ow">in</span> <span class="n">flows</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">:</span><span class="s2">&gt;8</span><span class="si">}</span><span class="s2"> flow: </span><span class="si">{</span><span class="n">mdot</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+
+<span class="n">dp</span> <span class="o">=</span> <span class="mf">6e4</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="mf">200.0</span> <span class="o">+</span> <span class="mi">3</span> <span class="o">/</span> <span class="mf">600.0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"branch pressure difference by hand: </span><span class="si">{</span><span class="n">dp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> bar"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"branch A by hand: </span><span class="si">{</span><span class="n">dp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">200.0</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2"> kg/s, branch B by hand: </span><span class="si">{</span><span class="n">dp</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">600.0</span><span class="si">:</span><span class="s2">8.3f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"J_split balance:  </span><span class="si">{</span><span class="n">flows</span><span class="p">[</span><span class="s1">'Pump'</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">flows</span><span class="p">[</span><span class="s1">'BranchA'</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">flows</span><span class="p">[</span><span class="s1">'BranchB'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="n">p_hx</span> <span class="o">=</span> <span class="mf">2e5</span> <span class="o">+</span> <span class="mf">6e4</span> <span class="o">-</span> <span class="n">dp</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="mf">40.0</span><span class="p">))</span> <span class="o">*</span> <span class="n">g</span> <span class="o">*</span> <span class="mf">5.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"HX inlet: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="sa">f</span><span class="s1">'(p_abs of </span><span class="si">{</span><span class="n">hx</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1">)'</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> bar, by hand </span><span class="si">{</span><span class="n">p_hx</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> bar"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+    Pump flow:  300.000 kg/s
+ BranchA flow:  150.000 kg/s
+ BranchB flow:   50.000 kg/s
+  Return flow:  300.000 kg/s
+branch pressure difference by hand: 0.300 bar
+branch A by hand:  150.000 kg/s, branch B by hand:   50.000 kg/s
+J_split balance:  2.8e-14 kg/s
+HX inlet: 2.7861 bar, by hand 2.7861 bar
+</pre></div></div>
+</div>
+<p>The branches carry about 150 kg/s and 50 kg/s, the hand values for a 0.3 bar difference, and <code class="docutils literal notranslate"><span class="pre">J_split</span></code> balances with branch B counted three times. The heat exchanger’s inlet pressure is the reference plus the gains on the way: the pump’s head, branch A’s loss and 5 m of water.</p>
+</section>
+<section id="Flywheels,-flappers-and-heated-channels">
+<h2>Flywheels, flappers and heated channels<a class="headerlink" href="#Flywheels,-flappers-and-heated-channels" title="Link to this heading"></a></h2>
+<p><strong>Flywheels.</strong> An <code class="docutils literal notranslate"><span class="pre">Inertia</span></code> needs the flow’s derivative: list it in <code class="docutils literal notranslate"><span class="pre">inertial_comps</span></code> and pass <code class="docutils literal notranslate"><span class="pre">k_constructor=KirchhoffWDerivatives</span></code>, which adds one <code class="docutils literal notranslate"><span class="pre">mdot2</span></code> row per edge. <code class="docutils literal notranslate"><span class="pre">inertial_comps</span></code> with the plain <code class="docutils literal notranslate"><span class="pre">Kirchhoff</span></code> raises a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code>.</p>
+<p><strong>Flappers.</strong> A <code class="docutils literal notranslate"><span class="pre">Flapper</span></code> reads the clock, <code class="docutils literal notranslate"><span class="pre">funcs={flapper:</span> <span class="pre">{&quot;t&quot;:</span> <span class="pre">identity}}</span></code>, and the flow it watches, declared on the watched edge by <code class="docutils literal notranslate"><span class="pre">ref_mdot_for=(flapper,)</span></code>. <code class="docutils literal notranslate"><span class="pre">ref_mdots</span></code> narrows that list; left out, every component named there receives the edge’s flow.</p>
+<p><strong>Heated channels.</strong> A <code class="docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> reads the absolute pressure <code class="docutils literal notranslate"><span class="pre">p_abs</span></code>, with no default: list it in <code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code> and give a <code class="docutils literal notranslate"><span class="pre">reference_node</span></code>.</p>
+<p>The cell below puts a flywheel on the pump edge.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">flywheel</span> <span class="o">=</span> <span class="n">Inertia</span><span class="p">(</span><span class="mf">5.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Flywheel"</span><span class="p">)</span>
+<span class="n">fg_w</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_low</span><span class="p">,</span> <span class="n">j_split</span><span class="p">),</span> <span class="n">pump</span><span class="p">,</span> <span class="n">flywheel</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">branch_a</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">branch_b</span><span class="p">,</span> <span class="n">signify</span><span class="o">=</span><span class="mf">3.0</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_merge</span><span class="p">,</span> <span class="n">j_low</span><span class="p">),</span> <span class="n">down</span><span class="p">,</span> <span class="n">hx</span><span class="p">,</span> <span class="n">up</span><span class="p">,</span> <span class="n">ret</span><span class="p">),</span>
+    <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">j_low</span><span class="p">,</span> <span class="mf">2e5</span><span class="p">),</span>
+    <span class="n">abs_pressure_comps</span><span class="o">=</span><span class="p">[</span><span class="n">hx</span><span class="p">],</span>
+    <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="n">flywheel</span><span class="p">],</span>
+    <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">K_w</span> <span class="o">=</span> <span class="n">fg_w</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">K_w</span><span class="o">.</span><span class="n">variables</span><span class="p">)[</span><span class="n">K_w</span><span class="o">.</span><span class="n">variables_by_type</span><span class="p">[</span><span class="s2">"mdot2"</span><span class="p">]])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;(J_low -&gt; J_split, mdot2 0)&#39;, &#39;(J_split -&gt; J_merge, mdot2 0)&#39;, &#39;(J_split -&gt; J_merge, mdot2 1)&#39;, &#39;(J_merge -&gt; J_low, mdot2 0)&#39;]
+</pre></div></div>
+</div>
+<p>Each edge gains a <code class="docutils literal notranslate"><span class="pre">(tail</span> <span class="pre">-&gt;</span> <span class="pre">head,</span> <span class="pre">mdot2</span> <span class="pre">n)</span></code> row holding its flow’s derivative, and the flows become differential rows.</p>
+<p><a class="reference internal" href="../LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> wires a full loop with every keyword on this page, a flapper and check valves included. <a class="reference internal" href="../TheCubeProblem.html"><span class="doc">The Cube Problem</span></a> builds a many-junction network, and <a class="reference internal" href="../explanation/sign-conventions.html"><span class="doc">Sign conventions</span></a> collects the signs. The usual next task: <a class="reference internal" href="choose-a-channel-and-its-laws.html"><span class="doc">Choose a channel and its laws</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="write-a-calculation.html" class="btn btn-neutral float-left" title="Write a calculation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="choose-a-channel-and-its-laws.html" class="btn btn-neutral float-right" title="Choose a channel and its laws" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

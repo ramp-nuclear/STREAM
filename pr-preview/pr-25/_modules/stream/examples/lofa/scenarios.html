@@ -1,0 +1,479 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.examples.lofa.scenarios &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.examples.lofa.scenarios</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.examples.lofa.scenarios</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The three loss-of-flow scenarios and the record each one leaves behind."""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">pairwise</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">Solution</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SaturationReachedError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORE</span><span class="p">,</span> <span class="n">HEATED</span><span class="p">,</span> <span class="n">Params</span><span class="p">,</span> <span class="n">nominal_flows</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.system</span><span class="w"> </span><span class="kn">import</span> <span class="n">operating_point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAE_jacobian</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+
+<span class="n">REVERSAL_THRESHOLD</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-3</span>
+<span class="n">VALVE_SHUT_FRACTION</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="n">SCENARIOS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"both"</span><span class="p">,</span> <span class="s2">"one"</span><span class="p">,</span> <span class="s2">"stuck"</span><span class="p">)</span>
+<span class="n">DEFAULT_PARAMS</span> <span class="o">=</span> <span class="n">Params</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Record">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.Record">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Record</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Outcome of one scenario run: ``status`` is ``completed``, ``saturation`` or ``failed``.</span>
+
+<span class="sd">    A valve's shut time ``t_valve_A`` or ``t_valve_B`` is the first output sample at which that</span>
+<span class="sd">    leg's flow is below 1 % of the nominal leg flow, so a leg still coasting forward counts as shut.</span>
+<span class="sd">    ``margin`` is the saturation temperature at the reference pressure at the core top minus the</span>
+<span class="sd">    sampled peak coolant temperature; the saturation stop uses the local pressure, so it can fire at</span>
+<span class="sd">    a slightly higher local temperature than ``margin`` suggests. Reversal and valve times are</span>
+<span class="sd">    quantised to the output grid, and the sampled peak moves with the grid (about 0.01 °C between</span>
+<span class="sd">    the 901- and 3601-point grids). ``t_half`` is the first output time at which the riser flow is</span>
+<span class="sd">    below half its initial value, counted from t=0 and so including the ``t_pumps`` before the</span>
+<span class="sd">    pumps trip; ``t_half_hand`` is the flywheel estimate of the time from the pump trip, inertia</span>
+<span class="sd">    times nominal leg flow over the solved pump head, in seconds.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    status: str</span>
+<span class="sd">        ``completed``, ``saturation`` or ``failed``.</span>
+<span class="sd">    error: str</span>
+<span class="sd">        The error that ended a run early, empty for a completed run.</span>
+<span class="sd">    residual_entry: float</span>
+<span class="sd">        Norm of the thermal-hydraulic residual at the steady-state guess, in the mixed units of the residual.</span>
+<span class="sd">    residual_steady: float</span>
+<span class="sd">        Norm of the full system's residual at the operating point, in the mixed units of the residual.</span>
+<span class="sd">    head: float</span>
+<span class="sd">        Solved head of pump A at the operating point, Pa.</span>
+<span class="sd">    mdot_total: float</span>
+<span class="sd">        Riser flow at the operating point, the core total, kg/s.</span>
+<span class="sd">    mdot_hot: float</span>
+<span class="sd">        Per-plate flow of the hot group at the operating point, kg/s.</span>
+<span class="sd">    mdot_normal: float</span>
+<span class="sd">        Per-plate flow of the normal group at the operating point, kg/s.</span>
+<span class="sd">    mdot_bypass: float</span>
+<span class="sd">        Per-plate flow of the bypass group at the operating point, kg/s.</span>
+<span class="sd">    T_out_hot: float</span>
+<span class="sd">        Coolant temperature in the hot channel's outlet cell at the operating point, °C.</span>
+<span class="sd">    T_out_error_max: float</span>
+<span class="sd">        Largest deviation of a heated group's outlet temperature from its energy balance, K.</span>
+<span class="sd">    split_error_max: float</span>
+<span class="sd">        Largest relative deviation of a group's flow share from the turbulent gap law.</span>
+<span class="sd">    t_trip: float | None</span>
+<span class="sd">        Time the low-flow trip latched, s.</span>
+<span class="sd">    t_rods: float | None</span>
+<span class="sd">        Time the rods start to insert, the trip time plus the trip delay, s.</span>
+<span class="sd">    t_open: float | None</span>
+<span class="sd">        Time the flapper opened, s.</span>
+<span class="sd">    t_valve_A: float | None</span>
+<span class="sd">        Shut time of leg A's check valve, s.</span>
+<span class="sd">    t_valve_B: float | None</span>
+<span class="sd">        Shut time of leg B's check valve, s.</span>
+<span class="sd">    t_rev_hot: float | None</span>
+<span class="sd">        Flow reversal time of the hot group, s.</span>
+<span class="sd">    t_rev_normal: float | None</span>
+<span class="sd">        Flow reversal time of the normal group, s.</span>
+<span class="sd">    t_rev_low: float | None</span>
+<span class="sd">        Flow reversal time of the low group, s.</span>
+<span class="sd">    reversal_in_buoyancy_order: bool</span>
+<span class="sd">        Whether the heated groups reversed in decreasing order of power factor over nominal flow.</span>
+<span class="sd">    peak_hot: float</span>
+<span class="sd">        Sampled peak coolant temperature of the hot channel, °C.</span>
+<span class="sd">    peak_max: float</span>
+<span class="sd">        Sampled peak coolant temperature over the heated channels, °C.</span>
+<span class="sd">    peak_fuel_hot: float</span>
+<span class="sd">        Sampled peak meat temperature of the hot plate, °C.</span>
+<span class="sd">    margin: float</span>
+<span class="sd">        Saturation temperature at the reference pressure minus ``peak_max``, K.</span>
+<span class="sd">    final_hot: float</span>
+<span class="sd">        Per-plate flow of the hot group at the last output time, kg/s.</span>
+<span class="sd">    final_bypass: float</span>
+<span class="sd">        Per-plate flow of the bypass group at the last output time, kg/s.</span>
+<span class="sd">    final_pool: float</span>
+<span class="sd">        Flow through the pool at the last output time, kg/s.</span>
+<span class="sd">    final_leg_A: float</span>
+<span class="sd">        Flow through pump leg A at the last output time, kg/s.</span>
+<span class="sd">    final_leg_B: float</span>
+<span class="sd">        Flow through pump leg B at the last output time, kg/s.</span>
+<span class="sd">    final_flapper: float</span>
+<span class="sd">        Flow through the flapper at the last output time, kg/s.</span>
+<span class="sd">    pool_rise: float</span>
+<span class="sd">        Rise of the mean pool coolant temperature over the run, K.</span>
+<span class="sd">    t_last: float</span>
+<span class="sd">        Last output time, s.</span>
+<span class="sd">    t_half: float | None</span>
+<span class="sd">        First output time the riser flow is below half its initial value, s.</span>
+<span class="sd">    t_half_hand: float</span>
+<span class="sd">        Flywheel estimate of the riser flow's half time from the pump trip, s.</span>
+<span class="sd">    """</span>
+
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">residual_entry</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">residual_steady</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">head</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">mdot_total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">mdot_hot</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">mdot_normal</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">mdot_bypass</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">T_out_hot</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">T_out_error_max</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">split_error_max</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">t_trip</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_rods</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_open</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_valve_A</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_valve_B</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_rev_hot</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_rev_normal</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_rev_low</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">reversal_in_buoyancy_order</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">peak_hot</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">peak_max</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">peak_fuel_hot</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">margin</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_hot</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_bypass</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_pool</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_leg_A</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_leg_B</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">final_flapper</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">pool_rise</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">t_last</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">t_half</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">t_half_hand</span><span class="p">:</span> <span class="nb">float</span>
+
+<div class="viewcode-block" id="Record.empty">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.Record.empty">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">empty</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Record</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A record with every time unknown (``None``), every flag false and every number NaN."""</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"t_"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"t_last"</span><span class="p">,</span> <span class="s2">"t_half_hand"</span><span class="p">):</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">elif</span> <span class="n">f</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="s2">"bool"</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">values</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="n">error</span><span class="p">})</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="flows">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.flows">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="n">Solution</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Mass flow of every core group, the pool, the flapper, both pump legs and the riser at each output time."""</span>
+    <span class="n">comps</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">c</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">comps</span> <span class="o">|=</span> <span class="p">{</span><span class="s2">"pool"</span><span class="p">:</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pool"</span><span class="p">],</span> <span class="s2">"flapper"</span><span class="p">:</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"flapper"</span><span class="p">],</span> <span class="s2">"A"</span><span class="p">:</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pumps"</span><span class="p">][</span><span class="s2">"A"</span><span class="p">],</span> <span class="s2">"B"</span><span class="p">:</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pumps"</span><span class="p">][</span><span class="s2">"B"</span><span class="p">],</span> <span class="s2">"riser"</span><span class="p">:</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"hx"</span><span class="p">]}</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">comps</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">"t"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">)}</span> <span class="o">|</span> <span class="n">data</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_first_time_below</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">threshold</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"t"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">idx</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="reversal_times">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.reversal_times">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">reversal_times</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""First output time each heated group's flow drops below ``REVERSAL_THRESHOLD``, ``None`` if it never does."""</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_first_time_below</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">REVERSAL_THRESHOLD</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="buoyancy_ratios">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.buoyancy_ratios">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">buoyancy_ratios</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Power factor over nominal per-plate flow of each heated group."""</span>
+    <span class="n">nominal</span> <span class="o">=</span> <span class="n">nominal_flows</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">factor</span> <span class="o">/</span> <span class="n">nominal</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_in_buoyancy_order</span><span class="p">(</span><span class="n">rev</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">ratios</span> <span class="o">=</span> <span class="n">buoyancy_ratios</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+    <span class="n">ordered</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">HEATED</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="o">-</span><span class="n">ratios</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="n">times</span> <span class="o">=</span> <span class="p">[</span><span class="n">rev</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">ordered</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">times</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">a</span> <span class="o">&lt;=</span> <span class="n">b</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">pairwise</span><span class="p">(</span><span class="n">times</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_transient_metrics</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">:</span> <span class="n">Solution</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">flows</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">)</span>
+    <span class="n">rev</span> <span class="o">=</span> <span class="n">reversal_times</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+    <span class="n">peaks</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="n">k</span><span class="p">],</span> <span class="s2">"T_cool"</span><span class="p">)))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">}</span>
+    <span class="n">trip</span><span class="p">,</span> <span class="n">flapper</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"trip"</span><span class="p">],</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"flapper"</span><span class="p">]</span>
+    <span class="n">leg_nominal</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"riser"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pool"</span><span class="p">]</span>
+    <span class="n">pool_rise</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+    <span class="k">if</span> <span class="s2">"T_cool"</span> <span class="ow">in</span> <span class="n">pool</span><span class="o">.</span><span class="n">variables</span><span class="p">:</span>
+        <span class="n">pool_T</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">pool</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">)</span>
+        <span class="n">pool_rise</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pool_T</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">pool_T</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"t_trip"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">trip</span><span class="o">.</span><span class="n">t_trip</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">trip</span><span class="o">.</span><span class="n">t_trip</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"t_rods"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">trip</span><span class="o">.</span><span class="n">t_rods</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">trip</span><span class="o">.</span><span class="n">t_trip</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"t_open"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">flapper</span><span class="o">.</span><span class="n">t_open</span><span class="p">)</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">flapper</span><span class="o">.</span><span class="n">t_open</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"t_valve_A"</span><span class="p">:</span> <span class="n">_first_time_below</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"A"</span><span class="p">,</span> <span class="n">VALVE_SHUT_FRACTION</span> <span class="o">*</span> <span class="n">leg_nominal</span><span class="p">),</span>
+        <span class="s2">"t_valve_B"</span><span class="p">:</span> <span class="n">_first_time_below</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="n">VALVE_SHUT_FRACTION</span> <span class="o">*</span> <span class="n">leg_nominal</span><span class="p">),</span>
+        <span class="s2">"reversal_in_buoyancy_order"</span><span class="p">:</span> <span class="n">_in_buoyancy_order</span><span class="p">(</span><span class="n">rev</span><span class="p">,</span> <span class="n">p</span><span class="p">),</span>
+        <span class="s2">"peak_hot"</span><span class="p">:</span> <span class="n">peaks</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">],</span>
+        <span class="s2">"peak_max"</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">peaks</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="s2">"peak_fuel_hot"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"fuels"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">],</span> <span class="s2">"T"</span><span class="p">))),</span>
+        <span class="s2">"margin"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">refs</span><span class="p">[</span><span class="s2">"p_ref"</span><span class="p">]))</span> <span class="o">-</span> <span class="nb">max</span><span class="p">(</span><span class="n">peaks</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+        <span class="s2">"final_hot"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"final_bypass"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"bypass"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"final_pool"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"pool"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"final_leg_A"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"final_leg_B"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"final_flapper"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"flapper"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"pool_rise"</span><span class="p">:</span> <span class="n">pool_rise</span><span class="p">,</span>
+        <span class="s2">"t_last"</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
+        <span class="s2">"t_half"</span><span class="p">:</span> <span class="n">_first_time_below</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="s2">"riser"</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">"riser"</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])),</span>
+    <span class="p">}</span>
+    <span class="n">out</span> <span class="o">|=</span> <span class="p">{</span><span class="sa">f</span><span class="s2">"t_rev_</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">"</span><span class="p">:</span> <span class="n">rev</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_partial_solution</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Solution</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">t</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="s2">"t"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="s2">"y"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">y</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">ndim</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">t</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">Solution</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="smooth_down">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.smooth_down">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">smooth_down</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">t0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">w</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Cosine ramp from 1 at ``t0`` to 0 at ``t0 + w``, flat outside."""</span>
+    <span class="k">return</span> <span class="mf">1.0</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;=</span> <span class="n">t0</span> <span class="k">else</span> <span class="p">(</span><span class="mf">0.0</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="n">t0</span> <span class="o">+</span> <span class="n">w</span> <span class="k">else</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">t0</span><span class="p">)</span> <span class="o">/</span> <span class="n">w</span><span class="p">)))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ramped_head</span><span class="p">(</span><span class="n">head</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">t0</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">):</span>
+    <span class="k">return</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">head</span> <span class="o">*</span> <span class="n">smooth_down</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t0</span><span class="p">,</span> <span class="n">width</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="start_transient">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.start_transient">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">start_transient</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">refs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">,</span> <span class="n">scenario</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Switch both pumps from imposed flow to imposed head at their solved heads, and ramp</span>
+<span class="sd">    the tripping ones to zero over ``[t_pumps, t_pumps + ramp_width]``."""</span>
+    <span class="k">if</span> <span class="n">scenario</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">SCENARIOS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"scenario must be one of </span><span class="si">{</span><span class="n">SCENARIOS</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">scenario</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">scenario</span> <span class="o">==</span> <span class="s2">"stuck"</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">p</span><span class="o">.</span><span class="n">flapper_stuck</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the stuck-flapper scenario needs Params(flapper_stuck=True)"</span><span class="p">)</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">tripping</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"both"</span><span class="p">:</span> <span class="s2">"AB"</span><span class="p">,</span> <span class="s2">"stuck"</span><span class="p">:</span> <span class="s2">"AB"</span><span class="p">,</span> <span class="s2">"one"</span><span class="p">:</span> <span class="s2">"B"</span><span class="p">}[</span><span class="n">scenario</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">leg</span><span class="p">,</span> <span class="n">pump</span> <span class="ow">in</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"pumps"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="n">pump</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">leg</span> <span class="ow">in</span> <span class="n">tripping</span><span class="p">:</span>
+            <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">pump</span><span class="p">,</span> <span class="p">{})[</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_ramped_head</span><span class="p">(</span><span class="n">head</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">t_pumps</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">ramp_width</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">pump</span><span class="p">,</span> <span class="p">{})[</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="o">=</span> <span class="n">head</span></div>
+
+
+
+<div class="viewcode-block" id="transient">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.transient">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">transient</span><span class="p">(</span><span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">atol_rel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Solution</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Integrate from ``y`` over ``[0, t_end]`` at ``n`` output times. Algebraic variables are</span>
+<span class="sd">    left out of the local error test: the Kirchhoff ``mdot2`` rows are the time derivative of</span>
+<span class="sd">    flows an algebraic law pins (index 2), and holding them to the error test stalls the step</span>
+<span class="sd">    at the flapper opening at tight tolerance."""</span>
+    <span class="k">return</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">time</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t_end</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">jacfn</span><span class="o">=</span><span class="n">DAE_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span>
+                     <span class="n">atol</span><span class="o">=</span><span class="n">agr</span><span class="o">.</span><span class="n">scaled_atol</span><span class="p">(</span><span class="n">atol_rel</span><span class="p">),</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">max_steps</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">,</span>
+                     <span class="n">exclude_algvar_from_error</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_effective</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">,</span> <span class="n">scenario</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Params</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``p`` as the scenario runs it: the stuck-flapper scenario forces ``flapper_stuck``."""</span>
+    <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="n">scenario</span><span class="p">,</span> <span class="n">flapper_stuck</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">scenario</span> <span class="o">==</span> <span class="s2">"stuck"</span> <span class="k">else</span> <span class="n">replace</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">scenario</span><span class="o">=</span><span class="n">scenario</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_steady_fields</span><span class="p">(</span><span class="n">rec</span><span class="p">:</span> <span class="n">Record</span><span class="p">,</span> <span class="n">agr</span><span class="p">:</span> <span class="n">Aggregator</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">chk</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"th_checks"</span><span class="p">]</span>
+    <span class="n">st</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">residual_entry</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"th_residual_entry"</span><span class="p">]</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">residual_steady</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)))</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"heads"</span><span class="p">][</span><span class="s2">"A"</span><span class="p">]</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">mdot_total</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">refs</span><span class="p">[</span><span class="s2">"hx"</span><span class="p">])]))</span>
+    <span class="n">inertia</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]</span><span class="o">.</span><span class="n">inertia</span> <span class="o">*</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"params"</span><span class="p">]</span><span class="o">.</span><span class="n">inertia_scale</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">t_half_hand</span> <span class="o">=</span> <span class="n">inertia</span> <span class="o">*</span> <span class="p">(</span><span class="n">rec</span><span class="o">.</span><span class="n">mdot_total</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">rec</span><span class="o">.</span><span class="n">head</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">mdot_hot</span><span class="p">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">mdot_normal</span><span class="p">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">mdot_bypass</span> <span class="o">=</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"mdot"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">],</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"mdot"</span><span class="p">][</span><span class="s2">"normal"</span><span class="p">],</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"mdot"</span><span class="p">][</span><span class="s2">"bypass"</span><span class="p">]</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">T_out_hot</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">st</span><span class="p">[</span><span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="s2">"hot"</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">])[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">rec</span><span class="o">.</span><span class="n">T_out_error_max</span><span class="p">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">split_error_max</span> <span class="o">=</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"T_out_error_max"</span><span class="p">],</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"split_error_max"</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">,</span> <span class="n">scenario</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">atol_rel</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">guess_kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+         <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">band</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Solution</span><span class="p">,</span> <span class="n">Record</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Operating point, then the scenario's transient. Reaching saturation ends the run with status</span>
+<span class="sd">    ``saturation`` and the trajectory up to the stop; any other exception raises; a run the solver</span>
+<span class="sd">    ends early without raising returns status ``failed``."""</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">_effective</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">scenario</span><span class="p">)</span>
+    <span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">operating_point</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">guess_kind</span><span class="o">=</span><span class="n">guess_kind</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="n">band</span><span class="p">)</span>
+    <span class="n">rec</span> <span class="o">=</span> <span class="n">Record</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="s2">"failed"</span><span class="p">)</span>
+    <span class="n">_steady_fields</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">start_transient</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">scenario</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">transient</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">t_end</span><span class="o">=</span><span class="n">t_end</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">atol_rel</span><span class="o">=</span><span class="n">atol_rel</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SaturationReachedError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">sol</span> <span class="o">=</span> <span class="n">_partial_solution</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sol</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="n">rec</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">rec</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="s2">"saturation"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rec</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"completed"</span> <span class="k">if</span> <span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">t_end</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="mf">1e-9</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"failed"</span>
+        <span class="k">if</span> <span class="n">rec</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="s2">"failed"</span><span class="p">:</span>
+            <span class="n">rec</span><span class="o">.</span><span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Solution ended at t=</span><span class="si">{</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> before t_end=</span><span class="si">{</span><span class="n">t_end</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_transient_metrics</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">sol</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">rec</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sol</span><span class="p">,</span> <span class="n">rec</span>
+
+
+<div class="viewcode-block" id="both_pumps">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.both_pumps">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">both_pumps</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span> <span class="o">=</span> <span class="n">DEFAULT_PARAMS</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3600.0</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1801</span><span class="p">,</span> <span class="n">atol_rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+               <span class="n">guess_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"ballpark"</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">band</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Solution</span><span class="p">,</span> <span class="n">Record</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Both pumps trip at ``p.t_pumps``: coastdown, low-flow trip, flapper opening, flow</span>
+<span class="sd">    reversal into natural circulation through the pool."""</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">"both"</span><span class="p">,</span> <span class="n">t_end</span><span class="o">=</span><span class="n">t_end</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">atol_rel</span><span class="o">=</span><span class="n">atol_rel</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">guess_kind</span><span class="o">=</span><span class="n">guess_kind</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="n">band</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="one_pump">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.one_pump">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">one_pump</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span> <span class="o">=</span> <span class="n">DEFAULT_PARAMS</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1800.0</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">901</span><span class="p">,</span> <span class="n">atol_rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+             <span class="n">guess_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"ballpark"</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">band</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Solution</span><span class="p">,</span> <span class="n">Record</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Pump B trips, pump A keeps running: its check valve shuts and the flapper stays closed."""</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">"one"</span><span class="p">,</span> <span class="n">t_end</span><span class="o">=</span><span class="n">t_end</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">atol_rel</span><span class="o">=</span><span class="n">atol_rel</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">guess_kind</span><span class="o">=</span><span class="n">guess_kind</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="n">band</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="stuck_flapper">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.stuck_flapper">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stuck_flapper</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span> <span class="o">=</span> <span class="n">DEFAULT_PARAMS</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">t_end</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3600.0</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1801</span><span class="p">,</span> <span class="n">atol_rel</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span> <span class="n">rtol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-4</span><span class="p">,</span>
+                  <span class="n">guess_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"ballpark"</span><span class="p">,</span> <span class="n">seed</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">band</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Solution</span><span class="p">,</span> <span class="n">Record</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Both pumps trip with the flapper stuck shut: no natural-circulation path, the hot</span>
+<span class="sd">    channel reaches saturation and the run stops there."""</span>
+    <span class="k">return</span> <span class="n">_run</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="s2">"stuck"</span><span class="p">,</span> <span class="n">t_end</span><span class="o">=</span><span class="n">t_end</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">atol_rel</span><span class="o">=</span><span class="n">atol_rel</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="n">rtol</span><span class="p">,</span> <span class="n">guess_kind</span><span class="o">=</span><span class="n">guess_kind</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="n">band</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

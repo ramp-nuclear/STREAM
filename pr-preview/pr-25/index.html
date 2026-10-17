@@ -1,0 +1,209 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>STREAM: System Thermohydraulics for Reactor Evaluation, Analysis &amp; Modeling &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="Installation.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">STREAM: <cite>System Thermohydraulics for Reactor Evaluation, Analysis &amp; Modeling</cite></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="stream-system-thermohydraulics-for-reactor-evaluation-analysis-modeling">
+<span id="stream"></span><h1>STREAM: <cite>System Thermohydraulics for Reactor Evaluation, Analysis &amp; Modeling</cite><a class="headerlink" href="#stream-system-thermohydraulics-for-reactor-evaluation-analysis-modeling" title="Link to this heading"></a></h1>
+<p>STREAM builds and solves systems of coupled differential algebraic equations,
+<span class="math notranslate nohighlight">\(M\dot{y} = F(y, t)\)</span>, put together from calculations that each own a slice of the state vector
+<span class="math notranslate nohighlight">\(y\)</span>. It ships thermal-hydraulic components, from pumps and channels to fuel plates and point
+kinetics, with the correlations behind them, for modelling the heat removal of research reactors.</p>
+<section id="where-to-start">
+<h2>Where to start<a class="headerlink" href="#where-to-start" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 45.0%" />
+<col style="width: 55.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>You want to</p></th>
+<th class="head"><p>Read</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>write your first loop and check it by hand</p></td>
+<td><p><a class="reference internal" href="quickstart.html"><span class="doc">A first loop</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>write a component of your own as a calculation</p></td>
+<td><p><a class="reference internal" href="howto/write-a-calculation.html"><span class="doc">Write a calculation</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>put components on the edges of a loop and solve its flows</p></td>
+<td><p><a class="reference internal" href="howto/wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>pick the coolant channel past a plate and its wall and friction laws</p></td>
+<td><p><a class="reference internal" href="howto/choose-a-channel-and-its-laws.html"><span class="doc">Choose a channel and its laws</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>put a fuel plate behind a channel and multiply it into a rod</p></td>
+<td><p><a class="reference internal" href="howto/build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>feed a calculation a constant, a step or a table in time</p></td>
+<td><p><a class="reference internal" href="howto/bind-inputs-and-schedules.html"><span class="doc">Bind inputs and time schedules</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>add reactor kinetics with a reactivity controller and a scram</p></td>
+<td><p><a class="reference internal" href="howto/add-point-kinetics-and-a-trip.html"><span class="doc">Add point kinetics, feedback and a trip</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>add the heat that lingers after shutdown</p></td>
+<td><p><a class="reference internal" href="howto/add-decay-heat.html"><span class="doc">Add decay heat</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>seed a steady solve that fails or lands on the wrong flow direction</p></td>
+<td><p><a class="reference internal" href="howto/get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>run a transient from an operating point and choose its tolerances</p></td>
+<td><p><a class="reference internal" href="howto/run-a-transient-and-set-tolerances.html"><span class="doc">Run a transient and set tolerances</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>stop a run at an event the solver locates, and restart it</p></td>
+<td><p><a class="reference internal" href="howto/trip-stop-and-restart.html"><span class="doc">Trip, stop and restart</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>find why a solve dies or lands somewhere wrong</p></td>
+<td><p><a class="reference internal" href="howto/diagnose-a-failing-solve.html"><span class="doc">Diagnose a failing solve</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>read a steady state or a transient by name, as a table or a history</p></td>
+<td><p><a class="reference internal" href="howto/read-results.html"><span class="doc">Read results</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>add boiling limits to a solution, at steady state and over a transient</p></td>
+<td><p><a class="reference internal" href="howto/compute-margins.html"><span class="doc">Compute margins</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>see a whole reactor built and run through a loss of flow</p></td>
+<td><p><a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> and the three pages after it, or
+<a class="reference internal" href="Examples.html"><span class="doc">Examples</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>learn the physics behind a heat transfer, friction or boiling law</p></td>
+<td><p><a class="reference internal" href="stream.physical_models.html"><span class="doc">Physical Models</span></a></p></td>
+</tr>
+<tr class="row-even"><td><p>understand why a solve converges or a flow reverses</p></td>
+<td><p><a class="reference internal" href="explanation/index.html"><span class="doc">Explanation</span></a></p></td>
+</tr>
+<tr class="row-odd"><td><p>look a name up</p></td>
+<td><p><a class="reference internal" href="stream.html"><span class="doc">Documentation</span></a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="conventions">
+<h2>Conventions<a class="headerlink" href="#conventions" title="Link to this heading"></a></h2>
+<p>The library holds to a few conventions throughout; <a class="reference internal" href="explanation/sign-conventions.html"><span class="doc">Sign conventions</span></a> collects the signs.</p>
+<ul class="simple">
+<li><p>Temperatures are in °C: the property functions of <code class="docutils literal notranslate"><span class="pre">light_water</span></code> take °C.</p></li>
+<li><p>Absolute pressure is in pascals, wherever <code class="docutils literal notranslate"><span class="pre">p_abs</span></code> is routed to a component, such as a heated channel,
+through <code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code> on <code class="xref py py-class docutils literal notranslate"><span class="pre">FlowGraph</span></code>.</p></li>
+<li><p>A component’s <code class="docutils literal notranslate"><span class="pre">pressure</span></code> is the gain from its inlet to its outlet: a pump’s head is positive, a loss is
+negative, and the gains cancel around every loop.</p></li>
+<li><p>A flow is positive along its drawn edge, from the first junction of <code class="xref py py-func docutils literal notranslate"><span class="pre">flow_edge</span></code>’s <code class="docutils literal notranslate"><span class="pre">(u,</span> <span class="pre">v)</span></code> to the second.</p></li>
+<li><p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">Gravity</span></code>’s <code class="docutils literal notranslate"><span class="pre">disposition</span></code> is positive when the outlet is below the inlet, so a riser takes a negative one.</p></li>
+<li><p>A plate and its channel share the same <code class="docutils literal notranslate"><span class="pre">z_boundaries</span></code>, as <a class="reference internal" href="howto/build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a> states.</p></li>
+</ul>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Installation.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

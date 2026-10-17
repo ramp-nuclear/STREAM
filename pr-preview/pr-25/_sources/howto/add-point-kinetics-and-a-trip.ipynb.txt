@@ -1,0 +1,191 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "428a5184",
+   "metadata": {},
+   "source": [
+    "# Add point kinetics, feedback and a trip\n",
+    "\n",
+    "[Bind inputs and time schedules](bind-inputs-and-schedules.ipynb) hands a calculation its clock through `funcs`. This page builds a point-kinetics node alone with a controller that inserts a reactivity step at 1 s and scrams at 120 % power, seeds it, runs it to the trip and on with the rods in."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "bd09f7de",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import matplotlib.pyplot as plt\n",
+    "import numpy as np\n",
+    "from matplotlib import rc\n",
+    "\n",
+    "rc(\"font\", family=\"serif\", size=15)\n",
+    "\n",
+    "from stream import Aggregator\n",
+    "from stream.calculations.point_kinetics import OneWayToSCRAM, PointKinetics, ReactivityController, SCRAM_at_power\n",
+    "from stream.composition import point_kinetics_steady_state\n",
+    "from stream.examples.lofa.params import BETA, GENERATION_TIME, LAMBDA\n",
+    "from stream.utilities import identity"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cc8bb8be",
+   "metadata": {},
+   "source": [
+    "## A controller and a state machine\n",
+    "\n",
+    "`ReactivityController` holds the control system as two functions. `input_reactivity(state, t_state, t)` returns the inserted reactivity, absolute rather than in dollars, given the state and the time `t_state` it was entered: here 0.15 dollars from 1 s, and once scrammed, the step dropped and 5 dollars of rods driven in over 0.5 s. `state_machine(state, t, power, dPdt)` returns the state that should hold. `OneWayToSCRAM` holds the shipped states, `NORMAL` and `SCRAM`. `SCRAM_at_power` is curried: `SCRAM_at_power(limit)` is a test on the power that returns `True` or `False`, not a state, so the machine wraps it. Without a `state_machine` the controller gets `just(OneWayToSCRAM.NORMAL)`, which never trips. `abort_states` names the states that stop the run."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a9c8f550",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "P0 = 1e6\n",
+    "DOLLAR = float(np.sum(BETA))\n",
+    "too_high = SCRAM_at_power(1.2 * P0)\n",
+    "\n",
+    "\n",
+    "def worth(state, t_state, t, **_):\n",
+    "    if state == OneWayToSCRAM.SCRAM:\n",
+    "        return -5.0 * DOLLAR * min((t - t_state) / 0.5, 1.0)\n",
+    "    return 0.15 * DOLLAR if t >= 1.0 else 0.0\n",
+    "\n",
+    "\n",
+    "def machine(state, t, power, dPdt, **_):\n",
+    "    return OneWayToSCRAM.SCRAM if too_high(power) else state\n",
+    "\n",
+    "\n",
+    "ctrl = ReactivityController(input_reactivity=worth, state_machine=machine, abort_states={OneWayToSCRAM.SCRAM})"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "bdee441d",
+   "metadata": {},
+   "source": [
+    "## The kinetics node and its seed\n",
+    "\n",
+    "`PointKinetics` takes the generation time, the delayed-neutron fractions and the decay rates, here the pool reactor's six groups, and the controller as `controls`; its `calculate` requires the clock `t`, bound through `funcs`. Its `name` defaults to `\"PK\"`, and two calculations of one name make the system refuse to build, so a second kinetics node needs its own.\n",
+    "\n",
+    "Seed it with `point_kinetics_steady_state`, the critical state at a given power, never at zero: with no source the equations are linear in the power and the precursors, so a zero state stays zero."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "58dd25c7",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pk = PointKinetics(GENERATION_TIME, BETA, LAMBDA, controls=ctrl)\n",
+    "agr = Aggregator.from_decoupled(pk, funcs={pk: {\"t\": identity}})\n",
+    "y0 = agr.load(point_kinetics_steady_state(pk, P0))\n",
+    "P = agr.var_index(pk, \"power\")\n",
+    "print(f\"seed power:   {y0[P] / 1e6:.3f} MW\")\n",
+    "print(f\"residual:     {np.linalg.norm(agr.compute(y0, 0.0)):.1e}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f84b4206",
+   "metadata": {},
+   "source": [
+    "The seed sits at 1 MW with a residual of about 2e-8: the precursors balance the power.\n",
+    "\n",
+    "## Run to the trip\n",
+    "\n",
+    "`PointKinetics` has no event margin, so the solver cannot locate the trip: the state machine is polled at each output time once the integration has covered it, and the run is cut at the first output time where an abort state is entered. The trip time is known to the output step, here 0.05 s. Without an abort state the run goes on to its end with the rods out, and only the log records the trip.\n",
+    "\n",
+    "The node is all-differential, so `solve` dispatches it to the ODE backend, which never consults the state machine and never trips. Pass `eq_type=\"DAE\"`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5f223ff5",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "time = np.linspace(0.0, 10.0, 201)\n",
+    "first = agr.solve(y0, time, eq_type=\"DAE\")\n",
+    "t_trip = ctrl.log[-1][1]\n",
+    "print(f\"controller log: {[(str(s), float(t)) for s, t in ctrl.log]}\")\n",
+    "print(f\"trip at:        {t_trip:.2f} s\")\n",
+    "print(f\"power there:    {first.data[-1, P] / P0 * 100:.1f} % of the seed\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "5329dfe6",
+   "metadata": {},
+   "source": [
+    "The first output time above the limit is 1.35 s, at about 120 %, and the run stops there.\n",
+    "\n",
+    "## Restart with the rods in\n",
+    "\n",
+    "A new solve from the stop row continues the transient. The controller inserts at each time the reactivity of the state its log puts there, so the rods go in from the trip. Clear `abort_states` first: the stop row is in the abort state at its own entry time, and the restart would stop at its first row."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "945dfaa2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ctrl.abort_states.clear()\n",
+    "second = agr.solve(first.data[-1], time[time >= t_trip], eq_type=\"DAE\")\n",
+    "t = np.concatenate([first.time, second.time[1:]])\n",
+    "power = np.concatenate([first.data[:, P], second.data[1:, P]])\n",
+    "print(f\"peak power:     {power.max() / P0 * 100:.1f} % at {t[power.argmax()]:.2f} s\")\n",
+    "print(f\"power at 10 s:  {power[-1] / P0 * 100:.1f} %\")\n",
+    "\n",
+    "fig, ax = plt.subplots(figsize=(8, 6))\n",
+    "ax.plot(t, power / 1e6, label=\"power\")\n",
+    "ax.axvline(t_trip, color=\"gray\", linestyle=\"--\", label=\"trip\")\n",
+    "ax.set_xlabel(\"Time [s]\")\n",
+    "ax.set_ylabel(\"Power [MW]\")\n",
+    "ax.grid()\n",
+    "ax.legend()\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "86c526a6",
+   "metadata": {},
+   "source": [
+    "On the output grid the peak is the stop row, and the rods take the power down to about 6 % by 10 s.\n",
+    "\n",
+    "The controller keeps its log after a solve and nothing resets it: a second run inserts the rods at the old trip time, whatever its own power does. `ctrl.reset()` returns it to its initial state.\n",
+    "\n",
+    "## Feedback and outside power\n",
+    "\n",
+    "**Feedback.** `temp_worth` and `ref_temp` are keyed by the calculations that supply `T`, a channel or a fuel, and hold a reactivity per kelvin and the temperature of zero feedback; `T` arrives through graph edges, not `funcs`. [Attaching the kinetics](../LOFABuildingTheLoop.ipynb#Attaching-the-kinetics) wires both for a full core.\n",
+    "\n",
+    "**Outside power.** `PointKineticsWInput` adds an algebraic row for the total power, the fission power plus a `power_input` bound through `funcs`. `power_input` is the non-fission power only, and `point_kinetics_steady_state(pk, power, power_input=...)` seeds the fission rows on the difference. That node dispatches to DAE unaided.\n",
+    "\n",
+    "[Power and reactivity](../LOFABothPumpsTrip.ipynb#Power-and-reactivity) shows kinetics with feedback and a flow trip at scale. [Add decay heat](add-decay-heat.ipynb) builds the `power_input`, and [Trip, stop and restart](trip-stop-and-restart.ipynb) writes a trip the solver locates in time."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}

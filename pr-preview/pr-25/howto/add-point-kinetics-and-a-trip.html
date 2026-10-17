@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Add point kinetics, feedback and a trip &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Add decay heat" href="add-decay-heat.html" />
+    <link rel="prev" title="Bind inputs and time schedules" href="bind-inputs-and-schedules.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#building">Building</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="choose-a-channel-and-its-laws.html">Choose a channel and its laws</a></li>
+<li class="toctree-l3"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
+<li class="toctree-l3"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Add point kinetics, feedback and a trip</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#A-controller-and-a-state-machine">A controller and a state machine</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-kinetics-node-and-its-seed">The kinetics node and its seed</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Run-to-the-trip">Run to the trip</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Restart-with-the-rods-in">Restart with the rods in</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Feedback-and-outside-power">Feedback and outside power</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Add point kinetics, feedback and a trip</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/add-point-kinetics-and-a-trip.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Add-point-kinetics,-feedback-and-a-trip">
+<h1>Add point kinetics, feedback and a trip<a class="headerlink" href="#Add-point-kinetics,-feedback-and-a-trip" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="bind-inputs-and-schedules.html"><span class="doc">Bind inputs and time schedules</span></a> hands a calculation its clock through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. This page builds a point-kinetics node alone with a controller that inserts a reactivity step at 1 s and scrams at 120 % power, seeds it, runs it to the trip and on with the rods in.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">Aggregator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.point_kinetics</span><span class="w"> </span><span class="kn">import</span> <span class="n">OneWayToSCRAM</span><span class="p">,</span> <span class="n">PointKinetics</span><span class="p">,</span> <span class="n">ReactivityController</span><span class="p">,</span> <span class="n">SCRAM_at_power</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">point_kinetics_steady_state</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">BETA</span><span class="p">,</span> <span class="n">GENERATION_TIME</span><span class="p">,</span> <span class="n">LAMBDA</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">identity</span>
+</pre></div>
+</div>
+</div>
+<section id="A-controller-and-a-state-machine">
+<h2>A controller and a state machine<a class="headerlink" href="#A-controller-and-a-state-machine" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ReactivityController</span></code> holds the control system as two functions. <code class="docutils literal notranslate"><span class="pre">input_reactivity(state,</span> <span class="pre">t_state,</span> <span class="pre">t)</span></code> returns the inserted reactivity, absolute rather than in dollars, given the state and the time <code class="docutils literal notranslate"><span class="pre">t_state</span></code> it was entered: here 0.15 dollars from 1 s, and once scrammed, the step dropped and 5 dollars of rods driven in over 0.5 s. <code class="docutils literal notranslate"><span class="pre">state_machine(state,</span> <span class="pre">t,</span> <span class="pre">power,</span> <span class="pre">dPdt)</span></code> returns the state that should hold. <code class="docutils literal notranslate"><span class="pre">OneWayToSCRAM</span></code> holds the shipped states, <code class="docutils literal notranslate"><span class="pre">NORMAL</span></code> and <code class="docutils literal notranslate"><span class="pre">SCRAM</span></code>.
+<code class="docutils literal notranslate"><span class="pre">SCRAM_at_power</span></code> is curried: <code class="docutils literal notranslate"><span class="pre">SCRAM_at_power(limit)</span></code> is a test on the power that returns <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code>, not a state, so the machine wraps it. Without a <code class="docutils literal notranslate"><span class="pre">state_machine</span></code> the controller gets <code class="docutils literal notranslate"><span class="pre">just(OneWayToSCRAM.NORMAL)</span></code>, which never trips. <code class="docutils literal notranslate"><span class="pre">abort_states</span></code> names the states that stop the run.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">P0</span> <span class="o">=</span> <span class="mf">1e6</span>
+<span class="n">DOLLAR</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">BETA</span><span class="p">))</span>
+<span class="n">too_high</span> <span class="o">=</span> <span class="n">SCRAM_at_power</span><span class="p">(</span><span class="mf">1.2</span> <span class="o">*</span> <span class="n">P0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">worth</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">t_state</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">state</span> <span class="o">==</span> <span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">SCRAM</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mf">5.0</span> <span class="o">*</span> <span class="n">DOLLAR</span> <span class="o">*</span> <span class="nb">min</span><span class="p">((</span><span class="n">t</span> <span class="o">-</span> <span class="n">t_state</span><span class="p">)</span> <span class="o">/</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mf">0.15</span> <span class="o">*</span> <span class="n">DOLLAR</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&gt;=</span> <span class="mf">1.0</span> <span class="k">else</span> <span class="mf">0.0</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">machine</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">dPdt</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">SCRAM</span> <span class="k">if</span> <span class="n">too_high</span><span class="p">(</span><span class="n">power</span><span class="p">)</span> <span class="k">else</span> <span class="n">state</span>
+
+
+<span class="n">ctrl</span> <span class="o">=</span> <span class="n">ReactivityController</span><span class="p">(</span><span class="n">input_reactivity</span><span class="o">=</span><span class="n">worth</span><span class="p">,</span> <span class="n">state_machine</span><span class="o">=</span><span class="n">machine</span><span class="p">,</span> <span class="n">abort_states</span><span class="o">=</span><span class="p">{</span><span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">SCRAM</span><span class="p">})</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="The-kinetics-node-and-its-seed">
+<h2>The kinetics node and its seed<a class="headerlink" href="#The-kinetics-node-and-its-seed" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">PointKinetics</span></code> takes the generation time, the delayed-neutron fractions and the decay rates, here the pool reactor’s six groups, and the controller as <code class="docutils literal notranslate"><span class="pre">controls</span></code>; its <code class="docutils literal notranslate"><span class="pre">calculate</span></code> requires the clock <code class="docutils literal notranslate"><span class="pre">t</span></code>, bound through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. Its <code class="docutils literal notranslate"><span class="pre">name</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">&quot;PK&quot;</span></code>, and two calculations of one name make the system refuse to build, so a second kinetics node needs its own.</p>
+<p>Seed it with <code class="docutils literal notranslate"><span class="pre">point_kinetics_steady_state</span></code>, the critical state at a given power, never at zero: with no source the equations are linear in the power and the precursors, so a zero state stays zero.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pk</span> <span class="o">=</span> <span class="n">PointKinetics</span><span class="p">(</span><span class="n">GENERATION_TIME</span><span class="p">,</span> <span class="n">BETA</span><span class="p">,</span> <span class="n">LAMBDA</span><span class="p">,</span> <span class="n">controls</span><span class="o">=</span><span class="n">ctrl</span><span class="p">)</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">pk</span><span class="p">:</span> <span class="p">{</span><span class="s2">"t"</span><span class="p">:</span> <span class="n">identity</span><span class="p">}})</span>
+<span class="n">y0</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">point_kinetics_steady_state</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">P0</span><span class="p">))</span>
+<span class="n">P</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">var_index</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="s2">"power"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"seed power:   </span><span class="si">{</span><span class="n">y0</span><span class="p">[</span><span class="n">P</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> MW"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"residual:     </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+seed power:   1.000 MW
+residual:     1.6e-08
+</pre></div></div>
+</div>
+<p>The seed sits at 1 MW with a residual of about 2e-8: the precursors balance the power.</p>
+</section>
+<section id="Run-to-the-trip">
+<h2>Run to the trip<a class="headerlink" href="#Run-to-the-trip" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">PointKinetics</span></code> has no event margin, so the solver cannot locate the trip: the state machine is polled at each output time once the integration has covered it, and the run is cut at the first output time where an abort state is entered. The trip time is known to the output step, here 0.05 s. Without an abort state the run goes on to its end with the rods out, and only the log records the trip.</p>
+<p>The node is all-differential, so <code class="docutils literal notranslate"><span class="pre">solve</span></code> dispatches it to the ODE backend, which never consults the state machine and never trips. Pass <code class="docutils literal notranslate"><span class="pre">eq_type=&quot;DAE&quot;</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mi">201</span><span class="p">)</span>
+<span class="n">first</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y0</span><span class="p">,</span> <span class="n">time</span><span class="p">,</span> <span class="n">eq_type</span><span class="o">=</span><span class="s2">"DAE"</span><span class="p">)</span>
+<span class="n">t_trip</span> <span class="o">=</span> <span class="n">ctrl</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"controller log: </span><span class="si">{</span><span class="p">[(</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">),</span><span class="w"> </span><span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">))</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">ctrl</span><span class="o">.</span><span class="n">log</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"trip at:        </span><span class="si">{</span><span class="n">t_trip</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"power there:    </span><span class="si">{</span><span class="n">first</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">P</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">P0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> % of the seed"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area rendered_html docutils container">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="color: #7fbfbf; text-decoration-color: #7fbfbf">[00:00:56] </span><span style="color: #808000; text-decoration-color: #808000">WARNING </span> At t = <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.35000</span>, the simulation has been stopped by <span style="font-weight: bold">[</span>PK<span style="font-weight: bold">]</span>                       <a href="file:///home/runner/work/STREAM/STREAM/stream/aggregator/aggregator.py" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">aggregator.py</span></a><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">:</span><a href="file:///home/runner/work/STREAM/STREAM/stream/aggregator/aggregator.py#309" target="_blank"><span style="color: #7f7f7f; text-decoration-color: #7f7f7f">309</span></a>
+</pre></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+controller log: [(&#39;NORMAL&#39;, 0.0), (&#39;SCRAM&#39;, 1.35)]
+trip at:        1.35 s
+power there:    120.1 % of the seed
+</pre></div></div>
+</div>
+<p>The first output time above the limit is 1.35 s, at about 120 %, and the run stops there.</p>
+</section>
+<section id="Restart-with-the-rods-in">
+<h2>Restart with the rods in<a class="headerlink" href="#Restart-with-the-rods-in" title="Link to this heading"></a></h2>
+<p>A new solve from the stop row continues the transient. The controller inserts at each time the reactivity of the state its log puts there, so the rods go in from the trip. Clear <code class="docutils literal notranslate"><span class="pre">abort_states</span></code> first: the stop row is in the abort state at its own entry time, and the restart would stop at its first row.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ctrl</span><span class="o">.</span><span class="n">abort_states</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+<span class="n">second</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">first</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">time</span><span class="p">[</span><span class="n">time</span> <span class="o">&gt;=</span> <span class="n">t_trip</span><span class="p">],</span> <span class="n">eq_type</span><span class="o">=</span><span class="s2">"DAE"</span><span class="p">)</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">first</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">second</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="mi">1</span><span class="p">:]])</span>
+<span class="n">power</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">first</span><span class="o">.</span><span class="n">data</span><span class="p">[:,</span> <span class="n">P</span><span class="p">],</span> <span class="n">second</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">:,</span> <span class="n">P</span><span class="p">]])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"peak power:     </span><span class="si">{</span><span class="n">power</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">P0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> % at </span><span class="si">{</span><span class="n">t</span><span class="p">[</span><span class="n">power</span><span class="o">.</span><span class="n">argmax</span><span class="p">()]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"power at 10 s:  </span><span class="si">{</span><span class="n">power</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">P0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">power</span> <span class="o">/</span> <span class="mf">1e6</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"power"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">t_trip</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"trip"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Power [MW]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+peak power:     120.1 % at 1.35 s
+power at 10 s:  6.0 %
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_add-point-kinetics-and-a-trip_9_1.png" src="../_images/howto_add-point-kinetics-and-a-trip_9_1.png" />
+</div>
+</div>
+<p>On the output grid the peak is the stop row, and the rods take the power down to about 6 % by 10 s.</p>
+<p>The controller keeps its log after a solve and nothing resets it: a second run inserts the rods at the old trip time, whatever its own power does. <code class="docutils literal notranslate"><span class="pre">ctrl.reset()</span></code> returns it to its initial state.</p>
+</section>
+<section id="Feedback-and-outside-power">
+<h2>Feedback and outside power<a class="headerlink" href="#Feedback-and-outside-power" title="Link to this heading"></a></h2>
+<p><strong>Feedback.</strong> <code class="docutils literal notranslate"><span class="pre">temp_worth</span></code> and <code class="docutils literal notranslate"><span class="pre">ref_temp</span></code> are keyed by the calculations that supply <code class="docutils literal notranslate"><span class="pre">T</span></code>, a channel or a fuel, and hold a reactivity per kelvin and the temperature of zero feedback; <code class="docutils literal notranslate"><span class="pre">T</span></code> arrives through graph edges, not <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. <a class="reference internal" href="../LOFABuildingTheLoop.html#Attaching-the-kinetics"><span class="std std-ref">Attaching the kinetics</span></a> wires both for a full core.</p>
+<p><strong>Outside power.</strong> <code class="docutils literal notranslate"><span class="pre">PointKineticsWInput</span></code> adds an algebraic row for the total power, the fission power plus a <code class="docutils literal notranslate"><span class="pre">power_input</span></code> bound through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. <code class="docutils literal notranslate"><span class="pre">power_input</span></code> is the non-fission power only, and <code class="docutils literal notranslate"><span class="pre">point_kinetics_steady_state(pk,</span> <span class="pre">power,</span> <span class="pre">power_input=...)</span></code> seeds the fission rows on the difference. That node dispatches to DAE unaided.</p>
+<p><a class="reference internal" href="../LOFABothPumpsTrip.html#Power-and-reactivity"><span class="std std-ref">Power and reactivity</span></a> shows kinetics with feedback and a flow trip at scale. <a class="reference internal" href="add-decay-heat.html"><span class="doc">Add decay heat</span></a> builds the <code class="docutils literal notranslate"><span class="pre">power_input</span></code>, and <a class="reference internal" href="trip-stop-and-restart.html"><span class="doc">Trip, stop and restart</span></a> writes a trip the solver locates in time.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bind-inputs-and-schedules.html" class="btn btn-neutral float-left" title="Bind inputs and time schedules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="add-decay-heat.html" class="btn btn-neutral float-right" title="Add decay heat" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

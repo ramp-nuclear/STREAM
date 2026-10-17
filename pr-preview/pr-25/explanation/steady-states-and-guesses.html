@@ -1,0 +1,192 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steady states and guesses &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Sign conventions" href="sign-conventions.html" />
+    <link rel="prev" title="Natural circulation and flow reversal" href="natural-circulation.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Explanation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="natural-circulation.html">Natural circulation and flow reversal</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Steady states and guesses</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#why-a-transient-starts-from-a-steady-state">Why a transient starts from a steady state</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-a-guess-has-to-get-right">What a guess has to get right</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#what-the-library-builds-and-what-it-does-not">What the library builds and what it does not</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-two-steps-of-a-steady-solve">The two steps of a steady solve</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sign-conventions.html">Sign conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Explanation</a></li>
+      <li class="breadcrumb-item active">Steady states and guesses</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/explanation/steady-states-and-guesses.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="steady-states-and-guesses">
+<h1>Steady states and guesses<a class="headerlink" href="#steady-states-and-guesses" title="Link to this heading"></a></h1>
+<p>A transient in this library starts from an operating point, and an operating point is a root of
+the system’s equations with every time derivative at zero. This page explains why, what a steady
+solve needs from its guess, what the library builds of it, and what the two steps of the solve do. <a class="reference internal" href="../howto/get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a>
+does the task, and <a class="reference internal" href="../LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> seeds a full pool reactor by hand.</p>
+<section id="why-a-transient-starts-from-a-steady-state">
+<h2>Why a transient starts from a steady state<a class="headerlink" href="#why-a-transient-starts-from-a-steady-state" title="Link to this heading"></a></h2>
+<p>Started anywhere other than an operating point, a transient first shows the plant relaxing toward its own steady state,
+mixed into the response to the change it was meant to show. The steady state also
+gives the transient a consistent start: the differential rows of the initial vector, the coolant and plate temperatures
+and, on a loop with inertia, the flows, are where IDA begins, and by default it makes only the algebraic rows and the
+derivatives consistent with them, so a differential row that is off is kept as given.</p>
+</section>
+<section id="what-a-guess-has-to-get-right">
+<h2>What a guess has to get right<a class="headerlink" href="#what-a-guess-has-to-get-right" title="Link to this heading"></a></h2>
+<p>A steady solve is a Newton-type iteration, and it converges from a starting point close enough to
+the root. Most of the vector is cheap to get close: a pressure follows from a flow through each
+component’s own law, a coolant temperature from the power, the flow and the heat capacity, a wall
+coefficient from the wall law at a guessed temperature. The flows are the part that has to be right,
+because every other row is computed from them, and of the flows the sign matters most. A guess with
+the water going the wrong way through a heated channel feeds the channel from the wrong end and
+sets its buoyancy against the flow it should drive. The natural-circulation loop of the how-to
+fails from a forced-flow guess and converges from two upward guesses that differ threefold in
+magnitude: there the magnitude does not matter and the sign does.</p>
+</section>
+<section id="what-the-library-builds-and-what-it-does-not">
+<h2>What the library builds and what it does not<a class="headerlink" href="#what-the-library-builds-and-what-it-does-not" title="Link to this heading"></a></h2>
+<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">guess_steady_state</span></code> builds the hydraulic part from flows it is
+given. It needs a flow on one component of every edge and raises
+<code class="xref py py-class docutils literal notranslate"><span class="pre">MissingFlowError</span></code> naming the edges without one: it does not complete the
+flows from the junction balances, and it does not choose a sign. From those flows and one
+temperature it computes each component’s pressure, sets the temperatures uniform, evaluates the
+wall coefficients of each wall-coupled channel and adds up the absolute pressures from the reference. A pump that
+imposes its flow, or a closed flapper, has no pressure that follows from the flow, and its guess is
+zero. <code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate_steady_state</span></code> solves a plate and its channel at a
+given flow, and <code class="xref py py-func docutils literal notranslate"><span class="pre">point_kinetics_steady_state</span></code> puts the kinetics at a given
+power and zero reactivity; <a class="reference internal" href="../aggregator.html#stream.state.State.merge" title="stream.state.State.merge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge</span></code></a> lets the later seed win where two overlap. The flows and
+their signs are what one brings.</p>
+</section>
+<section id="the-two-steps-of-a-steady-solve">
+<h2>The two steps of a steady solve<a class="headerlink" href="#the-two-steps-of-a-steady-solve" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../aggregator.html#stream.aggregator.Aggregator.solve_steady" title="stream.aggregator.Aggregator.solve_steady"><code class="xref py py-meth docutils literal notranslate"><span class="pre">solve_steady</span></code></a> first calls scipy’s <code class="docutils literal notranslate"><span class="pre">root</span></code> with the options it
+is given. When <code class="docutils literal notranslate"><span class="pre">root</span></code> reports that it did not converge, the
+library raises an <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code>, and with the default
+<code class="docutils literal notranslate"><span class="pre">globalize=&quot;auto&quot;</span></code> that error, and only that one, sends the solve on to
+<a class="reference internal" href="../aggregator.html#stream.solvers.scaled_newton" title="stream.solvers.scaled_newton"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_newton</span></code></a>; any other exception from scipy propagates.
+<code class="docutils literal notranslate"><span class="pre">globalize=True</span></code> skips scipy and <code class="docutils literal notranslate"><span class="pre">globalize=False</span></code> lets the error propagate. The fallback exists for guesses far from the root, where the
+globalisation of scipy’s default method stalls.</p>
+<p><a class="reference internal" href="../aggregator.html#stream.solvers.scaled_newton" title="stream.solvers.scaled_newton"><code class="xref py py-func docutils literal notranslate"><span class="pre">scaled_newton</span></code></a> is Newton’s method with a line search: each step is halved
+until the norm of the residual falls. The
+damping is what makes it converge. Each linear solve is equilibrated, rows then columns, as insurance for a
+badly scaled system, pressures of about 10⁵ Pa beside temperatures of about 100 °C, and a small
+Tikhonov term keeps a rank-deficient step finite. It stops when the residual norm falls
+below <code class="docutils literal notranslate"><span class="pre">1e-6</span></code>, and raises after 100 iterations or when no step decreases the residual, with the
+best iterate attached as the error’s <code class="docutils literal notranslate"><span class="pre">y</span></code> for diagnosis. <code class="docutils literal notranslate"><span class="pre">scales</span></code> sets the nominal magnitudes
+behind its finite-difference step and is read only when no <code class="docutils literal notranslate"><span class="pre">jac</span></code> is passed; with a <code class="docutils literal notranslate"><span class="pre">jac</span></code> both
+steps use it.</p>
+<p>A failure of both steps says the guess is outside the basin or the equations have no root there. A
+wrong flow sign is the first suspect. A missing edge flow fails earlier, at the guess; <code class="xref py py-meth docutils literal notranslate"><span class="pre">check_gravity_mismatch</span></code> finds a loop
+whose heights do not close at zero flow;
+<a class="reference internal" href="../howto/diagnose-a-failing-solve.html"><span class="doc">Diagnose a failing solve</span></a> goes through them, and <a class="reference internal" href="natural-circulation.html"><span class="doc">Natural circulation and flow reversal</span></a> explains
+why a natural-circulation loop is the case where the sign decides.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="natural-circulation.html" class="btn btn-neutral float-left" title="Natural circulation and flow reversal" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sign-conventions.html" class="btn btn-neutral float-right" title="Sign conventions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

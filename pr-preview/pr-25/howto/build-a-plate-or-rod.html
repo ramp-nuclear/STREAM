@@ -1,0 +1,395 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Build a plate, an assembly or a rod &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Bind inputs and time schedules" href="bind-inputs-and-schedules.html" />
+    <link rel="prev" title="Choose a channel and its laws" href="choose-a-channel-and-its-laws.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#building">Building</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="choose-a-channel-and-its-laws.html">Choose a channel and its laws</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Build a plate, an assembly or a rod</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#The-plate">The plate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Its-channel">Its channel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Couple-and-solve-the-pair">Couple and solve the pair</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#A-rod">A rod</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Build a plate, an assembly or a rod</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/build-a-plate-or-rod.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Build-a-plate,-an-assembly-or-a-rod">
+<h1>Build a plate, an assembly or a rod<a class="headerlink" href="#Build-a-plate,-an-assembly-or-a-rod" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="choose-a-channel-and-its-laws.html"><span class="doc">Choose a channel and its laws</span></a> builds a plate’s channel. This page builds the plate behind its wall, solves the pair against the energy balance, and multiplies it into a rod. <a class="reference internal" href="../SampleFuelPlateAndChannel.html"><span class="doc">Plates and Channels, an MTR Love Story</span></a> and <a class="reference internal" href="../MultiplePlatesInRod.html"><span class="doc">Multiple Plates In a Fuel Rod</span></a> do the same at length.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">Solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">rod</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">friction_factor</span><span class="p">,</span> <span class="n">pressure_diff</span><span class="p">,</span> <span class="n">rectangular_laminar_correction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+</pre></div>
+</div>
+</div>
+<section id="The-plate">
+<h2>The plate<a class="headerlink" href="#The-plate" title="Link to this heading"></a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">Fuel</span></code> is a mesh of cells along the flow (<code class="docutils literal notranslate"><span class="pre">z_boundaries</span></code>) and across the thickness (<code class="docutils literal notranslate"><span class="pre">x_boundaries</span></code>), with a <code class="docutils literal notranslate"><span class="pre">Solid(density,</span> <span class="pre">specific_heat,</span> <span class="pre">conductivity)</span></code> per cell. <code class="docutils literal notranslate"><span class="pre">x_boundaries(clad_N,</span> <span class="pre">fuel_N,</span> <span class="pre">clad_w,</span> <span class="pre">meat_w)</span></code> cuts the thickness into cladding, meat and cladding; <code class="docutils literal notranslate"><span class="pre">Solid.from_array</span></code> merges an array of <code class="docutils literal notranslate"><span class="pre">Solid</span></code>s into one; <code class="docutils literal notranslate"><span class="pre">meat_indices</span></code> marks the cells that make heat. <code class="docutils literal notranslate"><span class="pre">power_shape</span></code> spreads the plate’s power over those cells: one entry per meat cell, summing to one.
+<code class="docutils literal notranslate"><span class="pre">uniform_x_power_shape(z_N,</span> <span class="pre">fuel_N,</span> <span class="pre">clad_N,</span> <span class="pre">...)</span></code> builds it, a cosine along the flow, flat across the meat, its counts in another order than those of <code class="docutils literal notranslate"><span class="pre">x_boundaries</span></code>.</p>
+<p><img alt="A plate's 10 by 12 cell grid between two copies of the same channel with the variables crossing each face, and a rod of three channels and two plates whose outer faces are bare." src="../_images/plate-and-rod.svg" /></p>
+<p><em>(a) The plate’s cells and what crosses each face; (b) the rod of three channels and two plates, bare on its outer faces.</em></p>
+<p>The cell builds the plate of (a): 0.7 m long, 70 mm wide.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">length</span><span class="p">,</span> <span class="n">width</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.070</span>
+<span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="mf">0.0006</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+<span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">meat</span><span class="p">[:,</span> <span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">cladding</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">2700</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">167</span><span class="p">)</span>
+<span class="n">meat_solid</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">3500</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">750</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">power_shape</span> <span class="o">=</span> <span class="n">uniform_x_power_shape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+<span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">x_boundaries</span><span class="o">=</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">),</span>
+    <span class="n">material</span><span class="o">=</span><span class="n">Solid</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">meat</span><span class="p">,</span> <span class="n">meat_solid</span><span class="p">,</span> <span class="n">cladding</span><span class="p">)),</span>
+    <span class="n">y_length</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+    <span class="n">power_shape</span><span class="o">=</span><span class="n">power_shape</span><span class="p">,</span>
+    <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Plate"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"meat cells:        </span><span class="si">{</span><span class="n">meat</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"power_shape cells: </span><span class="si">{</span><span class="n">power_shape</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"power_shape sum:   </span><span class="si">{</span><span class="n">power_shape</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.12f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+meat cells:        80
+power_shape cells: 80
+power_shape sum:   1.000000000000
+</pre></div></div>
+</div>
+<p>Eighty entries for eighty meat cells, summing to one. Nothing checks either: a shape of the wrong size dies at the first evaluation, and one that does not sum to one scales the power the plate deposits.</p>
+</section>
+<section id="Its-channel">
+<h2>Its channel<a class="headerlink" href="#Its-channel" title="Link to this heading"></a></h2>
+<p>The channel is the previous page’s, a 2.2 mm gap with both regime laws, on the same <code class="docutils literal notranslate"><span class="pre">z</span></code>. A channel cut into another number of cells reports clean and dies at the first evaluation on a numpy broadcast error; one with the same count and other spacing is not caught at all, each side computing on its own mesh, so the same <code class="docutils literal notranslate"><span class="pre">z_boundaries</span></code> is required.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipe</span> <span class="o">=</span> <span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="mf">0.0022</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+<span class="n">aspect_ratio</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">width</span>
+<span class="n">re_bounds</span> <span class="o">=</span> <span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">)</span>
+<span class="n">h_spl</span> <span class="o">=</span> <span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">Lh</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">aspect_ratio</span><span class="o">=</span><span class="n">aspect_ratio</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">k_R</span><span class="o">=</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">))</span>
+<span class="n">channel</span> <span class="o">=</span> <span class="n">ChannelAndContacts</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span>
+    <span class="n">h_wall_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">wall_heat_transfer_coeff</span><span class="p">,</span> <span class="n">h_spl</span><span class="o">=</span><span class="n">h_spl</span><span class="p">),</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">pressure_diff</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Channel"</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Couple-and-solve-the-pair">
+<h2>Couple and solve the pair<a class="headerlink" href="#Couple-and-solve-the-pair" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">symmetric_plate(channel,</span> <span class="pre">fuel,</span> <span class="pre">funcs)</span></code> wires the channel to both faces of the plate and returns a <code class="docutils literal notranslate"><span class="pre">CalculationGraph</span></code>; <a class="reference internal" href="../LOFABuildingTheLoop.html#Plates-on-channels"><span class="std std-ref">Plates on channels</span></a> says why that stands for a stack of identical plates. Across each wall the plate reads the coolant temperature with its coefficient, <code class="docutils literal notranslate"><span class="pre">T_left</span></code> with <code class="docutils literal notranslate"><span class="pre">h_left</span></code>, and the channel reads the wall temperature. A plate face wired with a temperature and no coefficient raises a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code> at the first
+evaluation; one wired with neither carries no heat.</p>
+<p><code class="docutils literal notranslate"><span class="pre">symmetric_plate_steady_state(c,</span> <span class="pre">f,</span> <span class="pre">mdot,</span> <span class="pre">p_abs,</span> <span class="pre">power,</span> <span class="pre">Tin)</span></code> seeds the pair from the energy balance and hands it to <code class="docutils literal notranslate"><span class="pre">solve_steady</span></code>: with a shape summing to one, <code class="docutils literal notranslate"><span class="pre">power</span></code> is the whole plate’s in watts, <code class="docutils literal notranslate"><span class="pre">p_abs</span></code> the absolute pressure at the top, and positive <code class="docutils literal notranslate"><span class="pre">mdot</span></code> runs down.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">T_in</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.8e5</span><span class="p">,</span> <span class="mf">25e3</span><span class="p">,</span> <span class="mf">38.0</span>
+<span class="n">pair</span> <span class="o">=</span> <span class="n">symmetric_plate</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">),</span> <span class="n">fuel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+<span class="n">report</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+<span class="n">steady</span> <span class="o">=</span> <span class="n">symmetric_plate_steady_state</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">)</span>
+<span class="n">T_hand</span> <span class="o">=</span> <span class="n">T_in</span> <span class="o">+</span> <span class="n">power</span> <span class="o">/</span> <span class="p">(</span><span class="n">mdot</span> <span class="o">*</span> <span class="n">light_water</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">(</span><span class="n">T_in</span><span class="p">))</span>
+<span class="n">T_out</span> <span class="o">=</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_out"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"outlet, solved:   </span><span class="si">{</span><span class="n">T_out</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"outlet, by hand:  </span><span class="si">{</span><span class="n">T_hand</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"difference:       </span><span class="si">{</span><span class="nb">abs</span><span class="p">(</span><span class="n">T_out</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">T_hand</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"peak meat:        </span><span class="si">{</span><span class="n">steady</span><span class="p">[</span><span class="s1">'Plate'</span><span class="p">][</span><span class="s1">'T'</span><span class="p">][</span><span class="n">meat</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"largest residual: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">pair</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">pair</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">steady</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 171 Equations, 2 Nodes, 2 Edges.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Plate</p></td>
+<td><p>Fuel</p></td>
+<td><p>0 - 140</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Channel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>140 - 171</p></td>
+<td><p>Tin_minus, mdot2</p></td>
+<td><p>Tin, mdot, p_abs</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+outlet, solved:   49.9621 °C
+outlet, by hand:  49.9656 °C
+difference:       0.0035 K
+peak meat:        68.16 °C
+largest residual: 6.7e-10
+</pre></div></div>
+</div>
+<p><strong>Missing</strong> is empty; the plate’s axial faces sit under <strong>Unset</strong>, insulated. The outlet agrees with <span class="math notranslate nohighlight">\(T_{in} + P / (\dot m c_p)\)</span> to within about 0.004 K, with <span class="math notranslate nohighlight">\(c_p\)</span> taken at the inlet, and the meat peaks at about 68 °C.</p>
+</section>
+<section id="A-rod">
+<h2>A rod<a class="headerlink" href="#A-rod" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">rod(channel,</span> <span class="pre">channels,</span> <span class="pre">fuel,</span> <span class="pre">plates)</span></code> deep-copies the channel and the plate and alternates the copies, so every copy carries its original’s name and the graph refuses to aggregate with a <code class="docutils literal notranslate"><span class="pre">NonUniqueCalculationNameError</span></code>. Rename every copy and bind its inputs in one loop: the graph comes back without <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. The pair’s solution, given to every copy by name, seeds the solve.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">graph</span><span class="p">,</span> <span class="n">channels</span><span class="p">,</span> <span class="n">fuels</span> <span class="o">=</span> <span class="n">rod</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">channels</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Channel</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">plate_i</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fuels</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+    <span class="n">plate_i</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Plate</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">graph</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">plate_i</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)</span>
+<span class="n">assembly</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+<span class="n">report</span><span class="p">(</span><span class="n">assembly</span><span class="p">)</span>
+<span class="n">seed</span> <span class="o">=</span> <span class="n">State</span><span class="p">({</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">}</span> <span class="o">|</span> <span class="p">{</span><span class="n">p</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">steady</span><span class="p">[</span><span class="s2">"Plate"</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">fuels</span><span class="p">})</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">assembly</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">seed</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"largest residual: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">assembly</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">))</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 373 Equations, 5 Nodes, 8 Edges.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Channel1</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>0 - 31</p></td>
+<td><p>T_left, Tin_minus, mdot2</p></td>
+<td><p>Tin, mdot, p_abs</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Plate1</p></td>
+<td><p>Fuel</p></td>
+<td><p>31 - 171</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Channel2</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>171 - 202</p></td>
+<td><p>Tin_minus, mdot2</p></td>
+<td><p>Tin, mdot, p_abs</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Plate2</p></td>
+<td><p>Fuel</p></td>
+<td><p>202 - 342</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Channel3</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>342 - 373</p></td>
+<td><p>T_right, Tin_minus, mdot2</p></td>
+<td><p>Tin, mdot, p_abs</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+largest residual: 9.3e-08
+</pre></div></div>
+</div>
+<p><strong>Missing</strong> is empty again. The outer channels list <code class="docutils literal notranslate"><span class="pre">T_left</span></code> and <code class="docutils literal notranslate"><span class="pre">T_right</span></code> under <strong>Unset</strong> respectively: they face a plate on one side only, and the bare side carries no heat.</p>
+<p>An assembly whose plates or channels differ is wired by <code class="docutils literal notranslate"><span class="pre">chain_fuels_channels(channels,</span> <span class="pre">fuels)</span></code>, which <code class="docutils literal notranslate"><span class="pre">rod</span></code> calls on its copies: two sequences whose lengths differ by one, any other count refused with a <code class="docutils literal notranslate"><span class="pre">ValueError</span></code>, their order taken as the physical order unchecked. <code class="docutils literal notranslate"><span class="pre">plate(channel_l,</span> <span class="pre">channel_r,</span> <span class="pre">fuel)</span></code> puts one plate between two different channels. Such an assembly needs its own seed: <a class="reference internal" href="get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a>.</p>
+<p><a class="reference internal" href="../LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> puts such plates into a full loop, one pair per group of identical plates. The usual next task: <a class="reference internal" href="bind-inputs-and-schedules.html"><span class="doc">Bind inputs and time schedules</span></a>, which turns the constants in <code class="docutils literal notranslate"><span class="pre">funcs</span></code> into schedules.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="choose-a-channel-and-its-laws.html" class="btn btn-neutral float-left" title="Choose a channel and its laws" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bind-inputs-and-schedules.html" class="btn btn-neutral float-right" title="Bind inputs and time schedules" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

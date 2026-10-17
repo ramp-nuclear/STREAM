@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.examples.lofa.params &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../howto/index.html">How-to guides</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.examples.lofa.params</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.examples.lofa.params</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Geometry, core groups, operating point and modelling choices of the loss-of-flow case.</span>
+
+<span class="sd">The module constants are the plate geometry (``LENGTH``, ``WIDTH`` in m, cell counts and</span>
+<span class="sd">widths of cladding and meat, ``Z_N`` the default axial cell count), the cladding and fuel-meat</span>
+<span class="sd">solids, the core table (``CORE``, ``HEATED``, ``UNHEATED``), the primary pipe drop</span>
+<span class="sd">``PIPE1_DROP`` in m, the natural-circulation flow signs ``NC_SIGNS``, the nominal per-plate flow</span>
+<span class="sd">``PER_PLATE_REFERENCE`` in kg/s, and six-group delayed-neutron data (``BETA``, ``LAMBDA`` in 1/s,</span>
+<span class="sd">``GENERATION_TIME`` in s)."""</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+
+<span class="n">LENGTH</span><span class="p">,</span> <span class="n">WIDTH</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.070</span>
+<span class="n">CLAD_N</span><span class="p">,</span> <span class="n">FUEL_N</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span>
+<span class="n">CLAD_W</span><span class="p">,</span> <span class="n">MEAT_W</span> <span class="o">=</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="mf">0.0006</span>
+<span class="n">CLADDING</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">2700</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">900</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">167</span><span class="p">)</span>
+<span class="n">FUEL_MEAT</span> <span class="o">=</span> <span class="n">Solid</span><span class="p">(</span><span class="n">density</span><span class="o">=</span><span class="mi">3500</span><span class="p">,</span> <span class="n">specific_heat</span><span class="o">=</span><span class="mi">750</span><span class="p">,</span> <span class="n">conductivity</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<span class="n">Z_N</span> <span class="o">=</span> <span class="mi">10</span>
+
+
+<div class="viewcode-block" id="Group">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.Group">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Group</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One core group: coolant ``gap`` in m, power peaking ``factor`` and number of ``plates``."""</span>
+
+    <span class="n">gap</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">factor</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">plates</span><span class="p">:</span> <span class="nb">int</span></div>
+
+
+
+<span class="n">CORE</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Group</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"hot"</span><span class="p">:</span> <span class="n">Group</span><span class="p">(</span><span class="mf">0.0022</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="s2">"normal"</span><span class="p">:</span> <span class="n">Group</span><span class="p">(</span><span class="mf">0.0022</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>
+    <span class="s2">"low"</span><span class="p">:</span> <span class="n">Group</span><span class="p">(</span><span class="mf">0.0022</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">90</span><span class="p">),</span>
+    <span class="s2">"bypass"</span><span class="p">:</span> <span class="n">Group</span><span class="p">(</span><span class="mf">0.0100</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">HEATED</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">factor</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">UNHEATED</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">g</span><span class="o">.</span><span class="n">factor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="plate_count_weighted_sum">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.plate_count_weighted_sum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plate_count_weighted_sum</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Sum over the core groups of plate count times peaking factor."""</span>
+    <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">g</span><span class="o">.</span><span class="n">factor</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="power_share">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.power_share">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">power_share</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Fraction of the core power one plate of group ``name`` receives."""</span>
+    <span class="k">return</span> <span class="n">CORE</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">factor</span> <span class="o">/</span> <span class="n">plate_count_weighted_sum</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="plate_pipe">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.plate_pipe">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">plate_pipe</span><span class="p">(</span><span class="n">gap</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EffectivePipe</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Rectangular channel of one plate with coolant ``gap`` in m, heated on both wide sides."""</span>
+    <span class="k">return</span> <span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">LENGTH</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">WIDTH</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="n">gap</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">WIDTH</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Params">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.Params">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Params</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Operating point and modelling choices. Scales multiply the nominal value named.</span>
+<span class="sd">    ``pump_head_estimate`` is the head the loop needs at nominal flow without the pump</span>
+<span class="sd">    curve, Pa; each pump's curve is a quadratic droop that loses ``pump_droop`` times that</span>
+<span class="sd">    at the nominal leg flow, so the pump's own nominal head is the estimate plus the droop.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    power: float</span>
+<span class="sd">        Nominal core power, W.</span>
+<span class="sd">    power_scale: float</span>
+<span class="sd">        Multiplies ``power``.</span>
+<span class="sd">    hx_outlet: float</span>
+<span class="sd">        Heat-exchanger outlet temperature, °C.</span>
+<span class="sd">    p_surface: float</span>
+<span class="sd">        Pressure at the pool surface, Pa.</span>
+<span class="sd">    core_depth: float</span>
+<span class="sd">        Depth of the core top below the pool surface, m.</span>
+<span class="sd">    pool_volume: float</span>
+<span class="sd">        Water volume of the pool column, m³.</span>
+<span class="sd">    pool_area_scale: float</span>
+<span class="sd">        Multiplies ``pool_volume`` at fixed height, so it scales the pool's flow area.</span>
+<span class="sd">    tank_volume: float</span>
+<span class="sd">        Water volume of the decay tank, m³.</span>
+<span class="sd">    tank_volume_scale: float</span>
+<span class="sd">        Multiplies ``tank_volume``.</span>
+<span class="sd">    pipe_diameter: float</span>
+<span class="sd">        Inner diameter of the primary, basement and riser pipes, m.</span>
+<span class="sd">    pipe_friction: float</span>
+<span class="sd">        Darcy friction factor of those pipes.</span>
+<span class="sd">    basement_drop: float</span>
+<span class="sd">        Elevation drop from the core plenum to the pump legs, m.</span>
+<span class="sd">    hx_dp: float</span>
+<span class="sd">        Pressure loss of the heat exchanger at the nominal core flow, Pa.</span>
+<span class="sd">    pump_head_estimate: float</span>
+<span class="sd">        Head the loop needs at nominal flow without the pump curve, Pa.</span>
+<span class="sd">    pump_droop: float</span>
+<span class="sd">        Head each pump's curve loses at the nominal leg flow, as a fraction of ``pump_head_estimate``.</span>
+<span class="sd">    inertia: float</span>
+<span class="sd">        Inertance of each pump leg's flywheel, 1/m.</span>
+<span class="sd">    inertia_scale: float</span>
+<span class="sd">        Multiplies ``inertia``.</span>
+<span class="sd">    valve_k: float</span>
+<span class="sd">        Forward loss coefficient of each check valve, Pa·s²/kg².</span>
+<span class="sd">    valve_reverse_ratio: float</span>
+<span class="sd">        How many times stiffer each check valve is against reverse flow.</span>
+<span class="sd">    flapper_fraction: float</span>
+<span class="sd">        Riser flow at which the flapper opens, as a fraction of the nominal core flow.</span>
+<span class="sd">    flapper_f: float</span>
+<span class="sd">        Local loss coefficient of the open flapper.</span>
+<span class="sd">    flapper_area: float</span>
+<span class="sd">        Flow area of the open flapper, m².</span>
+<span class="sd">    flapper_stuck: bool</span>
+<span class="sd">        Whether the flapper never opens.</span>
+<span class="sd">    friction: str</span>
+<span class="sd">        Plate-channel friction: ``"regime"`` (laminar-turbulent blend) or ``"blasius"``.</span>
+<span class="sd">    htc: str</span>
+<span class="sd">        Plate-channel wall heat transfer: ``"regime"`` (laminar, turbulent and natural convection</span>
+<span class="sd">        composed over the same Reynolds bounds as the friction law) or ``"dittus"`` (the</span>
+<span class="sd">        Dittus-Boelter turbulent correlation, for comparison only).</span>
+<span class="sd">    gap_hot: float</span>
+<span class="sd">        Coolant gap of the hot plate channel, m.</span>
+<span class="sd">    trip_threshold: float</span>
+<span class="sd">        Riser flow at which the low-flow trip latches, as a fraction of the nominal core flow.</span>
+<span class="sd">    trip_delay: float</span>
+<span class="sd">        Time from the trip to the start of rod insertion, s.</span>
+<span class="sd">    rod_worth_dollars: float</span>
+<span class="sd">        Rod worth, dollars.</span>
+<span class="sd">    rod_duration: float</span>
+<span class="sd">        Duration of the rod insertion, s.</span>
+<span class="sd">    feedback_scale: float</span>
+<span class="sd">        Multiplies both temperature feedback coefficients.</span>
+<span class="sd">    coolant_worth: float</span>
+<span class="sd">        Coolant temperature coefficient of the whole core, absolute reactivity per K.</span>
+<span class="sd">    fuel_worth: float</span>
+<span class="sd">        Fuel-meat temperature coefficient of the whole core, absolute reactivity per K.</span>
+<span class="sd">    t_pumps: float</span>
+<span class="sd">        Time the tripping pumps start to lose their head, s.</span>
+<span class="sd">    ramp_width: float</span>
+<span class="sd">        Duration of the pump head ramp to zero, s.</span>
+<span class="sd">    scenario: str</span>
+<span class="sd">        ``"both"``, ``"one"`` or ``"stuck"``; the scenario functions set it.</span>
+<span class="sd">    stop_at_saturation: bool</span>
+<span class="sd">        Whether a heated channel ends the run when its coolant reaches saturation.</span>
+<span class="sd">    axial_cells: int</span>
+<span class="sd">        Axial cells per channel and plate.</span>
+<span class="sd">    """</span>
+
+    <span class="n">power</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10e6</span>
+    <span class="n">power_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">hx_outlet</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">38.0</span>
+    <span class="n">p_surface</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">101325.0</span>
+    <span class="n">core_depth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">8.0</span>
+    <span class="n">pool_volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">300.0</span>
+    <span class="n">pool_area_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">tank_volume</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">20.0</span>
+    <span class="n">tank_volume_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">pipe_diameter</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span>
+    <span class="n">pipe_friction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">basement_drop</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">7.3</span>
+    <span class="n">hx_dp</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5e4</span>
+    <span class="n">pump_head_estimate</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">8.15e4</span>
+    <span class="n">pump_droop</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.6</span>
+    <span class="n">inertia</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.35e4</span>
+    <span class="n">inertia_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">valve_k</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span>
+    <span class="n">valve_reverse_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e5</span>
+    <span class="n">flapper_fraction</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span>
+    <span class="n">flapper_f</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span>
+    <span class="n">flapper_area</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
+    <span class="n">flapper_stuck</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">friction</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"regime"</span>
+    <span class="n">htc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"regime"</span>
+    <span class="n">gap_hot</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0022</span>
+    <span class="n">trip_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.85</span>
+    <span class="n">trip_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">rod_worth_dollars</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span>
+    <span class="n">rod_duration</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">feedback_scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">coolant_worth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1e-4</span>
+    <span class="n">fuel_worth</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">2e-5</span>
+    <span class="n">t_pumps</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">10.0</span>
+    <span class="n">ramp_width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">scenario</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"both"</span>
+    <span class="n">stop_at_saturation</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">axial_cells</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Z_N</span></div>
+
+
+
+<span class="n">PIPE1_DROP</span> <span class="o">=</span> <span class="mf">4.3</span>
+<span class="n">NC_SIGNS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"pool"</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="s2">"flapper"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+<span class="n">PER_PLATE_REFERENCE</span> <span class="o">=</span> <span class="mf">0.5</span>
+<span class="n">BETA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.000215</span><span class="p">,</span> <span class="mf">0.001424</span><span class="p">,</span> <span class="mf">0.001274</span><span class="p">,</span> <span class="mf">0.002568</span><span class="p">,</span> <span class="mf">0.000748</span><span class="p">,</span> <span class="mf">0.000273</span><span class="p">])</span>
+<span class="n">LAMBDA</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0124</span><span class="p">,</span> <span class="mf">0.0305</span><span class="p">,</span> <span class="mf">0.111</span><span class="p">,</span> <span class="mf">0.301</span><span class="p">,</span> <span class="mf">1.14</span><span class="p">,</span> <span class="mf">3.01</span><span class="p">])</span>
+<span class="n">GENERATION_TIME</span> <span class="o">=</span> <span class="mf">5e-5</span>
+
+
+<div class="viewcode-block" id="nominal_flows">
+<a class="viewcode-back" href="../../../../stream.examples.html#stream.examples.lofa.nominal_flows">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">nominal_flows</span><span class="p">(</span><span class="n">p</span><span class="p">:</span> <span class="n">Params</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Per-plate nominal flow of each group (proportional to area times the square root of</span>
+<span class="sd">    the hydraulic diameter, anchored at ``PER_PLATE_REFERENCE`` for a 2.2 mm gap) and the</span>
+<span class="sd">    core total under ``"total"``. ``PER_PLATE_REFERENCE`` is the flow through a 2.2 mm plate</span>
+<span class="sd">    channel at the nominal point, kg/s."""</span>
+    <span class="n">gaps</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">gap_hot</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"hot"</span> <span class="k">else</span> <span class="n">g</span><span class="o">.</span><span class="n">gap</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">gap</span><span class="p">:</span> <span class="n">plate_pipe</span><span class="p">(</span><span class="n">gap</span><span class="p">)</span><span class="o">.</span><span class="n">area</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">plate_pipe</span><span class="p">(</span><span class="n">gap</span><span class="p">)</span><span class="o">.</span><span class="n">hydraulic_diameter</span><span class="p">)</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">PER_PLATE_REFERENCE</span> <span class="o">/</span> <span class="n">weight</span><span class="p">(</span><span class="mf">0.0022</span><span class="p">)</span>
+    <span class="n">flows</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">scale</span> <span class="o">*</span> <span class="n">weight</span><span class="p">(</span><span class="n">gap</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">gap</span> <span class="ow">in</span> <span class="n">gaps</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="n">flows</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flows</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

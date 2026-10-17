@@ -1,0 +1,731 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>A Pool Reactor for Loss-of-Flow Analysis &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection" href="LOFABothPumpsTrip.html" />
+    <link rel="prev" title="Building the Pool Reactor Loop" href="LOFABuildingTheLoop.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#from-a-first-loop-to-a-fuel-rod">From a first loop to a fuel rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#more-calculations">More calculations</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of flow</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">A Pool Reactor for Loss-of-Flow Analysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Parameters">Parameters</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-core">The core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-loop-as-a-graph">The loop as a graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-operating-point">The operating point</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Hand-checks">Hand checks</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Temperatures-along-the-core">Temperatures along the core</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Which-wall-law">Which wall law</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">A Pool Reactor for Loss-of-Flow Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LOFAPoolReactor.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="A-Pool-Reactor-for-Loss-of-Flow-Analysis">
+<h1>A Pool Reactor for Loss-of-Flow Analysis<a class="headerlink" href="#A-Pool-Reactor-for-Loss-of-Flow-Analysis" title="Link to this heading"></a></h1>
+<p>The reactor on this page is an open-pool research reactor. Its plate core sits 8 m under the pool surface and is cooled by forced flow running downward through four groups of plate channels. Below the core a plenum collects the flow and sends it to a decay tank, then to two pump legs in parallel, each with a pump, a flywheel and a check valve, and on through the heat exchanger back to the pool. A flapper joins the plenum below the core to the bottom of the pool beside it: it is held shut by the
+pressure of the forced flow and opens when that flow is lost. The pool itself is the heat sink for the natural circulation that follows.</p>
+<p>The whole loop is built from the library’s components and shipped as <code class="docutils literal notranslate"><span class="pre">stream.examples.lofa</span></code>; the previous page, <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a>, puts it together by hand, and <code class="docutils literal notranslate"><span class="pre">build</span></code> makes the same loop in one call. The next two examples take it through a loss of flow: both pumps tripping, from coastdown through the reactor trip and the flapper opening to natural circulation, and then the variations (one pump, a flapper that does not open) and how far the
+numbers can be trusted.</p>
+<p>Every transient starts from a steady state, so this page takes the loop <code class="docutils literal notranslate"><span class="pre">build</span></code> makes, solves its operating point, and checks that operating point against estimates one can make by hand.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">Solution</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa</span><span class="w"> </span><span class="kn">import</span> <span class="n">Params</span><span class="p">,</span> <span class="n">both_pumps</span><span class="p">,</span> <span class="n">junction_mass_balance</span><span class="p">,</span> <span class="n">operating_point</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.params</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORE</span><span class="p">,</span> <span class="n">HEATED</span><span class="p">,</span> <span class="n">nominal_flows</span><span class="p">,</span> <span class="n">plate_pipe</span><span class="p">,</span> <span class="n">power_share</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.system</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_channel</span>
+</pre></div>
+</div>
+</div>
+<section id="Parameters">
+<h2>Parameters<a class="headerlink" href="#Parameters" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Params</span></code> holds the operating point and the modelling choices, all with defaults. Only a few of them set the character of the plant: the core makes 10 MW, the heat exchanger returns the water at 38 °C, there are 8 m of water above the core, each of the two pump legs carries half the core flow, and the flapper opens once the flow returning from the heat exchanger falls to 30 % of the nominal core flow: the flapper and the reactor trip both read the flow of the riser. The table also gives the
+pump head the loop’s losses were estimated to need at nominal flow, before any pump curve is attached.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">Params</span><span class="p">()</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">nominal_flows</span><span class="p">(</span><span class="n">p</span><span class="p">)[</span><span class="s2">"total"</span><span class="p">]</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"power [MW]"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">power</span> <span class="o">/</span> <span class="mf">1e6</span><span class="p">,</span>
+        <span class="s2">"heat exchanger outlet [°C]"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">,</span>
+        <span class="s2">"water above the core [m]"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">core_depth</span><span class="p">,</span>
+        <span class="s2">"nominal core flow [kg/s]"</span><span class="p">:</span> <span class="n">total</span><span class="p">,</span>
+        <span class="s2">"flow per pump leg [kg/s]"</span><span class="p">:</span> <span class="n">total</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">"flapper opens at [kg/s]"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">flapper_fraction</span> <span class="o">*</span> <span class="n">total</span><span class="p">,</span>
+        <span class="s2">"estimated loop head [bar]"</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">pump_head_estimate</span> <span class="o">/</span> <span class="mf">1e5</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">to_frame</span><span class="p">(</span><span class="s2">"value"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>power [MW]</th>
+      <td>10.000</td>
+    </tr>
+    <tr>
+      <th>heat exchanger outlet [°C]</th>
+      <td>38.000</td>
+    </tr>
+    <tr>
+      <th>water above the core [m]</th>
+      <td>8.000</td>
+    </tr>
+    <tr>
+      <th>nominal core flow [kg/s]</th>
+      <td>241.532</td>
+    </tr>
+    <tr>
+      <th>flow per pump leg [kg/s]</th>
+      <td>120.766</td>
+    </tr>
+    <tr>
+      <th>flapper opens at [kg/s]</th>
+      <td>72.460</td>
+    </tr>
+    <tr>
+      <th>estimated loop head [bar]</th>
+      <td>0.815</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="The-core">
+<h2>The core<a class="headerlink" href="#The-core" title="Link to this heading"></a></h2>
+<p>The core is described by four groups of plates. There are 300 normal plates, a single hot plate carrying 1.6 times the power of a normal one, 90 low plates carrying half of it, and 10 wider unheated channels forming a bypass. The heated plates have a 2.2 mm coolant gap and the bypass 10 mm.</p>
+<p><img alt="The four core groups as plate stacks between the pool top and the plenum, and as four parallel edges of the flow graph" src="_images/lofa-core.svg" /></p>
+<p><em>One channel and one plate per group; the edge weight ``signify`` is the plate count.</em></p>
+<p>Simulating 401 channels one by one would be wasteful, as plates of a group behave identically. Each group is therefore one channel, one plate, and one edge in the flow network, and that edge carries a <code class="docutils literal notranslate"><span class="pre">signify</span></code> weight equal to the group’s plate count: the edge’s flow is the flow of one plate, and the junctions it connects see that flow multiplied by the plate count. The table below gives the share of the core power each single plate receives and the per-plate flow of the design point. That
+flow is an estimate, the channel’s area times the square root of its hydraulic diameter anchored at 0.5 kg/s for a 2.2 mm gap; it sizes the pumps and the initial guess, and is not the law the solved steady state is checked against below.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">flows</span> <span class="o">=</span> <span class="n">nominal_flows</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"plates"</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">plates</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+        <span class="s2">"gap [mm]"</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">gap</span> <span class="o">*</span> <span class="mf">1e3</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+        <span class="s2">"power factor"</span><span class="p">:</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">factor</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">values</span><span class="p">()],</span>
+        <span class="s2">"power per plate [kW]"</span><span class="p">:</span> <span class="p">[</span><span class="n">power_share</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">power</span> <span class="o">/</span> <span class="mf">1e3</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">],</span>
+        <span class="s2">"flow per plate [kg/s]"</span><span class="p">:</span> <span class="p">[</span><span class="n">flows</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">],</span>
+    <span class="p">},</span>
+    <span class="n">index</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">CORE</span><span class="p">),</span>
+<span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>plates</th>
+      <th>gap [mm]</th>
+      <th>power factor</th>
+      <th>power per plate [kW]</th>
+      <th>flow per plate [kg/s]</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>hot</th>
+      <td>1</td>
+      <td>2.2</td>
+      <td>1.6</td>
+      <td>46.163</td>
+      <td>0.500</td>
+    </tr>
+    <tr>
+      <th>normal</th>
+      <td>300</td>
+      <td>2.2</td>
+      <td>1.0</td>
+      <td>28.852</td>
+      <td>0.500</td>
+    </tr>
+    <tr>
+      <th>low</th>
+      <td>90</td>
+      <td>2.2</td>
+      <td>0.5</td>
+      <td>14.426</td>
+      <td>0.500</td>
+    </tr>
+    <tr>
+      <th>bypass</th>
+      <td>10</td>
+      <td>10.0</td>
+      <td>0.0</td>
+      <td>0.000</td>
+      <td>4.603</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="The-loop-as-a-graph">
+<h2>The loop as a graph<a class="headerlink" href="#The-loop-as-a-graph" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">build</span></code> returns the aggregator, the Kirchhoff calculation that holds the flows and pressures of the network, and a dictionary of references to the components. Without kinetics every plate is fed a constant share of the nominal power, which is what the thermal-hydraulic steady state needs. The figure shows the loop it builds, in elevation; <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> builds it component by component and draws the flow graph. The four core groups are the
+parallel edges from the pool top to the plenum; the flapper runs from the pool bottom to the plenum, so when it opens the core and the flapper form a loop through the pool.</p>
+<p><img alt="The pool reactor's loop in elevation, from the pool surface down to the pumps" src="_images/lofa-loop.svg" /></p>
+<p><em>The loop ``build`` makes, in elevation: seven junctions, twelve edges, the pool as the free surface.</em></p>
+</section>
+<section id="The-operating-point">
+<h2>The operating point<a class="headerlink" href="#The-operating-point" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">operating_point</span></code> solves the steady state in two stages. First the thermal-hydraulics, with the plates at constant power, from the rough guess described in <a class="reference internal" href="LOFABuildingTheLoop.html#A-first-solve"><span class="std std-ref">A first solve</span></a>. Then the point-kinetics node is attached, its temperature-feedback references taken at the solved temperatures, so that the full system starts with zero reactivity and exactly at its operating point. It returns the full system and its consistent state vector <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">operating_point</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="n">state</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>calculation</th>
+      <th>variable</th>
+      <th>i</th>
+      <th>j</th>
+      <th>value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>J_pool_top</td>
+      <td>Tin</td>
+      <td>0</td>
+      <td>0</td>
+      <td>38.000000</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>HotChannel</td>
+      <td>T_cool</td>
+      <td>0</td>
+      <td>0</td>
+      <td>38.566275</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>HotChannel</td>
+      <td>T_cool</td>
+      <td>0</td>
+      <td>1</td>
+      <td>40.209596</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>HotChannel</td>
+      <td>T_cool</td>
+      <td>0</td>
+      <td>2</td>
+      <td>42.768888</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>HotChannel</td>
+      <td>T_cool</td>
+      <td>0</td>
+      <td>3</td>
+      <td>45.993295</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+</section>
+<section id="Hand-checks">
+<h2>Hand checks<a class="headerlink" href="#Hand-checks" title="Link to this heading"></a></h2>
+<p>Three things about this steady state can be estimated without the code: the outlet temperature of each heated channel, how the flow divides between the groups, and the pump heads. <code class="docutils literal notranslate"><span class="pre">operating_point</span></code> stores these checks of the thermal-hydraulic solve in <code class="docutils literal notranslate"><span class="pre">refs[&quot;th_checks&quot;]</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">chk</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"th_checks"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"core inlet temperature:        </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'T_in'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"worst outlet temperature error: </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'T_out_error_max'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"worst split error:              </span><span class="si">{</span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">chk</span><span class="p">[</span><span class="s1">'split_error_max'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pool flow:                      </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'pool_flow'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">leg</span><span class="p">,</span> <span class="n">head</span> <span class="ow">in</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"heads"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">curve</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="n">refs</span><span class="p">[</span><span class="s2">"pump_curves"</span><span class="p">][</span><span class="n">leg</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pump </span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2">: head </span><span class="si">{</span><span class="n">head</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> bar, net of its curve </span><span class="si">{</span><span class="p">(</span><span class="n">head</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">curve</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> bar"</span><span class="p">)</span>
+<span class="n">law</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">plate_pipe</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">gap</span><span class="p">)</span><span class="o">.</span><span class="n">area</span> <span class="o">*</span> <span class="n">plate_pipe</span><span class="p">(</span><span class="n">g</span><span class="o">.</span><span class="n">gap</span><span class="p">)</span><span class="o">.</span><span class="n">hydraulic_diameter</span> <span class="o">**</span> <span class="p">(</span><span class="mi">5</span> <span class="o">/</span> <span class="mi">7</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+<span class="n">mdot</span> <span class="o">=</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"mdot"</span><span class="p">]</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"flow per plate [kg/s]"</span><span class="p">:</span> <span class="n">mdot</span><span class="p">,</span>
+        <span class="s2">"group flow [kg/s]"</span><span class="p">:</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">m</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mdot</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+        <span class="s2">"flow over 5/7 law"</span><span class="p">:</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">mdot</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="n">mdot</span><span class="p">[</span><span class="s2">"normal"</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">law</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">/</span> <span class="n">law</span><span class="p">[</span><span class="s2">"normal"</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">CORE</span><span class="p">},</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+core inlet temperature:        38.00 °C
+worst outlet temperature error: 0.0044 K
+worst split error:              3.39 %
+pool flow:                      241.5 kg/s
+pump A: head 1.278 bar, net of its curve 0.787 bar
+pump B: head 1.278 bar, net of its curve 0.787 bar
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>flow per plate [kg/s]</th>
+      <th>group flow [kg/s]</th>
+      <th>flow over 5/7 law</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>hot</th>
+      <td>0.477</td>
+      <td>0.477</td>
+      <td>1.009</td>
+    </tr>
+    <tr>
+      <th>normal</th>
+      <td>0.473</td>
+      <td>141.915</td>
+      <td>1.000</td>
+    </tr>
+    <tr>
+      <th>low</th>
+      <td>0.469</td>
+      <td>42.206</td>
+      <td>0.991</td>
+    </tr>
+    <tr>
+      <th>bypass</th>
+      <td>5.693</td>
+      <td>56.933</td>
+      <td>0.966</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p><strong>Energy balance.</strong> In each heated channel the water’s temperature rise is the plate’s power over its flow times the heat capacity, <span class="math notranslate nohighlight">\(\Delta T = P / (\dot m c_p)\)</span>. The solved outlet temperatures agree with that to within about 0.004 K, although the estimate takes the heat capacity at a single temperature.</p>
+<p><strong>Flow split.</strong> All core groups see the same pressure difference between the pool top and the plenum. With turbulent friction, a channel’s flow at a given pressure drop scales as <span class="math notranslate nohighlight">\(A\,D_h^{5/7}\)</span>, so the per-plate flows should stand in the ratio of that quantity; the last column divides each group’s flow by it, normalised to the normal group. This law is sharper than the design-point estimate in the core table, which is why the bypass carries about 5.7 kg/s per channel against its design
+value of about 4.6 kg/s. The flows follow the law to within about 3.4 %; the largest departure is the bypass, at about 0.97, which differs most from the normal channels in both gap and water temperature. The three heated groups share one geometry, so the law gives them equal flows, yet the hot plate takes about 1 % more than a normal one: its water is warmer and less viscous. The pool, carrying the whole core flow, carries about 242 kg/s.</p>
+<p><strong>Pump heads.</strong> The two pump legs sit in parallel between the same two junctions and are identical, so they share the head and the flow equally: both pumps deliver about 1.28 bar. Net of each pump’s droop curve, the head that reaches the loop is about 0.79 bar, close to the estimated loop head of 0.815 bar in the parameter table.</p>
+<p><strong>Mass balance.</strong> The operating point is a steady state, so at every junction the flows in and out must cancel, each core edge counted as many times as its group has plates. The package’s conservation checks take a solution of a transient; a single sample of the operating-point vector at time zero is one.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">worst</span><span class="p">,</span> <span class="n">per_junction</span> <span class="o">=</span> <span class="n">junction_mass_balance</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">Solution</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">]),</span> <span class="n">y</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"largest imbalance: </span><span class="si">{</span><span class="n">worst</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">junction</span><span class="p">,</span> <span class="n">imbalance</span> <span class="ow">in</span> <span class="n">per_junction</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">junction</span><span class="si">:</span><span class="s2">&gt;11</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">imbalance</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+largest imbalance: 2.8e-14 kg/s
+ J_pool_top: 2.8e-14 kg/s
+   J_plenum: 5.6e-15 kg/s
+ J_pool_bot: 2.8e-14 kg/s
+  J_tank_in: 0.0e+00 kg/s
+ J_tank_out: 0.0e+00 kg/s
+    J_split: 0.0e+00 kg/s
+    J_merge: 0.0e+00 kg/s
+</pre></div></div>
+</div>
+<p>Every junction closes to round-off, the largest imbalance being about 3e-14 kg/s against a core flow of about 242 kg/s.</p>
+</section>
+<section id="Temperatures-along-the-core">
+<h2>Temperatures along the core<a class="headerlink" href="#Temperatures-along-the-core" title="Link to this heading"></a></h2>
+<p>The coolant enters each channel at the top of the core at the pool temperature and heats up on its way down. The plates’ power follows a cosine along their length, so the water heats fastest at mid-core and the profile is an S rather than a straight line.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="n">ch</span> <span class="o">=</span> <span class="n">refs</span><span class="p">[</span><span class="s2">"channels"</span><span class="p">][</span><span class="n">k</span><span class="p">]</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="n">state</span><span class="p">[</span><span class="n">ch</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s2">"o"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Distance from the core top [m]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Coolant temperature [°C]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> outlet: </span><span class="si">{</span><span class="n">state</span><span class="p">[</span><span class="n">refs</span><span class="p">[</span><span class="s1">'channels'</span><span class="p">][</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s1">'T_cool'</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFAPoolReactor_15_0.png" src="_images/LOFAPoolReactor_15_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+hot outlet: 61.1 °C
+normal outlet: 52.6 °C
+low outlet: 45.4 °C
+</pre></div></div>
+</div>
+<p>The hot channel leaves the core at about 61 °C and the normal channels at about 53 °C, far below the saturation temperature at the pressure under 8 m of water.</p>
+</section>
+<section id="Which-wall-law">
+<h2>Which wall law<a class="headerlink" href="#Which-wall-law" title="Link to this heading"></a></h2>
+<p>The plates hand their heat to the coolant through a wall heat-transfer coefficient, and which law gives it matters most once the forced flow is gone. Dittus-Boelter is a turbulent correlation: the coefficient scales as the Reynolds number to the power 0.8, so it goes to zero with the flow. In natural circulation the water moves through the plates at a few centimetres per second, and there it starves the plate of heat transfer and the plate runs hot. The regime-dependent law composes laminar,
+turbulent and natural convection and holds a finite coefficient down to zero flow. That is why <code class="docutils literal notranslate"><span class="pre">Params.htc</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;regime&quot;</span></code> and Dittus-Boelter is kept only as a comparison.</p>
+<p>The cell below evaluates the hot channel’s coefficient for both laws, averaged over its cells, for a wall 20 K above a 40 °C coolant at the core-top pressure, from the nominal per-plate flow down to 1e-4 kg/s, and marks the hot plate’s flow five minutes into the both-pumps transient. It then runs those five minutes with each law and compares the hot plate’s peak meat temperature, the hot coolant’s peak, the margin to saturation, the hot channel’s reversal time and its flow at the end.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">runs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"regime"</span><span class="p">:</span> <span class="n">both_pumps</span><span class="p">(</span><span class="n">Params</span><span class="p">(),</span> <span class="n">t_end</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">151</span><span class="p">)[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="s2">"dittus"</span><span class="p">:</span> <span class="n">both_pumps</span><span class="p">(</span><span class="n">Params</span><span class="p">(</span><span class="n">htc</span><span class="o">=</span><span class="s2">"dittus"</span><span class="p">),</span> <span class="n">t_end</span><span class="o">=</span><span class="mf">300.0</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">151</span><span class="p">)[</span><span class="mi">1</span><span class="p">]}</span>
+<span class="n">nc_flow</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">runs</span><span class="p">[</span><span class="s2">"regime"</span><span class="p">]</span><span class="o">.</span><span class="n">final_hot</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">hot_h</span><span class="p">(</span><span class="n">htc</span><span class="p">,</span> <span class="n">mdot</span><span class="p">):</span>
+    <span class="n">ch</span> <span class="o">=</span> <span class="n">make_channel</span><span class="p">(</span><span class="s2">"HotChannel"</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">gap_hot</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">friction</span><span class="p">,</span> <span class="n">htc</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stop_at_saturation</span><span class="p">)</span>
+    <span class="n">h</span> <span class="o">=</span> <span class="n">ch</span><span class="o">.</span><span class="n">h_wall</span><span class="p">(</span><span class="n">T_cool</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">),</span> <span class="n">T_wall</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ch</span><span class="o">.</span><span class="n">n</span><span class="p">,</span> <span class="mf">60.0</span><span class="p">),</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">refs</span><span class="p">[</span><span class="s2">"p_ref"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">h</span><span class="p">))</span>
+
+
+<span class="n">mdots</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">flows</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">]),</span> <span class="o">-</span><span class="mi">4</span><span class="p">,</span> <span class="mi">60</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">htc</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"regime"</span><span class="p">,</span> <span class="s2">"regime-dependent"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"dittus"</span><span class="p">,</span> <span class="s2">"Dittus-Boelter"</span><span class="p">)):</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">mdots</span><span class="p">,</span> <span class="p">[</span><span class="n">hot_h</span><span class="p">(</span><span class="n">htc</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">mdots</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">label</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">nc_flow</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"gray"</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s2">"--"</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"hot plate at 300 s"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Flow per plate [kg/s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">"Wall heat-transfer coefficient [W/m$^2$K]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">which</span><span class="o">=</span><span class="s2">"both"</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"at </span><span class="si">{</span><span class="n">nc_flow</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s: regime-dependent </span><span class="si">{</span><span class="n">hot_h</span><span class="p">(</span><span class="s1">'regime'</span><span class="p">,</span><span class="w"> </span><span class="n">nc_flow</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> W/m²K, Dittus-Boelter </span><span class="si">{</span><span class="n">hot_h</span><span class="p">(</span><span class="s1">'dittus'</span><span class="p">,</span><span class="w"> </span><span class="n">nc_flow</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> W/m²K"</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="n">law</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"hot plate peak meat [°C]"</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">peak_fuel_hot</span><span class="p">,</span>
+            <span class="s2">"hot coolant peak [°C]"</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">peak_hot</span><span class="p">,</span>
+            <span class="s2">"margin to saturation [K]"</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">margin</span><span class="p">,</span>
+            <span class="s2">"hot channel reverses at [s]"</span><span class="p">:</span> <span class="n">r</span><span class="o">.</span><span class="n">t_rev_hot</span><span class="p">,</span>
+            <span class="s2">"hot plate flow at 300 s [g/s]"</span><span class="p">:</span> <span class="mf">1e3</span> <span class="o">*</span> <span class="n">r</span><span class="o">.</span><span class="n">final_hot</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">law</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">runs</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFAPoolReactor_18_0.png" src="_images/LOFAPoolReactor_18_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+at 0.0045 kg/s: regime-dependent 1184 W/m²K, Dittus-Boelter 444 W/m²K
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>regime</th>
+      <th>dittus</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>hot plate peak meat [°C]</th>
+      <td>105.79</td>
+      <td>121.69</td>
+    </tr>
+    <tr>
+      <th>hot coolant peak [°C]</th>
+      <td>101.14</td>
+      <td>100.87</td>
+    </tr>
+    <tr>
+      <th>margin to saturation [K]</th>
+      <td>15.70</td>
+      <td>15.97</td>
+    </tr>
+    <tr>
+      <th>hot channel reverses at [s]</th>
+      <td>192.00</td>
+      <td>200.00</td>
+    </tr>
+    <tr>
+      <th>hot plate flow at 300 s [g/s]</th>
+      <td>-4.51</td>
+      <td>-4.54</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>Down to about 0.1 kg/s per plate the two laws give the same coefficient, the turbulent one. Below that the regime-dependent law first falls under Dittus-Boelter, through the laminar and transition range, crosses it again near 0.02 kg/s, and then levels off on the natural-convection floor, while Dittus-Boelter keeps falling along its straight line. Five minutes into the transient the hot plate carries about 4.5 g/s, upward (the minus sign), and there the regime-dependent law gives about 1200
+W/m²K against about 440 W/m²K for Dittus-Boelter.</p>
+<p>The table shows what that does. The coolant hardly changes: its peak is about 101 °C with either law and the margin to saturation about 16 K, and the hot plate’s flow at the end is the same to within a few hundredths of a gram per second. The plate is what changes: its peak meat temperature is about 122 °C with Dittus-Boelter and about 106 °C with the regime-dependent law, about 16 K lower, and the hot channel reverses about 8 s earlier.</p>
+<p>The next example, <em>Both Pumps Trip</em>, starts the transient from exactly this state: the pumps lose their head, the flywheels carry the flow down, the reactor trips on low flow, the flapper opens, and the core reverses into natural circulation through the pool.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="LOFABuildingTheLoop.html" class="btn btn-neutral float-left" title="Building the Pool Reactor Loop" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LOFABothPumpsTrip.html" class="btn btn-neutral float-right" title="Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Read results &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Compute margins" href="compute-margins.html" />
+    <link rel="prev" title="Diagnose a failing solve" href="diagnose-a-failing-solve.html" />
+    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html#reading">Reading</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Read results</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#The-pair-and-its-state">The pair and its state</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Two-key-sets">Two key sets</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Save-at-a-time">Save at a time</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#A-table">A table</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#A-history">A history</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Copy-before-editing">Copy before editing</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="compute-margins.html">Compute margins</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
+      <li class="breadcrumb-item active">Read results</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/howto/read-results.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Read-results">
+<h1>Read results<a class="headerlink" href="#Read-results" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="run-a-transient-and-set-tolerances.html"><span class="doc">Run a transient and set tolerances</span></a> ends with a <code class="docutils literal notranslate"><span class="pre">Solution</span></code>. This page reads one, and a steady state, by name, on the plate and channel pair of <a class="reference internal" href="build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a>: saved two ways, at a time, into a table, as a history, and through a saved array that is a view of the vector.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">Solid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">friction_factor</span><span class="p">,</span> <span class="n">pressure_diff</span><span class="p">,</span> <span class="n">rectangular_laminar_correction</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+</pre></div>
+</div>
+</div>
+<section id="The-pair-and-its-state">
+<h2>The pair and its state<a class="headerlink" href="#The-pair-and-its-state" title="Link to this heading"></a></h2>
+<p>The cell rebuilds the pair and solves it at 0.5 kg/s. Its aggregator binds a coastdown instead, <span class="math notranslate nohighlight">\(\dot m(t) = \dot m_0 / (1 + t / 20\,\mathrm{s})\)</span>, which starts at the solved flow. <code class="docutils literal notranslate"><span class="pre">symmetric_plate_steady_state</span></code> returns a <code class="docutils literal notranslate"><span class="pre">State</span></code>: a <code class="docutils literal notranslate"><span class="pre">dict</span></code> keyed by calculation name, then by variable name. The keys are names, never the calculation objects. <code class="docutils literal notranslate"><span class="pre">agr.load(state)</span></code> builds the vector from it, reading every variable of every calculation; <code class="docutils literal notranslate"><span class="pre">State.uniform(calculations,</span> <span class="pre">value,</span> <span class="pre">*names)</span></code> fills the
+named variables with one value, and a state that lacks one raises a <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>. There is no partial load.</p>
+<p><img alt="The vector y as a column of 171 rows, the Plate slice then the Channel slice, each split by variable, beside the State saved from it, whose entries point back into y as views or a copy, or own no row." src="../_images/state-and-vector.svg" /></p>
+<p><em>The 171 rows of ``y`` in graph order: the Plate slice, rows 0 to 139, then the Channel slice, rows 140 to 170, where ``pressure`` takes one row; the computed entries of the saved state own none.</em></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">length</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">cells</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.070</span><span class="p">,</span> <span class="mi">10</span>
+<span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="mf">0.0006</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cells</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+<span class="n">meat</span><span class="p">[:,</span> <span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">x_boundaries</span><span class="o">=</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">),</span>
+    <span class="n">material</span><span class="o">=</span><span class="n">Solid</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">meat</span><span class="p">,</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">3500</span><span class="p">,</span> <span class="mi">750</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">2700</span><span class="p">,</span> <span class="mi">900</span><span class="p">,</span> <span class="mi">167</span><span class="p">))),</span>
+    <span class="n">y_length</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+    <span class="n">power_shape</span><span class="o">=</span><span class="n">uniform_x_power_shape</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">length</span><span class="p">),</span>
+    <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Plate"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="mf">0.0022</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+<span class="n">aspect_ratio</span> <span class="o">=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">depth</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">width</span>
+<span class="n">h_spl</span> <span class="o">=</span> <span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">),</span> <span class="n">Lh</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">aspect_ratio</span><span class="o">=</span><span class="n">aspect_ratio</span><span class="p">)</span>
+<span class="n">f</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">),</span> <span class="n">k_R</span><span class="o">=</span><span class="n">rectangular_laminar_correction</span><span class="p">(</span><span class="n">aspect_ratio</span><span class="p">))</span>
+<span class="n">channel</span> <span class="o">=</span> <span class="n">ChannelAndContacts</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span>
+    <span class="n">h_wall_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">wall_heat_transfer_coeff</span><span class="p">,</span> <span class="n">h_spl</span><span class="o">=</span><span class="n">h_spl</span><span class="p">),</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">pressure_diff</span><span class="p">,</span> <span class="n">f</span><span class="o">=</span><span class="n">f</span><span class="p">),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Channel"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">mdot0</span><span class="p">,</span> <span class="n">p_abs</span><span class="p">,</span> <span class="n">power</span><span class="p">,</span> <span class="n">T_in</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.8e5</span><span class="p">,</span> <span class="mf">25e3</span><span class="p">,</span> <span class="mf">38.0</span>
+<span class="n">steady</span> <span class="o">=</span> <span class="n">symmetric_plate_steady_state</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot0</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">)</span>
+<span class="n">funcs</span> <span class="o">=</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">mdot0</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">t</span> <span class="o">/</span> <span class="mf">20.0</span><span class="p">),</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">),</span> <span class="n">fuel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)}</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="n">funcs</span><span class="p">)</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">steady</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"type:         </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">steady</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"calculations: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">steady</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows:         </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">,</span> <span class="mf">40.0</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">))</span>
+<span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"KeyError:     </span><span class="si">{</span><span class="n">err</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+type:         State
+calculations: [&#39;Channel&#39;, &#39;Plate&#39;]
+rows:         171
+KeyError:     T_wall_left
+</pre></div></div>
+</div>
+<p>The state loads to 171 rows; the uniform one stops at the first variable it lacks.</p>
+</section>
+<section id="Two-key-sets">
+<h2>Two key sets<a class="headerlink" href="#Two-key-sets" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">agr.save(y)</span></code> returns every variable plus the computed values that own no row; <code class="docutils literal notranslate"><span class="pre">agr.save(y,</span> <span class="pre">strict=True)</span></code> returns the variables only. <code class="docutils literal notranslate"><span class="pre">load</span></code> reads the variables and nothing else, so both load back to <code class="docutils literal notranslate"><span class="pre">y</span></code>, and an edited analysis value is never read back.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">full</span><span class="p">,</span> <span class="n">strict</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">full</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> rows:     </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">strict</span><span class="p">[</span><span class="n">name</span><span class="p">]))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> computed: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">full</span><span class="p">[</span><span class="n">name</span><span class="p">])</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">strict</span><span class="p">[</span><span class="n">name</span><span class="p">])))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"full loads to y:   </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">full</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"strict loads to y: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">strict</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"plate T, full:     </span><span class="si">{</span><span class="n">full</span><span class="p">[</span><span class="s1">'Plate'</span><span class="p">][</span><span class="s1">'T'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">; strict: </span><span class="si">{</span><span class="n">strict</span><span class="p">[</span><span class="s1">'Plate'</span><span class="p">][</span><span class="s1">'T'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"scalars:           </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">full</span><span class="o">.</span><span class="n">filter_values</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">)[</span><span class="s1">'Channel'</span><span class="p">]))</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Plate rows:     [&#39;T&#39;, &#39;T_wall_left&#39;, &#39;T_wall_right&#39;]
+Plate computed: []
+Channel rows:     [&#39;T_cool&#39;, &#39;h_left&#39;, &#39;h_right&#39;, &#39;pressure&#39;]
+Channel computed: [&#39;Gr, left&#39;, &#39;Gr, right&#39;, &#39;Pe&#39;, &#39;Re&#39;, &#39;T_in&#39;, &#39;T_out&#39;, &#39;T_wall, left&#39;, &#39;T_wall, right&#39;, &#39;absolute_pressure&#39;, &#39;mass_flow&#39;, &#39;power&#39;, &#39;q, left&#39;, &#39;q, right&#39;, &#39;static_pressure&#39;, &#39;velocity&#39;]
+full loads to y:   True
+strict loads to y: True
+plate T, full:     (10, 12); strict: (120,)
+scalars:           [&#39;T_in&#39;, &#39;T_out&#39;, &#39;mass_flow&#39;, &#39;power&#39;, &#39;pressure&#39;]
+</pre></div></div>
+</div>
+<p>The plate adds only a shape: its temperatures are cells by thickness in the full state, flat in the strict one. <code class="docutils literal notranslate"><span class="pre">filter_values</span></code> keeps the values a predicate accepts, here the scalars: the channel’s <code class="docutils literal notranslate"><span class="pre">pressure</span></code> is a row, its pressure gain; <code class="docutils literal notranslate"><span class="pre">mass_flow</span></code> and <code class="docutils literal notranslate"><span class="pre">T_out</span></code> are computed.</p>
+</section>
+<section id="Save-at-a-time">
+<h2>Save at a time<a class="headerlink" href="#Save-at-a-time" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">save(y,</span> <span class="pre">t)</span></code> evaluates the bindings at <code class="docutils literal notranslate"><span class="pre">t</span></code>, <code class="docutils literal notranslate"><span class="pre">0</span></code> by default, so a computed value reads its schedule at that time. <code class="docutils literal notranslate"><span class="pre">strict</span></code> is the third parameter: <code class="docutils literal notranslate"><span class="pre">save(y,</span> <span class="pre">True)</span></code> binds <code class="docutils literal notranslate"><span class="pre">True</span></code> to the time.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"mass_flow, t = 0 s:  </span><span class="si">{</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'mass_flow'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"mass_flow, t = 10 s: </span><span class="si">{</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">10.0</span><span class="p">)[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'mass_flow'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+mass_flow, t = 0 s:  0.5000 kg/s
+mass_flow, t = 10 s: 0.3333 kg/s
+</pre></div></div>
+</div>
+<p>The same vector reports 0.5 kg/s at 0 s and the coastdown’s 0.333 kg/s at 10 s.</p>
+</section>
+<section id="A-table">
+<h2>A table<a class="headerlink" href="#A-table" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">state.to_dataframe()</span></code> flattens a state into one row per number, with columns <code class="docutils literal notranslate"><span class="pre">calculation</span></code>, <code class="docutils literal notranslate"><span class="pre">variable</span></code>, <code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">j</span></code> and <code class="docutils literal notranslate"><span class="pre">value</span></code>; <code class="docutils literal notranslate"><span class="pre">i</span></code> and <code class="docutils literal notranslate"><span class="pre">j</span></code> address a cell of an array, a scalar sits at <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0)</span></code>. <code class="docutils literal notranslate"><span class="pre">State.from_dataframe</span></code> reads it back, and a one-dimensional array returns as one row of a two-dimensional one.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">table</span> <span class="o">=</span> <span class="n">strict</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">head</span><span class="p">()</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+<span class="n">back</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rows: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"T_cool shape back: </span><span class="si">{</span><span class="n">back</span><span class="p">[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'T_cool'</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"loads to y:        </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">back</span><span class="p">),</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+calculation variable  i  j     value
+      Plate        T  0  0 41.870297
+      Plate        T  0  1 41.963752
+      Plate        T  0  2 42.069006
+      Plate        T  0  3 42.156795
+      Plate        T  0  4 42.215321
+rows: 171
+T_cool shape back: (1, 10)
+loads to y:        True
+</pre></div></div>
+</div>
+<p>One row per entry of the vector, and the table loads back to it: <code class="docutils literal notranslate"><span class="pre">load</span></code> broadcasts the extra axis away. <code class="docutils literal notranslate"><span class="pre">stream.state.to_dataframe</span></code> takes a history too, and adds a <code class="docutils literal notranslate"><span class="pre">time</span></code> column.</p>
+</section>
+<section id="A-history">
+<h2>A history<a class="headerlink" href="#A-history" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">agr.save(sol)</span></code> returns a <code class="docutils literal notranslate"><span class="pre">dict</span></code> from each output time to its <code class="docutils literal notranslate"><span class="pre">State</span></code>, the type <code class="docutils literal notranslate"><span class="pre">stream.state.StateTimeseries</span></code>, every row saved at its own time; <code class="docutils literal notranslate"><span class="pre">strict</span></code> does not apply to it. <code class="docutils literal notranslate"><span class="pre">agr.at_times(sol,</span> <span class="pre">node,</span> <span class="pre">&quot;name&quot;)</span></code> returns one variable’s column of <code class="docutils literal notranslate"><span class="pre">sol.data</span></code>: two-dimensional, times by cells, for a variable on several rows, one-dimensional for a single row. It reads rows only, the plate’s temperatures flat as the vector holds them; a computed value comes from the history.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">30.0</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+<span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
+<span class="n">history</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">sol</span><span class="p">)</span>
+<span class="n">T_cool</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">channel</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">)</span>
+<span class="n">T_plate</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">)</span>
+<span class="n">T_out</span> <span class="o">=</span> <span class="p">[</span><span class="n">history</span><span class="p">[</span><span class="n">time</span><span class="p">][</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_out"</span><span class="p">]</span> <span class="k">for</span> <span class="n">time</span> <span class="ow">in</span> <span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"output times:    </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">history</span><span class="p">)</span><span class="si">}</span><span class="s2">, last </span><span class="si">{</span><span class="nb">max</span><span class="p">(</span><span class="n">history</span><span class="p">)</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"T_cool:          </span><span class="si">{</span><span class="n">T_cool</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">; pressure: </span><span class="si">{</span><span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span><span class="w"> </span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="s1">'pressure'</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"plate T:         </span><span class="si">{</span><span class="n">T_plate</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"outlet at 30 s:  </span><span class="si">{</span><span class="n">T_out</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hottest at 30 s: </span><span class="si">{</span><span class="n">T_plate</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">T_plate</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">label</span><span class="o">=</span><span class="s2">"plate, hottest cell"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sol</span><span class="o">.</span><span class="n">time</span><span class="p">,</span> <span class="n">T_out</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">"coolant outlet"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Time [s]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Temperature [°C]"</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">grid</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+output times:    31, last 30 s
+T_cool:          (31, 10); pressure: (31,)
+plate T:         (31, 120)
+outlet at 30 s:  67.56 °C
+hottest at 30 s: 95.91 °C
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_read-results_11_1.png" src="../_images/howto_read-results_11_1.png" />
+</div>
+</div>
+<p>Both temperatures climb as the flow falls: at 30 s the outlet is at about 67.6 °C and the hottest cell of the plate at about 95.9 °C.</p>
+</section>
+<section id="Copy-before-editing">
+<h2>Copy before editing<a class="headerlink" href="#Copy-before-editing" title="Link to this heading"></a></h2>
+<p>A saved array that owns rows can be a view, as <code class="docutils literal notranslate"><span class="pre">T_cool</span></code> is for this pair: writing into it writes into <code class="docutils literal notranslate"><span class="pre">y</span></code>, and the cell does so, then undoes it; the one-row <code class="docutils literal notranslate"><span class="pre">pressure</span></code> is a copy. <code class="docutils literal notranslate"><span class="pre">State.merge(*states)</span></code> combines states, later ones winning per variable, and copies every array, so <code class="docutils literal notranslate"><span class="pre">State.merge(saved)</span></code> is safe to edit.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">saved</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="n">row</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">var_index</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"shares memory, T_cool:   </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">shares_memory</span><span class="p">(</span><span class="n">saved</span><span class="p">[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'T_cool'</span><span class="p">],</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"shares memory, pressure: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">shares_memory</span><span class="p">(</span><span class="n">saved</span><span class="p">[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'pressure'</span><span class="p">],</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="n">saved</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">10.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"y after editing save:  </span><span class="si">{</span><span class="n">y</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="n">saved</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">-=</span> <span class="mf">10.0</span>
+<span class="n">copied</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+<span class="n">copied</span><span class="p">[</span><span class="s2">"Channel"</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">10.0</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"y after editing merge: </span><span class="si">{</span><span class="n">y</span><span class="p">[</span><span class="n">row</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"shares memory, merge:  </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">shares_memory</span><span class="p">(</span><span class="n">copied</span><span class="p">[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'T_cool'</span><span class="p">],</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+shares memory, T_cool:   True
+shares memory, pressure: False
+y after editing save:  48.2928 °C
+y after editing merge: 38.2928 °C
+shares memory, merge:  False
+</pre></div></div>
+</div>
+<p>The edit to the saved <code class="docutils literal notranslate"><span class="pre">T_cool</span></code> moved the vector by 10 K; the edit to the merged copy left the vector alone. A saved state that will be edited, or kept while <code class="docutils literal notranslate"><span class="pre">y</span></code> or <code class="docutils literal notranslate"><span class="pre">sol.data</span></code> changes, goes through <code class="docutils literal notranslate"><span class="pre">State.merge</span></code> first.</p>
+<p><a class="reference internal" href="../LOFABothPumpsTrip.html"><span class="doc">Both Pumps Trip</span></a> reads an hour-long run this way, its reactivity saved at each output time over its first minute. The usual next task: <a class="reference internal" href="compute-margins.html"><span class="doc">Compute margins</span></a>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="diagnose-a-failing-solve.html" class="btn btn-neutral float-left" title="Diagnose a failing solve" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="compute-margins.html" class="btn btn-neutral float-right" title="Compute margins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 17, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
