@@ -399,7 +399,7 @@ class Sweep:
                 out[name] = wanted
                 continue
             if isinstance(wanted, str):
-                raise ValueError(f"{name} is a number; got {wanted!r}")
+                raise TypeError(f"{name} is a number; got {wanted!r}")
             hits = np.isclose(levels, wanted, rtol=1e-9, atol=0.0)
             if hits.any():
                 out[name] = float(levels[hits][0])

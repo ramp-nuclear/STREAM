@@ -78,9 +78,8 @@ def test_profile_of_calculations_with_different_x_names_raises(agr):
 
 
 def test_profile_without_a_solved_case_names_the_selection(holed_sweep):
-    with pytest.warns(UserWarning, match="case 7"):
-        with pytest.raises(ValueError, match="no solved case.*power=8e\\+06, mdot=0.3.*'T_cool'"):
-            holed_sweep.profile("T_cool", of="CC", where={"power": 8e6, "mdot": 0.3})
+    with pytest.warns(UserWarning, match="case 7"), pytest.raises(ValueError, match="no solved case.*power=8e\\+06, mdot=0.3.*'T_cool'"):
+        holed_sweep.profile("T_cool", of="CC", where={"power": 8e6, "mdot": 0.3})
 
 
 def test_profile_envelopes_from_bands(banded_sweep):
@@ -257,9 +256,8 @@ def test_reduce_without_a_solved_case_names_the_selection(grid_cases, agr):
     frames = [None if case["mdot"] == 0.3 else make_case_frame(**case) for case in grid_cases]
     with pytest.warns(UserWarning, match="holes"):
         s = Sweep(grid_cases, frames, agr)
-    with pytest.warns(UserWarning, match="case 1"):
-        with pytest.raises(ValueError, match="no solved case.*mdot=0.3.*'CHFR'"):
-            s.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
+    with pytest.warns(UserWarning, match="case 1"), pytest.raises(ValueError, match="no solved case.*mdot=0.3.*'CHFR'"):
+        s.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
 
 
 def test_reduce_envelopes(banded_sweep):

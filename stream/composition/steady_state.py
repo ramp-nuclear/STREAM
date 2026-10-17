@@ -216,7 +216,10 @@ def _frozen_inputs(agr: Aggregator, block: set, y: np.ndarray, t: Second) -> dic
                     f"wholly from inside or wholly from outside."
                 )
             if isinstance(v, Junction):
-                raise ValueError(
+                # Ruff is wrong here, we find that this is a value problem by 
+                # looking at the data type, but the problem is in the data 
+                # structure, not the data type.
+                raise ValueError(  # ruff: ignore[TRY004]
                     f"{v} is a Junction on the block boundary; junctions mix their inputs by "
                     f"source and cannot be frozen. Put the junction and its neighbours in the same block."
                 )

@@ -342,7 +342,7 @@ def test_string_parameter_colours_and_titles(agr):
     sweep = wall_sweep(agr)
     r = sweep.reduce("CHFR", "min", versus="power")
     assert r.dims == {"wall_law": ["regime", "Dittus"]}
-    fig, ax = r.plot()
+    _, ax = r.plot()
     assert [t.get_text() for t in ax.get_legend().get_texts()] == ["regime", "Dittus"]
     assert ax.get_legend().get_title().get_text() == "wall_law"
     _fig, axes = r.plot(col="wall_law")

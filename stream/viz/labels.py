@@ -51,8 +51,11 @@ def _as_label(name: str, spec) -> Label:
         return spec
     if isinstance(spec, str):
         return Label(spec)
-    if isinstance(spec, tuple) and 2 <= len(spec) <= 4 and all(isinstance(s, str) for s in spec[:2]):
-        if len(spec) < 4 or isinstance(spec[3], str) or callable(spec[3]):
+    if (isinstance(spec, tuple) 
+        and 2 <= len(spec) <= 4 
+        and all(isinstance(s, str) for s in spec[:2]) 
+        and (len(spec) < 4 or isinstance(spec[3], str) or callable(spec[3]))
+        ):
             return Label(*spec)
     raise TypeError(
         f"label for {name!r} must be a string, a (display, unit) tuple, a (display, unit, scale) "
