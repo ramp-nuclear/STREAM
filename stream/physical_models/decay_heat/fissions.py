@@ -45,7 +45,7 @@ def profile(
         delayed_groups_decay_rates=delayed_groups_decay_rates,
         controls=controls,
     )
-    agr = Aggregator.from_decoupled(pk, funcs={pk: dict(T=0, t=identity)})
+    agr = Aggregator.from_decoupled(pk, funcs={pk: {"T": 0, "t": identity}})
     sol = agr.solve(
         y0 := agr.load(point_kinetics_steady_state(pk, 1e6)),
         time,

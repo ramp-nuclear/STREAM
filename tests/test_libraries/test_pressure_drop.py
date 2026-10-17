@@ -175,7 +175,7 @@ def test_friction_factor_raises_value_error_for_unknown_names():
 
 
 def test_friction_factor_keyword_passing():
-    args = T, Tw, mdot, fluid, pipe = 60.0, 80.0, 0.5, light_water, mock_pipe
+    args = _T, _Tw, _mdot, _fluid, _pipe = 60.0, 80.0, 0.5, light_water, mock_pipe
     assert friction_factor("turbulent", epsilon=1.0)(*args) != friction_factor("turbulent", epsilon=0.0)(*args)
     with pytest.raises(TypeError):
         friction_factor("laminar", epsilon=1.0)(*args)

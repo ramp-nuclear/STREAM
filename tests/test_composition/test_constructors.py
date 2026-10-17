@@ -70,7 +70,7 @@ def test_Calculation_factory_given_a_simple_example_is_set_up_and_calculates_cor
     A = Calculation_factory(
         calculate=lambda y, **kwargs: np.ones(1),
         mass_vector=np.ones(1),
-        variables=dict(y=0),
+        variables={"y": 0},
     )
 
     a = A("Hi")
@@ -82,5 +82,5 @@ def test_Calculation_factory_given_a_simple_example_is_set_up_and_calculates_cor
 
     agr = Aggregator.from_decoupled(a)
     time = np.linspace(0, 1, 11)
-    sol = agr.solve({a.name: dict(y=0.0)}, time)
+    sol = agr.solve({a.name: {"y": 0.0}}, time)
     assert np.allclose(sol[:, 0], time)

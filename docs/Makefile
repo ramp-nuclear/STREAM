@@ -7,7 +7,7 @@ SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 SOURCEDIR     = source
 BUILDDIR      = build
-MATHJAX       = lib/mathjax
+MATHJAX       = $(SOURCEDIR)/_static/mathjax/tex-chtml.js
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -17,11 +17,10 @@ help:
 
 clean:
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-	@echo "Removing mathjax static library..."
-	@rm -fr $(SOURCEDIR)/_static/mathjax
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
-	@cp -r $(CONDA_PREFIX)/$(MATHJAX) $(SOURCEDIR)/_static/
+	@test -f $(MATHJAX) || { echo "MathJax is missing from $(SOURCEDIR)/_static/mathjax. Run 'python mathjax_assets.py fetch'"; \
+		echo "(or 'python mathjax_assets.py install BUNDLE' on a machine without network access)."; exit 1; }
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)

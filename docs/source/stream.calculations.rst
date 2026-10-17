@@ -129,8 +129,6 @@ Inertia
    :undoc-members:
    :show-inheritance:
 
-.. autofunction:: stream.calculations.ideal.inertia.bilinear
-
 Flapper
 -------
 .. automodule:: stream.calculations.flapper

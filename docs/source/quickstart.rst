@@ -10,8 +10,8 @@ Consider the physical system you would like to simulate, and look at the :ref:`C
 creating a custom component.
 If all you want is a simple component, consider using :func:`~stream.composition.constructors.Calculation_factory`.
 
-Composition
-~~~~~~~~~~~
+Composing Systems of Calculations
+~~~~~~~~~~~~~~~~~~~~~~
 Assuming you have all of your calculations instantiated, the next step is combining these interdependent
 calculations, usually with the end result being an :class:`~stream.aggregator.CalculationGraph`. Aptly named, the
 :ref:`Composition` subpackage offers functionality for composing standard calculations.
@@ -94,8 +94,8 @@ and can limit the search space somewhat. It follows the following mapping::
 
 For most use cases, the defaults are really good enough, but know that these options can be controlled.
 
-Uncertainty Quantification
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Quantifying Uncertainty
+~~~~~~~~~~~~~~~~~~~~~~~
 A common use case for a system code like STREAM is when one needs a relatively fast and simple
 model that can be used for parametric studies, as well as uncertainty quantification (UQ) problems.
 In STREAM, the :mod:`~stream.analysis.UQ` module is used for UQ problems, and it provides two

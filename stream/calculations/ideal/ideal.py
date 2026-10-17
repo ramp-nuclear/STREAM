@@ -16,7 +16,7 @@ namespace to be useful.
 
 import logging
 from abc import ABCMeta
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -75,14 +75,14 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
         errors: Array1D
             The error in ``variables``
         """
-        inputs = dict(dp=variables[1], Tin=directed_Tin(Tin, Tin_minus, mdot), mdot=mdot) | kwargs
+        inputs = {"dp": variables[1], "Tin": directed_Tin(Tin, Tin_minus, mdot), "mdot": mdot} | kwargs
         out = np.empty(2)
         out[0] = variables[0] - self.T_out(**inputs)
         out[1] = variables[1] - self.dp_out(**inputs)
         return out
 
     def indices(self, variable: Name, asking=None) -> int:
-        return dict(Tin=0, Tin_minus=0, pressure=1)[variable]
+        return {"Tin": 0, "Tin_minus": 0, "pressure": 1}[variable]
 
     indices.__doc__ = Calculation.indices.__doc__
 
@@ -93,7 +93,7 @@ class LumpedComponent(Calculation, metaclass=ABCMeta):
 
     @property
     def variables(self) -> dict[Name, Place]:
-        return dict(Tin=0, pressure=1)
+        return {"Tin": 0, "pressure": 1}
 
     variables.__doc__ = Calculation.variables.__doc__
 

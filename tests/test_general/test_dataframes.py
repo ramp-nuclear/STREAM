@@ -97,7 +97,7 @@ def test_statetimeseries_to_dataframe_and_back_is_same(s: StateTimeseries):
     is the inverse of :func:`~stream.state.state_timeseries_to_dataframe`
 
     """
-    assert _timeseries_equal(from_dataframe((to_dataframe(s))), s)
+    assert _timeseries_equal(from_dataframe(to_dataframe(s)), s)
 
 
 num_times = st.shared(st.integers(1, 20), key="time_length")

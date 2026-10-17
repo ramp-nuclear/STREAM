@@ -106,11 +106,11 @@ lambdas = st.floats(1e-3, 10.0, allow_nan=False)
 betas = st.floats(700 * pcm * 10.0, 700 * pcm * 1000.0, allow_nan=False)
 lifetimes = st.floats(1e-6, 1e-4, allow_nan=False)
 specific_dicts = st.fixed_dictionaries(
-    dict(
-        generation_time=lifetimes,
-        delayed_neutron_fractions=arrays(np.float64, 6, elements=betas, unique=True),
-        delayed_groups_decay_rates=arrays(np.float64, 6, elements=lambdas, unique=True),
-    )
+    {
+        "generation_time": lifetimes,
+        "delayed_neutron_fractions": arrays(np.float64, 6, elements=betas, unique=True),
+        "delayed_groups_decay_rates": arrays(np.float64, 6, elements=lambdas, unique=True),
+    }
 )
 powers = st.floats(min_value=1.0, max_value=3e7, allow_nan=False, allow_infinity=False)
 
@@ -168,7 +168,7 @@ def test_hydraulic_steady_state_is_a_root_for_a_simple_parallel_case():
     assert np.allclose(fg.aggregator.compute(y), 0.0)
 
 
-_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], dict(Tin=0, pressure=1))
+_FakeC = Calculation_factory(just(np.zeros(2)), [False, False], {"Tin": 0, "pressure": 1})
 _FakeC.indices = LumpedComponent.indices
 fake = _FakeC("fake")
 
@@ -264,7 +264,7 @@ def test_open_flapper_gets_a_physically_consistent_dp_guess():
         fg,
         inertial_comps=[flywheel],
         k_constructor=KirchhoffWDerivatives,
-        funcs={R: dict(Tin=T), flapper: dict(t=identity, ref_mdot=np.inf)},
+        funcs={R: {"Tin": T}, flapper: {"t": identity, "ref_mdot": np.inf}},
     )
     flows = {pump: 1.0, R: 0.5, flapper: 0.5}
 
@@ -291,7 +291,7 @@ def _gravity_loop():
         flow_edge((j_bot, j_top), pump, hx, cold),
         reference_node=(j_top, 2e5),
     )
-    return fg, dict(j_top=j_top, j_bot=j_bot, pump=pump, hx=hx, hot=hot, cold=cold)
+    return fg, {"j_top": j_top, "j_bot": j_bot, "pump": pump, "hx": hx, "hot": hot, "cold": cold}
 
 
 def test_hydraulic_guess_scalar_temperature_matches_uniform_mapping():
@@ -318,7 +318,7 @@ def test_hydraulic_guess_mapping_gives_gravity_legs_their_own_density():
 
 
 def test_hydraulic_guess_mapping_puts_a_profile_into_the_channel():
-    f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
+    _f, c = MTR_fuel_and_channel(z_N=5, fuel_N=2, clad_N=2)
     j_top, j_bot = Junction(name="J_top"), Junction(name="J_bot")
     pump = Pump(mdot0=0.5, name="Pump")
     fg = FlowGraph(flow_edge((j_top, j_bot), c), flow_edge((j_bot, j_top), pump), reference_node=(j_top, 2e5))

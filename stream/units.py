@@ -15,7 +15,7 @@ The word "Per" separates the unit into  **[numerator]Per[denominator]**.
     at the denominator.
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 from scipy.constants import g as standard_acceleration

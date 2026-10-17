@@ -1,0 +1,9 @@
+{
+  "name": "stream-docs-mathjax",
+  "private": true,
+  "description": "Pins the MathJax data hosted with the docs. Read by docs/mathjax_assets.py and Dependabot; npm is not needed.",
+  "dependencies": {
+    "@mathjax/mathjax-newcm-font": "4.1.3",
+    "mathjax": "4.1.3"
+  }
+}

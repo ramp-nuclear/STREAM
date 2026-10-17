@@ -35,8 +35,8 @@ from stream.units import (
 
 __all__ = [
     "Blasius_friction",
-    "contraction_factor",
     "Darcy_Weisbach_pressure_by_mdot",
+    "contraction_factor",
     "expansion_factor",
     "friction_factor",
     "gravity_pressure",
@@ -48,9 +48,9 @@ __all__ = [
     "pressure_diff",
     "rectangular_laminar_correction",
     "regime_dependent_friction",
+    "static_pressure",
     "turbulent_friction",
     "viscosity_correction",
-    "static_pressure",
 ]
 
 
@@ -87,6 +87,9 @@ def gravity_pressure(rho: KgPerM3, dh: Meter, g: MPerS2 = local_gravity) -> Pasc
     return rho * g * dh
 
 
+_blasius = friction_factor("Blasius")
+
+
 def pressure_diff(
     T: Celsius,
     Tw: Celsius,
@@ -94,7 +97,7 @@ def pressure_diff(
     mdot: KgPerS,
     pipe: EffectivePipe,
     dz: Meter,
-    f: GeneralDarcyFactor = friction_factor("Blasius"),
+    f: GeneralDarcyFactor = _blasius,
     g: MPerS2 = local_gravity,
     mdot2: KgPerS2 | None = None,
     **_,

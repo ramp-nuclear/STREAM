@@ -6,10 +6,11 @@ objects. We provide additional useful methods in the same namespace.
 """
 
 import numbers
+from collections.abc import Callable, Iterable
 from functools import reduce
 from itertools import chain
 from operator import or_
-from typing import IO, Any, Callable, Iterable, TypeVar
+from typing import IO, Any, TypeVar
 
 import numpy as np
 import yaml
@@ -221,7 +222,7 @@ class State(dict):
     def to_dataframe(self) -> DataFrame:
         """Represents a State as a DataFrame"""
         return DataFrame.from_records(self.records()).astype(
-            dict(calculation="category", variable="category", i="uint16", j="uint16")
+            {"calculation": "category", "variable": "category", "i": "uint16", "j": "uint16"}
         )
 
     def listify(self) -> ListState:
@@ -278,7 +279,7 @@ def _state_timeseries_to_dataframe(s: StateTimeseries) -> DataFrame:
 
     """
     return DataFrame.from_records(_gen_records_from_timeseries(s)).astype(
-        dict(calculation="category", variable="category", i="uint16", j="uint16")
+        {"calculation": "category", "variable": "category", "i": "uint16", "j": "uint16"}
     )
 
 

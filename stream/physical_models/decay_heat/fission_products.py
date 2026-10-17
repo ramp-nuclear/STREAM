@@ -6,7 +6,7 @@ import pandas as pd
 
 from stream.units import DecayHeatFunction, MeVPerFission, MeVPerS, PerS, Second
 
-__all__ = ["read", "Standard", "Source", "contribution", "fp_inner_"]
+__all__ = ["Source", "Standard", "contribution", "fp_inner_", "read"]
 
 STANDARDS = Path(__file__).parent / "standards"
 

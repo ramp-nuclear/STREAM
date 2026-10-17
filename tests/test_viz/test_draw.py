@@ -16,7 +16,7 @@ def legend_texts(ax):
 
 
 def test_single_profile_has_no_legend_and_labels(sweep):
-    fig, ax = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+    fig, ax = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot()
     assert ax.get_legend() is None
     assert ax.get_xlabel() == "z [m]"
     assert ax.get_ylabel() == "Coolant temperature [°C]"
@@ -29,7 +29,7 @@ def test_single_profile_has_no_legend_and_labels(sweep):
 
 def test_family_profile_legend_block_titled_with_unit(sweep):
     sweep.labels = {"power": ("Power", "MW", 1e-6)}
-    fig, ax = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3)).plot()
+    fig, ax = sweep.profile("CHFR", of="CC", where={"mdot": 0.3}).plot()
     assert len(ax.get_lines()) == 4
     assert legend_texts(ax) == ["2", "4", "6", "8"]
     assert ax.get_legend().get_title().get_text() == "Power [MW]"
@@ -40,7 +40,7 @@ def test_family_profile_legend_block_titled_with_unit(sweep):
 
 def test_scale_applies_to_x_and_y(sweep):
     sweep.labels = {"z": ("z", "mm", 1e3), "T_cool": ("Bulk", "°C", 2.0)}
-    r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot()
     np.testing.assert_allclose(ax.get_lines()[0].get_xdata(), [50, 150, 250, 350])
     np.testing.assert_allclose(ax.get_lines()[0].get_ydata(), 2.0 * r.frame.value)
@@ -49,7 +49,7 @@ def test_scale_applies_to_x_and_y(sweep):
 
 
 def test_where_reducer_y_carries_the_coordinate_scale(sweep):
-    r = sweep.reduce("CHFR", "where_min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "where_min", versus="power", where={"mdot": 0.3})
     fig, ax = r.plot(labels={"z": ("z", "mm", 1e3)})
     assert ax.get_ylabel() == "where_min CHFR [mm]"
     np.testing.assert_allclose(ax.get_lines()[0].get_ydata(), 1e3 * r.frame.value)
@@ -57,7 +57,7 @@ def test_where_reducer_y_carries_the_coordinate_scale(sweep):
 
 
 def test_where_reducer_with_an_axis_carries_the_collapsed_axis_scale(sweep):
-    r = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
+    r = sweep.reduce("T", "where_max", axis="x", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot()
     assert ax.get_ylabel() == r.ylabel == "where_max Temperature [m]"
     plt.close(fig)
@@ -68,7 +68,7 @@ def test_where_reducer_with_an_axis_carries_the_collapsed_axis_scale(sweep):
 
 
 def test_subtitle_follows_the_labels_given_to_plot(sweep):
-    r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot(labels={"power": ("Power", "MW", 1e-6)})
     assert ax.get_title() == "Power = 4 MW, Mass flow = 0.3 kg/s, CC"
     plt.close(fig)
@@ -79,20 +79,20 @@ def test_subtitle_follows_the_labels_given_to_plot(sweep):
 
 
 def test_band_drawn_only_when_banded(sweep, banded_sweep):
-    fig, ax = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+    fig, ax = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot()
     assert not ax.collections
     plt.close(fig)
-    fig, ax = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()
+    fig, ax = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot()
     assert len(ax.collections) == 1
     assert legend_texts(ax) == ["uncertainty"]
     plt.close(fig)
-    fig, ax = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0).plot()
+    fig, ax = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}, sigma=2.0).plot()
     assert legend_texts(ax) == ["uncertainty (2σ)"]
     plt.close(fig)
 
 
 def test_band_modes(banded_sweep):
-    r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot(band="none")
     assert not ax.collections and ax.get_legend() is None
     plt.close(fig)
@@ -100,7 +100,7 @@ def test_band_modes(banded_sweep):
     assert len(ax.collections) == 2
     assert legend_texts(ax) == ["systematic", "systematic + statistical"]
     plt.close(fig)
-    fig, ax = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0).plot(band="split")
+    fig, ax = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}, sigma=2.0).plot(band="split")
     assert legend_texts(ax) == ["systematic", "systematic + statistical (2σ)"]
     plt.close(fig)
     fig, ax = r.plot(errorbars=True)
@@ -112,7 +112,7 @@ def test_band_modes(banded_sweep):
 
 
 def test_bound_draws_envelope_without_band(banded_sweep):
-    r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot(bound="lower")
     np.testing.assert_allclose(ax.get_lines()[0].get_ydata(), r.frame.lower)
     assert not ax.collections
@@ -131,13 +131,13 @@ def test_split_band_with_no_systematic_width(agr):
 
 
 def test_band_legend_hidden_through_labels(banded_sweep):
-    fig, ax = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot(labels={"band": None})
+    fig, ax = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}).plot(labels={"band": None})
     assert len(ax.collections) == 1 and ax.get_legend() is None
     plt.close(fig)
 
 
 def test_curve_three_channels_and_legend_blocks(agr):
-    cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
+    cases = [{"power": p, "mdot": m, "depth": d} for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     s.labels = {"CHFR": ("CHF ratio", ""), "T_cool": ("Bulk", "°C")}
     fig, ax = s.reduce("CHFR", "min", versus="power").plot(color="mdot", style="depth")
@@ -149,7 +149,7 @@ def test_curve_three_channels_and_legend_blocks(agr):
 
 
 def test_quantity_dimension_selects_rows_by_name(sweep):
-    r = sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot()
     assert len(ax.get_lines()) == 2
     assert legend_texts(ax) == ["Coolant temperature", "CHFR"]
@@ -158,7 +158,7 @@ def test_quantity_dimension_selects_rows_by_name(sweep):
 
 
 def test_panel_titles_take_categorical_level_names(sweep):
-    r = sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
     fig, axes = r.plot(col="quantity")
     assert axes.shape == (1, 2)
     assert [a.get_title() for a in axes.ravel()] == ["Coolant temperature", "CHFR"]
@@ -181,7 +181,7 @@ def test_grid_panels(sweep):
 
 def test_existing_axes_and_style_sheet(sweep):
     fig, (a, b) = plt.subplots(1, 2)
-    out_fig, out_ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(ax=b, style_sheet=Style(linewidth=3.0))
+    out_fig, out_ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(ax=b, style_sheet=Style(linewidth=3.0))
     assert out_fig is fig and out_ax is b
     assert b.get_lines()[0].get_linewidth() == 3.0
     assert not a.get_lines()
@@ -189,7 +189,7 @@ def test_existing_axes_and_style_sheet(sweep):
 
 
 def test_field_map(sweep):
-    f = sweep.field("T", where=dict(power=4e6, mdot=0.3))
+    f = sweep.field("T", where={"power": 4e6, "mdot": 0.3})
     fig, ax = f.plot()
     assert ax.collections
     assert ax.get_xlabel() == "x [m]" and ax.get_ylabel() == "z [m]"
@@ -202,7 +202,7 @@ def test_field_map(sweep):
 
 
 def test_field_refuses_the_line_arguments(sweep):
-    f = sweep.field("T", where=dict(power=4e6, mdot=0.3))
+    f = sweep.field("T", where={"power": 4e6, "mdot": 0.3})
     with pytest.raises(ValueError, match="color='mdot'.*field"):
         f.plot(color="mdot")
     with pytest.raises(ValueError, match="row='mdot'.*field"):
@@ -274,7 +274,7 @@ def test_binding_marker_colours_agree_across_panels(agr):
         return frame(rows)
 
     agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
-    cases = [dict(power=p, mdot=m, peak=k) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
+    cases = [{"power": p, "mdot": m, "peak": k} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
     sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
     r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
     assert set(r.frame[r.frame.peak == 0.8].binder) == {"CHFR of hot"}
@@ -357,7 +357,7 @@ def test_limit_line_on_a_curve(agr, grid_cases):
 
 def test_limit_line_scaled_and_coloured_by_quantity(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
-    r = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile(["CHFR", "T_cool"], where={"power": 4e6, "mdot": 0.3})
     fig, ax = r.plot(labels={"CHFR": ("CHFR", "", 10.0)})
     (line,) = dashed_lines(ax)
     assert line.get_ydata()[0] == pytest.approx(15.0)
@@ -420,7 +420,7 @@ def test_shade_is_allowed_when_the_limits_merge(agr, grid_cases):
 def test_limit_shade_refusals(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5))
     with pytest.raises(ValueError, match="shade needs one quantity per axes; put quantity on col= or row="):
-        sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(show_limit="shade")
+        sweep.profile(["CHFR", "T_cool"], where={"power": 4e6, "mdot": 0.3}).plot(show_limit="shade")
     with pytest.raises(ValueError, match="no limit declared for 'T_cool'; declare it in limits= to shade"):
         sweep.reduce("T_cool", "max", versus="power").plot(show_limit="shade")
     r = limited(agr, grid_cases).required("CHFR", equals=1.6, solve_for="power", versus="mdot")
@@ -432,7 +432,7 @@ def test_limit_shade_refusals(agr, grid_cases):
 
 def test_limit_shade_allowed_with_quantity_on_panels(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(50.0))
-    fig, axes = sweep.profile(["CHFR", "T_cool"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity", show_limit="shade")
+    fig, axes = sweep.profile(["CHFR", "T_cool"], where={"power": 4e6, "mdot": 0.3}).plot(col="quantity", show_limit="shade")
     assert all(len(hatched(ax)) == 1 for ax in axes.ravel())
     plt.close(fig)
 
@@ -453,10 +453,10 @@ def test_limit_none_and_required_shade(agr, grid_cases):
 
 def test_field_limit_contour(agr, grid_cases):
     sweep = limited(agr, grid_cases, T=at_most(60.0))
-    fig, ax = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()
+    fig, ax = sweep.field("T", of="plate", where={"power": 4e6, "mdot": 0.3}).plot()
     assert any(type(c).__name__ == "QuadContourSet" for c in ax.collections)
     plt.close(fig)
-    field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    field = sweep.field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
     fig, ax = field.plot(show_limit="shade")
     (cells,) = hatched(ax)
     assert isinstance(cells, PolyCollection)
@@ -467,7 +467,7 @@ def test_field_limit_contour(agr, grid_cases):
 def test_limit_shade_on_panels_keeps_every_limit_in_view(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.5), T_cool=at_most(100.0))
     for order in (["CHFR", "T_cool"], ["T_cool", "CHFR"]):
-        r = sweep.profile(order, where=dict(power=4e6, mdot=0.3))
+        r = sweep.profile(order, where={"power": 4e6, "mdot": 0.3})
         fig, axes = r.plot(col="quantity", show_limit="shade")
         for ax in axes.ravel():
             lo, hi = ax.get_ylim()
@@ -485,7 +485,7 @@ def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
         return frame(rows)
 
     agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
-    cases = [dict(power=p, mdot=m, peak=k) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
+    cases = [{"power": p, "mdot": m, "peak": k} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for k in (0.8, 1.25)]
     sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
     r = sweep.required("CHFR", solve_for="power", versus="mdot", of=["CC", "hot"], limiting=True)
     with pytest.raises(ValueError, match="shade needs one curve per axes; put peak on col= or row="):
@@ -500,12 +500,12 @@ def test_limit_shade_refuses_a_free_parameter_on_a_binding_result(agr):
 
 def test_field_shade_reads_the_drawn_bound_and_skips_safe_fields(agr, grid_cases):
     sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"T": at_most(60.0)})
-    field = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    field = sweep.field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
     fig, ax = field.plot(bound="upper", show_limit="shade")
     (cells,) = hatched(ax)
     assert len(cells.get_paths()) == at_most(60.0).unsafe(field.arrays["upper"]).sum() == 3
     plt.close(fig)
-    safe = limited(agr, grid_cases, T=at_most(100.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    safe = limited(agr, grid_cases, T=at_most(100.0)).field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
     fig, ax = safe.plot(show_limit="shade")
     assert hatched(ax) == []
     plt.close(fig)
@@ -572,7 +572,7 @@ def test_map_panels_share_levels_and_refuse_line_arguments(agr, grid_cases):
         r.plot(band="none")
     with pytest.raises(ValueError, match="errorbars= does not apply to a map; use bound= to pick an envelope"):
         r.plot(errorbars=True)
-    cs = [dict(power=p, mdot=m, Tin=t) for t in (300.0, 310.0) for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3)]
+    cs = [{"power": p, "mdot": m, "Tin": t} for t in (300.0, 310.0) for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3)]
     three = Sweep(cs, [make_case_frame(c["power"], c["mdot"]) for c in cs], agr)
     with pytest.raises(ValueError, match="'Tin' varies; a map takes it on col= or row="):
         three.reduce("CHFR", "min", versus=("power", "mdot")).plot()
@@ -588,7 +588,7 @@ def test_filled_points_draw_open_markers_with_a_legend_entry(agr, grid_cases):
     frames[3] = None
     with pytest.warns(UserWarning):
         sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
-    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot()
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot()
     open_ = [ln for ln in ax.get_lines() if ln.get_linestyle() == "None" and ln.get_markerfacecolor() == "white"]
     assert len(open_) == 1 and open_[0].get_xdata()[0] == pytest.approx(4e6)
     assert "interpolated" in legend_texts(ax)
@@ -664,17 +664,17 @@ def test_map_cases_dots_skip_filled_cases(agr, grid_cases):
 
 
 def formatted_sweep(agr):
-    cases = [dict(power=p, mdot=m) for p in (4.21e6, 6e6) for m in (0.2, 0.3)]
+    cases = [{"power": p, "mdot": m} for p in (4.21e6, 6e6) for m in (0.2, 0.3)]
     return Sweep(cases, [make_case_frame(**c) for c in cases], agr, limits={"CHFR": at_least(1.5)})
 
 
 def test_a_label_format_reaches_legend_subtitle_and_limit(agr):
     sweep = formatted_sweep(agr)
     labels = {"power": ("Power", "MW", 1e-6, ".1f"), "CHFR": ("CHFR", "", 1.0, ".2f")}
-    fig, ax = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3)).plot(labels=labels)
+    fig, ax = sweep.profile("CHFR", of="CC", where={"mdot": 0.3}).plot(labels=labels)
     assert legend_texts(ax) == ["4.2", "6.0"]
     plt.close(fig)
-    fig, ax = sweep.profile("CHFR", of="CC", where=dict(power=4.21e6, mdot=0.3)).plot(labels=labels)
+    fig, ax = sweep.profile("CHFR", of="CC", where={"power": 4.21e6, "mdot": 0.3}).plot(labels=labels)
     assert ax.get_title() == "Power = 4.2 MW, mdot = 0.3, CC"
     plt.close(fig)
     fig, ax = sweep.reduce("CHFR", "min", versus="mdot").plot(labels=labels)
@@ -691,7 +691,7 @@ def test_style_number_format_sets_the_default_of_a_figure(sweep):
     fig, ax = r.plot(style_sheet=Style(number_format=".2f"))
     assert legend_texts(ax) == ["0.20", "0.30"]
     plt.close(fig)
-    single = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    single = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     fig, ax = single.plot(style_sheet=Style(number_format=".2f"))
     assert ax.get_title() == "Power = 4000000.00 W, Mass flow = 0.30 kg/s, CC"
     plt.close(fig)
@@ -699,11 +699,11 @@ def test_style_number_format_sets_the_default_of_a_figure(sweep):
 
 
 def test_style_number_format_reaches_sigma_and_the_reducer_position(sweep, banded_sweep):
-    r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0)
+    r = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}, sigma=2.0)
     fig, ax = r.plot(style_sheet=Style(number_format=".1f"))
     assert any("(2.0σ)" in t for t in legend_texts(ax))
     plt.close(fig)
-    r = sweep.reduce("T_cool", at(z=0.35), versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("T_cool", at(z=0.35), versus="power", where={"mdot": 0.3})
     fig, ax = r.plot(labels={"z": ("z", "m", 1.0, ".3f")})
     assert ax.get_ylabel() == "at z=0.350 Coolant temperature [°C]"
     plt.close(fig)
@@ -714,7 +714,7 @@ def test_style_number_format_reaches_sigma_and_the_reducer_position(sweep, bande
 
 
 def test_levels_printing_alike_warn_at_the_plot_call(agr):
-    cases = [dict(power=p, mdot=0.3) for p in (1.0e6, 1.04e6)]
+    cases = [{"power": p, "mdot": 0.3} for p in (1.0e6, 1.04e6)]
     sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr)
     r = sweep.reduce("CHFR", "min", versus="mdot")
     with pytest.warns(UserWarning, match=r"power levels 1e\+06 and 1\.04e\+06 both print as '1\.0'") as record:
@@ -742,7 +742,7 @@ def foot_texts(ax):
 
 def test_crossing_mark_draws_a_drop_line_a_marker_and_the_value(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     xc = 4.8e6
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
@@ -818,7 +818,7 @@ def test_crossing_legend_appends_the_value_to_the_one_encoded_dimension(agr, gri
 
 
 def test_crossing_legend_with_two_encoded_dimensions_adds_a_block(agr):
-    cases = [dict(power=p, mdot=m, wall_law=w) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for w in ("Dittus", "regime")]
+    cases = [{"power": p, "mdot": m, "wall_law": w} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3) for w in ("Dittus", "regime")]
     sweep = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr, limits={"CHFR": at_least(1.3)})
     fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(color="mdot", style="wall_law", crossing="legend")
     texts = legend_texts(ax)
@@ -830,7 +830,7 @@ def test_crossing_legend_with_two_encoded_dimensions_adds_a_block(agr):
 
 def test_crossing_legend_on_a_single_curve_titles_one_entry(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(crossing="legend")
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(crossing="legend")
     assert ax.get_legend().get_title().get_text() == "Power at CHFR = 1.3"
     assert legend_texts(ax) == ["4.8e+06 W"]
     assert foot_texts(ax) == []
@@ -849,7 +849,7 @@ def test_crossing_skips_a_curve_that_never_reaches_the_limit(agr, grid_cases):
 
 def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.7))
-    r = sweep.profile("CHFR", of="CC", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile("CHFR", of="CC", where={"power": 4e6, "mdot": 0.3})
     assert np.count_nonzero(np.diff(np.sign(r.frame.value.to_numpy() - 1.7))) == 2
     fig, ax = r.plot(crossing="mark")
     (drop,) = drop_lines(ax)
@@ -861,7 +861,7 @@ def test_crossing_marks_only_the_first_of_several(agr, grid_cases):
 
 def test_crossing_follows_the_drawn_bound(agr, grid_cases):
     sweep = Sweep(grid_cases, [make_case_frame(**c, banded=True) for c in grid_cases], agr, limits={"CHFR": at_least(1.3)})
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     fig, ax = r.plot(crossing="mark")
     (nominal,) = crossing_markers(ax)
     plt.close(fig)
@@ -877,7 +877,7 @@ def test_crossing_follows_the_drawn_bound(agr, grid_cases):
 
 def test_crossing_without_the_limit_line(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    fig, ax = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).plot(show_limit="none", crossing="mark")
+    fig, ax = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).plot(show_limit="none", crossing="mark")
     assert len(drop_lines(ax)) == 1 and dashed_lines(ax) == []
     assert [t.get_text() for t in ax.texts] == ["4.8e+06"]
     plt.close(fig)
@@ -890,7 +890,7 @@ def test_crossing_refusals(agr, grid_cases):
     with pytest.raises(ValueError, match="crossing= does not apply to a map"):
         sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot(crossing="mark")
     with pytest.raises(ValueError, match="crossing= does not apply to a field"):
-        limited(agr, grid_cases, T=at_most(60.0)).field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(crossing="mark")
+        limited(agr, grid_cases, T=at_most(60.0)).field("T", of="plate", where={"power": 4e6, "mdot": 0.3}).plot(crossing="mark")
     with pytest.raises(ValueError, match="where_min gives a location, not a value of CHFR"):
         sweep.reduce("CHFR", "where_min", versus="power").plot(crossing="legend")
     with pytest.raises(ValueError, match="no limit declared for 'T_cool'; declare it in limits= to mark its crossing"):
@@ -909,7 +909,7 @@ def test_crossing_legend_on_panels_prints_at_the_foot(agr, grid_cases):
 
 def test_crossing_value_prints_with_the_label_format(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     fig, ax = r.plot(crossing="mark", labels={"power": ("Power", "MW", 1e-6, ".1f")})
     assert foot_texts(ax) == ["4.8"]
     (marker,) = crossing_markers(ax)
@@ -918,9 +918,9 @@ def test_crossing_value_prints_with_the_label_format(agr, grid_cases):
 
 
 def test_crossing_legend_names_each_limit_when_quantities_differ(agr):
-    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
+    cases = [{"power": p, "mdot": 0.3} for p in (2e6, 4e6)]
     sweep = Sweep(cases, [make_case_frame(**c) for c in cases], agr, limits={"CHFR": at_least(1.7), "T_cool": at_most(48.0)})
-    r = sweep.profile(["CHFR", "T_cool"], of="CC", where=dict(mdot=0.3))
+    r = sweep.profile(["CHFR", "T_cool"], of="CC", where={"mdot": 0.3})
     fig, ax = r.plot(color="quantity", style="power", crossing="legend")
     texts = legend_texts(ax)
     assert texts[texts.index("z at the limit") + 1:] == [
@@ -932,7 +932,7 @@ def test_crossing_legend_names_each_limit_when_quantities_differ(agr):
 
 
 def test_crossing_legend_keeps_the_order_of_a_categorical_dimension(agr):
-    cases = [dict(power=p, mdot=0.3, wall_law=w) for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6, 8e6)]
+    cases = [{"power": p, "mdot": 0.3, "wall_law": w} for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6, 8e6)]
     sweep = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr, limits={"CHFR": at_least(1.3)})
     fig, ax = sweep.reduce("CHFR", "min", versus="power").plot(crossing="legend")
     assert legend_texts(ax) == ["regime (4.8e+06 W)", "Dittus (4.8e+06 W)"]
@@ -958,7 +958,7 @@ def test_crossing_mark_on_a_binding_result(agr):
         return frame(rows)
 
     agr["hot"] = FakeChannel([0.0, 0.1, 0.2, 0.3, 0.4])
-    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6, 6e6, 8e6)]
+    cases = [{"power": p, "mdot": 0.3} for p in (2e6, 4e6, 6e6, 8e6)]
     sweep = Sweep(cases, [make(**c) for c in cases], agr, limits={"CHFR": at_least(1.3)})
     r = sweep.reduce("CHFR", "min", versus="power", of=["CC", "hot"], limiting=True)
     xc = 4e6 + 2e6 * 0.2 / 0.7
@@ -971,7 +971,7 @@ def test_crossing_mark_on_a_binding_result(agr):
 
 def test_crossing_mark_under_a_shaded_limit_keeps_the_axes(agr, grid_cases):
     sweep = limited(agr, grid_cases, CHFR=at_least(1.3))
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     fig, ax = r.plot(show_limit="shade")
     shaded = ax.get_ylim()
     plt.close(fig)
@@ -985,7 +985,7 @@ def test_crossing_mark_under_a_shaded_limit_keeps_the_axes(agr, grid_cases):
 def test_a_sweep_keeps_the_default_format_of_its_labels(agr, grid_cases):
     labels = Labels({"mdot": ("Mass flow", "kg/s")}, default_format=".2f")
     sweep = Sweep(grid_cases, [make_case_frame(**c) for c in grid_cases], agr, labels=labels)
-    r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     assert r.subtitle == "Power = 4000000.00 W, Mass flow = 0.30 kg/s, CC"
     fig, ax = r.plot()
     assert ax.get_title() == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"

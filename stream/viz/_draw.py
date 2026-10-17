@@ -55,7 +55,7 @@ def _quantities_on(result) -> list[str]:
 
 
 def _shade(ax, style: Style, color: str, span: tuple[float, float], x=None, y=None) -> None:
-    kwargs = dict(facecolor="white", alpha=style.shade_alpha, hatch=style.shade_hatch, edgecolor=color, linewidth=0)
+    kwargs = {"facecolor": "white", "alpha": style.shade_alpha, "hatch": style.shade_hatch, "edgecolor": color, "linewidth": 0}
     if x is None:
         ax.axhspan(span[0], span[1], **kwargs)
     else:

@@ -5,9 +5,10 @@ derivative calculation.
 """
 
 import logging
+from collections.abc import Sequence
 from enum import StrEnum
 from functools import partial
-from typing import Sequence, TypeVar
+from typing import TypeVar
 
 import numpy as np
 
@@ -141,7 +142,7 @@ class ChannelVar(StrEnum):
         ----------
         key: str
             Variable name in general
-        direction: left or right
+        direction: Direction
             The directionality, in a case where the channel has multiples of the same thing.
 
         Returns
@@ -149,7 +150,7 @@ class ChannelVar(StrEnum):
         The appropriate enum member.
 
         """
-        return getattr(cls, f"{key}{f'_{str(direction)}' if direction else ''}")
+        return getattr(cls, f"{key}{f'_{direction!s}' if direction else ''}")
 
 
 def coolant_first_order_upwind_dTdt(
@@ -304,30 +305,30 @@ class Channel(Calculation):
         """
         T_vecs = self._T_vecs(variables, T_left, T_right)
         q_left, q_right = _heatflux(**T_vecs, h_left=h_left, h_right=h_right)
-        d = dict(
-            T_cool=self._dTdt(
+        d = {
+            "T_cool": self._dTdt(
                 Tin=directed_Tin(Tin, Tin_minus, mdot),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
                 q_right=q_right,
             ),
-            pressure=variables[-1] - np.sum(self._dp(mdot=mdot, mdot2=mdot2, **T_vecs)),
-        )
+            "pressure": variables[-1] - np.sum(self._dp(mdot=mdot, mdot2=mdot2, **T_vecs)),
+        }
         return self.load(d)
 
     def indices(self, variable: Name, asking=None) -> Place:
-        return dict(
-            Tin=self.n - 1,
-            Tin_minus=0,
-            T_coolant=(Ts := slice(0, self.n)),
-            T_cool=Ts,
-            pressure=self.n,
-            T_left=Ts,
-            T_right=Ts,
-            T=Ts,
-            dp=self.n,
-        )[variable]
+        return {
+            "Tin": self.n - 1,
+            "Tin_minus": 0,
+            "T_coolant": (Ts := slice(0, self.n)),
+            "T_cool": Ts,
+            "pressure": self.n,
+            "T_left": Ts,
+            "T_right": Ts,
+            "T": Ts,
+            "dp": self.n,
+        }[variable]
 
     @property
     def mass_vector(self) -> Sequence[bool]:
@@ -408,11 +409,11 @@ class Channel(Calculation):
         return self.pressure(mdot=mdot, mdot2=mdot2, T=T, Tw=(T_left + T_right) / 2)
 
     def _T_vecs(self, variables, T_left: Celsius, T_right: Celsius) -> dict:
-        return dict(
-            T=(T := np.asarray(variables[0 : self.n])),
-            T_left=T_left if T_left is not None else T,
-            T_right=T_right if T_right is not None else T,
-        )
+        return {
+            "T": (T := np.asarray(variables[0 : self.n])),
+            "T_left": T_left if T_left is not None else T,
+            "T_right": T_right if T_right is not None else T,
+        }
 
     @property
     def variables(self) -> dict[str, Place]:
@@ -467,16 +468,16 @@ class ChannelHeatFlux(Channel):
         q_right: WPerM2 = 0.0,
     ) -> Array1D:
         T_vecs = self._T_vecs(variables, T_left, T_right)
-        d = dict(
-            T_cool=self._dTdt(
+        d = {
+            "T_cool": self._dTdt(
                 Tin=directed_Tin(Tin, Tin_minus, mdot),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
                 q_right=q_right,
             ),
-            pressure=variables[-1] - np.sum(self._dp(mdot=mdot, mdot2=mdot2, **T_vecs)),
-        )
+            "pressure": variables[-1] - np.sum(self._dp(mdot=mdot, mdot2=mdot2, **T_vecs)),
+        }
         return self.load(d)
 
     @unpacked
@@ -558,7 +559,7 @@ class ChannelAndContacts(Channel):
             return super().indices(variable, asking=asking)
         except KeyError:
             pass
-        return dict(h_left=self.variables["h_right"], h_right=self.variables["h_left"])[variable]
+        return {"h_left": self.variables["h_right"], "h_right": self.variables["h_left"]}[variable]
 
     @property
     def variables(self) -> dict[str, Place]:
@@ -740,18 +741,18 @@ class ChannelAndContacts(Channel):
         h_left, h_right = _other_if_none(h_left, h_right)  # type: WPerM2K
         q_left, q_right = _heatflux(**T_vecs, h_left=h_left, h_right=h_right)
 
-        d = dict(
-            T_cool=self._dTdt(
+        d = {
+            "T_cool": self._dTdt(
                 Tin=directed_Tin(Tin, Tin_minus, mdot),
                 T=T_vecs["T"],
                 mdot=mdot,
                 q_left=q_left,
                 q_right=q_right,
             ),
-            h_left=h_left - variables[self._vars[ChannelVar.h_left]],
-            h_right=h_right - variables[self._vars[ChannelVar.h_right]],
-            pressure=variables[self._vars[ChannelVar.pressure_drop]] - np.sum(dp),
-        )
+            "h_left": h_left - variables[self._vars[ChannelVar.h_left]],
+            "h_right": h_right - variables[self._vars[ChannelVar.h_right]],
+            "pressure": variables[self._vars[ChannelVar.pressure_drop]] - np.sum(dp),
+        }
 
         return self.load(d)
 

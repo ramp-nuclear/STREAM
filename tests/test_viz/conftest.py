@@ -18,7 +18,7 @@ def close_figures():
 def frame(rows, sys=None, stat=None):
     """Build a State-like frame from (calculation, variable, i, j, value) rows."""
     df = pd.DataFrame(rows, columns=["calculation", "variable", "i", "j", "value"]).astype(
-        dict(calculation="category", variable="category", i="uint16", j="uint16", value="float64")
+        {"calculation": "category", "variable": "category", "i": "uint16", "j": "uint16", "value": "float64"}
     )
     if sys is not None:
         df = df.assign(sys=np.asarray(sys, dtype=float), stat=np.asarray(stat, dtype=float))
@@ -73,7 +73,7 @@ def make_case_frame(power, mdot, banded=False):
 
 @pytest.fixture
 def grid_cases():
-    return [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
+    return [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
 
 
 LABELS = {"mdot": ("Mass flow", "kg/s")}

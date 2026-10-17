@@ -4,7 +4,7 @@ A simple implementation is presented simply as :class:`.Flapper`.
 """
 
 import logging
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy as np
 
@@ -15,7 +15,7 @@ from stream.substances import LiquidFuncs
 from stream.units import Array1D, Celsius, KgPerS, Meter2, PerS, Second
 from stream.utilities import STREAM_DEBUG, directed_Tin
 
-__all__ = ["Flapper", "legacy_relaxation", "continuously_differentiable_relaxation"]
+__all__ = ["Flapper", "continuously_differentiable_relaxation", "legacy_relaxation"]
 
 logger = logging.getLogger(__name__)
 

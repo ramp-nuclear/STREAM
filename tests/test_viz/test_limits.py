@@ -43,10 +43,10 @@ def test_sweep_rejects_unknown_quantity_and_wrong_type(agr, grid_cases):
 def test_results_carry_the_limits_of_their_quantities(agr, grid_cases):
     frames = [make_case_frame(**c) for c in grid_cases]
     sweep = Sweep(grid_cases, frames, agr, limits={"CHFR": at_least(1.3)})
-    assert sweep.profile("CHFR", where=dict(mdot=0.3)).limits == {"CHFR": at_least(1.3)}
-    assert sweep.profile("T_cool", where=dict(mdot=0.3)).limits == {}
+    assert sweep.profile("CHFR", where={"mdot": 0.3}).limits == {"CHFR": at_least(1.3)}
+    assert sweep.profile("T_cool", where={"mdot": 0.3}).limits == {}
     assert sweep.reduce("CHFR", "min", versus="power").limits == {"CHFR": at_least(1.3)}
-    assert sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).limits == {}
+    assert sweep.field("T", of="plate", where={"power": 4e6, "mdot": 0.3}).limits == {}
     r = sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")
     assert r.limits == {"CHFR": at_least(1.3)} and r.safe_side == "below" and r.binding is False and r.y is None
 

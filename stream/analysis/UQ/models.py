@@ -1,7 +1,8 @@
 """Tools to generate UQ models"""
 
+from collections.abc import Callable, Iterable
 from functools import reduce
-from typing import Callable, Iterable, TypeVar
+from typing import TypeVar
 
 import numpy as np
 from dask import delayed
@@ -15,10 +16,10 @@ from .uncertainty import Uncertainty, Uncertuple
 Model = Callable[[...], DataFrame]
 DelayedModel = Callable[[...], Delayed]
 ModelFactory = Callable[[...], tuple[Delayed, Delayed]]
-T = TypeVar("T", bound=Value, covariant=True)
+T_co = TypeVar("T_co", bound=Value, covariant=True)
 
 
-def _vector_step(x: T, h: T) -> Iterable[T]:
+def _vector_step(x: T_co, h: T_co) -> Iterable[T_co]:
     """Generate finite-difference step values ``x+h``
 
     Parameters
@@ -55,7 +56,7 @@ def _vector_step(x: T, h: T) -> Iterable[T]:
             )
 
 
-def default_deriv_step(x: T) -> T:
+def default_deriv_step(x: T_co) -> T_co:
     """The default way to make an infinitesimal change in x.
 
     Parameters
@@ -71,7 +72,7 @@ def _as_matrix(
     nominal,
     perturbed_solutions: Iterable[Array1D],
     perturbations: Array1D,
-    length: int = None,
+    length: int | None = None,
 ) -> Array2D:
     """Creates a matrix subjacobian representation from perturbed solutions
     and known perturbation values.
@@ -151,7 +152,7 @@ class _UQModel:
         self._invalidate_cache()
 
     @property
-    def step_strategy(self) -> Callable[[T], T]:
+    def step_strategy(self) -> Callable[[T_co], T_co]:
         """A strategy for deciding how big a perturbation step to take.
         This should be a small positive value, usually.
 
@@ -159,7 +160,7 @@ class _UQModel:
         return self._step_strategy
 
     @step_strategy.setter
-    def step_strategy(self, st: Callable[[T], T]) -> None:
+    def step_strategy(self, st: Callable[[T_co], T_co]) -> None:
         self._step_strategy = st
         self._invalidate_cache()
 
@@ -181,7 +182,7 @@ class UQModel(_UQModel):
         parameters: dict[str, Value],
         model: Model,
         nominal: DataFrame = None,
-        step_strategy: Callable[[T], T] = default_deriv_step,
+        step_strategy: Callable[[T_co], T_co] = default_deriv_step,
     ):
         """
         Parameters
@@ -329,9 +330,9 @@ class DASKUQModel(_UQModel):
         parameters: dict[str, Value],
         model: Model,
         *features: DelayedModel,
-        feature_length: int = None,
+        feature_length: int | None = None,
         persist: bool = False,
-        step_strategy: Callable[[T], T] = default_deriv_step,
+        step_strategy: Callable[[T_co], T_co] = default_deriv_step,
     ):
         """
 
@@ -387,7 +388,7 @@ class DASKUQModel(_UQModel):
         df = self._eval(**parameters)
         return df.value.values
 
-    def subjacobian(self, param: str, persist: bool = None) -> Delayed:
+    def subjacobian(self, param: str, persist: bool | None = None) -> Delayed:
         r"""Derive the Jacobian matrix of derivation by a single input parameter.
 
         See Also
@@ -426,7 +427,7 @@ class DASKUQModel(_UQModel):
         self,
         param: str,
         uncertainty: Uncertainty,
-        persist: bool = None,
+        persist: bool | None = None,
     ) -> tuple[Delayed, Delayed]:
         """Perform the uncertainty quantification of the model for one
         parameter's uncertainty.
@@ -453,7 +454,7 @@ class DASKUQModel(_UQModel):
 
     def uq(
         self,
-        persist: bool = None,
+        persist: bool | None = None,
         **uncertainties: Uncertainty,
     ) -> tuple[Delayed, Delayed]:
         """Performs the uncertainty quantification of the model for a given set
@@ -487,7 +488,7 @@ class DASKUQModel(_UQModel):
         # noinspection PyTypeChecker
         return sys, stat
 
-    def uq_attach(self, persist: bool = None, **uncertainties: Uncertainty) -> Delayed:
+    def uq_attach(self, persist: bool | None = None, **uncertainties: Uncertainty) -> Delayed:
         """Performs the uncertainty quantification of the model for a given set
         of uncertainties, just like :meth:`uq`.
 

@@ -52,7 +52,7 @@ References
 .. [#BPR] CONVEC v 3.40, section 7.2.4, page 20, Revision II
 """
 
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 from scipy.integrate import quad
@@ -79,10 +79,10 @@ from stream.units import (
 from stream.utilities import directed
 
 __all__ = [
-    "Saha_Zuber_OSV",
-    "Saha_Zuber_OSV_computed_bulk",
     "Fabrega_CHF",
     "Mirshak_CHF",
+    "Saha_Zuber_OSV",
+    "Saha_Zuber_OSV_computed_bulk",
     "Sudo_Kaminaga_CHF",
     "Whittle_Forgan_OFI",
     "boiling_power",

@@ -3,8 +3,9 @@ A calculation for the point kinetics neutronics model
 """
 
 import logging
+from collections.abc import Sequence
 from enum import Enum, StrEnum
-from typing import Protocol, Sequence, TypeVar
+from typing import Protocol, TypeVar
 
 import numpy as np
 from cytoolz.functoolz import curry
@@ -45,7 +46,6 @@ class InputReactivity(Protocol):
         rho_c: float
             Inserted control reactivity
         """
-        pass
 
 
 S = TypeVar("S", bound=Enum)
@@ -72,7 +72,6 @@ class StateMachine(Protocol):
         new_state: Enum
             New state, which may be the same as the current state.
         """
-        pass
 
 
 class OneWayToSCRAM(StrEnum):
@@ -100,7 +99,8 @@ class ReactivityController:
     def __init__(
         self,
         input_reactivity: InputReactivity | None = None,
-        state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),
+        # The function call here creates practically an immutable and is fine
+        state_machine: StateMachine = just(OneWayToSCRAM.NORMAL),  # ruff: ignore[B008]
         initial_state: S = OneWayToSCRAM.NORMAL,
         initial_time: Second = 0.0,
         abort_states: set[S] | None = None,
@@ -311,7 +311,7 @@ class PointKinetics(Calculation):
 
     @property
     def variables(self) -> dict[Name, Place]:
-        return dict(power=0, ck=slice(1, self.m + 1))
+        return {"power": 0, "ck": slice(1, self.m + 1)}
 
     def indices(self, variable: Name, asking: Calculation | None = None) -> Place | dict[Name, Place]:
         """`pk_power` is the kinetics power row: the `power` row unless a subtype separates the two."""
@@ -399,7 +399,7 @@ class PointKineticsWInput(PointKinetics):
         self,
         variables: Sequence[float],
         *,
-        T: dict[Calculation, Celsius] = None,
+        T: dict[Calculation, Celsius] | None = None,
         source: Watt | None = None,
         t: Second,
         power_input: Watt | None = None,
@@ -419,4 +419,4 @@ class PointKineticsWInput(PointKinetics):
 
     @property
     def variables(self) -> dict[Name, Place]:
-        return dict(pk_power=0, ck=slice(1, self.m + 1), power=self.m + 1)
+        return {"pk_power": 0, "ck": slice(1, self.m + 1), "power": self.m + 1}
