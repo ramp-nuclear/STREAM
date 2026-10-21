@@ -1,0 +1,542 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Decay Heat &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Analysis" href="analysis.html" />
+    <link rel="prev" title="Thresholds" href="thresholds.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="stream.html">Documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="calculation.html">Calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.calculations.html">Calculations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stream.composition.html">Composition</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="stream.physical_models.html">Physical Models</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="thresholds.html">Thresholds</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Decay Heat</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#the-fission-rate">The Fission Rate</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fissions">Fissions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fission-products">Fission Products</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#activation">Activation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="stream.physical_models.html#module-stream.physical_models.dimensionless">Dimensionless Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="stream.html">Documentation</a></li>
+          <li class="breadcrumb-item"><a href="stream.physical_models.html">Physical Models</a></li>
+      <li class="breadcrumb-item active">Decay Heat</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/decay_heat.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="decay-heat">
+<h1>Decay Heat<a class="headerlink" href="#decay-heat" title="Link to this heading"></a></h1>
+<p>During the operation of a nuclear reactor, the core’s components are heated by interactions of particles
+(neutrons, photons, electrons, ions and atoms) with component materials. The origin of most of those particles can be
+traced back in time to an induced fission event in the reactor. So they depend on the reactor power level history.</p>
+<p>We can further separate these particles into 3 categories:</p>
+<dl class="simple">
+<dt><strong>Immediate</strong> sources</dt><dd><p>Particles that are created immediately after an induced fission event in the reactor
+(created within a time scale that is much smaller than the generation time).
+For example: prompt neutrons, prompt photons and fission products.</p>
+</dd>
+<dt><strong>Delayed</strong> sources</dt><dd><p>Particles that are created after an induced fission event in the reactor with a delay that is larger than the generation time.
+For example: particles that are created from decay of activation products or fission products.</p>
+</dd>
+<dt><strong>External</strong> sources</dt><dd><p>Particles that their origin <em>cannot</em> be traced back to an induced fission event in the reactor,
+and so this type of source does not depend on the reactor power level history.
+For example: particles that are created from an external neutron source, particles that are created by cosmic radiation
+and particles that are created by spontaneous fission of U238.</p>
+</dd>
+</dl>
+<p>Most of the time, external sources have a negligible effect on radiation heating. They are not considered here.
+The total heating must be evaluated to ensure proper heat evacuation from the core (such evaluation is beyond the scope
+of system codes and particularly <a class="reference internal" href="index.html#stream"><span class="std std-ref">STREAM</span></a>, and serves as input for this subpackage).
+When the reactor is shut down, the power does not turn off completely, as these delayed sources of heating have a
+lingering (sometimes called <cite>residual</cite>) effect - <strong>Decay Heat</strong>.</p>
+<hr class="docutils" />
+<section id="the-fission-rate">
+<h2>The Fission Rate<a class="headerlink" href="#the-fission-rate" title="Link to this heading"></a></h2>
+<p>Since the common source of (the majority of) immediate and delayed heating contributions is the induced fission event,
+it is convenient to write contributions per fission event, and multiply by the rate of fission events.</p>
+<p>The total decay heat per fission event is given in units of <span class="math notranslate nohighlight">\([\text{MeV} / \text{fission}]\)</span>,
+and denoted <span class="math notranslate nohighlight">\(F_\text{Decay Heat}(t, T)\)</span> where <span class="math notranslate nohighlight">\(T\)</span> is the operation time
+(constant fission rate during this period is assumed), and <span class="math notranslate nohighlight">\(t\)</span> is the time after shutdown.</p>
+<p>The decay heat power is then defined as:</p>
+<div class="math notranslate nohighlight" id="equation-pdh">
+<span class="eqno">(1)<a class="headerlink" href="#equation-pdh" title="Link to this equation"></a></span>\[P_\text{Decay Heat} = \Phi F_\text{Decay Heat}(t, T)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\Phi\)</span> is the <strong>fission rate</strong>, and has units of <span class="math notranslate nohighlight">\([\text{W} / (\text{MeV} / \text{fission})]\)</span> or
+<span class="math notranslate nohighlight">\([\approx 1.602\cdot 10^{-13}\text{ fission}/\text{s}]\)</span>, and is commonly written as:</p>
+<div class="math notranslate nohighlight" id="equation-fr">
+<span class="eqno">(2)<a class="headerlink" href="#equation-fr" title="Link to this equation"></a></span>\[\Phi = \frac{P_0}{Q}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(P_0\)</span> is the reactor operation power and <span class="math notranslate nohighlight">\(Q\)</span> is the total <strong>recoverable</strong> energy
+associated with a fission event (conservatively, <span class="math notranslate nohighlight">\(Q\approx 200 \text{MeV}\)</span>).</p>
+<p>In the method contained herein this total decay heat per fission event is the sum of several contributions:</p>
+<div class="math notranslate nohighlight" id="equation-fdh">
+<span class="eqno">(3)<a class="headerlink" href="#equation-fdh" title="Link to this equation"></a></span>\[F_\text{Decay Heat}(t, T) =
+      F_\text{Fissions}(t, T) + F_\text{Fission Products}(t, T) + \sum_i F_{\text{Activation Products} i}(t, T)\]</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The user is left with the responsibility of constructing their own decay heat function, including the fission rate
+and the weighting of each contribution which depends on the component in question.</p>
+</div>
+<p>In the following segments, each term of <a class="reference internal" href="#equation-fdh">(3)</a>: <a class="reference internal" href="#fissions"><span class="std std-ref">Fissions</span></a>, <a class="reference internal" href="#fission-products"><span class="std std-ref">Fission Products</span></a>, <a class="reference internal" href="#activation"><span class="std std-ref">Activation</span></a> is explained
+and the corresponding functions are linked.</p>
+</section>
+<section id="fissions">
+<h2>Fissions<a class="headerlink" href="#fissions" title="Link to this heading"></a></h2>
+<p>With the shutdown of the reactor the neutron population plunges, and with it the fission rate in
+accordance with the generation time <span class="math notranslate nohighlight">\(\Lambda\)</span> and the delayed neutron decay rates <span class="math notranslate nohighlight">\(\lambda_k\)</span>.
+The fraction of delayed fission yield <span class="math notranslate nohighlight">\(\beta_\text{eff}\)</span> is spectrum dependent and should, along with the
+other kinetic parameters, be calculated for a given reactor.</p>
+<p>The decay heat is calculated as follows:</p>
+<div class="math notranslate nohighlight" id="equation-fis">
+<span class="eqno">(4)<a class="headerlink" href="#equation-fis" title="Link to this equation"></a></span>\[F_\text{Fissions}(t, T) = Q_\text{prompt}P(t)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(P(t)\)</span> is the profile generated by solving the Point-Kinetics equations,
+having arbitrary units:</p>
+<blockquote>
+<div><div class="math notranslate nohighlight">
+\[\begin{split}\dot{P} &amp;= \frac{\rho(t) - \beta}{\Lambda} P + \sum_k C_k\lambda_k \\
+\dot{C}_k &amp;= - C_k\lambda_k + \frac{\beta_k}{ \Lambda} P\end{split}\]</div>
+</div></blockquote>
+<p>For <span class="math notranslate nohighlight">\(P(t=0) = 1\)</span> normalized initial power and controlled by the reactivity insertion <span class="math notranslate nohighlight">\(\rho(t); \rho(0)=0\)</span>.
+These equations are further described at <a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.PointKinetics" title="stream.calculations.point_kinetics.PointKinetics"><code class="xref py py-class docutils literal notranslate"><span class="pre">PointKinetics</span></code></a>.
+<span class="math notranslate nohighlight">\(Q_\text{prompt}\equiv Q - Q_\text{delayed}\)</span> is the total energy deposited in a component
+directly related to fission events (including, for example, the immediate <span class="math notranslate nohighlight">\(\gamma\)</span> radiation
+released <cite>immediately</cite> after fission).</p>
+<p>The user is provided with methods to generate such a profile:</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fissions.profile">
+<span class="sig-name descname"><span class="pre">profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">generation_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delayed_neutron_fractions</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delayed_groups_decay_rates</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">controls</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fissions.html#profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fissions.profile" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (<em>Second</em>) – Times on which the calculated profile should rely.</p></li>
+<li><p><strong>generation_time</strong> (<em>Second</em>) – mean time between neutron generations.</p></li>
+<li><p><strong>delayed_neutron_fractions</strong> (<em>Array1D</em>) – the fractional yield of neutrons in
+defined delay groups. 1$ worth is the total.</p></li>
+<li><p><strong>delayed_groups_decay_rates</strong> (<em>PerS</em>) – each group’s decay rate.</p></li>
+<li><p><strong>controls</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.ReactivityController" title="stream.calculations.point_kinetics.ReactivityController"><em>ReactivityController</em></a>) – Reactor reactivity controls</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The fission time profile <span class="math notranslate nohighlight">\(\text{PK}(t, T)\)</span></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fissions.profile_from_pk">
+<span class="sig-name descname"><span class="pre">profile_from_pk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pk</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fissions.html#profile_from_pk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fissions.profile_from_pk" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time</strong> (<em>Second</em>) – Times on which the calculated profile should rely.</p></li>
+<li><p><strong>pk</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.point_kinetics.PointKinetics" title="stream.calculations.point_kinetics.PointKinetics"><em>PointKinetics</em></a>) – Calculation on which the calculated profile should rely.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The fission time profile <span class="math notranslate nohighlight">\(\text{PK}(t, T)\)</span></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition-implementation-detail admonition">
+<p class="admonition-title">Implementation Detail</p>
+<p>The profiles are generated once and interpolated for use at STREAM simulation-time, in order to save the
+runtime cost of calculating the profile for each call.</p>
+</div>
+</section>
+<section id="fission-products">
+<h2>Fission Products<a class="headerlink" href="#fission-products" title="Link to this heading"></a></h2>
+<p>The primary contributor to reactor decay heat is the <span class="math notranslate nohighlight">\(\beta\)</span> and <span class="math notranslate nohighlight">\(\gamma\)</span> decays
+of fission products. Several standards are readily available, of which the most notable
+is the American National Standard <strong>ANSI/ANS-5.1</strong>.</p>
+<p>The supported standards are:</p>
+<ul class="simple">
+<li><p><strong>ANSI/ANS-5.1-1973</strong><a class="footnote-reference brackets" href="#ans1973" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p></li>
+<li><p><strong>ANSI/ANS-5.1-2014</strong><a class="footnote-reference brackets" href="#ans2014" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p></li>
+<li><p><strong>JAERI-M-91-034</strong><a class="footnote-reference brackets" href="#jaeri1991" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a></p></li>
+</ul>
+<aside class="footnote-list brackets">
+<aside class="footnote brackets" id="ans1973" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id1">1</a>,<a role="doc-backlink" href="#id6">2</a>)</span>
+<p>American Nuclear Society Proposed Standard, ANS-5.1
+“Decay Energy Release Rates Following Shutdown of Uranium-Fueled Thermal Reactors,”
+October (1971), Revised October (1973).</p>
+</aside>
+<aside class="footnote brackets" id="ans2014" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id2">1</a>,<a role="doc-backlink" href="#id7">2</a>)</span>
+<p>“American National Standard for Decay Heat Power in
+Light Water Reactors”, ANSI/ANS-5.1-2014, American Nuclear Society,
+2014.</p>
+</aside>
+<aside class="footnote brackets" id="jaeri1991" role="doc-footnote">
+<span class="label"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id3">1</a>,<a role="doc-backlink" href="#id4">2</a>)</span>
+<p>K. Tasaka, “Recommended values of decay heat power and method to utilize the data”,
+Japan Atomic Energy Research Institute, Japan, JAERI-M-91-034, 1991.</p>
+</aside>
+</aside>
+<p>The american standards do not distinguish between <span class="math notranslate nohighlight">\(\beta\)</span> and <span class="math notranslate nohighlight">\(\gamma\)</span> contributions and are only meant
+for fuel elements. Since the <span class="math notranslate nohighlight">\(\beta\)</span> contribution is naturally local while the <span class="math notranslate nohighlight">\(\gamma\)</span> contribution
+may not be, for non-fuel elements only the latter profile should be used, a distinction available through
+JAERI<a class="footnote-reference brackets" href="#jaeri1991" id="id4" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a>, included mainly for this reason. For these cases, the user must normalize the profile
+and multiply by the correct fission product contribution evaluated at shutdown.</p>
+<p>The user may choose a standard and a source (for the reason outlined above), or provide their own constants
+for the general equation:</p>
+<div class="math notranslate nohighlight" id="equation-fp">
+<span class="eqno">(5)<a class="headerlink" href="#equation-fp" title="Link to this equation"></a></span>\[F_\text{Fission Products}(t, T) = \sum_i\frac{\alpha_i}{\lambda_i}
+    e^{-\lambda_i t}\left(1 -e^{-\lambda_i T}\right)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\alpha_i \space [\text{MeV}/(\text{fission}/s)]\)</span> and <span class="math notranslate nohighlight">\(\lambda_i \space [1/s]\)</span>
+are given by the standards.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Standard">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fission_products.html#Standard"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Standard" title="Link to this definition"></a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Standard.ANS14">
+<span class="sig-name descname"><span class="pre">ANS14</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ans14'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Standard.ANS14" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Standard.ANS73">
+<span class="sig-name descname"><span class="pre">ANS73</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ans73'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Standard.ANS73" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Standard.JAERI91">
+<span class="sig-name descname"><span class="pre">JAERI91</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'jaeri91'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Standard.JAERI91" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Source</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fission_products.html#Source"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source" title="Link to this definition"></a></dt>
+<dd><dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source.U235">
+<span class="sig-name descname"><span class="pre">U235</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'U235'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source.U235" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source.U235_beta">
+<span class="sig-name descname"><span class="pre">U235_beta</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'U235_beta'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source.U235_beta" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source.U235_gamma">
+<span class="sig-name descname"><span class="pre">U235_gamma</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'U235_gamma'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source.U235_gamma" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source.U238">
+<span class="sig-name descname"><span class="pre">U238</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'U238'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source.U238" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.Source.U238_gamma">
+<span class="sig-name descname"><span class="pre">U238_gamma</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'U238_gamma'</span></span><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.Source.U238_gamma" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.contribution">
+<span class="sig-name descname"><span class="pre">contribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">standard</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fission_products.html#contribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.contribution" title="Link to this definition"></a></dt>
+<dd><p>A DecayHeatFunction for fission products` decay, given a <a class="reference internal" href="#stream.physical_models.decay_heat.fission_products.Standard" title="stream.physical_models.decay_heat.fission_products.Standard"><code class="xref py py-class docutils literal notranslate"><span class="pre">Standard</span></code></a>, <a class="reference internal" href="#stream.physical_models.decay_heat.fission_products.Source" title="stream.physical_models.decay_heat.fission_products.Source"><code class="xref py py-class docutils literal notranslate"><span class="pre">Source</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>standard</strong> (<a class="reference internal" href="#stream.physical_models.decay_heat.fission_products.Standard" title="stream.physical_models.decay_heat.fission_products.Standard"><em>Standard</em></a>) – The decay heat standard from which the data should be taken.</p></li>
+<li><p><strong>source</strong> (<a class="reference internal" href="#stream.physical_models.decay_heat.fission_products.Source" title="stream.physical_models.decay_heat.fission_products.Source"><em>Source</em></a>) – Chosen source.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Whose return value has units of MeV / fission event</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">try</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">fp</span> <span class="o">=</span> <span class="n">contribution</span><span class="p">(</span><span class="n">Standard</span><span class="o">.</span><span class="n">ANS14</span><span class="p">,</span> <span class="n">Source</span><span class="o">.</span><span class="n">U235</span><span class="p">)</span>
+<span class="gp">... </span><span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">"This doctest requires the standards which are not there"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Q</span><span class="p">:</span> <span class="n">MeV</span> <span class="o">=</span> <span class="mi">200</span> <span class="c1"># Approx. total recoverable energy associated with one fission</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fp</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">/</span> <span class="n">Q</span>
+<span class="go">array([0.06728006])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">fp</span><span class="p">(</span><span class="n">t</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="mf">0.</span><span class="p">)</span>
+<span class="go">array([0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.fission_products.fp_inner_">
+<span class="sig-name descname"><span class="pre">fp_inner_</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">t</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lamda</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/fission_products.html#fp_inner_"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.fission_products.fp_inner_" title="Link to this definition"></a></dt>
+<dd><p>Implements <a class="reference internal" href="#equation-fp">(5)</a>, the decay heat stemming from fission products decays.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>t</strong> (<em>Second</em>) – Times after shutdown</p></li>
+<li><p><strong>T</strong> (<em>Second</em>) – Operation time</p></li>
+<li><p><strong>lamda</strong> (<em>PerS</em>) – Decay rates</p></li>
+<li><p><strong>alpha</strong> (<em>MeVPerS</em>) – Fractional fission power contributions</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>At times <cite>t</cite> after shutdown, <span class="math notranslate nohighlight">\(F(t,T)\)</span></p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MeVPerFission</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fp_inner_</span><span class="p">(</span>
+<span class="gp">... </span><span class="n">t</span><span class="o">=</span><span class="mf">0.</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">,</span> <span class="n">lamda</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">alpha</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="go">array([1.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<section id="neutron-captures-in-fission-products">
+<h3>Neutron Captures in Fission Products<a class="headerlink" href="#neutron-captures-in-fission-products" title="Link to this heading"></a></h3>
+<div class="admonition-todo admonition" id="id5">
+<p class="admonition-title">Todo</p>
+<p>Not implemented yet!</p>
+</div>
+</section>
+</section>
+<section id="activation">
+<h2>Activation<a class="headerlink" href="#activation" title="Link to this heading"></a></h2>
+<p>The decay of activated materials is yet another source of decay heat. For an activated material
+whose decay rate is <span class="math notranslate nohighlight">\(\lambda_1\)</span>, the decay heat <span class="math notranslate nohighlight">\(F(t, T)\)</span> is given by</p>
+<div class="math notranslate nohighlight" id="equation-act1">
+<span class="eqno">(6)<a class="headerlink" href="#equation-act1" title="Link to this equation"></a></span>\[F_{\text{Activation }}(t, T) = Q_1 e^{-\lambda_1 t}\left(1 -e^{-\lambda_1 T}\right)\]</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.activation.profile">
+<span class="sig-name descname"><span class="pre">profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lamda</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/activation.html#profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.activation.profile" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>lamda</strong> (<em>PerS</em>) – Activated isotope decay rate</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Decay profile from initially activated isotope</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">lamda_U239</span> <span class="o">:=</span> <span class="mf">4.91e-04</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">array([1.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">array([0.61201407])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">array([0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>And if the resultant isotope also decays with decay rate <span class="math notranslate nohighlight">\(\lambda_2\)</span>,(see <a class="reference internal" href="#actinides"><span class="std std-ref">Actinides</span></a>), the solution is</p>
+<div class="math notranslate nohighlight" id="equation-act2">
+<span class="eqno">(7)<a class="headerlink" href="#equation-act2" title="Link to this equation"></a></span>\[F_\text{Activation 2}(t, T) = Q_2\left[
+    \frac{\lambda_1}{\lambda_1 - \lambda_2}e^{-\lambda_2 t}
+    \left(1 -e^{-\lambda_2 T}\right)
+    - \frac{\lambda_2}{\lambda_1 - \lambda_2}e^{-\lambda_1 t}
+    \left(1 -e^{-\lambda_1 T}\right)\right]\]</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.activation.double_decay_profile">
+<span class="sig-name descname"><span class="pre">double_decay_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lamda1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lamda2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/activation.html#double_decay_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.activation.double_decay_profile" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>lamda1</strong> (<em>PerS</em>) – Activated isotope decay rate</p></li>
+<li><p><strong>lamda2</strong> (<em>PerS</em>) – Interim isotope decay rate</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Double decay profile from initially activated isotope</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">f</span> <span class="o">=</span> <span class="n">double_decay_profile</span><span class="p">(</span><span class="n">lamda_U239</span> <span class="o">:=</span> <span class="mf">4.91e-04</span><span class="p">,</span> <span class="n">lamda_Np</span> <span class="o">:=</span> <span class="mf">3.41e-06</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">array([1.])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+<span class="go">array([0.99928541])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">f</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="go">array([0.])</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>The profiles provided here should be factored by the appropriate <span class="math notranslate nohighlight">\(Q\)</span> values, as seen in equations
+<a class="reference internal" href="#equation-act1">(6)</a>, <a class="reference internal" href="#equation-act2">(7)</a>. One way of doing that is by writing <span class="math notranslate nohighlight">\(Q = E_d R\)</span> where
+<span class="math notranslate nohighlight">\(E_d \ [\text{MeV}]\)</span> is the deposited energy per decay event, and <span class="math notranslate nohighlight">\(R \ [1/\text{fission}]\)</span> is the
+number of capture events per fission event which lead to the creation of the decaying isotope.</p>
+<section id="actinides">
+<h3>Actinides<a class="headerlink" href="#actinides" title="Link to this heading"></a></h3>
+<p>The aforementioned ANS standard<a class="footnote-reference brackets" href="#ans1973" id="id6" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a> specifically mentions the contribution of <span class="math notranslate nohighlight">\(^{239} U\)</span>
+and <span class="math notranslate nohighlight">\(^{239} Np\)</span> which are created and decay by the following process:</p>
+<div class="math notranslate nohighlight">
+\[{}^{238} U  \xrightarrow{n \text{ capture}}
+{}^{239} U  \xrightarrow{\beta^-}
+{}^{239} Np \xrightarrow{\beta^-}
+{}^{239} Pu\]</div>
+<p>Their contributions are given by:</p>
+<div class="math notranslate nohighlight" id="equation-actinides-contribution">
+<span class="eqno">(8)<a class="headerlink" href="#equation-actinides-contribution" title="Link to this equation"></a></span>\[\begin{split}F_{U}(t, T) &amp;= E_{U}R_{U}e^{-\lambda_1 t}\left(1 -e^{-\lambda_1 T}\right) \\
+F_{Np}(t, T) &amp;= E_{Np}R_{U}\left[
+\frac{\lambda_1}{\lambda_1 - \lambda_2}e^{-\lambda_2 t}
+\left(1 -e^{-\lambda_2 T}\right)
+- \frac{\lambda_2}{\lambda_1 - \lambda_2}e^{-\lambda_1 t}
+\left(1 -e^{-\lambda_1 T}\right)\right]\end{split}\]</div>
+<dl class="py function" id="module-stream.physical_models.decay_heat.actinides">
+<dt class="sig sig-object py" id="stream.physical_models.decay_heat.actinides.contribution">
+<span class="sig-name descname"><span class="pre">contribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">R</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/decay_heat/actinides.html#contribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.decay_heat.actinides.contribution" title="Link to this definition"></a></dt>
+<dd><p>Gives a profile of the actinides contribution as described in<a class="footnote-reference brackets" href="#ans2014" id="id7" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a> and <a class="reference internal" href="#equation-actinides-contribution">(8)</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>R</strong> (<em>CapturesPerFission</em>) – Ratio of neutron captures in <span class="math notranslate nohighlight">\(^{238}U\)</span> to fission events at operation time.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Actinides (U239, Np239) total contribution</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>DecayHeatFunction</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">contribution</span><span class="p">(</span><span class="mf">0.005</span><span class="p">)(</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+<span class="go">0.004325</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="thresholds.html" class="btn btn-neutral float-left" title="Thresholds" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="analysis.html" class="btn btn-neutral float-right" title="Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 21, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

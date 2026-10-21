@@ -1,0 +1,301 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>test_composition.test_cycle &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link href="../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">test_composition.test_cycle</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for test_composition.test_cycle</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiGraph</span><span class="p">,</span> <span class="n">MultiDiGraph</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VARS</span><span class="p">,</span> <span class="n">CalculationGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">Kirchhoff</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition.cycle</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">,</span>
+    <span class="n">flow_graph</span><span class="p">,</span>
+    <span class="n">flow_graph_to_aggregator</span><span class="p">,</span>
+    <span class="n">in_parallel</span><span class="p">,</span>
+    <span class="n">in_series</span><span class="p">,</span>
+    <span class="n">kirchhoffify</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_in_series_with_no_arguments_gives_an_empty_graph_and_funcs</span><span class="p">():</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_series</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span></div>
+
+
+
+<div class="viewcode-block" id="test_in_series_two_components_creates_a_graph_with_known_edges">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_in_series_two_components_creates_a_graph_with_known_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_in_series_two_components_creates_a_graph_with_known_edges</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_in_series_cyclic_for_3_calculations_has_the_right_edges">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_in_series_cyclic_for_3_calculations_has_the_right_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_in_series_cyclic_for_3_calculations_has_the_right_edges</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">3</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="test_in_parallel_of_with_no_comps_gives_empty_graph_and_funcs">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_in_parallel_of_with_no_comps_gives_empty_graph_and_funcs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_in_parallel_of_with_no_comps_gives_empty_graph_and_funcs</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_parallel</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span></div>
+
+
+
+<div class="viewcode-block" id="test_in_parallel_for_two_paths_with_a_comp_each_has_correct_edges">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_in_parallel_for_two_paths_with_a_comp_each_has_correct_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_in_parallel_for_two_paths_with_a_comp_each_has_correct_edges</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">in_parallel</span><span class="p">(</span><span class="s2">"A"</span><span class="p">,</span> <span class="s2">"B"</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s2">"A"</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s2">"A"</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">"B"</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s2">"B"</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s2">"B"</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="s2">"B"</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="s2">"A"</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="s2">"A"</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_of_empty_graphs_makes_empty_graph_and_funcs">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_of_empty_graphs_makes_empty_graph_and_funcs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_of_empty_graphs_makes_empty_graph_and_funcs</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">MultiDiGraph</span><span class="p">())</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">funcs</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_w_2_hydraulic_comps_and_empty_graph_sets_comps_edges_correctly">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_w_2_hydraulic_comps_and_empty_graph_sets_comps_edges_correctly">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_w_2_hydraulic_comps_and_empty_graph_sets_comps_edges_correctly</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">MultiDiGraph</span><span class="p">())</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">hydraulic_comps</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"pressure"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"pressure"</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_given_inertial_components_and_regular_kirchoff_throws">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_given_inertial_components_and_regular_kirchoff_throws">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_given_inertial_components_and_regular_kirchoff_throws</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">MultiDiGraph</span><span class="p">())</span>
+    <span class="n">expected_message</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">"&lt;class 'stream.calculations.kirchhoff.Kirchhoff'&gt; "</span>
+        <span class="s2">"does not handle inertial components, as it does "</span>
+        <span class="s2">"not index mdot2"</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">expected_message</span><span class="p">):</span>
+        <span class="c1"># noinspection PyTypeChecker</span>
+        <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_w_inertial_comps_adds_mdot_and_mdot2">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_w_inertial_comps_adds_mdot_and_mdot2">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_w_inertial_comps_adds_mdot_and_mdot2</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">KirchhoffWDerivatives</span><span class="p">(</span><span class="n">MultiDiGraph</span><span class="p">())</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="s2">"mdot2"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="s2">"mdot2"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_one_junction_connects_k_to_junction_but_not_vice_versa">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_one_junction_connects_k_to_junction_but_not_vice_versa">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_one_junction_connects_k_to_junction_but_not_vice_versa</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">g</span> <span class="o">=</span> <span class="n">MultiDiGraph</span><span class="p">()</span>
+    <span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="n">j</span> <span class="o">:=</span> <span class="n">Junction</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="n">j</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">j</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="test_kirchhoffify_with_ref_mdots_gives_them_the_right_comps_by_example">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_kirchhoffify_with_ref_mdots_gives_them_the_right_comps_by_example">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_kirchhoffify_with_ref_mdots_gives_them_the_right_comps_by_example</span><span class="p">():</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="p">(</span><span class="n">DiGraph</span><span class="p">())</span>
+    <span class="n">k</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">(</span><span class="n">MultiDiGraph</span><span class="p">())</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">kirchhoffify</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">hydraulic_comps</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">ref_mdots</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="s2">"ref_mdot"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"mdot"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"pressure"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"pressure"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">b</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">3</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"ref_mdot"</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="test_flow_edge_example">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_flow_edge_example">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_flow_edge_example</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="k">assert</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">{</span><span class="s2">"comps"</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,),</span> <span class="s2">"signify"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">})</span> <span class="o">==</span> <span class="n">flow_edge</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="test_flow_graph_to_agr_for_2_junctions_2_comps_has_correct_edges">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_flow_graph_to_agr_for_2_junctions_2_comps_has_correct_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_flow_graph_to_agr_for_2_junctions_2_comps_has_correct_edges</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">flow_graph</span><span class="p">(</span><span class="n">flow_edge</span><span class="p">((</span><span class="n">J0</span> <span class="o">:=</span> <span class="n">Junction</span><span class="p">(),</span> <span class="n">J1</span> <span class="o">:=</span> <span class="n">Junction</span><span class="p">()),</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">flow_graph_to_aggregator</span><span class="p">(</span><span class="n">fg</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">J0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">J1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">J1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">J0</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span></div>
+
+
+
+<div class="viewcode-block" id="test_flow_graph_to_agr_for_2_junction_and_a_virtual_junction_has_correct_edges">
+<a class="viewcode-back" href="../../tests.test_composition.html#test_composition.test_cycle.test_flow_graph_to_agr_for_2_junction_and_a_virtual_junction_has_correct_edges">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_flow_graph_to_agr_for_2_junction_and_a_virtual_junction_has_correct_edges</span><span class="p">():</span>
+    <span class="c1"># noinspection PyTypeChecker</span>
+    <span class="n">fg</span> <span class="o">=</span> <span class="n">flow_graph</span><span class="p">(</span><span class="n">flow_edge</span><span class="p">((</span><span class="n">J0</span> <span class="o">:=</span> <span class="n">Junction</span><span class="p">(),</span> <span class="s2">"A"</span><span class="p">),</span> <span class="mi">1</span><span class="p">),</span> <span class="n">flow_edge</span><span class="p">((</span><span class="s2">"A"</span><span class="p">,</span> <span class="n">J1</span> <span class="o">:=</span> <span class="n">Junction</span><span class="p">()),</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">flow_graph_to_aggregator</span><span class="p">(</span><span class="n">fg</span><span class="p">)</span>
+
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">J0</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="n">J1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="n">J1</span><span class="p">][</span><span class="mi">2</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span>
+    <span class="k">assert</span> <span class="n">a</span><span class="o">.</span><span class="n">graph</span><span class="p">[</span><span class="mi">1</span><span class="p">][</span><span class="n">J0</span><span class="p">][</span><span class="n">VARS</span><span class="p">]</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"Tin_minus"</span><span class="p">,)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 21, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

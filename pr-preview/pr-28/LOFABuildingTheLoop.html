@@ -1,0 +1,964 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building the Pool Reactor Loop &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2a705162"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="A Pool Reactor for Loss-of-Flow Analysis" href="LOFAPoolReactor.html" />
+    <link rel="prev" title="The Cube Problem" href="TheCubeProblem.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a></li>
+<li class="toctree-l2"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Building the Pool Reactor Loop</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Core-channels-and-plates">Core channels and plates</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Junctions,-pool-and-flapper">Junctions, pool and flapper</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Pipes,-tank-and-pump-legs">Pipes, tank and pump legs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-flow-graph">The flow graph</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Plates-on-channels">Plates on channels</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#A-first-solve">A first solve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Attaching-the-kinetics">Attaching the kinetics</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#The-same-loop-as-build">The same loop as <code class="docutils literal notranslate"><span class="pre">build</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Where-the-numbers-come-from">Where the numbers come from</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="LOFAPoolReactor.html">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
+      <li class="breadcrumb-item active">Building the Pool Reactor Loop</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/LOFABuildingTheLoop.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Building-the-Pool-Reactor-Loop">
+<h1>Building the Pool Reactor Loop<a class="headerlink" href="#Building-the-Pool-Reactor-Loop" title="Link to this heading"></a></h1>
+<p>This page builds the pool reactor of the loss-of-flow examples by hand, one part at a time: the core, the junctions with the pool and the flapper, the pipes, the decay tank and the two pump legs, the flow graph that joins them, the fuel plates on their channels, a first steady solve, and finally the point kinetics. Every cell calls the library’s constructors with the arguments the shipped example uses, so the loop built here is the same loop.</p>
+<p>The example package <code class="docutils literal notranslate"><span class="pre">stream.examples.lofa</span></code> does all of this in one call, <code class="docutils literal notranslate"><span class="pre">build</span></code>, and the next pages use that call. This page shows what is behind it, in the order one would put a system like this together.</p>
+<p><img alt="The pool reactor's loop in elevation, from the pool surface down to the pumps" src="_images/lofa-loop.svg" /></p>
+<p><em>The loop the page builds, in elevation: seven junctions, twelve edges, the pool as the free surface.</em></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">rc</span>
+
+<span class="n">rc</span><span class="p">(</span><span class="s2">"font"</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s2">"serif"</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.aggregator</span><span class="w"> </span><span class="kn">import</span> <span class="n">CalculationGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Bend</span><span class="p">,</span>
+    <span class="n">Channel</span><span class="p">,</span>
+    <span class="n">CheckValve</span><span class="p">,</span>
+    <span class="n">Flapper</span><span class="p">,</span>
+    <span class="n">Friction</span><span class="p">,</span>
+    <span class="n">Gravity</span><span class="p">,</span>
+    <span class="n">HeatExchanger</span><span class="p">,</span>
+    <span class="n">Inertia</span><span class="p">,</span>
+    <span class="n">Junction</span><span class="p">,</span>
+    <span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+    <span class="n">Pump</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.flapper</span><span class="w"> </span><span class="kn">import</span> <span class="n">continuously_differentiable_relaxation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.point_kinetics</span><span class="w"> </span><span class="kn">import</span> <span class="n">PointKineticsWInput</span><span class="p">,</span> <span class="n">ReactivityController</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FlowGraph</span><span class="p">,</span>
+    <span class="n">ResistorFromKnownPoint</span><span class="p">,</span>
+    <span class="n">check_gravity_mismatch</span><span class="p">,</span>
+    <span class="n">flow_edge</span><span class="p">,</span>
+    <span class="n">point_kinetics_steady_state</span><span class="p">,</span>
+    <span class="n">symmetric_plate</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa</span><span class="w"> </span><span class="kn">import</span> <span class="n">Params</span><span class="p">,</span> <span class="n">build</span><span class="p">,</span> <span class="n">draw</span><span class="p">,</span> <span class="n">steady</span><span class="p">,</span> <span class="n">steady_checks</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.components</span><span class="w"> </span><span class="kn">import</span> <span class="n">LowFlowTrip</span><span class="p">,</span> <span class="n">horizontal_pressure</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.params</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BETA</span><span class="p">,</span>
+    <span class="n">CORE</span><span class="p">,</span>
+    <span class="n">FUEL_N</span><span class="p">,</span>
+    <span class="n">GENERATION_TIME</span><span class="p">,</span>
+    <span class="n">HEATED</span><span class="p">,</span>
+    <span class="n">LAMBDA</span><span class="p">,</span>
+    <span class="n">LENGTH</span><span class="p">,</span>
+    <span class="n">PER_PLATE_REFERENCE</span><span class="p">,</span>
+    <span class="n">PIPE1_DROP</span><span class="p">,</span>
+    <span class="n">Z_N</span><span class="p">,</span>
+    <span class="n">nominal_flows</span><span class="p">,</span>
+    <span class="n">power_share</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.examples.lofa.system</span><span class="w"> </span><span class="kn">import</span> <span class="n">decay_heat</span><span class="p">,</span> <span class="n">make_channel</span><span class="p">,</span> <span class="n">make_fuel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">pressure_diff</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.state</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">g</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">identity</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="n">Params</span><span class="p">()</span>
+<span class="n">nominal</span> <span class="o">=</span> <span class="n">nominal_flows</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+<span class="n">total</span> <span class="o">=</span> <span class="n">nominal</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span>
+<span class="n">P0</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">power</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">power_scale</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"core power </span><span class="si">{</span><span class="n">P0</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> MW, nominal core flow </span><span class="si">{</span><span class="n">total</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+core power 10 MW, nominal core flow 241.5 kg/s
+</pre></div></div>
+</div>
+<section id="Core-channels-and-plates">
+<h2>Core channels and plates<a class="headerlink" href="#Core-channels-and-plates" title="Link to this heading"></a></h2>
+<p>The core has four groups of plates: one hot plate, 300 normal plates, 90 low-power plates and 10 wider unheated bypass channels. Plates of a group behave alike, so each group is modelled once: one channel and, for the heated groups, one plate. Later, in the flow graph, the group’s edge carries the plate count as its <code class="docutils literal notranslate"><span class="pre">signify</span></code> weight, so the junctions see one channel’s flow times the number of plates.</p>
+<p>The example package provides two short constructors for the core. <code class="docutils literal notranslate"><span class="pre">make_channel</span></code> lays 10 axial cells along the 0.7 m plate, takes the channel’s geometry from <code class="docutils literal notranslate"><span class="pre">plate_pipe</span></code> (a rectangle 70 mm wide with the coolant gap as its depth, heated on both wide sides) and returns a <code class="docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> for a heated group, which exchanges heat with walls on both sides, or a plain <code class="docutils literal notranslate"><span class="pre">Channel</span></code> for the bypass. With <code class="docutils literal notranslate"><span class="pre">p.friction</span> <span class="pre">==</span> <span class="pre">&quot;regime&quot;</span></code> it gives the channel a friction factor that blends the laminar
+and turbulent laws between Reynolds numbers 2000 and 5000. <code class="docutils literal notranslate"><span class="pre">p.htc</span></code> picks the wall heat-transfer law; the default, <code class="docutils literal notranslate"><span class="pre">&quot;regime&quot;</span></code>, which composes laminar, turbulent and natural convection, is chosen because the transient ends in natural circulation. <code class="docutils literal notranslate"><span class="pre">stop_at_saturation</span></code> makes a heated channel end a transient with a named error once its coolant reaches saturation, the edge of what the single-phase model can describe.</p>
+<p><code class="docutils literal notranslate"><span class="pre">make_fuel</span></code> builds one plate as a <code class="docutils literal notranslate"><span class="pre">Fuel</span></code>: 10 axial cells, eight meat cells between two cladding cells on each side, and a cosine power shape along the plate. Its <code class="docutils literal notranslate"><span class="pre">share</span></code> scales that shape so the plate takes its fraction of the core power: the group’s peaking factor over the sum of plate count times peaking factor, <span class="math notranslate nohighlight">\(1.6 / (1 \cdot 1.6 + 300 \cdot 1.0 + 90 \cdot 0.5)\)</span> for the hot plate.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">channels</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"hot"</span><span class="p">:</span> <span class="n">make_channel</span><span class="p">(</span><span class="s2">"HotChannel"</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">gap_hot</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">friction</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">htc</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stop_at_saturation</span><span class="p">),</span>
+    <span class="s2">"normal"</span><span class="p">:</span> <span class="n">make_channel</span><span class="p">(</span><span class="s2">"NormalChannel"</span><span class="p">,</span> <span class="n">CORE</span><span class="p">[</span><span class="s2">"normal"</span><span class="p">]</span><span class="o">.</span><span class="n">gap</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">friction</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">htc</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stop_at_saturation</span><span class="p">),</span>
+    <span class="s2">"low"</span><span class="p">:</span> <span class="n">make_channel</span><span class="p">(</span><span class="s2">"LowChannel"</span><span class="p">,</span> <span class="n">CORE</span><span class="p">[</span><span class="s2">"low"</span><span class="p">]</span><span class="o">.</span><span class="n">gap</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">friction</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">htc</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stop_at_saturation</span><span class="p">),</span>
+    <span class="s2">"bypass"</span><span class="p">:</span> <span class="n">make_channel</span><span class="p">(</span><span class="s2">"BypassChannel"</span><span class="p">,</span> <span class="n">CORE</span><span class="p">[</span><span class="s2">"bypass"</span><span class="p">]</span><span class="o">.</span><span class="n">gap</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">friction</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">htc</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">stop_at_saturation</span><span class="p">),</span>
+<span class="p">}</span>
+<span class="n">fuels</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"hot"</span><span class="p">:</span> <span class="n">make_fuel</span><span class="p">(</span><span class="s2">"HotFuel"</span><span class="p">,</span> <span class="n">share</span><span class="o">=</span><span class="n">power_share</span><span class="p">(</span><span class="s2">"hot"</span><span class="p">)),</span>
+    <span class="s2">"normal"</span><span class="p">:</span> <span class="n">make_fuel</span><span class="p">(</span><span class="s2">"NormalFuel"</span><span class="p">,</span> <span class="n">share</span><span class="o">=</span><span class="n">power_share</span><span class="p">(</span><span class="s2">"normal"</span><span class="p">)),</span>
+    <span class="s2">"low"</span><span class="p">:</span> <span class="n">make_fuel</span><span class="p">(</span><span class="s2">"LowFuel"</span><span class="p">,</span> <span class="n">share</span><span class="o">=</span><span class="n">power_share</span><span class="p">(</span><span class="s2">"low"</span><span class="p">)),</span>
+<span class="p">}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">channels</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">]</span><span class="o">.</span><span class="n">pipe</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hot plate share of the core power: </span><span class="si">{</span><span class="n">power_share</span><span class="p">(</span><span class="s1">'hot'</span><span class="p">)</span><span class="si">:</span><span class="s2">.5f</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+EffectivePipe(length=0.7, heated_perimeter=0.14, wet_perimeter=0.1444, area=0.00015400000000000003, heated_parts=(0.07, 0.07), width=0.07, depth=0.0022, heated_diameter=0.0044, hydraulic_diameter=0.004265927977839336)
+hot plate share of the core power: 0.00462
+</pre></div></div>
+</div>
+</section>
+<section id="Junctions,-pool-and-flapper">
+<h2>Junctions, pool and flapper<a class="headerlink" href="#Junctions,-pool-and-flapper" title="Link to this heading"></a></h2>
+<p>Seven junctions hold the loop together: the top and bottom of the pool, the plenum under the core, the inlet and outlet of the decay tank, and the split and merge of the two pump legs.</p>
+<p>The pool beside the core is a square column of water as tall as the core and holding 300 m³, so its side is about 21 m. It is a plain <code class="docutils literal notranslate"><span class="pre">Channel</span></code> with 10 cells, built from an <code class="docutils literal notranslate"><span class="pre">EffectivePipe.rectangular</span></code> square. Its edge will run from the pool bottom to the pool top, so positive flow in it goes upward; <code class="docutils literal notranslate"><span class="pre">pressure_diff</span></code>, the channels’ pressure law, takes positive flow as downward, so the pool gets it with gravity reversed.</p>
+<p>The flapper joins the pool bottom to the plenum. It stays shut while the flow returning from the heat exchanger is above <code class="docutils literal notranslate"><span class="pre">p.flapper_fraction</span></code> (30 %) of the nominal core flow and opens below it, then behaves as a local loss of coefficient 5 over 0.05 m². A flapper stuck shut is modelled by an opening threshold no flow can reach.</p>
+<p>The trip sensor <code class="docutils literal notranslate"><span class="pre">LowFlowTrip</span></code> is a calculation the example package adds: it watches the same returning flow, latches at 85 % of nominal, and half a second later inserts the rods, worth 10 dollars, over one second. Its worth is given in absolute reactivity, the dollars times the total delayed-neutron fraction.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">j_top</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">,</span> <span class="n">j_bot</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_pool_top"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_plenum"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_pool_bot"</span><span class="p">)</span>
+<span class="n">j_tank_in</span><span class="p">,</span> <span class="n">j_tank_out</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_tank_in"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_tank_out"</span><span class="p">)</span>
+<span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_split"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_merge"</span><span class="p">)</span>
+
+<span class="n">pool_edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">pool_volume</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">pool_area_scale</span> <span class="o">/</span> <span class="n">LENGTH</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">Channel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">LENGTH</span><span class="p">,</span> <span class="mi">11</span><span class="p">),</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">LENGTH</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">pool_edge</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="n">pool_edge</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">pool_edge</span><span class="p">),</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">pressure_diff</span><span class="p">,</span> <span class="n">g</span><span class="o">=-</span><span class="n">g</span><span class="p">),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Pool"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">flapper</span> <span class="o">=</span> <span class="n">Flapper</span><span class="p">(</span>
+    <span class="n">open_at_current</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">1e9</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">flapper_stuck</span> <span class="k">else</span> <span class="n">p</span><span class="o">.</span><span class="n">flapper_fraction</span> <span class="o">*</span> <span class="n">total</span><span class="p">),</span>
+    <span class="n">f</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">flapper_f</span><span class="p">,</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">area</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">flapper_area</span><span class="p">,</span>
+    <span class="n">open_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">stop_on_open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">relaxation</span><span class="o">=</span><span class="n">continuously_differentiable_relaxation</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Flapper"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trip</span> <span class="o">=</span> <span class="n">LowFlowTrip</span><span class="p">(</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">trip_threshold</span> <span class="o">*</span> <span class="n">total</span><span class="p">,</span>
+    <span class="n">delay</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">trip_delay</span><span class="p">,</span>
+    <span class="n">worth</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rod_worth_dollars</span> <span class="o">*</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">BETA</span><span class="p">)),</span>
+    <span class="n">duration</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">rod_duration</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Trip"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pool side </span><span class="si">{</span><span class="n">pool_edge</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> m, flapper opens below </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">flapper_fraction</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">total</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> kg/s, trip at </span><span class="si">{</span><span class="n">p</span><span class="o">.</span><span class="n">trip_threshold</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">total</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+pool side 20.7 m, flapper opens below 72.5 kg/s, trip at 205.3 kg/s
+</pre></div></div>
+</div>
+</section>
+<section id="Pipes,-tank-and-pump-legs">
+<h2>Pipes, tank and pump legs<a class="headerlink" href="#Pipes,-tank-and-pump-legs" title="Link to this heading"></a></h2>
+<p>The library has no single pipe constructor; a pipe is a <code class="docutils literal notranslate"><span class="pre">Friction</span></code> for its wall friction, one <code class="docutils literal notranslate"><span class="pre">Bend</span></code> per elbow, and a <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> for its change of height. The function below assembles those three for a 0.4 m pipe; it is the same as the example package’s private helper <code class="docutils literal notranslate"><span class="pre">_pipe_parts</span></code>. Three pipes use it: the primary pipe from the plenum down 4.3 m to the decay tank, with two elbows; the basement pipe down the remaining 3 m to the pumps, with one; and the riser, 7.3 m back up from the heat
+exchanger to the pool bottom, with two. A positive <code class="docutils literal notranslate"><span class="pre">disposition</span></code> is a drop along the flow, so the riser’s is negative.</p>
+<p>The decay tank holds 20 m³ in a horizontal square column 5 m long; <code class="docutils literal notranslate"><span class="pre">horizontal_pressure</span></code> is <code class="docutils literal notranslate"><span class="pre">pressure_diff</span></code> without gravity.</p>
+<p>Each pump leg is four components in series. The <code class="docutils literal notranslate"><span class="pre">Pump</span></code> imposes half the nominal core flow and leaves its head to the solve. A <code class="docutils literal notranslate"><span class="pre">ResistorFromKnownPoint</span></code> gives the pump its curve: a parabolic loss that takes 60 % of the estimated loop head at the nominal leg flow, so the head falls as the flow rises. The <code class="docutils literal notranslate"><span class="pre">Inertia</span></code> is the flywheel, which carries the flow on after the pump loses its drive. The library’s <code class="docutils literal notranslate"><span class="pre">CheckValve</span></code> is a quadratic loss forward and a hundred thousand times stiffer backward, so
+a stopped leg does not carry reverse flow.</p>
+<p>The heat exchanger returns the water at 38 °C, and a second <code class="docutils literal notranslate"><span class="pre">ResistorFromKnownPoint</span></code> gives it its 0.5 bar loss at the nominal core flow.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">pipe_parts</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">drop</span><span class="p">,</span> <span class="n">bends</span><span class="p">):</span>
+    <span class="n">area</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">pipe_diameter</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mi">4</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">Friction</span><span class="p">(</span><span class="n">f</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">pipe_friction</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">hydraulic_diameter</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">pipe_diameter</span><span class="p">,</span>
+                      <span class="n">area</span><span class="o">=</span><span class="n">area</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Friction</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">"</span><span class="p">)]</span>
+    <span class="n">parts</span> <span class="o">+=</span> <span class="p">[</span><span class="n">Bend</span><span class="p">(</span><span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">hydraulic_diameter</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">pipe_diameter</span><span class="p">,</span> <span class="n">area</span><span class="o">=</span><span class="n">area</span><span class="p">,</span> <span class="n">bend_radius</span><span class="o">=</span><span class="mf">1.5</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">pipe_diameter</span><span class="p">,</span>
+                   <span class="n">bend_angle</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Bend</span><span class="si">{</span><span class="n">tag</span><span class="si">}{</span><span class="n">i</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">bends</span><span class="p">)]</span>
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Gravity</span><span class="p">(</span><span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">disposition</span><span class="o">=</span><span class="n">drop</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Gravity</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">parts</span>
+
+
+<span class="n">primary</span> <span class="o">=</span> <span class="n">pipe_parts</span><span class="p">(</span><span class="s2">"Primary"</span><span class="p">,</span> <span class="n">PIPE1_DROP</span><span class="p">,</span> <span class="n">PIPE1_DROP</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">basement</span> <span class="o">=</span> <span class="n">pipe_parts</span><span class="p">(</span><span class="s2">"Basement"</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">basement_drop</span> <span class="o">-</span> <span class="n">PIPE1_DROP</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">basement_drop</span> <span class="o">-</span> <span class="n">PIPE1_DROP</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">tank_length</span> <span class="o">=</span> <span class="mf">5.0</span>
+<span class="n">tank_edge</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">tank_volume</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">tank_volume_scale</span> <span class="o">/</span> <span class="n">tank_length</span><span class="p">)</span>
+<span class="n">tank</span> <span class="o">=</span> <span class="n">Channel</span><span class="p">(</span>
+    <span class="n">z_boundaries</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">tank_length</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span>
+    <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+    <span class="n">pipe</span><span class="o">=</span><span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">tank_length</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">tank_edge</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="n">tank_edge</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">tank_edge</span><span class="p">),</span>
+    <span class="n">pressure_func</span><span class="o">=</span><span class="n">horizontal_pressure</span><span class="p">(),</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"DecayTank"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">pumps</span> <span class="o">=</span> <span class="p">{</span><span class="n">leg</span><span class="p">:</span> <span class="n">Pump</span><span class="p">(</span><span class="n">mdot0</span><span class="o">=</span><span class="n">total</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Pump</span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">leg</span> <span class="ow">in</span> <span class="s2">"AB"</span><span class="p">}</span>
+<span class="n">pump_curves</span> <span class="o">=</span> <span class="p">{</span><span class="n">leg</span><span class="p">:</span> <span class="n">ResistorFromKnownPoint</span><span class="p">(</span><span class="n">dp</span><span class="o">=-</span><span class="n">p</span><span class="o">.</span><span class="n">pump_droop</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">pump_head_estimate</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">total</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="s2">"parabolic"</span><span class="p">,</span>
+                                           <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"PumpCurve</span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">leg</span> <span class="ow">in</span> <span class="s2">"AB"</span><span class="p">}</span>
+<span class="n">flywheels</span> <span class="o">=</span> <span class="p">{</span><span class="n">leg</span><span class="p">:</span> <span class="n">Inertia</span><span class="p">(</span><span class="n">inertia</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">inertia</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">inertia_scale</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Flywheel</span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">leg</span> <span class="ow">in</span> <span class="s2">"AB"</span><span class="p">}</span>
+<span class="n">valves</span> <span class="o">=</span> <span class="p">{</span><span class="n">leg</span><span class="p">:</span> <span class="n">CheckValve</span><span class="p">(</span><span class="n">k_forward</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">valve_k</span><span class="p">,</span> <span class="n">reverse_ratio</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">valve_reverse_ratio</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Valve</span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">leg</span> <span class="ow">in</span> <span class="s2">"AB"</span><span class="p">}</span>
+
+<span class="n">hx</span> <span class="o">=</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HX"</span><span class="p">)</span>
+<span class="n">hx_loss</span> <span class="o">=</span> <span class="n">ResistorFromKnownPoint</span><span class="p">(</span><span class="n">dp</span><span class="o">=-</span><span class="n">p</span><span class="o">.</span><span class="n">hx_dp</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">total</span><span class="p">,</span> <span class="n">behavior</span><span class="o">=</span><span class="s2">"parabolic"</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span>
+                                 <span class="n">Tin</span><span class="o">=</span><span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HXLoss"</span><span class="p">)</span>
+<span class="n">riser</span> <span class="o">=</span> <span class="n">pipe_parts</span><span class="p">(</span><span class="s2">"Riser"</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">basement_drop</span><span class="p">,</span> <span class="o">-</span><span class="n">p</span><span class="o">.</span><span class="n">basement_drop</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">primary</span> <span class="o">+</span> <span class="n">basement</span> <span class="o">+</span> <span class="n">riser</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[&#39;FrictionPrimary&#39;, &#39;BendPrimary0&#39;, &#39;BendPrimary1&#39;, &#39;GravityPrimary&#39;, &#39;FrictionBasement&#39;, &#39;BendBasement0&#39;, &#39;GravityBasement&#39;, &#39;FrictionRiser&#39;, &#39;BendRiser0&#39;, &#39;BendRiser1&#39;, &#39;GravityRiser&#39;]
+</pre></div></div>
+</div>
+</section>
+<section id="The-flow-graph">
+<h2>The flow graph<a class="headerlink" href="#The-flow-graph" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code> takes the edges of the network, each a <code class="docutils literal notranslate"><span class="pre">flow_edge</span></code> from one junction to another with its components in series, and builds the Kirchhoff calculation that holds every edge’s flow and every junction’s pressure. An edge’s direction is the direction of positive flow: the four core edges run from the pool top down to the plenum, each weighted by its plate count; the pool runs from its bottom up to its top; the flapper from the pool bottom to the plenum; then the primary pipe, the tank,
+the basement pipe, the two pump legs in parallel and the heat exchanger with the riser back to the pool bottom. That last edge also names the flapper and the trip in <code class="docutils literal notranslate"><span class="pre">ref_mdot_for</span></code>: the flow they watch is the riser’s.</p>
+<p>The keywords say the rest. <code class="docutils literal notranslate"><span class="pre">inertial_comps</span></code> lists the components whose flow has inertia, the flywheels, the channels, the pool and the tank, and <code class="docutils literal notranslate"><span class="pre">KirchhoffWDerivatives</span></code> gives each of them a flow-derivative equation. <code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code> hands the heated channels the absolute pressure, which their saturation temperature needs. <code class="docutils literal notranslate"><span class="pre">funcs</span></code> gives the flapper and the trip the clock. The pressure is pinned at the pool top, at the surface pressure plus the weight of 8 m of water at 38 °C.</p>
+<p><code class="docutils literal notranslate"><span class="pre">check_gravity_mismatch</span></code> sums the gravity heads around every closed loop of the graph at zero flow and uniform temperature, and raises if one does not close: a typo in a height shows up here rather than as a phantom flow later. It is silent for this loop. <code class="docutils literal notranslate"><span class="pre">draw</span></code> then shows the graph object <code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code> built, laid out like the loop above: the junctions and, on each edge, its first component, with each arrow pointing the way positive flow runs.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">p_ref</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">p_surface</span> <span class="o">+</span> <span class="nb">float</span><span class="p">(</span><span class="n">light_water</span><span class="o">.</span><span class="n">density</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">))</span> <span class="o">*</span> <span class="n">g</span> <span class="o">*</span> <span class="n">p</span><span class="o">.</span><span class="n">core_depth</span>
+
+<span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_top</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">),</span> <span class="n">channels</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">],</span> <span class="n">signify</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="s2">"hot"</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_top</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">),</span> <span class="n">channels</span><span class="p">[</span><span class="s2">"normal"</span><span class="p">],</span> <span class="n">signify</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="s2">"normal"</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_top</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">),</span> <span class="n">channels</span><span class="p">[</span><span class="s2">"low"</span><span class="p">],</span> <span class="n">signify</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="s2">"low"</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_top</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">),</span> <span class="n">channels</span><span class="p">[</span><span class="s2">"bypass"</span><span class="p">],</span> <span class="n">signify</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">CORE</span><span class="p">[</span><span class="s2">"bypass"</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span><span class="p">)),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_bot</span><span class="p">,</span> <span class="n">j_top</span><span class="p">),</span> <span class="n">pool</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_bot</span><span class="p">,</span> <span class="n">j_plenum</span><span class="p">),</span> <span class="n">flapper</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_plenum</span><span class="p">,</span> <span class="n">j_tank_in</span><span class="p">),</span> <span class="o">*</span><span class="n">primary</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_tank_in</span><span class="p">,</span> <span class="n">j_tank_out</span><span class="p">),</span> <span class="n">tank</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_tank_out</span><span class="p">,</span> <span class="n">j_split</span><span class="p">),</span> <span class="o">*</span><span class="n">basement</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">pumps</span><span class="p">[</span><span class="s2">"A"</span><span class="p">],</span> <span class="n">pump_curves</span><span class="p">[</span><span class="s2">"A"</span><span class="p">],</span> <span class="n">flywheels</span><span class="p">[</span><span class="s2">"A"</span><span class="p">],</span> <span class="n">valves</span><span class="p">[</span><span class="s2">"A"</span><span class="p">]),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_split</span><span class="p">,</span> <span class="n">j_merge</span><span class="p">),</span> <span class="n">pumps</span><span class="p">[</span><span class="s2">"B"</span><span class="p">],</span> <span class="n">pump_curves</span><span class="p">[</span><span class="s2">"B"</span><span class="p">],</span> <span class="n">flywheels</span><span class="p">[</span><span class="s2">"B"</span><span class="p">],</span> <span class="n">valves</span><span class="p">[</span><span class="s2">"B"</span><span class="p">]),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_merge</span><span class="p">,</span> <span class="n">j_bot</span><span class="p">),</span> <span class="n">hx</span><span class="p">,</span> <span class="n">hx_loss</span><span class="p">,</span> <span class="o">*</span><span class="n">riser</span><span class="p">,</span> <span class="n">ref_mdot_for</span><span class="o">=</span><span class="p">(</span><span class="n">flapper</span><span class="p">,</span> <span class="n">trip</span><span class="p">)),</span>
+    <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="o">*</span><span class="n">flywheels</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="o">*</span><span class="n">channels</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">pool</span><span class="p">,</span> <span class="n">tank</span><span class="p">],</span>
+    <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+    <span class="n">abs_pressure_comps</span><span class="o">=</span><span class="p">[</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">],</span>
+    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">flapper</span><span class="p">:</span> <span class="p">{</span><span class="s2">"t"</span><span class="p">:</span> <span class="n">identity</span><span class="p">},</span> <span class="n">trip</span><span class="p">:</span> <span class="p">{</span><span class="s2">"t"</span><span class="p">:</span> <span class="n">identity</span><span class="p">}},</span>
+    <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">j_top</span><span class="p">,</span> <span class="n">p_ref</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">K</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="n">check_gravity_mismatch</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pressure at the pool top: </span><span class="si">{</span><span class="n">p_ref</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> bar"</span><span class="p">)</span>
+
+<span class="n">draw</span><span class="p">(</span><span class="n">K</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+pressure at the pool top: 1.7916 bar
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/LOFABuildingTheLoop_10_1.png" src="_images/LOFABuildingTheLoop_10_1.png" />
+</div>
+</div>
+</section>
+<section id="Plates-on-channels">
+<h2>Plates on channels<a class="headerlink" href="#Plates-on-channels" title="Link to this heading"></a></h2>
+<p>The flow graph knows the channels but not the plates. <code class="docutils literal notranslate"><span class="pre">symmetric_plate</span></code> couples a channel to its plate as if each surrounded the other on both sides, which is how a channel between two identical plates sees them: the plate heats the channel through both walls, and the channel cools both faces of the plate. For the thermal-hydraulic steady state each plate is fed a constant <code class="docutils literal notranslate"><span class="pre">power</span></code>, the full core power, of which its <code class="docutils literal notranslate"><span class="pre">share</span></code> keeps its own fraction. Adding the three plate graphs to the flow
+graph’s aggregator gives the complete thermal-hydraulic system, and <code class="docutils literal notranslate"><span class="pre">report</span></code> lists every calculation with its equations and the inputs that are left unset or provided by external functions. The column to look at is <strong>Missing</strong>: an input there has no source and no default, and the solve would fail or, worse, run on a value nobody chose. For this loop the column is empty. The <strong>Unset</strong> inputs fall back on what their calculations were built with: the bypass, the pool and the decay tank have no
+walls to exchange heat with, the plates’ ends are insulated, and each pump imposes the flow it was built with and leaves its head for the solve to find. Set externally are the plates’ power and the clocks of the flapper and the trip.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">agr</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="n">P0</span><span class="p">}})</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+<span class="n">report</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 620 Equations, 40 Nodes, 150 Edges.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>J_pool_top</p></td>
+<td><p>Junction</p></td>
+<td><p>0 - 1</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>HotChannel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>1 - 32</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_plenum</p></td>
+<td><p>Junction</p></td>
+<td><p>32 - 33</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>NormalChannel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>33 - 64</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>LowChannel</p></td>
+<td><p>ChannelAndContacts</p></td>
+<td><p>64 - 95</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>BypassChannel</p></td>
+<td><p>Channel</p></td>
+<td><p>95 - 106</p></td>
+<td><p>T_left, T_right, h_left, h_right</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>FrictionPrimary</p></td>
+<td><p>Friction</p></td>
+<td><p>106 - 108</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>BendPrimary0</p></td>
+<td><p>Bend</p></td>
+<td><p>108 - 110</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>BendPrimary1</p></td>
+<td><p>Bend</p></td>
+<td><p>110 - 112</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>GravityPrimary</p></td>
+<td><p>Gravity</p></td>
+<td><p>112 - 114</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_tank_in</p></td>
+<td><p>Junction</p></td>
+<td><p>114 - 115</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>J_pool_bot</p></td>
+<td><p>Junction</p></td>
+<td><p>115 - 116</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Pool</p></td>
+<td><p>Channel</p></td>
+<td><p>116 - 127</p></td>
+<td><p>T_left, T_right, h_left, h_right</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Flapper</p></td>
+<td><p>Flapper</p></td>
+<td><p>127 - 129</p></td>
+<td></td>
+<td><p>t</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>DecayTank</p></td>
+<td><p>Channel</p></td>
+<td><p>129 - 135</p></td>
+<td><p>T_left, T_right, h_left, h_right</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>J_tank_out</p></td>
+<td><p>Junction</p></td>
+<td><p>135 - 136</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>FrictionBasement</p></td>
+<td><p>Friction</p></td>
+<td><p>136 - 138</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>BendBasement0</p></td>
+<td><p>Bend</p></td>
+<td><p>138 - 140</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>GravityBasement</p></td>
+<td><p>Gravity</p></td>
+<td><p>140 - 142</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>J_split</p></td>
+<td><p>Junction</p></td>
+<td><p>142 - 143</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>PumpA</p></td>
+<td><p>Pump</p></td>
+<td><p>143 - 145</p></td>
+<td><p>pressure, mdot0</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>PumpCurveA</p></td>
+<td><p>Friction</p></td>
+<td><p>145 - 147</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>FlywheelA</p></td>
+<td><p>Inertia</p></td>
+<td><p>147 - 149</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>ValveA</p></td>
+<td><p>CheckValve</p></td>
+<td><p>149 - 151</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_merge</p></td>
+<td><p>Junction</p></td>
+<td><p>151 - 152</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>PumpB</p></td>
+<td><p>Pump</p></td>
+<td><p>152 - 154</p></td>
+<td><p>pressure, mdot0</p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>PumpCurveB</p></td>
+<td><p>Friction</p></td>
+<td><p>154 - 156</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>FlywheelB</p></td>
+<td><p>Inertia</p></td>
+<td><p>156 - 158</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>ValveB</p></td>
+<td><p>CheckValve</p></td>
+<td><p>158 - 160</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>HX</p></td>
+<td><p>HeatExchanger</p></td>
+<td><p>160 - 162</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>HXLoss</p></td>
+<td><p>Friction</p></td>
+<td><p>162 - 164</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>FrictionRiser</p></td>
+<td><p>Friction</p></td>
+<td><p>164 - 166</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>BendRiser0</p></td>
+<td><p>Bend</p></td>
+<td><p>166 - 168</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>BendRiser1</p></td>
+<td><p>Bend</p></td>
+<td><p>168 - 170</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>GravityRiser</p></td>
+<td><p>Gravity</p></td>
+<td><p>170 - 172</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Kirchhoff</p></td>
+<td><p>KirchhoffWDerivatives</p></td>
+<td><p>172 - 199</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Trip</p></td>
+<td><p>LowFlowTrip</p></td>
+<td><p>199 - 200</p></td>
+<td></td>
+<td><p>t</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>HotFuel</p></td>
+<td><p>Fuel</p></td>
+<td><p>200 - 340</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>NormalFuel</p></td>
+<td><p>Fuel</p></td>
+<td><p>340 - 480</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>LowFuel</p></td>
+<td><p>Fuel</p></td>
+<td><p>480 - 620</p></td>
+<td><p>T_top, T_bottom, h_top, h_bottom</p></td>
+<td><p>power</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="A-first-solve">
+<h2>A first solve<a class="headerlink" href="#A-first-solve" title="Link to this heading"></a></h2>
+<p>A steady solve needs a starting point, and for this loop a rough one is enough: every temperature at the heat-exchanger outlet, every pressure drop zero, heat-transfer coefficients of 1000 W/m²K, and flows set by the kind of edge: 0.5 kg/s through each core channel (one plate’s flow), the full core flow through the pool and the pipes, half of it through each pump leg, and nothing through the flapper. The Kirchhoff calculation’s flows and pressures are set on its own vector, which <code class="docutils literal notranslate"><span class="pre">K.save</span></code>
+turns into a state, and <code class="docutils literal notranslate"><span class="pre">K.component_edge</span></code> names the edge a component sits on. This is the example package’s ballpark guess.</p>
+<p><code class="docutils literal notranslate"><span class="pre">steady</span></code> is <code class="docutils literal notranslate"><span class="pre">solve_steady</span></code> with the analytic algebraic Jacobian. <code class="docutils literal notranslate"><span class="pre">steady_checks</span></code> then compares the solution with estimates one can make by hand, the same checks the next page discusses: each heated channel’s outlet temperature against the energy balance, the flow split against the turbulent gap law, and the pump heads. It reads the components through a dictionary of references.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">non_kirchhoff</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">agr</span><span class="o">.</span><span class="n">graph</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">K</span><span class="p">]</span>
+<span class="n">k_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">K</span><span class="p">))</span>
+<span class="n">k_vector</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">variables_by_type</span><span class="p">[</span><span class="s2">"mdot"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">total</span>
+<span class="n">k_vector</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">variables_by_type</span><span class="p">[</span><span class="s2">"abs_pressure"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">p_ref</span>
+<span class="n">k_state</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">k_vector</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">channels</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+    <span class="n">k_state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">ch</span><span class="p">)]</span> <span class="o">=</span> <span class="n">PER_PLATE_REFERENCE</span>
+<span class="n">k_state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">pool</span><span class="p">)]</span> <span class="o">=</span> <span class="n">total</span>
+<span class="n">k_state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">flapper</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">leg</span> <span class="ow">in</span> <span class="s2">"AB"</span><span class="p">:</span>
+    <span class="n">k_state</span><span class="p">[</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">pumps</span><span class="p">[</span><span class="n">leg</span><span class="p">])]</span> <span class="o">=</span> <span class="n">total</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="n">ballpark</span> <span class="o">=</span> <span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
+    <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">non_kirchhoff</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">hx_outlet</span><span class="p">,</span> <span class="s2">"T_cool"</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">,</span> <span class="s2">"T_wall_left"</span><span class="p">,</span> <span class="s2">"T_wall_right"</span><span class="p">,</span> <span class="s2">"Tin"</span><span class="p">),</span>
+    <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">non_kirchhoff</span><span class="p">,</span> <span class="mf">1e3</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">),</span>
+    <span class="n">State</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">non_kirchhoff</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">,</span> <span class="s2">"flag"</span><span class="p">),</span>
+    <span class="p">{</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">k_state</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">y_th</span> <span class="o">=</span> <span class="n">steady</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">ballpark</span><span class="p">))</span>
+
+<span class="n">refs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"params"</span><span class="p">:</span> <span class="n">p</span><span class="p">,</span> <span class="s2">"channels"</span><span class="p">:</span> <span class="n">channels</span><span class="p">,</span> <span class="s2">"fuels"</span><span class="p">:</span> <span class="n">fuels</span><span class="p">,</span> <span class="s2">"pool"</span><span class="p">:</span> <span class="n">pool</span><span class="p">,</span> <span class="s2">"pumps"</span><span class="p">:</span> <span class="n">pumps</span><span class="p">,</span> <span class="s2">"power"</span><span class="p">:</span> <span class="n">P0</span><span class="p">}</span>
+<span class="n">chk</span> <span class="o">=</span> <span class="n">steady_checks</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">refs</span><span class="p">,</span> <span class="n">y_th</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"core inlet temperature:         </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'T_in'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"worst outlet temperature error: </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'T_out_error_max'</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> K"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"worst split error:              </span><span class="si">{</span><span class="mi">100</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">chk</span><span class="p">[</span><span class="s1">'split_error_max'</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> %"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pool flow:                      </span><span class="si">{</span><span class="n">chk</span><span class="p">[</span><span class="s1">'pool_flow'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">leg</span><span class="p">,</span> <span class="n">head</span> <span class="ow">in</span> <span class="n">chk</span><span class="p">[</span><span class="s2">"heads"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"pump </span><span class="si">{</span><span class="n">leg</span><span class="si">}</span><span class="s2"> head:                    </span><span class="si">{</span><span class="n">head</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e5</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> bar"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+core inlet temperature:         38.00 °C
+worst outlet temperature error: 0.0044 K
+worst split error:              3.39 %
+pool flow:                      241.5 kg/s
+pump A head:                    1.278 bar
+pump B head:                    1.278 bar
+</pre></div></div>
+</div>
+</section>
+<section id="Attaching-the-kinetics">
+<h2>Attaching the kinetics<a class="headerlink" href="#Attaching-the-kinetics" title="Link to this heading"></a></h2>
+<p>The solve lands where the hand estimates put it: the outlet temperatures within about 0.004 K of the energy balance, the per-plate flows within about 3.4 % of the gap law, and both pumps at about 1.28 bar. With the thermal-hydraulics solved, the constant power gives way to point kinetics. <code class="docutils literal notranslate"><span class="pre">PointKineticsWInput</span></code> takes six delayed-neutron groups, a generation time of 50 µs, temperature feedback and a reactivity controller. The feedback is a reactivity per kelvin on every coolant cell and every
+meat cell. The core’s coefficients, -1e-4 per K for the coolant and -2e-5 per K for the fuel, are split between the groups by plate count times peaking factor, and within a group evenly over its cells. The reference temperatures are the solved ones, so the feedback is zero at the operating point and the reactor starts critical. The controller reads the rods’ reactivity from the trip sensor.</p>
+<p>The kinetics node is a single calculation, and its links are added by hand in a <code class="docutils literal notranslate"><span class="pre">CalculationGraph</span></code>: it reads the temperatures <code class="docutils literal notranslate"><span class="pre">T</span></code> of the heated channels and plates and feeds each plate its <code class="docutils literal notranslate"><span class="pre">power</span></code>. Besides the fission power it takes a <code class="docutils literal notranslate"><span class="pre">power_input</span></code>, the decay heat, which counts from the trip; at the operating point it is 6.6 % of the power. The plates are attached with <code class="docutils literal notranslate"><span class="pre">symmetric_plate</span></code> again, this time without a constant power, and the new graph is added to the same flow graph’s
+aggregator.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">st_th</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y_th</span><span class="p">)</span>
+<span class="n">weight_sum</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">grp</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">grp</span><span class="o">.</span><span class="n">factor</span> <span class="k">for</span> <span class="n">grp</span> <span class="ow">in</span> <span class="n">CORE</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="n">temp_worth</span><span class="p">,</span> <span class="n">ref_temp</span> <span class="o">=</span> <span class="p">{},</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="n">fraction</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">feedback_scale</span> <span class="o">*</span> <span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">plates</span> <span class="o">*</span> <span class="n">CORE</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">factor</span> <span class="o">/</span> <span class="n">weight_sum</span>
+    <span class="n">temp_worth</span><span class="p">[</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">Z_N</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">coolant_worth</span> <span class="o">*</span> <span class="n">fraction</span> <span class="o">/</span> <span class="n">Z_N</span><span class="p">)</span>
+    <span class="n">temp_worth</span><span class="p">[</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">Z_N</span> <span class="o">*</span> <span class="n">FUEL_N</span><span class="p">,</span> <span class="n">p</span><span class="o">.</span><span class="n">fuel_worth</span> <span class="o">*</span> <span class="n">fraction</span> <span class="o">/</span> <span class="p">(</span><span class="n">Z_N</span> <span class="o">*</span> <span class="n">FUEL_N</span><span class="p">))</span>
+    <span class="n">ref_temp</span><span class="p">[</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">st_th</span><span class="p">[</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T_cool"</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">meat</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">ref_temp</span><span class="p">[</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">st_th</span><span class="p">[</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="s2">"T"</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)[</span><span class="n">meat</span><span class="p">]</span>
+
+<span class="n">controls</span> <span class="o">=</span> <span class="n">ReactivityController</span><span class="p">(</span><span class="n">input_reactivity</span><span class="o">=</span><span class="k">lambda</span> <span class="n">state</span><span class="p">,</span> <span class="n">t_state</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">trip</span><span class="o">.</span><span class="n">rho</span><span class="p">(</span><span class="n">t</span><span class="p">))</span>
+<span class="n">pk</span> <span class="o">=</span> <span class="n">PointKineticsWInput</span><span class="p">(</span><span class="n">generation_time</span><span class="o">=</span><span class="n">GENERATION_TIME</span><span class="p">,</span> <span class="n">delayed_neutron_fractions</span><span class="o">=</span><span class="n">BETA</span><span class="p">,</span>
+                         <span class="n">delayed_groups_decay_rates</span><span class="o">=</span><span class="n">LAMBDA</span><span class="p">,</span> <span class="n">temp_worth</span><span class="o">=</span><span class="n">temp_worth</span><span class="p">,</span> <span class="n">ref_temp</span><span class="o">=</span><span class="n">ref_temp</span><span class="p">,</span>
+                         <span class="n">controls</span><span class="o">=</span><span class="n">controls</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"PK"</span><span class="p">)</span>
+
+<span class="n">dh</span> <span class="o">=</span> <span class="n">decay_heat</span><span class="p">(</span><span class="n">P0</span><span class="p">)</span>
+<span class="n">kinetics</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span>
+    <span class="n">pk</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">pk</span><span class="p">:</span> <span class="p">{</span><span class="s2">"t"</span><span class="p">:</span> <span class="n">identity</span><span class="p">,</span> <span class="s2">"power_input"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">dh</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">t</span> <span class="o">-</span> <span class="n">trip</span><span class="o">.</span><span class="n">t_trip</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))}})</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">HEATED</span><span class="p">:</span>
+    <span class="n">kinetics</span> <span class="o">=</span> <span class="n">kinetics</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="n">kinetics</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">channels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">pk</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,))</span>
+    <span class="n">kinetics</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">pk</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"T"</span><span class="p">,))</span>
+    <span class="n">kinetics</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">fuels</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">variables</span><span class="o">=</span><span class="p">(</span><span class="s2">"power"</span><span class="p">,))</span>
+<span class="n">agr_k</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span> <span class="o">+</span> <span class="n">kinetics</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">agr_k</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">State</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">st_th</span><span class="p">,</span> <span class="n">point_kinetics_steady_state</span><span class="p">(</span><span class="n">pk</span><span class="p">,</span> <span class="n">P0</span><span class="p">,</span> <span class="n">power_input</span><span class="o">=</span><span class="n">dh</span><span class="p">(</span><span class="mf">0.0</span><span class="p">))))</span>
+<span class="n">pk_state</span> <span class="o">=</span> <span class="n">agr_k</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)[</span><span class="s2">"PK"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"power:          </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">pk_state</span><span class="p">[</span><span class="s1">'power'</span><span class="p">])</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> MW"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"decay heat:     </span><span class="si">{</span><span class="n">dh</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">1e6</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> MW"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"reactivity:     </span><span class="si">{</span><span class="nb">float</span><span class="p">(</span><span class="n">pk_state</span><span class="p">[</span><span class="s1">'reactivity'</span><span class="p">])</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"steady residual: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr_k</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+power:          10.000 MW
+decay heat:     0.660 MW
+reactivity:     0.0e+00
+steady residual: 1.7e-07
+</pre></div></div>
+</div>
+</section>
+<section id="The-same-loop-as-build">
+<h2>The same loop as <code class="docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#The-same-loop-as-build" title="Link to this heading"></a></h2>
+<p>The kinetics node reads the full 10 MW, of which 0.66 MW is decay heat, at zero reactivity, and the residual of about 2e-7 is what the steady solve left. <code class="docutils literal notranslate"><span class="pre">agr_k</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> are the system and state <code class="docutils literal notranslate"><span class="pre">operating_point</span></code> produces for these parameters, and <code class="docutils literal notranslate"><span class="pre">build(p,</span> <span class="pre">kinetics=True,</span> <span class="pre">ref_state=st_th)</span></code> builds the same system in one call. The check below builds it that way and compares: the two aggregators lay out the same calculations, by name, on the same slices of the state vector, and the state
+solved on this page, loaded into the one from <code class="docutils literal notranslate"><span class="pre">build</span></code>, leaves it the same steady residual. From here on the examples use <code class="docutils literal notranslate"><span class="pre">build</span></code> and <code class="docutils literal notranslate"><span class="pre">operating_point</span></code>; the next page, <a class="reference internal" href="LOFAPoolReactor.html"><span class="doc">A Pool Reactor for Loss-of-Flow Analysis</span></a>, takes the operating point apart and checks it.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr_ref</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">kinetics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ref_state</span><span class="o">=</span><span class="n">st_th</span><span class="p">)</span>
+<span class="n">same_layout</span> <span class="o">=</span> <span class="p">[(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">agr_k</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span> <span class="o">==</span> <span class="p">[(</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">agr_ref</span><span class="o">.</span><span class="n">sections</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+<span class="n">y_ref</span> <span class="o">=</span> <span class="n">agr_ref</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">agr_k</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"same layout: </span><span class="si">{</span><span class="n">same_layout</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"steady residual here </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr_k</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">, in build's </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr_ref</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y_ref</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.3e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+same layout: True
+steady residual here 1.715e-07, in build&#39;s 1.715e-07
+</pre></div></div>
+</div>
+</section>
+<section id="Where-the-numbers-come-from">
+<h2>Where the numbers come from<a class="headerlink" href="#Where-the-numbers-come-from" title="Link to this heading"></a></h2>
+<p>The reactor of these examples is a generic open-pool reactor of the MTR class, not a particular plant. Its loop is the layout the loss-of-flow literature on such reactors describes: forced flow down through the core, flappers between the plenum and the pool, the pool as the heat sink, a decay tank, two pump legs with flywheels and check valves, a heat exchanger and a riser back to the pool. The numbers are illustrative values for a 10 MW reactor of that class, chosen so that one loop behaves
+sensibly in every scenario of these pages, not read off a plant. The table shows how they compare with published figures.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Quantity</p></th>
+<th class="head"><p>This case</p></th>
+<th class="head"><p>Published figure</p></th>
+<th class="head"><p>Where</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Core power</p></td>
+<td><p>10 MW</p></td>
+<td><p>the IAEA benchmark reactor is a 10 MW plate-type MTR</p></td>
+<td><p>IAEA 10 MW benchmark (Aziz 2011; defined in IAEA-TECDOC-233)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fuel plates</p></td>
+<td><p>391 heated plates in three groups, about 17 elements of 23 plates, plus a bypass group of 10 unheated channels</p></td>
+<td><p>standard element 23 plates, control element 17 plates (HEU core)</p></td>
+<td><p>Aziz 2011; TECDOC-467 gives “23, some less”</p></td>
+</tr>
+<tr class="row-even"><td><p>Coolant gap</p></td>
+<td><p>2.2 mm</p></td>
+<td><p>2.19 mm (HEU core), 2.217 mm (LEU core)</p></td>
+<td><p>Aziz 2011</p></td>
+</tr>
+<tr class="row-odd"><td><p>Plate</p></td>
+<td><p>0.7 m by 70 mm, meat 0.6 mm, cladding 0.5 mm</p></td>
+<td><p>meat 600 mm long (a few up to 800 mm), 60 or 62.8 mm wide, 0.51 mm thick (a few 0.76 mm); plate 1.27 mm; cladding
+specified as 0.38 mm; element 7.71 cm by 8.1 cm with 60 cm active length</p></td>
+<td><p>TECDOC-467; Aziz 2011</p></td>
+</tr>
+<tr class="row-even"><td><p>Core inlet temperature</p></td>
+<td><p>38 °C</p></td>
+<td><p>ETRR-2: 40 °C; TR-2: 17 to 29.5 °C</p></td>
+<td><p>Doval and Abdou 1999; Sevdik et al. 2007</p></td>
+</tr>
+<tr class="row-odd"><td><p>Primary flow</p></td>
+<td><p>about 242 kg/s, about 880 m³/h, at 10 MW</p></td>
+<td><p>ETRR-2: 1900 m³/h at 22 MW; TR-2: 750 m³/h at 5 MW</p></td>
+<td><p>Doval and Abdou 1999; Sevdik et al. 2007</p></td>
+</tr>
+<tr class="row-even"><td><p>Low-flow trip</p></td>
+<td><p>85 % of nominal flow, 0.5 s delay, about 2.5 s into the coastdown</p></td>
+<td><p>ETRR-2: 90 % of nominal, no delay assumed in the simulation; TR-2: flow scram 7 to 9 s after the flow starts to fall</p></td>
+<td><p>Doval and Abdou 1999; Sevdik et al. 2007</p></td>
+</tr>
+<tr class="row-odd"><td><p>Flapper opening</p></td>
+<td><p>30 % of nominal flow, about 29 s after the pumps start to lose head</p></td>
+<td><p>ETRR-2: 68 s simulated, 75 to 76 s measured; TR-2: 25 to 35 s</p></td>
+<td><p>Doval and Abdou 1999; Sevdik et al. 2007</p></td>
+</tr>
+<tr class="row-even"><td><p>Decay tank</p></td>
+<td><p>20 m³, about 80 s of transit at nominal flow</p></td>
+<td><p>TR-2: 22 m³, 3 min</p></td>
+<td><p>Sevdik et al. 2007</p></td>
+</tr>
+<tr class="row-odd"><td><p>Saturation reference</p></td>
+<td><p>core top, about 1.8 bar, saturation at about 117 °C</p></td>
+<td><p>ETRR-2: 120 °C at 2.0 bar</p></td>
+<td><p>Doval and Abdou 1999</p></td>
+</tr>
+</tbody>
+</table>
+<p>Other values have no public counterpart here and were sized for this loop: the pool volume, the pipe diameter and elevations, the pump head and droop, the flywheel inertance (sized so the flow halves about 13 s after the pumps lose their head), the check-valve coefficients, the rod worth and insertion time, and the two feedback coefficients. The sweep in <code class="docutils literal notranslate"><span class="pre">benchmarks/lofa_pool</span></code>, which varies several of them, exists partly because these are choices.</p>
+<p><strong>References</strong></p>
+<ul class="simple">
+<li><p>IAEA-TECDOC-467, Standardization of specifications and inspection procedures for LEU plate-type research reactor fuels, IAEA, Vienna, 1988. <a class="reference external" href="https://www-pub.iaea.org/MTCD/publications/PDF/te_467_prn.pdf">https://www-pub.iaea.org/MTCD/publications/PDF/te_467_prn.pdf</a></p></li>
+<li><ol class="upperalpha simple" start="13">
+<li><p>Aziz, Neutronic analysis for the conversion of IAEA 10 MW research reactor from HEU to LEU, International Conference on Research Reactors: Safe Management and Effective Utilization, IAEA, 2011. <a class="reference external" href="https://www-pub.iaea.org/MTCD/publications/PDF/P1575_CD_web/datasets/presentations/Session%20B/B14%20Aziz%20Egypt.pdf">https://www-pub.iaea.org/MTCD/publications/PDF/P1575_CD_web/datasets/presentations/Session%20B/B14%20Aziz%20Egypt.pdf</a></p></li>
+</ol>
+</li>
+<li><p>IAEA-TECDOC-233, Research reactor core conversion from the use of highly enriched uranium to the use of low enriched uranium fuels: guidebook, IAEA, Vienna, 1980 (the document that defines the 10 MW benchmark; its figures are quoted here through Aziz 2011).</p></li>
+<li><ol class="upperalpha simple">
+<li><p>Doval and H. Abdou, Loss of flow incident: simulation and measurements in the MPR, IGORR 7, 1999. <a class="reference external" href="https://www.igorr.com/_media/proceedings:1999_igorr7:ps2_doval.pdf">https://www.igorr.com/_media/proceedings:1999_igorr7:ps2_doval.pdf</a></p></li>
+</ol>
+</li>
+<li><ol class="upperalpha simple" start="2">
+<li><p>Sevdik, T. Türker, S. Taylan and O. Uzonur, Experimental measurements for plate temperatures of MTR fuel elements at sudden loss-of-flow accident and comparison with computed results, International Conference on Research Reactors, IAEA, 2007. <a class="reference external" href="https://www-pub.iaea.org/MTCD/Publications/PDF/P1360_ICRR_2007_CD/papers/B.%20Sevdik.pdf">https://www-pub.iaea.org/MTCD/Publications/PDF/P1360_ICRR_2007_CD/papers/B.%20Sevdik.pdf</a></p></li>
+</ol>
+</li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="TheCubeProblem.html" class="btn btn-neutral float-left" title="The Cube Problem" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="LOFAPoolReactor.html" class="btn btn-neutral float-right" title="A Pool Reactor for Loss-of-Flow Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 21, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
