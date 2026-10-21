@@ -109,7 +109,7 @@ def test_degenerate_point_finite():
     finite and non-negative, no 0/0."""
     h = _h(0.0, 60.0, 60.0)
     assert np.isfinite(h)
-    assert h >= 0.0
+    assert h == pytest.approx(_forced(0.0, 60.0, 60.0), rel=1e-9)
 
 
 def test_g_zero_is_the_forced_value():
@@ -120,6 +120,10 @@ def test_g_zero_is_the_forced_value():
 def test_orientation_alone_does_not_change_h():
     for mdot in (5e-4, -5e-4, 5e-2):
         assert _h(mdot, 60.0, 90.0, g=9.80665) == pytest.approx(_h(mdot, 60.0, 90.0, g=-9.80665), rel=1e-12)
+
+
+def test_gravity_magnitude_reaches_the_natural_term():
+    assert _h(5e-4, 60.0, 90.0, g=2 * 9.80665) > _h(5e-4, 60.0, 90.0)
 
 
 def _sudo(mdot, T_cool, T_wall, g=9.80665):

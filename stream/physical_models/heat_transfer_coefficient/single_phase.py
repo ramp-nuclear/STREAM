@@ -79,8 +79,9 @@ def regime_dependent_h_spl(
     The natural-convection contribution is added to the forced value by the cube norm
     :math:`h = (h_f^3 + h_n^3)^{1/3}`, the assisting form of Churchill [#Churchill]_.
     It is a smooth maximum of the two: the plain maximum used by RELAP5 and TRACE is
-    its large-exponent limit. In a channel narrower than about 4 mm the natural term
-    adds under 1 %; from 6 mm up it matters.
+    its large-exponent limit. For a 2 mm gap at up to 30 K superheat the natural term
+    adds under 1 %; the gain grows roughly as the fourth power of the gap and with the
+    superheat, and from about 4 mm it matters.
 
     At zero flow the laminar law returns its fully developed value. That value lies
     below the conduction limit of a stagnant heated slab (Nu 12 on the hydraulic
