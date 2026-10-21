@@ -204,6 +204,12 @@ def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
     assert np.all(np.isfinite(Elenbaas_h_spl(T_wall=np.array([50.0, 50.0]), **kw)))
 
 
+def test_elenbaas_without_gravity_is_zero_and_finite():
+    cool = light_water.to_properties(np.array([50.0]))
+    h = Elenbaas_h_spl(coolant=cool, depth=0.003, T_cool=np.array([50.0]), T_wall=np.array([70.0]), Lh=0.6, g=0.0)
+    assert np.all(np.isfinite(h)) and np.all(h >= 0.0) and h[0] < 1e-20
+
+
 def test_elenbaas_h_is_finite_and_positive_for_a_wall_colder_than_coolant():
     coolant = light_water.to_properties(np.array([50.0]))
     h = Elenbaas_h_spl(coolant=coolant, depth=0.003, T_cool=np.array([50.0]), T_wall=np.array([40.0]), Lh=0.6)

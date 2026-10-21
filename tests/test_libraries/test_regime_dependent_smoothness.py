@@ -109,3 +109,13 @@ def test_degenerate_point_finite():
     h = _h(0.0, 60.0, 60.0)
     assert np.isfinite(h)
     assert h >= 0.0
+
+
+def test_g_zero_is_the_forced_value():
+    for mdot in (0.0, 5e-4, -5e-3):
+        assert _h(mdot, 60.0, 90.0, g=0.0) == pytest.approx(_forced(mdot, 60.0, 90.0), rel=1e-12)
+
+
+def test_orientation_alone_does_not_change_h():
+    for mdot in (5e-4, -5e-4, 5e-2):
+        assert _h(mdot, 60.0, 90.0, g=9.80665) == pytest.approx(_h(mdot, 60.0, 90.0, g=-9.80665), rel=1e-12)

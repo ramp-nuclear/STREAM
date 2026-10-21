@@ -18,7 +18,8 @@ from stream.physical_models.heat_transfer_coefficient.turbulent import (
     Dittus_Boelter_h_spl,
 )
 from stream.substances import Liquid, LiquidFuncs
-from stream.units import Celsius, KgPerS, Meter, Meter2, Pascal, Value, WPerM2K
+from stream.units import Celsius, KgPerS, Meter, Meter2, MPerS2, Pascal, Value, WPerM2K
+from stream.units import g as local_gravity
 from stream.utilities import lin_interp
 
 
@@ -59,6 +60,7 @@ def regime_dependent_h_spl(
     re_bounds: tuple[Value, Value],
     coolant_funcs: LiquidFuncs,
     Lh: Meter,
+    g: MPerS2 = local_gravity,
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
@@ -114,6 +116,12 @@ def regime_dependent_h_spl(
     Lh: Meter
         Heated length, passed on to the ``laminar``, ``turbulent`` and ``natural``
         functions.
+    g: MPerS2
+        Gravitational acceleration along the channel, passed on to ``natural``. It is
+        the same ``g`` the channel's pressure law (:func:`~.pressure_diff`) uses, so
+        positive flow runs along gravity when ``g > 0``; a riser passes the negated
+        gravity to both laws. A horizontal channel passes ``0.0``, which drops the
+        natural term and returns the forced value.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
@@ -172,7 +180,7 @@ def regime_dependent_h_spl(
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
-    h_nat = natural(**(inp | {"coolant": bulk}))
+    h_nat = natural(**(inp | {"coolant": bulk, "g": g})) if g != 0.0 else np.zeros_like(h)
     with np.errstate(invalid="ignore", over="ignore"):
         return np.cbrt(h**3 + h_nat**3)
 

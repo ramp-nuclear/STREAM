@@ -10,12 +10,14 @@ from stream.units import (
     JPerKgK,
     KgPerM3,
     Meter,
+    MPerS2,
     PaS,
     PerC,
     Value,
     WPerM2K,
     WPerMK,
 )
+from stream.units import g as local_gravity
 
 
 @njit
@@ -29,13 +31,23 @@ def _Elenbaas(
     Twall: Celsius,
     Lh: Meter,
     S: Meter,
+    g: MPerS2,
 ) -> Value:
     # |Ra| covers a cooled wall; the floor keeps Ra > 0 at Twall == T.
-    ra = np.abs(Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S)) + 1e-30
+    ra = np.abs(Ra(rho=rho, mu=mu, cp=cp, k=k, beta=beta, T=T, Twall=Twall, Dh=S, g=g)) + 1e-30
     return (1 / 24) * ra * (S / Lh) * (1 - np.exp(-35 * Lh / (ra * S))) ** 0.75
 
 
-def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Celsius, Lh: Meter, **_) -> WPerM2K:
+def Elenbaas_h_spl(
+    *,
+    coolant: Liquid,
+    depth: Meter,
+    T_cool: Celsius,
+    T_wall: Celsius,
+    Lh: Meter,
+    g: MPerS2 = local_gravity,
+    **_,
+) -> WPerM2K:
     r"""A semi-empirical correlation for :class:`~.SinglePhaseLiquidHTC` made by
     Elenbaas [1]_ [2]_ for the case of `symmetrically heated, isothermal plates`:
 
@@ -54,6 +66,9 @@ def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Ce
         Surface temperature
     Lh: Meter
         Heated length
+    g: MPerS2
+        Gravitational acceleration along the channel. Its sign does not matter, the
+        Rayleigh number enters in absolute value; ``0.0`` removes buoyancy.
 
     Returns
     -------
@@ -77,5 +92,6 @@ def Elenbaas_h_spl(*, coolant: Liquid, depth: Meter, T_cool: Celsius, T_wall: Ce
         Twall=T_wall,
         Lh=Lh,
         S=S,
+        g=g,
     )
     return (k / S) * Nu
