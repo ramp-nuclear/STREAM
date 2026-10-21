@@ -389,31 +389,17 @@ def Sudo_downflow_ratio(gz: Value, fade: tuple[float, float] = (2.0, 16.0)) -> V
     r"""Ratio of the laminar downflow to the laminar upflow heat transfer coefficient
     in a narrow heated rectangular channel, after Sudo et al. [#Sudo1985]_.
 
-    Sudo et al. measured water in a 2.25 mm by 50 mm by 750 mm channel heated on both
-    sides, at Reynolds numbers from 100 to 50,000, and gave lower limits of the laminar
-    data for each flow direction:
+    The lower limits of the laminar data, measured in a 2.25 mm gap at Reynolds
+    numbers from 100 to 50,000, are
 
-    - upflow: :math:`\text{Nu} = 2.0\,\text{Gz}^{0.3}` for :math:`\text{Gz} \geq 40`,
-      and :math:`\text{Nu} = 6.0` for :math:`16 < \text{Gz} < 40`;
-    - downflow: :math:`\text{Nu} = 0.915\,\text{Gz}^{0.4}` for
-      :math:`\text{Gz} \geq 40`, and :math:`\text{Nu} = 4.0` for
-      :math:`16 < \text{Gz} < 40`.
+    - upflow: :math:`\text{Nu} = 2.0\,\text{Gz}^{0.3}` for :math:`\text{Gz} \geq 40`, 6.0 for :math:`16 < \text{Gz} < 40`;
+    - downflow: :math:`\text{Nu} = 0.915\,\text{Gz}^{0.4}` for :math:`\text{Gz} \geq 40`, 4.0 for :math:`16 < \text{Gz} < 40`;
 
-    The Nusselt number is on the equivalent diameter :math:`D_e` and the local bulk
-    temperature, and :math:`\text{Gz} = \text{Re}\,\text{Pr}\,D_e/x` with :math:`x`
-    measured from the channel inlet.
-
-    Both laws are lower envelopes of their data, so only their ratio is used: it
-    scales whatever laminar coefficient the caller computes. The ratio of the power
-    laws, :math:`0.4575\,\text{Gz}^{0.1}`, is clipped to :math:`[2/3, 1]`; it equals 1
-    from about Gz 2500. The plateau of 2/3 is the ratio of the constant pieces, joined to
-    the power law at the Graetz number where the power law reaches 2/3 (about 43),
-    since the published pieces do not meet at Gz 40. Below Gz 16 there are no data,
-    and the ratio fades from the plateau back to 1 over ``fade``, a smooth step on
+    with Nu on the equivalent diameter :math:`D_e` and the local bulk temperature, and
+    :math:`\text{Gz} = \text{Re}\,\text{Pr}\,D_e/x`, :math:`x` from the inlet. Their
+    ratio, :math:`0.4575\,\text{Gz}^{0.1}`, is clipped to :math:`[2/3, 1]` and, below
+    Gz 16 where there are no data, fades back to 1 over ``fade`` by a smooth step on
     :math:`\log_{10}\text{Gz}`. A non-positive Graetz number returns 1.
-
-    The ratio applies for either sign of the wall superheat: a lower coefficient is
-    conservative for the plate whether it heats or cools the coolant.
 
     Parameters
     ----------

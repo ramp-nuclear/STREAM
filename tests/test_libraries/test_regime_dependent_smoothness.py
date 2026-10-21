@@ -82,11 +82,6 @@ def test_zero_flow_holds_the_laminar_value():
     assert hf <= h_still <= hf * 1.05
 
 
-def test_gz_band_is_rejected():
-    with pytest.raises(TypeError, match="gz_band"):
-        _h(5e-3, 60.0, 90.0, gz_band=(0.01, 0.1))
-
-
 def test_wall_balance_monotone_at_stagnation_scale():
     """The fold regression: at Re ~ 20 (where the replaced interpolation produced a
     three-root N-curve), F = h*(T_wall - T_cool) must rise strictly with T_wall."""

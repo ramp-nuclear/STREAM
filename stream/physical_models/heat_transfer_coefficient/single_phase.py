@@ -71,39 +71,21 @@ def regime_dependent_h_spl(
 ) -> WPerM2K:
     r"""A flow-regime-dependent single phase heat transfer coefficient function.
 
-    The forced-convection part interpolates linearly on the bulk-evaluated Reynolds
-    number between the ``laminar`` and ``turbulent`` functions, with ``re_bounds``
-    setting the transition band. The laminar function is passed bulk properties,
-    the turbulent one film properties.
+    The forced part interpolates linearly on the bulk Reynolds number between the
+    ``laminar`` function (bulk properties) and the ``turbulent`` one (film properties)
+    over ``re_bounds``. The natural term is added by the cube norm
+    :math:`h = (h_f^3 + h_n^3)^{1/3}` [#Churchill]_. For a 2 mm gap at up to 30 K
+    superheat it adds under 1 %; it grows about as the fourth power of the gap and
+    matters from about 4 mm.
 
-    The natural-convection contribution is added to the forced value by the cube norm
-    :math:`h = (h_f^3 + h_n^3)^{1/3}`, the assisting form of Churchill [#Churchill]_.
-    It is a smooth maximum of the two: the plain maximum used by RELAP5 and TRACE is
-    its large-exponent limit. For a 2 mm gap at up to 30 K superheat the natural term
-    adds under 1 %; the gain grows roughly as the fourth power of the gap and with the
-    superheat, and from about 4 mm it matters.
-
-    At zero flow the laminar law returns its fully developed value. That value lies
-    below the conduction limit of a stagnant heated slab (Nu 12 on the hydraulic
-    diameter for uniform flux), so it is a floor and the composition needs no separate
-    stagnant-channel limit. Upflow data in narrow heated channels place the coefficient
-    at the laminar value when buoyancy aids the flow [#Sudo]_.
-
-    Every switch here is fed by the flow (Re), never by the wall superheat the result
-    feeds back into, and the cube norm only adds, so :math:`h(T_{wall}) \cdot \Delta T`
-    is monotone and a cell's wall balance has a unique root.
-
-    Laminar flow along gravity past a heated wall (heated downflow) is opposed by
-    buoyancy, which slows the fluid at the wall: Sudo et al. measured about half the
-    laminar coefficient at Re 250 to 400 in a 2.25 mm channel [#Sudo]_. Passing
-    ``downflow="sudo"`` scales the laminar value by :func:`~.Sudo_downflow_ratio` when
-    the flow runs along gravity, before the laminar-turbulent interpolation, so the
-    reduction also fades out through the transition band. It is off by default.
-
-    Limitations: without a downflow law, heated laminar downflow is over-predicted.
-    Buoyancy effects on turbulent flow are not modelled. The natural term is an
-    open-chimney correlation evaluated on bulk properties with the absolute Rayleigh
-    number.
+    At zero flow the laminar law holds its fully developed value, which lies below the
+    conduction limit of a stagnant heated slab, so no separate stagnant limit is
+    needed; upflow data place the coefficient at the laminar value [#Sudo]_. Every
+    switch is fed by the flow, so :math:`h(T_{wall}) \cdot \Delta T` is monotone and a
+    cell's wall balance has one root. Without a downflow law heated laminar downflow
+    is over-predicted: ``downflow="sudo"`` scales the laminar value by
+    :func:`~.Sudo_downflow_ratio` in laminar flow along gravity, before the
+    interpolation. It is off by default.
 
     Parameters
     ----------
@@ -127,19 +109,12 @@ def regime_dependent_h_spl(
         Heated length, passed on to the ``laminar``, ``turbulent`` and ``natural``
         functions.
     g: MPerS2
-        Gravitational acceleration along the channel, passed on to ``natural``. It is
-        the same ``g`` the channel's pressure law (:func:`~.pressure_diff`) uses, so
-        positive flow runs along gravity when ``g > 0``; a riser passes the negated
-        gravity to both laws. A horizontal channel passes ``0.0``, which drops the
-        natural term and returns the forced value.
+        Same ``g`` as :func:`~.pressure_diff`: positive flow runs along gravity when
+        ``g > 0``, a riser passes ``-g``, and ``0.0`` drops the natural term.
     downflow: Literal["sudo"] | None
-        Downflow law for laminar flow along gravity. ``None`` (default) leaves the
-        laminar value as is. ``"sudo"`` multiplies it by
-        :math:`1 - w\,(1 - r)`, where :math:`r` is :func:`~.Sudo_downflow_ratio` of the
-        local Graetz number :math:`\text{Re}\,\text{Pr}\,D_h/x` (bulk properties,
-        :math:`x` the ``develop_length`` keyword) and :math:`w` rises smoothly from 0 at
-        rest to 1 at Re 1 along gravity, and is 0 against it. It needs ``develop_length``
-        and has no effect when ``g == 0``.
+        ``None`` (default) or ``"sudo"``, which multiplies the laminar value by the
+        ratio on the local Graetz number Re Pr Dh / ``develop_length`` in flow along
+        gravity. It needs ``develop_length`` and has no effect when ``g == 0``.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
@@ -155,8 +130,7 @@ def regime_dependent_h_spl(
     Raises
     ------
     TypeError
-        If ``gz_band`` is passed, or ``downflow="sudo"`` is given without
-        ``develop_length``.
+        If ``downflow="sudo"`` is given without ``develop_length``.
     ValueError
         If ``downflow`` is neither ``None`` nor ``"sudo"``.
 
@@ -169,11 +143,6 @@ def regime_dependent_h_spl(
        characteristics between upflow and downflow for narrow rectangular channel",
        J. Nucl. Sci. Technol. 22(3):202-212, 1985.
     """
-    if "gz_band" in kwargs:
-        raise TypeError(
-            "regime_dependent_h_spl no longer takes gz_band: the natural term is combined by the cube norm"
-            " at every flow and the laminar law holds at zero flow"
-        )
     if downflow not in (None, "sudo"):
         raise ValueError(f"Unknown downflow law {downflow!r}, expected None or 'sudo'")
     if downflow == "sudo" and "develop_length" not in kwargs:
