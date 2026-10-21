@@ -7,6 +7,7 @@ h(T_wall)*(T_wall - T_cool) stays monotone so a cell has a unique steady root.""
 import numpy as np
 import pytest
 
+from stream.physical_models.heat_transfer_coefficient.laminar import Sudo_downflow_ratio
 from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
 from stream.physical_models.heat_transfer_coefficient.single_phase import regime_dependent_h_spl
 from stream.substances import light_water
@@ -119,3 +120,80 @@ def test_g_zero_is_the_forced_value():
 def test_orientation_alone_does_not_change_h():
     for mdot in (5e-4, -5e-4, 5e-2):
         assert _h(mdot, 60.0, 90.0, g=9.80665) == pytest.approx(_h(mdot, 60.0, 90.0, g=-9.80665), rel=1e-12)
+
+
+def _sudo(mdot, T_cool, T_wall, g=9.80665):
+    return _h(mdot, T_cool, T_wall, g=g, downflow="sudo")
+
+
+def test_downflow_law_orders_flow_along_gravity_below_flow_against_it():
+    T_cool, T_wall = 60.0, 90.0
+    mu = float(light_water.viscosity(np.array([T_cool]))[0])
+    for re in (50.0, 250.0, 700.0, 1500.0, 3000.0):
+        m = re * A * mu / DH
+        assert _sudo(m, T_cool, T_wall) < _sudo(-m, T_cool, T_wall)
+        assert _sudo(-m, T_cool, T_wall) == pytest.approx(_h(-m, T_cool, T_wall), rel=1e-12)
+    m = 6000.0 * A * mu / DH
+    assert _sudo(m, T_cool, T_wall) == pytest.approx(_sudo(-m, T_cool, T_wall), rel=1e-12)
+
+
+def test_downflow_law_mirrors_with_gravity():
+    for m in (5e-4, 5e-3):
+        assert _sudo(m, 60.0, 90.0, g=9.80665) == pytest.approx(_sudo(-m, 60.0, 90.0, g=-9.80665), rel=1e-12)
+
+
+def test_downflow_law_off_without_gravity_and_at_rest():
+    assert _sudo(5e-4, 60.0, 90.0, g=0.0) == pytest.approx(_forced(5e-4, 60.0, 90.0), rel=1e-12)
+    assert _sudo(0.0, 60.0, 90.0) == pytest.approx(_h(0.0, 60.0, 90.0), rel=1e-12)
+
+
+def test_downflow_law_wall_balance_monotone_both_superheat_signs():
+    T_cool = 60.0
+    mu = float(light_water.viscosity(np.array([T_cool]))[0])
+    mdot = 250.0 * A * mu / DH
+    for dts in (np.geomspace(0.01, 40.0, 120), -np.geomspace(0.01, 40.0, 120)[::-1]):
+        F = np.array([_sudo(mdot, T_cool, T_cool + dt) * dt for dt in dts])
+        assert np.all(np.diff(F) > 0)
+
+
+def test_downflow_law_continuous_through_reversal():
+    T_cool, T_wall = 60.0, 90.0
+    mu = float(light_water.viscosity(np.array([T_cool]))[0])
+
+    def max_step(n):
+        m = np.linspace(-300.0, 300.0, n) * A * mu / DH
+        h = np.array([_sudo(mi, T_cool, T_wall) for mi in m])
+        return np.max(np.abs(np.diff(h)))
+
+    assert max_step(2001) <= 0.35 * max_step(201)
+
+
+def test_downflow_law_needs_the_entry_length():
+    film = _film(60.0, 90.0)
+    kw = {k: v for k, v in KW.items() if k != "develop_length"}
+    with pytest.raises(TypeError, match="develop_length"):
+        regime_dependent_h_spl(coolant=film, mdot=5e-3, T_cool=np.array([60.0]), T_wall=np.array([90.0]),
+                               downflow="sudo", **kw)
+
+
+def test_downflow_law_takes_array_flow():
+    T = np.array([60.0, 60.0])
+    kw = KW | {"develop_length": np.array([0.3, 0.3])}
+    h = regime_dependent_h_spl(coolant=light_water.to_properties(np.array([75.0, 75.0])), mdot=np.array([5e-3, -5e-3]),
+                               T_cool=T, T_wall=T + 30.0, downflow="sudo", **kw)
+    assert h[0] < h[1]
+
+
+def test_downflow_law_needs_the_entry_length_in_turbulent_flow():
+    film = _film(60.0, 90.0)
+    mu = float(light_water.viscosity(np.array([60.0]))[0])
+    kw = {k: v for k, v in KW.items() if k != "develop_length"}
+    with pytest.raises(TypeError, match="develop_length"):
+        regime_dependent_h_spl(coolant=film, mdot=6000.0 * A * mu / DH, T_cool=np.array([60.0]),
+                               T_wall=np.array([90.0]), downflow="sudo", **kw)
+
+
+@pytest.mark.parametrize("fade", [(16.0, 2.0), (2.0, 2.0), (0.0, 16.0), (-2.0, 16.0)])
+def test_downflow_ratio_rejects_a_misordered_fade(fade):
+    with pytest.raises(ValueError, match="fade"):
+        Sudo_downflow_ratio(10.0, fade=fade)

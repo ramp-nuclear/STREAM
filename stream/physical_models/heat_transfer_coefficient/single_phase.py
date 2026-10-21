@@ -5,8 +5,9 @@ from typing import Literal, Protocol
 
 import numpy as np
 
-from stream.physical_models.dimensionless import Re_mdot, flow_regimes
+from stream.physical_models.dimensionless import Pr, Re_mdot, flow_regimes
 from stream.physical_models.heat_transfer_coefficient.laminar import (
+    Sudo_downflow_ratio,
     constant_Nusselt_h_spl,
     developing_laminar_h_spl,
     fully_developed_laminar_h_spl,
@@ -17,6 +18,7 @@ from stream.physical_models.heat_transfer_coefficient.natural_convection import 
 from stream.physical_models.heat_transfer_coefficient.turbulent import (
     Dittus_Boelter_h_spl,
 )
+from stream.smoothing import smooth_step
 from stream.substances import Liquid, LiquidFuncs
 from stream.units import Celsius, KgPerS, Meter, Meter2, MPerS2, Pascal, Value, WPerM2K
 from stream.units import g as local_gravity
@@ -61,6 +63,7 @@ def regime_dependent_h_spl(
     coolant_funcs: LiquidFuncs,
     Lh: Meter,
     g: MPerS2 = local_gravity,
+    downflow: Literal["sudo"] | None = None,
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
@@ -89,8 +92,14 @@ def regime_dependent_h_spl(
     feeds back into, and the cube norm only adds, so :math:`h(T_{wall}) \cdot \Delta T`
     is monotone and a cell's wall balance has a unique root.
 
-    Limitations: laminar flow opposed by buoyancy (heated downflow) is over-predicted,
-    since buoyancy slows the fluid at the wall, unless a downflow law is given.
+    Laminar flow along gravity past a heated wall (heated downflow) is opposed by
+    buoyancy, which slows the fluid at the wall: Sudo et al. measured about half the
+    laminar coefficient at Re 250 to 400 in a 2.25 mm channel [#Sudo]_. Passing
+    ``downflow="sudo"`` scales the laminar value by :func:`~.Sudo_downflow_ratio` when
+    the flow runs along gravity, before the laminar-turbulent interpolation, so the
+    reduction also fades out through the transition band. It is off by default.
+
+    Limitations: without a downflow law, heated laminar downflow is over-predicted.
     Buoyancy effects on turbulent flow are not modelled. The natural term is an
     open-chimney correlation evaluated on bulk properties with the absolute Rayleigh
     number.
@@ -122,6 +131,14 @@ def regime_dependent_h_spl(
         positive flow runs along gravity when ``g > 0``; a riser passes the negated
         gravity to both laws. A horizontal channel passes ``0.0``, which drops the
         natural term and returns the forced value.
+    downflow: Literal["sudo"] | None
+        Downflow law for laminar flow along gravity. ``None`` (default) leaves the
+        laminar value as is. ``"sudo"`` multiplies it by
+        :math:`1 - w\,(1 - r)`, where :math:`r` is :func:`~.Sudo_downflow_ratio` of the
+        local Graetz number :math:`\text{Re}\,\text{Pr}\,D_h/x` (bulk properties,
+        :math:`x` the ``develop_length`` keyword) and :math:`w` rises smoothly from 0 at
+        rest to 1 at Re 1 along gravity, and is 0 against it. It needs ``develop_length``
+        and has no effect when ``g == 0``.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
@@ -137,7 +154,10 @@ def regime_dependent_h_spl(
     Raises
     ------
     TypeError
-        If ``gz_band`` is passed.
+        If ``gz_band`` is passed, or ``downflow="sudo"`` is given without
+        ``develop_length``.
+    ValueError
+        If ``downflow`` is neither ``None`` nor ``"sudo"``.
 
     References
     ----------
@@ -153,6 +173,10 @@ def regime_dependent_h_spl(
             "regime_dependent_h_spl no longer takes gz_band: the natural term is combined by the cube norm"
             " at every flow and the laminar law holds at zero flow"
         )
+    if downflow not in (None, "sudo"):
+        raise ValueError(f"Unknown downflow law {downflow!r}, expected None or 'sudo'")
+    if downflow == "sudo" and "develop_length" not in kwargs:
+        raise TypeError("regime_dependent_h_spl with downflow='sudo' requires develop_length")
     re_bulk = Re_mdot(mdot, A, Dh, coolant_funcs.viscosity(T_cool))
 
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
@@ -177,6 +201,12 @@ def regime_dependent_h_spl(
     h[turb] = h_turb[turb]
     if np.any(lam + inter):
         h_lam = laminar(**(inp | {"coolant": bulk}))
+        if downflow == "sudo" and g != 0.0:
+            pr_bulk = Pr(bulk.specific_heat, bulk.viscosity, bulk.conductivity)
+            with np.errstate(divide="ignore"):
+                gz_local = re_bulk * pr_bulk * Dh / kwargs["develop_length"]
+            w = smooth_step(np.sign(g) * np.sign(mdot) * re_bulk, 0.0, 1.0)
+            h_lam = h_lam * (1.0 - w * (1.0 - Sudo_downflow_ratio(gz_local)))
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
