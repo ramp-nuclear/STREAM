@@ -2,6 +2,7 @@
 Regression / comparison testing the pressure drop functions and correlations
 """
 
+from dataclasses import replace
 from functools import partial
 
 import hypothesis.strategies as st
@@ -259,3 +260,22 @@ def test_bend_factor_raises_error_when_angle_out_of_range(angle, relative_curvat
 def test_bend_factor_raises_error_when_relative_curvature_out_of_range(angle, relative_curvature, re):
     with pytest.raises(ValueError):
         bend_factor(angle=angle, relative_curvature=relative_curvature, re=re)
+
+
+def test_regime_dependent_friction_viscosity_correction_is_laminar_only():
+    kw = {"T_cool": np.array([20.0]), "T_wall": np.array([20.0]), "fluid": mock_liquid_funcs,
+          "pipe": EffectivePipe(1, 4, 4, 1), "re_bounds": (2000.0, 4000.0), "k_R": 1.0}
+    double = lambda heat_wet_ratio, mu_ratio: 2.0
+    assert np.allclose(regime_dependent_friction(mdot=500.0, k_H=double, **kw), 2.0 * regime_dependent_friction(mdot=500.0, **kw))
+    assert np.allclose(regime_dependent_friction(mdot=8000.0, k_H=double, **kw), regime_dependent_friction(mdot=8000.0, **kw))
+    mid = regime_dependent_friction(mdot=3000.0, k_H=double, **kw)
+    assert np.all(regime_dependent_friction(mdot=3000.0, **kw) < mid) and np.all(mid < 2.0 * regime_dependent_friction(mdot=3000.0, **kw))
+
+
+def test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction():
+    fluid = replace(mock_liquid_funcs, viscosity=lambda T: 1.0 + 0.0 * T)
+    kw = {"T_cool": np.array([20.0]), "mdot": 500.0, "fluid": fluid, "pipe": EffectivePipe(1, 4, 4, 1),
+          "re_bounds": (2000.0, 4000.0), "k_R": 1.0}
+    assert np.all(np.isfinite(regime_dependent_friction(T_wall=None, **kw)))
+    with pytest.raises(TypeError):
+        regime_dependent_friction(T_wall=None, k_H=lambda a, b: 1.0, **kw)
