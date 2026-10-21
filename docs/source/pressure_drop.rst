@@ -32,6 +32,16 @@ Friction
 .. automodule:: stream.physical_models.pressure_drop.friction
    :members:
 
+With :func:`~.regime_dependent_friction` below ``re_bounds``, the laminar factor :math:`64/(\text{Re}\,k_R)`
+makes the friction pressure linear in the flow, so it passes through zero flow and reverses with it,
+continuous in both directions. The viscosity correction ``k_H`` multiplies the laminar factor only and
+fades out across ``re_bounds``.
+
+.. figure:: _static/htc/friction_through_zero.png
+   :width: 100%
+
+   Pressure difference of a 0.7 m long, 2 mm gap channel in ten cells against mass flow, with gravity, crossing zero flow at the hydrostatic head.
+
 Local
 =====
 

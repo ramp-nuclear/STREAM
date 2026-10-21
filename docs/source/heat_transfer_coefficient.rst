@@ -75,6 +75,40 @@ Composed HTC Functions
 .. autofunction:: stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl
 .. autofunction:: stream.physical_models.heat_transfer_coefficient.single_phase.maximal_h_spl
 
+Low flow, reversal and natural circulation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+As a channel's flow falls, :func:`~.regime_dependent_h_spl` moves from Dittus-Boelter through the
+``re_bounds`` band to the developing laminar law, and at zero flow the laminar law holds its fully
+developed value. Without the downflow law the coefficient is therefore continuous through stagnation and
+the same on both sides of it. The Elenbaas natural term is added to the forced value by the cube norm at
+every flow: in a 2 mm gap at up to 30 K superheat it adds under 1 %; the gain grows roughly as the fourth
+power of the gap and with the superheat, and from about 4 mm it lifts the low-flow value.
+
+.. figure:: _static/htc/h_vs_re.png
+   :width: 100%
+
+   Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, with the ``re_bounds`` band shaded.
+
+Every switch in the law is fed by the flow, never by the wall superheat the coefficient feeds back
+into, and the cube norm only adds. The wall heat flux :math:`h \cdot \Delta T` then rises monotonically
+with the superheat, so a flow-fed closure gives a cell's wall balance one root per heat flux.
+
+.. figure:: _static/htc/wall_balance.png
+   :width: 100%
+
+   Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20, which coincide on the held laminar value, crossing a 15 kW/m² flux once.
+
+The channel's orientation enters through ``g``, the same gravity its pressure law
+(:func:`~.pressure_diff`) uses: positive flow runs along gravity when ``g > 0``, a riser passes the
+negated gravity and a horizontal channel passes ``0.0``, which drops the natural term. Laminar flow along
+gravity past a heated wall is slowed at the wall by buoyancy, which the default law ignores and so
+over-predicts. Passing ``downflow="sudo"`` scales the laminar value by :func:`~.Sudo_downflow_ratio`,
+from the narrow-channel measurements of Sudo et al. (about half the laminar coefficient at Re 250 to 400),
+on the local Graetz number; the law applies the ratio of Sudo's downflow and upflow envelopes, never below
+2/3, and it needs ``develop_length``. It lowers the coefficient and raises the wall
+temperature, the conservative side, and is off by default.
+
 
 Incipience (INC)
 ================
