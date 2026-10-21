@@ -1,10 +1,11 @@
-"""Acceptance tests for the monotone forced-plus-natural HTC composition: Churchill
-cube-norm superposition with a Graetz-number stagnation handover. The composition must
-be continuous, ordered above both of its ingredients in the through-flow regime, hand
-over to the pure natural function at stagnation, and keep the per-cell wall balance
-h(T_wall)*(T_wall - T_cool) monotone so a cell has a unique steady root."""
+"""Acceptance tests for the monotone forced-plus-natural HTC composition: the forced
+value combined with the natural one by the Churchill cube norm at every flow. Every
+regime switch is fed by the flow, never by the wall temperature; the laminar law holds
+its fully developed value at zero flow; and the per-cell wall balance
+h(T_wall)*(T_wall - T_cool) stays monotone so a cell has a unique steady root."""
 
 import numpy as np
+import pytest
 
 from stream.physical_models.heat_transfer_coefficient.natural_convection import Elenbaas_h_spl
 from stream.physical_models.heat_transfer_coefficient.single_phase import regime_dependent_h_spl
@@ -42,18 +43,16 @@ def _zero_natural(**_):
 
 
 def _forced(mdot, T_cool, T_wall):
-    """Forced part alone: natural contribution zeroed, handover forced off."""
-    return _h(mdot, T_cool, T_wall, natural=_zero_natural, gz_band=(1e-12, 2e-12))
+    return _h(mdot, T_cool, T_wall, natural=_zero_natural)
 
 
 def test_no_jump_under_refinement():
-    """max |Δh| across the handover band must shrink under grid refinement."""
+    """max |Δh| across zero flow (Re from -5 to 5) must shrink under grid refinement."""
     T_cool, T_wall = 60.0, 90.0
     mu = float(light_water.viscosity(np.array([T_cool]))[0])
-    m_hand = 0.05 * KW["Lh"] / DH * A * mu / DH  # flow at the middle of the default gz_band
 
     def max_step(n):
-        m = np.linspace(0.2 * m_hand, 5.0 * m_hand, n)
+        m = np.linspace(-5.0, 5.0, n) * A * mu / DH
         h = np.array([_h(mi, T_cool, T_wall) for mi in m])
         return np.max(np.abs(np.diff(h)))
 
@@ -72,17 +71,19 @@ def test_superposition_orders_above_both_ingredients():
         assert hb <= (hf**3 + hn**3) ** (1 / 3) * (1 + 1e-9)
 
 
-def test_gz_handover_limits():
-    """Degenerate gz_band isolates the two limits: pure natural at w=0, and at w=1
-    a value at least as large as both the forced and the natural one."""
-    T_cool, T_wall, mdot = 60.0, 90.0, 5e-3
-    hn = _independent_natural(T_cool, T_wall)
-    h_low = _h(mdot, T_cool, T_wall, gz_band=(1e12, 2e12))  # w_flow == 0 everywhere
-    assert np.isclose(h_low, hn)
-    hf = _forced(mdot, T_cool, T_wall)
-    h_high = _h(mdot, T_cool, T_wall, gz_band=(1e-12, 2e-12))  # w_flow == 1 everywhere
-    assert h_high >= hf * (1 - 1e-9)
-    assert h_high >= hn * (1 - 1e-9)
+def test_zero_flow_holds_the_laminar_value():
+    T_cool, T_wall = 60.0, 90.0
+    h_still = _h(0.0, T_cool, T_wall)
+    h_creep = _h(1e-9, T_cool, T_wall)
+    hf = _forced(0.0, T_cool, T_wall)
+    assert hf > 0.0
+    assert h_still == pytest.approx(h_creep, rel=1e-9)
+    assert hf <= h_still <= hf * 1.05
+
+
+def test_gz_band_is_rejected():
+    with pytest.raises(TypeError, match="gz_band"):
+        _h(5e-3, 60.0, 90.0, gz_band=(0.01, 0.1))
 
 
 def test_wall_balance_monotone_at_stagnation_scale():
@@ -103,8 +104,8 @@ def test_cooled_wall_finite_and_symmetric_natural_term():
 
 
 def test_degenerate_point_finite():
-    """mdot=0, isothermal wall: the handover selects the natural function, whose
-    conduction-free limit is ~0 -- finite by construction, no 0/0."""
+    """mdot=0, isothermal wall: the natural term vanishes and the laminar value stands,
+    finite and non-negative, no 0/0."""
     h = _h(0.0, 60.0, 60.0)
     assert np.isfinite(h)
-    assert h == np.clip(h, 0.0, _independent_natural(60.0, 60.0) + 1e-12)
+    assert h >= 0.0

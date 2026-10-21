@@ -164,8 +164,8 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
     """In this test, the reynolds number is set to be just mdot,
     thus it is directly compared with the re regime bounds. The laminar and turbulent
     spl values are set to be simply given values, and are compared with the
-    interpolation scheme. The natural contribution is zeroed and the stagnation
-    handover forced off, isolating the forced-convection interpolation."""
+    interpolation scheme. The natural contribution is zeroed, isolating the
+    forced-convection interpolation."""
     re_bounds = (min(re), max(re))
     h = regime_dependent_h_spl(
         mock_liquid_funcs.to_properties(np.array([100.0]), 1e5),
@@ -180,7 +180,6 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         turbulent=just(np.atleast_1d(turb)),
         coolant_funcs=mock_liquid_funcs,
         Lh=1.0,
-        gz_band=(1e-12, 2e-12),
     )
     if md < re_bounds[0]:
         assert np.allclose(h, lam)
