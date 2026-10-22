@@ -282,6 +282,8 @@ def regime_dependent_friction(
     f_turb = turbulent(re_bulk * k_R)
     f_lam = laminar(re_bulk * k_R)
     if k_H is not None:
+        if T_wall is None:
+            raise TypeError("k_H needs T_wall to read the wall viscosity")
         mu_ratio = fluid.viscosity(T_wall) / mu_bulk
         f_lam = f_lam * k_H(pipe.heated_perimeter / pipe.wet_perimeter, mu_ratio)
 

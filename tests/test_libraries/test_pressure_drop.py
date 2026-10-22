@@ -37,7 +37,7 @@ from stream.physical_models.pressure_drop.local import (
 from stream.pipe_geometry import EffectivePipe
 from stream.substances import light_water
 from stream.substances.mocks import mock_liquid_funcs
-from stream.utilities import lin_interp
+from stream.utilities import just, lin_interp
 
 from .conftest import mock_pipe, normal_floats, pos_medium_floats
 
@@ -263,19 +263,21 @@ def test_bend_factor_raises_error_when_relative_curvature_out_of_range(angle, re
 
 
 def test_regime_dependent_friction_viscosity_correction_is_laminar_only():
+    """A k_H of 2 doubles the laminar factor, leaves the turbulent factor alone and lands between them in transition."""
     kw = {"T_cool": np.array([20.0]), "T_wall": np.array([20.0]), "fluid": mock_liquid_funcs,
           "pipe": EffectivePipe(1, 4, 4, 1), "re_bounds": (2000.0, 4000.0), "k_R": 1.0}
-    double = lambda heat_wet_ratio, mu_ratio: 2.0
+    double = just(2.0)
     assert np.allclose(regime_dependent_friction(mdot=500.0, k_H=double, **kw), 2.0 * regime_dependent_friction(mdot=500.0, **kw))
     assert np.allclose(regime_dependent_friction(mdot=8000.0, k_H=double, **kw), regime_dependent_friction(mdot=8000.0, **kw))
     mid = regime_dependent_friction(mdot=3000.0, k_H=double, **kw)
     assert np.all(regime_dependent_friction(mdot=3000.0, **kw) < mid) and np.all(mid < 2.0 * regime_dependent_friction(mdot=3000.0, **kw))
 
 
-def test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction():
+def test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given():
+    """Without k_H the wall temperature is never read, so T_wall=None works; with k_H the viscosity ratio needs it."""
     fluid = replace(mock_liquid_funcs, viscosity=lambda T: 1.0 + 0.0 * T)
     kw = {"T_cool": np.array([20.0]), "mdot": 500.0, "fluid": fluid, "pipe": EffectivePipe(1, 4, 4, 1),
           "re_bounds": (2000.0, 4000.0), "k_R": 1.0}
     assert np.all(np.isfinite(regime_dependent_friction(T_wall=None, **kw)))
-    with pytest.raises(TypeError):
-        regime_dependent_friction(T_wall=None, k_H=lambda a, b: 1.0, **kw)
+    with pytest.raises(TypeError, match="k_H needs T_wall"):
+        regime_dependent_friction(T_wall=None, k_H=just(1.0), **kw)

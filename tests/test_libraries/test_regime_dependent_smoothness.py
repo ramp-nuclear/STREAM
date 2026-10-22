@@ -31,7 +31,7 @@ def _independent_natural(T_cool, T_wall):
     )[0]
 
 
-def _h(mdot, T_cool, T_wall, **over):
+def regime_h(mdot, T_cool, T_wall, **over):
     film = _film(T_cool, T_wall)
     return regime_dependent_h_spl(
         coolant=film, mdot=mdot, T_cool=np.array([T_cool]), T_wall=np.array([T_wall]),
@@ -43,8 +43,8 @@ def _zero_natural(**_):
     return np.zeros(1)
 
 
-def _forced(mdot, T_cool, T_wall):
-    return _h(mdot, T_cool, T_wall, natural=_zero_natural)
+def forced_only_h(mdot, T_cool, T_wall):
+    return regime_h(mdot, T_cool, T_wall, natural=_zero_natural)
 
 
 def test_no_jump_under_refinement():
@@ -54,7 +54,7 @@ def test_no_jump_under_refinement():
 
     def max_step(n):
         m = np.linspace(-5.0, 5.0, n) * A * mu / DH
-        h = np.array([_h(mi, T_cool, T_wall) for mi in m])
+        h = np.array([regime_h(mi, T_cool, T_wall) for mi in m])
         return np.max(np.abs(np.diff(h)))
 
     coarse, fine = max_step(201), max_step(2001)
@@ -65,8 +65,8 @@ def test_superposition_orders_above_both_ingredients():
     """In the through-flow regime h >= h_forced and h >= h_natural (buoyancy only adds)."""
     T_cool, T_wall = 60.0, 90.0
     for mdot in (5e-4, 5e-3, 5e-2):
-        hb = _h(mdot, T_cool, T_wall)
-        hf = _forced(mdot, T_cool, T_wall)
+        hb = regime_h(mdot, T_cool, T_wall)
+        hf = forced_only_h(mdot, T_cool, T_wall)
         hn = _independent_natural(T_cool, T_wall)
         assert hb >= hf and hb >= hn
         assert hb <= (hf**3 + hn**3) ** (1 / 3) * (1 + 1e-9)
@@ -74,9 +74,9 @@ def test_superposition_orders_above_both_ingredients():
 
 def test_zero_flow_holds_the_laminar_value():
     T_cool, T_wall = 60.0, 90.0
-    h_still = _h(0.0, T_cool, T_wall)
-    h_creep = _h(1e-9, T_cool, T_wall)
-    hf = _forced(0.0, T_cool, T_wall)
+    h_still = regime_h(0.0, T_cool, T_wall)
+    h_creep = regime_h(1e-9, T_cool, T_wall)
+    hf = forced_only_h(0.0, T_cool, T_wall)
     assert hf > 0.0
     assert h_still == pytest.approx(h_creep, rel=1e-9)
     assert hf <= h_still <= hf * 1.05
@@ -89,85 +89,97 @@ def test_wall_balance_monotone_at_stagnation_scale():
     mu = float(light_water.viscosity(np.array([T_cool]))[0])
     mdot = 20.0 * A * mu / DH  # Re = 20
     dts = np.geomspace(0.01, 40.0, 120)
-    F = np.array([_h(mdot, T_cool, T_cool + dt) * dt for dt in dts])
+    F = np.array([regime_h(mdot, T_cool, T_cool + dt) * dt for dt in dts])
     assert np.all(np.diff(F) > 0)
 
 
 def test_cooled_wall_finite_and_symmetric_natural_term():
     """T_wall < T_cool (negative Gr) keeps a finite, positive coefficient."""
-    hb_cold = _h(5e-4, 60.0, 30.0)
+    hb_cold = regime_h(5e-4, 60.0, 30.0)
     assert np.isfinite(hb_cold) and hb_cold > 0
 
 
-def test_degenerate_point_finite():
+def test_zero_flow_isothermal_wall_gives_the_laminar_value():
     """mdot=0, isothermal wall: the natural term vanishes and the laminar value stands,
     finite and non-negative, no 0/0."""
-    h = _h(0.0, 60.0, 60.0)
+    h = regime_h(0.0, 60.0, 60.0)
     assert np.isfinite(h)
-    assert h == pytest.approx(_forced(0.0, 60.0, 60.0), rel=1e-9)
+    assert h == pytest.approx(forced_only_h(0.0, 60.0, 60.0), rel=1e-9)
 
 
-def test_g_zero_is_the_forced_value():
+def regime_h_with_downflow_law(mdot, T_cool, T_wall, g=9.80665):
+    return regime_h(mdot, T_cool, T_wall, g=g, downflow="sudo")
+
+
+def test_without_gravity_the_law_is_the_forced_convection_value():
     for mdot in (0.0, 5e-4, -5e-3):
-        assert _h(mdot, 60.0, 90.0, g=0.0) == pytest.approx(_forced(mdot, 60.0, 90.0), rel=1e-12)
+        assert regime_h(mdot, 60.0, 90.0, g=0.0) == pytest.approx(forced_only_h(mdot, 60.0, 90.0), rel=1e-12)
 
 
-def test_orientation_alone_does_not_change_h():
+def test_flipping_gravity_direction_does_not_change_h_without_the_downflow_law():
     for mdot in (5e-4, -5e-4, 5e-2):
-        assert _h(mdot, 60.0, 90.0, g=9.80665) == pytest.approx(_h(mdot, 60.0, 90.0, g=-9.80665), rel=1e-12)
+        assert regime_h(mdot, 60.0, 90.0, g=9.80665) == pytest.approx(regime_h(mdot, 60.0, 90.0, g=-9.80665), rel=1e-12)
 
 
-def test_gravity_magnitude_reaches_the_natural_term():
-    assert _h(5e-4, 60.0, 90.0, g=2 * 9.80665) > _h(5e-4, 60.0, 90.0)
+def test_doubling_gravity_raises_h_through_the_natural_term():
+    assert regime_h(5e-4, 60.0, 90.0, g=2 * 9.80665) > regime_h(5e-4, 60.0, 90.0)
 
 
-def _sudo(mdot, T_cool, T_wall, g=9.80665):
-    return _h(mdot, T_cool, T_wall, g=g, downflow="sudo")
-
-
-def test_downflow_law_orders_flow_along_gravity_below_flow_against_it():
+def test_downflow_law_lowers_h_in_laminar_flow_along_gravity():
+    """Flow along gravity has a lower h than flow against it, and flow against it keeps the plain law."""
     T_cool, T_wall = 60.0, 90.0
     mu = float(light_water.viscosity(np.array([T_cool]))[0])
     for re in (50.0, 250.0, 700.0, 1500.0, 3000.0):
         m = re * A * mu / DH
-        assert _sudo(m, T_cool, T_wall) < _sudo(-m, T_cool, T_wall)
-        assert _sudo(-m, T_cool, T_wall) == pytest.approx(_h(-m, T_cool, T_wall), rel=1e-12)
+        assert regime_h_with_downflow_law(m, T_cool, T_wall) < regime_h_with_downflow_law(-m, T_cool, T_wall)
+        assert regime_h_with_downflow_law(-m, T_cool, T_wall) == pytest.approx(regime_h(-m, T_cool, T_wall), rel=1e-12)
+
+
+def test_downflow_law_has_no_effect_in_turbulent_flow():
+    T_cool, T_wall = 60.0, 90.0
+    mu = float(light_water.viscosity(np.array([T_cool]))[0])
     m = 6000.0 * A * mu / DH
-    assert _sudo(m, T_cool, T_wall) == pytest.approx(_sudo(-m, T_cool, T_wall), rel=1e-12)
+    assert regime_h_with_downflow_law(m, T_cool, T_wall) == pytest.approx(regime_h_with_downflow_law(-m, T_cool, T_wall), rel=1e-12)
 
 
-def test_downflow_law_mirrors_with_gravity():
+def test_downflow_law_depends_only_on_flow_relative_to_gravity():
     for m in (5e-4, 5e-3):
-        assert _sudo(m, 60.0, 90.0, g=9.80665) == pytest.approx(_sudo(-m, 60.0, 90.0, g=-9.80665), rel=1e-12)
+        assert regime_h_with_downflow_law(m, 60.0, 90.0, g=9.80665) == pytest.approx(
+            regime_h_with_downflow_law(-m, 60.0, 90.0, g=-9.80665), rel=1e-12)
 
 
-def test_downflow_law_off_without_gravity_and_at_rest():
-    assert _sudo(5e-4, 60.0, 90.0, g=0.0) == pytest.approx(_forced(5e-4, 60.0, 90.0), rel=1e-12)
-    assert _sudo(0.0, 60.0, 90.0) == pytest.approx(_h(0.0, 60.0, 90.0), rel=1e-12)
+def test_downflow_law_is_off_without_gravity():
+    assert regime_h_with_downflow_law(5e-4, 60.0, 90.0, g=0.0) == pytest.approx(forced_only_h(5e-4, 60.0, 90.0), rel=1e-12)
 
 
-def test_downflow_law_wall_balance_monotone_both_superheat_signs():
+def test_downflow_law_is_off_at_zero_flow():
+    assert regime_h_with_downflow_law(0.0, 60.0, 90.0) == pytest.approx(regime_h(0.0, 60.0, 90.0), rel=1e-12)
+
+
+def test_wall_heat_flux_rises_with_superheat_under_the_downflow_law():
+    """h(dT)*dT rises strictly with dT, so the wall balance h(dT)*dT = q has one root, for heated and cooled walls."""
     T_cool = 60.0
     mu = float(light_water.viscosity(np.array([T_cool]))[0])
     mdot = 250.0 * A * mu / DH
     for dts in (np.geomspace(0.01, 40.0, 120), -np.geomspace(0.01, 40.0, 120)[::-1]):
-        F = np.array([_sudo(mdot, T_cool, T_cool + dt) * dt for dt in dts])
+        F = np.array([regime_h_with_downflow_law(mdot, T_cool, T_cool + dt) * dt for dt in dts])
         assert np.all(np.diff(F) > 0)
 
 
-def test_downflow_law_continuous_through_reversal():
+def test_downflow_law_h_has_no_jump_through_flow_reversal():
+    """On 4000 points of Re from -300 to 300, no neighbour jump in h exceeds 1% of the zero flow h, and the jump
+    between the two points straddling zero is at most twice the median neighbour jump."""
     T_cool, T_wall = 60.0, 90.0
     mu = float(light_water.viscosity(np.array([T_cool]))[0])
-
-    def max_step(n):
-        m = np.linspace(-300.0, 300.0, n) * A * mu / DH
-        h = np.array([_sudo(mi, T_cool, T_wall) for mi in m])
-        return np.max(np.abs(np.diff(h)))
-
-    assert max_step(2001) <= 0.35 * max_step(201)
+    m = np.linspace(-300.0, 300.0, 4000) * A * mu / DH
+    jumps = np.abs(np.diff([regime_h_with_downflow_law(mi, T_cool, T_wall) for mi in m]))
+    h0 = regime_h_with_downflow_law(0.0, T_cool, T_wall)
+    assert np.max(jumps) < 0.01 * h0
+    assert jumps[np.searchsorted(m, 0.0) - 1] <= 2.0 * np.median(jumps)
 
 
-def test_downflow_law_takes_array_flow():
+def test_downflow_law_applies_per_element_to_array_flow():
+    """The first element flows along gravity, so the downflow law lowers its h below the second, which flows against it."""
     T = np.array([60.0, 60.0])
     kw = KW | {"develop_length": np.array([0.3, 0.3])}
     h = regime_dependent_h_spl(coolant=light_water.to_properties(np.array([75.0, 75.0])), mdot=np.array([5e-3, -5e-3]),
