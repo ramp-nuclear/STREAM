@@ -85,7 +85,7 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -96,7 +96,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Array1D</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">Meter2</span><span class="p">,</span> <span class="n">PerS</span><span class="p">,</span> <span class="n">Second</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">STREAM_DEBUG</span><span class="p">,</span> <span class="n">directed_Tin</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Flapper"</span><span class="p">,</span> <span class="s2">"legacy_relaxation"</span><span class="p">,</span> <span class="s2">"continuously_differentiable_relaxation"</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Flapper"</span><span class="p">,</span> <span class="s2">"continuously_differentiable_relaxation"</span><span class="p">,</span> <span class="s2">"legacy_relaxation"</span><span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -285,7 +285,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -372,7 +372,7 @@ Since this is a DaskUQModel, this is a delayed of said operation.</p>
 Keys must be names of parameters of the model.
 Any parameter in the model that isn’t listed is considered to have
 zero uncertainty.</p></li>
-<li><p><strong>persist</strong> (<em>bool</em>)</p></li>
+<li><p><strong>persist</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -594,7 +594,7 @@ The pattern to use this is as follows:</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><em>State</em></a>) – The channel state to analyze.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – The geometry of the flow channel.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -620,7 +620,7 @@ the rest of the channel stays as is.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><em>State</em></a>) – The channel state to analyze.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – The geometry of the flow channel.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -647,7 +647,7 @@ the rest of the channel stays as is.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><em>State</em></a>) – The channel state to analyze.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – The geometry of the flow channel.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 <li><p><strong>dz</strong> (<em>Meter</em>) – Cell length for each cell in the channel.</p></li>
 <li><p><strong>direction</strong> (<a class="reference internal" href="stream.calculations.html#stream.calculations.channel.Direction" title="stream.calculations.channel.Direction"><em>Direction</em></a>) – Which wall direction to take the power shape from.</p></li>
 <li><p><strong>inhomogeneity_factor</strong> (<em>float</em>) – Factor to make flux worse by locally (fuel inhomogeneity, usually).</p></li>
@@ -675,7 +675,7 @@ the rest of the channel stays as is.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><em>State</em></a>) – The channel state to analyze.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – The geometry of the flow channel.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 <li><p><strong>gravity</strong> (<em>MPerS2</em>) – Gravitational acceleration constant in the channel.</p></li>
 </ul>
 </dd>
@@ -702,7 +702,7 @@ the rest of the channel stays as is.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<a class="reference internal" href="aggregator.html#stream.state.State" title="stream.state.State"><em>State</em></a>) – The channel state to analyze.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – The geometry of the flow channel.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -726,7 +726,7 @@ the rest of the channel stays as is.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>state</strong> (<em>CalcState</em>) – The state of the channel</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – The functional properties of the fluid in the channel.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -815,7 +815,7 @@ account in the physical solution.</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

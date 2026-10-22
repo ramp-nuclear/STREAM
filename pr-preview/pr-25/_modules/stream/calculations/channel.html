@@ -86,9 +86,10 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypeVar</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -232,7 +233,7 @@
 <span class="sd">        ----------</span>
 <span class="sd">        key: str</span>
 <span class="sd">            Variable name in general</span>
-<span class="sd">        direction: left or right</span>
+<span class="sd">        direction: Direction</span>
 <span class="sd">            The directionality, in a case where the channel has multiples of the same thing.</span>
 
 <span class="sd">        Returns</span>
@@ -240,7 +241,7 @@
 <span class="sd">        The appropriate enum member.</span>
 
 <span class="sd">        """</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}{</span><span class="sa">f</span><span class="s1">'_</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">direction</span><span class="p">)</span><span class="si">}</span><span class="s1">'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}{</span><span class="sa">f</span><span class="s1">'_</span><span class="si">{</span><span class="n">direction</span><span class="si">!s}</span><span class="s1">'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">direction</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span></div>
 </div>
 
 
@@ -404,33 +405,33 @@
 <span class="sd">        """</span>
         <span class="n">T_vecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T_vecs</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">)</span>
         <span class="n">q_left</span><span class="p">,</span> <span class="n">q_right</span> <span class="o">=</span> <span class="n">_heatflux</span><span class="p">(</span><span class="o">**</span><span class="n">T_vecs</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h_right</span><span class="p">)</span>
-        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">T_cool</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"T_cool"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
                 <span class="n">Tin</span><span class="o">=</span><span class="n">directed_Tin</span><span class="p">(</span><span class="n">Tin</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="p">,</span> <span class="n">mdot</span><span class="p">),</span>
                 <span class="n">T</span><span class="o">=</span><span class="n">T_vecs</span><span class="p">[</span><span class="s2">"T"</span><span class="p">],</span>
                 <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
                 <span class="n">q_left</span><span class="o">=</span><span class="n">q_left</span><span class="p">,</span>
                 <span class="n">q_right</span><span class="o">=</span><span class="n">q_right</span><span class="p">,</span>
             <span class="p">),</span>
-            <span class="n">pressure</span><span class="o">=</span><span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dp</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="n">mdot2</span><span class="p">,</span> <span class="o">**</span><span class="n">T_vecs</span><span class="p">)),</span>
-        <span class="p">)</span>
+            <span class="s2">"pressure"</span><span class="p">:</span> <span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dp</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="n">mdot2</span><span class="p">,</span> <span class="o">**</span><span class="n">T_vecs</span><span class="p">)),</span>
+        <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Channel.indices">
 <a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.channel.Channel.indices">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Place</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">Tin</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">Tin_minus</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">T_coolant</span><span class="o">=</span><span class="p">(</span><span class="n">Ts</span> <span class="o">:=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)),</span>
-            <span class="n">T_cool</span><span class="o">=</span><span class="n">Ts</span><span class="p">,</span>
-            <span class="n">pressure</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">T_left</span><span class="o">=</span><span class="n">Ts</span><span class="p">,</span>
-            <span class="n">T_right</span><span class="o">=</span><span class="n">Ts</span><span class="p">,</span>
-            <span class="n">T</span><span class="o">=</span><span class="n">Ts</span><span class="p">,</span>
-            <span class="n">dp</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
-        <span class="p">)[</span><span class="n">variable</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"Tin"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"Tin_minus"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"T_coolant"</span><span class="p">:</span> <span class="p">(</span><span class="n">Ts</span> <span class="o">:=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)),</span>
+            <span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">Ts</span><span class="p">,</span>
+            <span class="s2">"pressure"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
+            <span class="s2">"T_left"</span><span class="p">:</span> <span class="n">Ts</span><span class="p">,</span>
+            <span class="s2">"T_right"</span><span class="p">:</span> <span class="n">Ts</span><span class="p">,</span>
+            <span class="s2">"T"</span><span class="p">:</span> <span class="n">Ts</span><span class="p">,</span>
+            <span class="s2">"dp"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">,</span>
+        <span class="p">}[</span><span class="n">variable</span><span class="p">]</span></div>
 
 
     <span class="nd">@property</span>
@@ -515,11 +516,11 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="n">mdot2</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">Tw</span><span class="o">=</span><span class="p">(</span><span class="n">T_left</span> <span class="o">+</span> <span class="n">T_right</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_T_vecs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">T_left</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_right</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">T</span><span class="o">=</span><span class="p">(</span><span class="n">T</span> <span class="o">:=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">])),</span>
-            <span class="n">T_left</span><span class="o">=</span><span class="n">T_left</span> <span class="k">if</span> <span class="n">T_left</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span><span class="p">,</span>
-            <span class="n">T_right</span><span class="o">=</span><span class="n">T_right</span> <span class="k">if</span> <span class="n">T_right</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"T"</span><span class="p">:</span> <span class="p">(</span><span class="n">T</span> <span class="o">:=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">variables</span><span class="p">[</span><span class="mi">0</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">])),</span>
+            <span class="s2">"T_left"</span><span class="p">:</span> <span class="n">T_left</span> <span class="k">if</span> <span class="n">T_left</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span><span class="p">,</span>
+            <span class="s2">"T_right"</span><span class="p">:</span> <span class="n">T_right</span> <span class="k">if</span> <span class="n">T_right</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">T</span><span class="p">,</span>
+        <span class="p">}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
@@ -582,16 +583,16 @@
         <span class="n">q_right</span><span class="p">:</span> <span class="n">WPerM2</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array1D</span><span class="p">:</span>
         <span class="n">T_vecs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T_vecs</span><span class="p">(</span><span class="n">variables</span><span class="p">,</span> <span class="n">T_left</span><span class="p">,</span> <span class="n">T_right</span><span class="p">)</span>
-        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">T_cool</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"T_cool"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
                 <span class="n">Tin</span><span class="o">=</span><span class="n">directed_Tin</span><span class="p">(</span><span class="n">Tin</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="p">,</span> <span class="n">mdot</span><span class="p">),</span>
                 <span class="n">T</span><span class="o">=</span><span class="n">T_vecs</span><span class="p">[</span><span class="s2">"T"</span><span class="p">],</span>
                 <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
                 <span class="n">q_left</span><span class="o">=</span><span class="n">q_left</span><span class="p">,</span>
                 <span class="n">q_right</span><span class="o">=</span><span class="n">q_right</span><span class="p">,</span>
             <span class="p">),</span>
-            <span class="n">pressure</span><span class="o">=</span><span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dp</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="n">mdot2</span><span class="p">,</span> <span class="o">**</span><span class="n">T_vecs</span><span class="p">)),</span>
-        <span class="p">)</span>
+            <span class="s2">"pressure"</span><span class="p">:</span> <span class="n">variables</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dp</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">mdot2</span><span class="o">=</span><span class="n">mdot2</span><span class="p">,</span> <span class="o">**</span><span class="n">T_vecs</span><span class="p">)),</span>
+        <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
 
 
@@ -682,7 +683,7 @@
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">variable</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="n">asking</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">h_left</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"h_right"</span><span class="p">],</span> <span class="n">h_right</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"h_left"</span><span class="p">])[</span><span class="n">variable</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"h_left"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"h_right"</span><span class="p">],</span> <span class="s2">"h_right"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables</span><span class="p">[</span><span class="s2">"h_left"</span><span class="p">]}[</span><span class="n">variable</span><span class="p">]</span></div>
 
 
     <span class="nd">@property</span>
@@ -876,18 +877,18 @@
         <span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span> <span class="o">=</span> <span class="n">_other_if_none</span><span class="p">(</span><span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span><span class="p">)</span>  <span class="c1"># type: WPerM2K</span>
         <span class="n">q_left</span><span class="p">,</span> <span class="n">q_right</span> <span class="o">=</span> <span class="n">_heatflux</span><span class="p">(</span><span class="o">**</span><span class="n">T_vecs</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">h_left</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h_right</span><span class="p">)</span>
 
-        <span class="n">d</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">T_cool</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"T_cool"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dTdt</span><span class="p">(</span>
                 <span class="n">Tin</span><span class="o">=</span><span class="n">directed_Tin</span><span class="p">(</span><span class="n">Tin</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="p">,</span> <span class="n">mdot</span><span class="p">),</span>
                 <span class="n">T</span><span class="o">=</span><span class="n">T_vecs</span><span class="p">[</span><span class="s2">"T"</span><span class="p">],</span>
                 <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
                 <span class="n">q_left</span><span class="o">=</span><span class="n">q_left</span><span class="p">,</span>
                 <span class="n">q_right</span><span class="o">=</span><span class="n">q_right</span><span class="p">,</span>
             <span class="p">),</span>
-            <span class="n">h_left</span><span class="o">=</span><span class="n">h_left</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">h_left</span><span class="p">]],</span>
-            <span class="n">h_right</span><span class="o">=</span><span class="n">h_right</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">h_right</span><span class="p">]],</span>
-            <span class="n">pressure</span><span class="o">=</span><span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">pressure_drop</span><span class="p">]]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span>
-        <span class="p">)</span>
+            <span class="s2">"h_left"</span><span class="p">:</span> <span class="n">h_left</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">h_left</span><span class="p">]],</span>
+            <span class="s2">"h_right"</span><span class="p">:</span> <span class="n">h_right</span> <span class="o">-</span> <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">h_right</span><span class="p">]],</span>
+            <span class="s2">"pressure"</span><span class="p">:</span> <span class="n">variables</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_vars</span><span class="p">[</span><span class="n">ChannelVar</span><span class="o">.</span><span class="n">pressure_drop</span><span class="p">]]</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp</span><span class="p">),</span>
+        <span class="p">}</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">d</span><span class="p">)</span></div>
 
@@ -968,7 +969,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

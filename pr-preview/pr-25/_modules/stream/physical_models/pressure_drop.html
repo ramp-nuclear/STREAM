@@ -116,8 +116,8 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"Blasius_friction"</span><span class="p">,</span>
-    <span class="s2">"contraction_factor"</span><span class="p">,</span>
     <span class="s2">"Darcy_Weisbach_pressure_by_mdot"</span><span class="p">,</span>
+    <span class="s2">"contraction_factor"</span><span class="p">,</span>
     <span class="s2">"expansion_factor"</span><span class="p">,</span>
     <span class="s2">"friction_factor"</span><span class="p">,</span>
     <span class="s2">"gravity_pressure"</span><span class="p">,</span>
@@ -129,9 +129,9 @@
     <span class="s2">"pressure_diff"</span><span class="p">,</span>
     <span class="s2">"rectangular_laminar_correction"</span><span class="p">,</span>
     <span class="s2">"regime_dependent_friction"</span><span class="p">,</span>
+    <span class="s2">"static_pressure"</span><span class="p">,</span>
     <span class="s2">"turbulent_friction"</span><span class="p">,</span>
     <span class="s2">"viscosity_correction"</span><span class="p">,</span>
-    <span class="s2">"static_pressure"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -171,6 +171,9 @@
 
 
 
+<span class="n">_blasius</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"Blasius"</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="pressure_diff">
 <a class="viewcode-back" href="../../../pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">pressure_diff</span><span class="p">(</span>
@@ -180,7 +183,7 @@
     <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
     <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
     <span class="n">dz</span><span class="p">:</span> <span class="n">Meter</span><span class="p">,</span>
-    <span class="n">f</span><span class="p">:</span> <span class="n">GeneralDarcyFactor</span> <span class="o">=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"Blasius"</span><span class="p">),</span>
+    <span class="n">f</span><span class="p">:</span> <span class="n">GeneralDarcyFactor</span> <span class="o">=</span> <span class="n">_blasius</span><span class="p">,</span>
     <span class="n">g</span><span class="p">:</span> <span class="n">MPerS2</span> <span class="o">=</span> <span class="n">local_gravity</span><span class="p">,</span>
     <span class="n">mdot2</span><span class="p">:</span> <span class="n">KgPerS2</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">_</span><span class="p">,</span>
@@ -304,7 +307,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

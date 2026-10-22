@@ -79,9 +79,9 @@
            <div itemprop="articleBody">
              
   <h1>Source code for test_general.test_aggregator</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">nullcontext</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">nullcontext</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">count</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
@@ -197,10 +197,10 @@
     <span class="n">c</span> <span class="o">=</span> <span class="n">CalculationGraph</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">edge</span><span class="p">)</span>
 
     <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">graph</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span> <span class="o">==</span> <span class="p">[</span>
-        <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"hello"</span><span class="p">)),</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"hi"</span><span class="p">)),</span>
-        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">variables</span><span class="o">=</span><span class="s2">"var"</span><span class="p">)),</span>
-        <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="s2">"welcome"</span><span class="p">)),</span>
+        <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">{</span><span class="s2">"data"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}),</span>
+        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="p">{</span><span class="s2">"data"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">}),</span>
+        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">{</span><span class="s2">"variables"</span><span class="p">:</span> <span class="s2">"var"</span><span class="p">}),</span>
+        <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">{</span><span class="s2">"data"</span><span class="p">:</span> <span class="s2">"welcome"</span><span class="p">}),</span>
     <span class="p">]</span>
     <span class="k">assert</span> <span class="nb">list</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">funcs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">==</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">]</span></div>
 
@@ -232,7 +232,7 @@
         <span class="n">last_call</span><span class="p">[:]</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">y</span>
 
-    <span class="n">options</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">)</span>
+    <span class="n">options</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"rtol"</span><span class="p">:</span> <span class="mf">1e-9</span><span class="p">}</span>
 
     <span class="n">out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">differential_algebraic</span><span class="p">(</span>
         <span class="n">F</span><span class="o">=</span><span class="n">F</span><span class="p">,</span>
@@ -362,7 +362,7 @@
 
         <span class="nd">@property</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"y"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
         <span class="nd">@unpacked</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">should_continue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -460,7 +460,7 @@
     <span class="n">calc</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">v</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="n">v</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
         <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="nb">dict</span><span class="p">(</span><span class="n">v_neg</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">v_zero</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">v_pos</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">"v_neg"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"v_zero"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"v_pos"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
     <span class="p">)()</span>
     <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span>
@@ -487,7 +487,7 @@
     <span class="n">calc</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">v</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="n">v</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
         <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="nb">dict</span><span class="p">(</span><span class="n">mdot_a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">mdot_b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">"mdot_a"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"mdot_b"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"h"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
     <span class="p">)()</span>
     <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">create_constraints</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">non_negative</span><span class="o">=</span><span class="p">[</span><span class="s2">"mdot_a"</span><span class="p">,</span> <span class="s2">"mdot_b"</span><span class="p">],</span> <span class="n">positive</span><span class="o">=</span><span class="p">[</span><span class="s2">"h"</span><span class="p">])</span>
@@ -504,7 +504,7 @@
     <span class="n">calc</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">v</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span><span class="p">:</span> <span class="n">v</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
         <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="nb">dict</span><span class="p">(</span><span class="n">v_neg</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">v_zero</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">v_pos</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="p">{</span><span class="s2">"v_neg"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"v_zero"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"v_pos"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span>
     <span class="p">)()</span>
     <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="o">.</span><span class="n">from_decoupled</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"moo. Must be one of"</span><span class="p">):</span>
@@ -520,7 +520,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

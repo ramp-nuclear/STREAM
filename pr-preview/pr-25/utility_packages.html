@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -79,8 +79,6 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#module-stream.substances">Substances</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#stream.substances.Liquid"><code class="docutils literal notranslate"><span class="pre">Liquid</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#stream.substances.LiquidFuncs"><code class="docutils literal notranslate"><span class="pre">LiquidFuncs</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#liquid-properties-and-interface">Liquid Properties and Interface</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#stream.substances.liquid.Liquid"><code class="docutils literal notranslate"><span class="pre">Liquid</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#stream.substances.liquid.LiquidFuncs"><code class="docutils literal notranslate"><span class="pre">LiquidFuncs</span></code></a></li>
@@ -321,160 +319,6 @@ state equations).</p>
 ORNL/TM-12322, 1993.</p>
 </aside>
 </aside>
-<dl class="py class">
-<dt class="sig sig-object py" id="stream.substances.Liquid">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">Liquid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vapor_density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_heat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">viscosity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sat_temperature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_tension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latent_heat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductivity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_expansion</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/substances/liquid.html#Liquid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.substances.Liquid" title="Link to this definition"></a></dt>
-<dd><p>Bulk properties of a liquid.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>density</strong> (<em>KgPerM3</em>) – Liquid density</p></li>
-<li><p><strong>specific_heat</strong> (<em>JPerKgK</em>) – Liquid specific heat</p></li>
-<li><p><strong>viscosity</strong> (<em>PaS</em>) – Liquid viscosity</p></li>
-<li><p><strong>conductivity</strong> (<em>WPerMK</em>) – Liquid thermal conductivity</p></li>
-<li><p><strong>vapor_density</strong> (<em>KgPerM3</em>) – Vapor density</p></li>
-<li><p><strong>sat_temperature</strong> (<em>Celsius</em>) – Saturation (Boiling) temperature</p></li>
-<li><p><strong>surface_tension</strong> (<em>NPerM</em>) – Liquid surface tension</p></li>
-<li><p><strong>latent_heat</strong> (<em>JPerKg</em>) – Liquid-Vapor transition specific latent heat</p></li>
-<li><p><strong>thermal_expansion</strong> (<em>PerC</em>) – Thermal volume expansion coefficient</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.conductivity">
-<span class="sig-name descname"><span class="pre">conductivity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.conductivity" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.density">
-<span class="sig-name descname"><span class="pre">density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.density" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.latent_heat">
-<span class="sig-name descname"><span class="pre">latent_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.latent_heat" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.sat_temperature">
-<span class="sig-name descname"><span class="pre">sat_temperature</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.sat_temperature" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.specific_heat">
-<span class="sig-name descname"><span class="pre">specific_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.specific_heat" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.surface_tension">
-<span class="sig-name descname"><span class="pre">surface_tension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.surface_tension" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.thermal_expansion">
-<span class="sig-name descname"><span class="pre">thermal_expansion</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.thermal_expansion" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.vapor_density">
-<span class="sig-name descname"><span class="pre">vapor_density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.vapor_density" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.Liquid.viscosity">
-<span class="sig-name descname"><span class="pre">viscosity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.Liquid.viscosity" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">LiquidFuncs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vapor_density</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specific_heat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">viscosity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sat_temperature</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">surface_tension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latent_heat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conductivity</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermal_expansion</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/substances/liquid.html#LiquidFuncs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.substances.LiquidFuncs" title="Link to this definition"></a></dt>
-<dd><p>A dataclass containing functions of temperature and pressure depicting several properties of a liquid</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>density</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>KgPerM3</em><em>]</em>) – Liquid density</p></li>
-<li><p><strong>specific_heat</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>JPerKgK</em><em>]</em>) – Liquid specific heat</p></li>
-<li><p><strong>viscosity</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>PaS</em><em>]</em>) – Liquid viscosity</p></li>
-<li><p><strong>conductivity</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>WPerMK</em><em>]</em>) – Liquid thermal conductivity</p></li>
-<li><p><strong>vapor_density</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>KgPerM3</em><em>]</em>) – Vapor density</p></li>
-<li><p><strong>sat_temperature</strong> (<em>Callable</em><em>[</em><em>[</em><em>Pascal</em><em>]</em><em>, </em><em>Celsius</em><em>]</em>) – Saturation (Boiling) temperature. Note the pressure dependence</p></li>
-<li><p><strong>surface_tension</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>NPerM</em><em>]</em>) – Liquid surface tension</p></li>
-<li><p><strong>latent_heat</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>JPerKg</em><em>]</em>) – Liquid-Vapor transition specific latent heat</p></li>
-<li><p><strong>thermal_expansion</strong> (<em>Callable</em><em>[</em><em>[</em><em>Celsius</em><em>]</em><em>, </em><em>PerC</em><em>]</em>) – Thermal volume expansion coefficient</p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.to_properties">
-<span class="sig-name descname"><span class="pre">to_properties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101325.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/substances/liquid.html#LiquidFuncs.to_properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.substances.LiquidFuncs.to_properties" title="Link to this definition"></a></dt>
-<dd><p>Apply T, p once to receive every property of the liquid at the
-given phase space point.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>T</strong> (<em>Celsius</em>) – Temperature</p></li>
-<li><p><strong>p</strong> (<em>Pascal</em>) – Pressure. Specifically used only for the saturation temperature,
-so it is optional and 1 Atmosphere (101,325 Pa) by default.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>liquid</strong> – A Liquid Dataclass containing the aforementioned properties.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#stream.substances.Liquid" title="stream.substances.Liquid">Liquid</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.conductivity">
-<span class="sig-name descname"><span class="pre">conductivity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.conductivity" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.density">
-<span class="sig-name descname"><span class="pre">density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.density" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.latent_heat">
-<span class="sig-name descname"><span class="pre">latent_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.latent_heat" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.sat_temperature">
-<span class="sig-name descname"><span class="pre">sat_temperature</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.sat_temperature" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.specific_heat">
-<span class="sig-name descname"><span class="pre">specific_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.specific_heat" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.surface_tension">
-<span class="sig-name descname"><span class="pre">surface_tension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.surface_tension" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.thermal_expansion">
-<span class="sig-name descname"><span class="pre">thermal_expansion</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.thermal_expansion" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.vapor_density">
-<span class="sig-name descname"><span class="pre">vapor_density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.vapor_density" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="stream.substances.LiquidFuncs.viscosity">
-<span class="sig-name descname"><span class="pre">viscosity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.LiquidFuncs.viscosity" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
 <section id="liquid-properties-and-interface">
 <span id="module-stream.substances.liquid"></span><h3>Liquid Properties and Interface<a class="headerlink" href="#liquid-properties-and-interface" title="Link to this heading"></a></h3>
 <p>Two dataclasses are defined, which serve as an interface to the rest of the code whenever liquid properties such as
@@ -502,6 +346,51 @@ containing the same properties, actualized.</p>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.conductivity">
+<span class="sig-name descname"><span class="pre">conductivity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.conductivity" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.density">
+<span class="sig-name descname"><span class="pre">density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.density" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.latent_heat">
+<span class="sig-name descname"><span class="pre">latent_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.latent_heat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.sat_temperature">
+<span class="sig-name descname"><span class="pre">sat_temperature</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.sat_temperature" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.specific_heat">
+<span class="sig-name descname"><span class="pre">specific_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.specific_heat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.surface_tension">
+<span class="sig-name descname"><span class="pre">surface_tension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.surface_tension" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.thermal_expansion">
+<span class="sig-name descname"><span class="pre">thermal_expansion</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.thermal_expansion" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.vapor_density">
+<span class="sig-name descname"><span class="pre">vapor_density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.vapor_density" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.Liquid.viscosity">
+<span class="sig-name descname"><span class="pre">viscosity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span><a class="headerlink" href="#stream.substances.liquid.Liquid.viscosity" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -545,6 +434,51 @@ so it is optional and 1 Atmosphere (101,325 Pa) by default.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.conductivity">
+<span class="sig-name descname"><span class="pre">conductivity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.conductivity" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.density">
+<span class="sig-name descname"><span class="pre">density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.density" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.latent_heat">
+<span class="sig-name descname"><span class="pre">latent_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.latent_heat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.sat_temperature">
+<span class="sig-name descname"><span class="pre">sat_temperature</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.sat_temperature" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.specific_heat">
+<span class="sig-name descname"><span class="pre">specific_heat</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.specific_heat" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.surface_tension">
+<span class="sig-name descname"><span class="pre">surface_tension</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.surface_tension" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.thermal_expansion">
+<span class="sig-name descname"><span class="pre">thermal_expansion</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.thermal_expansion" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.vapor_density">
+<span class="sig-name descname"><span class="pre">vapor_density</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.vapor_density" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="stream.substances.liquid.LiquidFuncs.viscosity">
+<span class="sig-name descname"><span class="pre">viscosity</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#stream.substances.liquid.LiquidFuncs.viscosity" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <section id="module-stream.substances.heavy_water">
@@ -572,13 +506,13 @@ The user facing function is of type <a class="reference internal" href="#stream.
 <dl class="py function">
 <dt class="sig sig-object py" id="stream.substances.mocks.constant_LiquidFuncs">
 <span class="sig-name descname"><span class="pre">constant_LiquidFuncs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fluid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/substances/mocks.html#constant_LiquidFuncs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.substances.mocks.constant_LiquidFuncs" title="Link to this definition"></a></dt>
-<dd><p>Create a constant-valued <a class="reference internal" href="#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><code class="xref py py-class docutils literal notranslate"><span class="pre">LiquidFuncs</span></code></a> based on a given
+<dd><p>Create a constant-valued <a class="reference internal" href="#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><code class="xref py py-class docutils literal notranslate"><span class="pre">LiquidFuncs</span></code></a> based on a given
 instance at a (T, p) phase-space point.</p>
 <p>T, p are taken as at_least1d to allow compatibility with vector operations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fluid</strong> (<a class="reference internal" href="#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Model fluid to be evaluated.</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Model fluid to be evaluated.</p></li>
 <li><p><strong>T</strong> (<em>Celsius</em>) – Temperature.</p></li>
 <li><p><strong>p</strong> (<em>Pascal</em>) – Pressure.</p></li>
 </ul>
@@ -587,7 +521,7 @@ instance at a (T, p) phase-space point.</p>
 <dd class="field-even"><p><strong>const_fluid</strong> – A LiquidFuncs which always returns the same value for each parameter.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><a class="reference internal" href="#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs">LiquidFuncs</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs">LiquidFuncs</a></p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
@@ -932,7 +866,7 @@ one element, in which case it is returned.</p>
 <span class="sig-name descname"><span class="pre">ignore_warnings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">warn_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/utilities.html#ignore_warnings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.utilities.ignore_warnings" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>warn_type</strong> (<em>Type</em><em>[</em><em>Warning</em><em>]</em>)</p>
+<dd class="field-odd"><p><strong>warn_type</strong> (<em>type</em><em>[</em><em>Warning</em><em>]</em>)</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1318,7 +1252,7 @@ always <code class="docutils literal notranslate"><span class="pre">&gt;=</span>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

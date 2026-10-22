@@ -102,12 +102,12 @@
 <span class="sd">.. [#Todreas] Nuclear Systems Volume I, Thermal Hydraulic Fundamentals, Todreas &amp; Kazimi, 2nd edition.</span>
 <span class="sd">"""</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.ideal.ideal</span><span class="w"> </span><span class="kn">import</span> <span class="n">LumpedComponent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">KgPerS</span><span class="p">,</span> <span class="n">KgPerS2</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">,</span> <span class="n">PerM</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"bilinear"</span><span class="p">,</span> <span class="s2">"Inertia"</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Inertia"</span><span class="p">,</span> <span class="s2">"bilinear"</span><span class="p">]</span>
 
 
 <span class="n">Inertia_Coefficient</span> <span class="o">=</span> <span class="n">PerM</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="o">...</span><span class="p">],</span> <span class="n">PerM</span><span class="p">]</span>
@@ -204,7 +204,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

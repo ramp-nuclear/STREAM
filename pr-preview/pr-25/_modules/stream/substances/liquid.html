@@ -91,8 +91,8 @@
 <span class="sd">containing the same properties, actualized.</span>
 <span class="sd">"""</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.constants</span><span class="w"> </span><span class="kn">import</span> <span class="n">atm</span>
 
@@ -112,7 +112,7 @@
 
 
 <div class="viewcode-block" id="Liquid">
-<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.Liquid">[docs]</a>
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.liquid.Liquid">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Liquid</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
@@ -156,7 +156,7 @@
 
 
 <div class="viewcode-block" id="LiquidFuncs">
-<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.LiquidFuncs">[docs]</a>
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.liquid.LiquidFuncs">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">LiquidFuncs</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""</span>
@@ -196,7 +196,7 @@
     <span class="n">thermal_expansion</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Celsius</span><span class="p">],</span> <span class="n">PerC</span><span class="p">]</span>
 
 <div class="viewcode-block" id="LiquidFuncs.to_properties">
-<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.LiquidFuncs.to_properties">[docs]</a>
+<a class="viewcode-back" href="../../../utility_packages.html#stream.substances.liquid.LiquidFuncs.to_properties">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">p</span><span class="p">:</span> <span class="n">Pascal</span> <span class="o">=</span> <span class="n">atm</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Liquid</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Apply T, p once to receive every property of the liquid at the</span>
@@ -238,7 +238,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

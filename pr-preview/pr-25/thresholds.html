@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -279,7 +279,7 @@ This function is deprecated as the main usage and may change its name to reflect
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_bulk</strong> (<em>Celsius</em>) – Coolant bulk temperature.</p></li>
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties at T_bulk and appropriate pressure.</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties at T_bulk and appropriate pressure.</p></li>
 <li><p><strong>u</strong> (<em>MPerS</em>) – Coolant flow velocity.</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
 </ul>
@@ -326,7 +326,7 @@ entire <code class="docutils literal notranslate"><span class="pre">heated_perim
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_inlet</strong> (<em>Celsius</em>) – Coolant bulk temperature.</p></li>
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties at T_bulk and appropriate pressure.</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties at T_bulk and appropriate pressure.</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass flow rate</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
 <li><p><strong>area</strong> (<em>Meter2</em>) – Flow area</p></li>
@@ -353,7 +353,7 @@ entire <code class="docutils literal notranslate"><span class="pre">heated_perim
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_bulk</strong> (<em>Celsius</em>) – Bulk coolant temperature</p></li>
-<li><p><strong>sat_coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties at saturation temperature</p></li>
+<li><p><strong>sat_coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties at saturation temperature</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass flow rate</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Channel Geometry</p></li>
 <li><p><strong>g</strong> (<em>MPerS2</em>) – Gravitational acceleration constant</p></li>
@@ -497,7 +497,7 @@ does not model.</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

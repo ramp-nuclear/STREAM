@@ -130,8 +130,12 @@ wall coefficients of each wall-coupled channel and adds up the absolute pressure
 imposes its flow, or a closed flapper, has no pressure that follows from the flow, and its guess is
 zero. <code class="xref py py-func docutils literal notranslate"><span class="pre">symmetric_plate_steady_state</span></code> solves a plate and its channel at a
 given flow, and <code class="xref py py-func docutils literal notranslate"><span class="pre">point_kinetics_steady_state</span></code> puts the kinetics at a given
-power and zero reactivity; <a class="reference internal" href="../aggregator.html#stream.state.State.merge" title="stream.state.State.merge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge</span></code></a> lets the later seed win where two overlap. The flows and
-their signs are what one brings.</p>
+power and zero reactivity; <a class="reference internal" href="../aggregator.html#stream.state.State.merge" title="stream.state.State.merge"><code class="xref py py-meth docutils literal notranslate"><span class="pre">merge</span></code></a> lets the later seed win where two overlap.
+For a network coupled to plates, <a class="reference internal" href="../stream.composition.html#stream.composition.steady_state.guess_steady_state" title="stream.composition.steady_state.guess_steady_state"><code class="xref py py-func docutils literal notranslate"><span class="pre">guess_steady_state</span></code></a> builds the whole guess in
+one call: it completes the flows the junction balances and the known flows fix, walks the temperatures
+around the loop, then solves the hydraulics and the plates one block at a time. It still raises
+<a class="reference internal" href="../stream.composition.html#stream.composition.subsystems.MissingFlowError" title="stream.composition.subsystems.MissingFlowError"><code class="xref py py-class docutils literal notranslate"><span class="pre">MissingFlowError</span></code></a> for a heated channel whose flow nothing on its loop fixes.
+Where nothing on a loop fixes its flow, the flow and its sign are what one brings.</p>
 </section>
 <section id="the-two-steps-of-a-steady-solve">
 <h2>The two steps of a steady solve<a class="headerlink" href="#the-two-steps-of-a-steady-solve" title="Link to this heading"></a></h2>
@@ -171,7 +175,7 @@ why a natural-circulation loop is the case where the sign decides.</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

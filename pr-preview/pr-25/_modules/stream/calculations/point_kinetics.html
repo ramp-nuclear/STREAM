@@ -84,8 +84,9 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span><span class="p">,</span> <span class="n">StrEnum</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">TypeVar</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">TypeVar</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">cytoolz.functoolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">curry</span>
@@ -127,8 +128,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        rho_c: float</span>
 <span class="sd">            Inserted control reactivity</span>
-<span class="sd">        """</span>
-        <span class="k">pass</span></div>
+<span class="sd">        """</span></div>
 
 
 
@@ -157,8 +157,7 @@
 <span class="sd">        -------</span>
 <span class="sd">        new_state: Enum</span>
 <span class="sd">            New state, which may be the same as the current state.</span>
-<span class="sd">        """</span>
-        <span class="k">pass</span></div>
+<span class="sd">        """</span></div>
 
 
 
@@ -192,7 +191,8 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_reactivity</span><span class="p">:</span> <span class="n">InputReactivity</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">state_machine</span><span class="p">:</span> <span class="n">StateMachine</span> <span class="o">=</span> <span class="n">just</span><span class="p">(</span><span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">),</span>
+        <span class="c1"># The function call here creates practically an immutable and is fine</span>
+        <span class="n">state_machine</span><span class="p">:</span> <span class="n">StateMachine</span> <span class="o">=</span> <span class="n">just</span><span class="p">(</span><span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">),</span>  <span class="c1"># ruff: ignore[B008]</span>
         <span class="n">initial_state</span><span class="p">:</span> <span class="n">S</span> <span class="o">=</span> <span class="n">OneWayToSCRAM</span><span class="o">.</span><span class="n">NORMAL</span><span class="p">,</span>
         <span class="n">initial_time</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">abort_states</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">S</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -430,7 +430,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Name</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ck</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"ck"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)}</span>
 
 <div class="viewcode-block" id="PointKinetics.indices">
 <a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.point_kinetics.PointKinetics.indices">[docs]</a>
@@ -535,7 +535,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">variables</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
         <span class="o">*</span><span class="p">,</span>
-        <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">T</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="n">Celsius</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">source</span><span class="p">:</span> <span class="n">Watt</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span>
         <span class="n">power_input</span><span class="p">:</span> <span class="n">Watt</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -556,7 +556,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Name</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">pk_power</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ck</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">power</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"pk_power"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"ck"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"power"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">+</span> <span class="mi">1</span><span class="p">}</span></div>
 
 </pre></div>
 
@@ -568,7 +568,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

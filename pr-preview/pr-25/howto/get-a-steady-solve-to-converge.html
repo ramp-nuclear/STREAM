@@ -19,8 +19,8 @@
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="../_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="../_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -58,6 +58,7 @@
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Get a steady solve to converge</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#The-loop">The loop</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Seed-and-solve">Seed and solve</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#One-call-for-the-whole-system">One call for the whole system</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#What-scales-changes">What <code class="docutils literal notranslate"><span class="pre">scales</span></code> changes</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Pump-off">Pump off</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#When-it-still-fails">When it still fails</a></li>
@@ -106,7 +107,8 @@
              
   <section id="Get-a-steady-solve-to-converge">
 <h1>Get a steady solve to converge<a class="headerlink" href="#Get-a-steady-solve-to-converge" title="Link to this heading"></a></h1>
-<p><a class="reference internal" href="build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a> solves a plate and its channel at a flow it is given; <a class="reference internal" href="wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a> guesses a loop’s pressures from its flows. This page puts the pair on a loop with a pump and a riser, seeds the solve from both helpers, solves it, then stops the pump, where the guess must get the sign of the flow right. <a class="reference internal" href="../explanation/steady-states-and-guesses.html"><span class="doc">Steady states and guesses</span></a> explains the background.</p>
+<p><a class="reference internal" href="build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a> solves a plate and its channel at a flow it is given; <a class="reference internal" href="wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a> guesses a loop’s pressures from its flows. This page puts the pair on a loop with a pump and a riser, seeds the solve from both helpers and then from one call, solves it, then stops the pump, where the guess must get the sign of the flow right. <a class="reference internal" href="../explanation/steady-states-and-guesses.html"><span class="doc">Steady states and guesses</span></a>
+explains the background.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -118,7 +120,7 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">Gravity</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Solid</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span><span class="p">,</span> <span class="n">guess_steady_state</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALG_jacobian</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">friction_factor</span><span class="p">,</span> <span class="n">pressure_diff</span><span class="p">,</span> <span class="n">rectangular_laminar_correction</span>
@@ -234,11 +236,42 @@ residual norm:    8.7e-10
 </div>
 <p>A guess of 0.2 kg/s lands on about 0.223 kg/s with a residual norm of about 9e-10.</p>
 </section>
+<section id="One-call-for-the-whole-system">
+<h2>One call for the whole system<a class="headerlink" href="#One-call-for-the-whole-system" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">guess_steady_state</span></code> builds the guess for the whole aggregator. It splits the aggregator into blocks, the hydraulics and one cluster per group of wall-coupled plates and channels, seeds every block in closed form by walking the temperatures around the loop in flow direction, then solves the plate clusters with the rest frozen, and repeats hydraulics-then-clusters <code class="docutils literal notranslate"><span class="pre">sweeps</span></code> times; <code class="docutils literal notranslate"><span class="pre">sweeps=0</span></code> returns the closed-form seed unsolved. It is the route for a network coupled to plates, where the
+flows set the walls and the walls feed back on the pressure drops, which the two helpers above seed apart and never reconcile.</p>
+<p>The pump here is given a head, not a flow, so nothing on the loop fixes the flow and the call raises <code class="docutils literal notranslate"><span class="pre">MissingFlowError</span></code> without one; <code class="docutils literal notranslate"><span class="pre">flows={channel:</span> <span class="pre">0.2}</span></code> gives it the guess the helpers took.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">toolkit_guess</span> <span class="o">=</span> <span class="n">guess_steady_state</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">})</span>
+<span class="n">y_t</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">toolkit_guess</span><span class="p">,</span> <span class="n">jac</span><span class="o">=</span><span class="n">ALG_jacobian</span><span class="p">(</span><span class="n">agr</span><span class="p">),</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"helper seed residual:  </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">guess</span><span class="p">),</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"toolkit residual:      </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">toolkit_guess</span><span class="p">),</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"channel flow:          </span><span class="si">{</span><span class="n">flow</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span><span class="w"> </span><span class="n">fg</span><span class="p">,</span><span class="w"> </span><span class="n">y_t</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"solved residual:       </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">agr</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">y_t</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">))</span><span class="si">:</span><span class="s2">.1e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+helper seed residual:  1.0e+03
+toolkit residual:      7.9e-03
+channel flow:          0.2227 kg/s
+solved residual:       1.3e-10
+</pre></div></div>
+</div>
+<p>The one-call guess starts at a residual norm of about 8e-3, against about 1e3 for the two-helper seed, and the solve lands on the same flow, about 0.223 kg/s, with a residual norm of about 1e-10. With the pump off nothing on that loop fixes its flow, so its heated channel raises the same error without one, and the flow passed in <code class="docutils literal notranslate"><span class="pre">flows=</span></code> must point the way the water goes.</p>
+</section>
 <section id="What-scales-changes">
 <h2>What <code class="docutils literal notranslate"><span class="pre">scales</span></code> changes<a class="headerlink" href="#What-scales-changes" title="Link to this heading"></a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">scales</span></code> sets the nominal magnitudes behind the fallback’s finite-difference step, and is read only when the fallback runs without a <code class="docutils literal notranslate"><span class="pre">jac</span></code>: <code class="docutils literal notranslate"><span class="pre">None</span></code> takes the library’s registry, a dict replaces it, and <code class="docutils literal notranslate"><span class="pre">scale_vector(agr,</span> <span class="pre">overrides=)</span></code> changes one calculation’s variable.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">scales</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"registry"</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="s2">"plate T at 100"</span><span class="p">,</span> <span class="n">scale_vector</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="n">overrides</span><span class="o">=</span><span class="p">{(</span><span class="s2">"Plate"</span><span class="p">,</span> <span class="s2">"T"</span><span class="p">):</span> <span class="mf">1e2</span><span class="p">}))):</span>
@@ -262,7 +295,7 @@ plate T at 100: 0.2226918445 kg/s, residual 6.2e-07
 <h2>Pump off<a class="headerlink" href="#Pump-off" title="Link to this heading"></a></h2>
 <p>With no head the forced-flow guess points the wrong way.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr_nc</span><span class="p">,</span> <span class="n">fg_nc</span><span class="p">,</span> <span class="n">pump_nc</span> <span class="o">=</span> <span class="n">build</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
@@ -286,7 +319,7 @@ AlgRuntimeError: scaled_newton failed
 </div>
 <p>Scipy fails, and so does the fallback; its iterate reaches flows where the friction and laminar wall laws divide by zero, whose warnings the cell silences. The guess that converges says which way water goes: negative, up a channel drawn downward.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">mdot</span> <span class="ow">in</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.01</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.03</span><span class="p">):</span>
@@ -304,7 +337,25 @@ seed -0.01 kg/s: flow -0.012015 kg/s, outlet 77.8 °C
 seed -0.03 kg/s: flow -0.012015 kg/s, outlet 77.8 °C
 </pre></div></div>
 </div>
-<p>Both seeds land on about 0.012 kg/s upward with the outlet at about 78 °C: the magnitude does not matter and the sign does. <a class="reference internal" href="../explanation/natural-circulation.html"><span class="doc">Natural circulation and flow reversal</span></a> explains the flow.</p>
+<p>Both seeds land on about 0.012 kg/s upward with the outlet at about 78 °C: the magnitude does not matter and the sign does. <code class="docutils literal notranslate"><span class="pre">guess_steady_state</span></code> takes the same sign through <code class="docutils literal notranslate"><span class="pre">flows=</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">y_nc</span> <span class="o">=</span> <span class="n">agr_nc</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">guess_steady_state</span><span class="p">(</span><span class="n">agr_nc</span><span class="p">,</span> <span class="n">flows</span><span class="o">=</span><span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.01</span><span class="p">}),</span> <span class="n">jac</span><span class="o">=</span><span class="n">ALG_jacobian</span><span class="p">(</span><span class="n">agr_nc</span><span class="p">),</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"one call -0.01 kg/s: flow </span><span class="si">{</span><span class="n">flow</span><span class="p">(</span><span class="n">agr_nc</span><span class="p">,</span><span class="w"> </span><span class="n">fg_nc</span><span class="p">,</span><span class="w"> </span><span class="n">y_nc</span><span class="p">)</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2"> kg/s, outlet </span><span class="si">{</span><span class="n">agr_nc</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y_nc</span><span class="p">)[</span><span class="s1">'Channel'</span><span class="p">][</span><span class="s1">'T_out'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> °C"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+one call -0.01 kg/s: flow -0.012015 kg/s, outlet 77.8 °C
+</pre></div></div>
+</div>
+<p>The one call lands on the same flow, about 0.012 kg/s upward, with the outlet at about 78 °C. <a class="reference internal" href="../explanation/natural-circulation.html"><span class="doc">Natural circulation and flow reversal</span></a> explains the flow.</p>
 </section>
 <section id="When-it-still-fails">
 <h2>When it still fails<a class="headerlink" href="#When-it-still-fails" title="Link to this heading"></a></h2>
@@ -331,7 +382,7 @@ seed -0.03 kg/s: flow -0.012015 kg/s, outlet 77.8 °C
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

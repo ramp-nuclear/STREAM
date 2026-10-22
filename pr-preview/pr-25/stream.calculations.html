@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -338,11 +338,11 @@ from the smallest radius (0 for a cylinder). The integration is the same (since 
 <span class="math notranslate nohighlight">\(\partial_r\)</span> and <span class="math notranslate nohighlight">\(\partial_z\)</span>, respectively), but the volumes and cell areas
 are <span class="math notranslate nohighlight">\(r\)</span>-dependent. Specifically:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align}
+\[\begin{split}\begin{aligned}
 A_{i, j-1/2} &amp;= 2\pi r_{j-1/2}\Delta z_i \\
 A_{i-1/2, j} = A_{i+1/2, j} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2) \\
 V_{ij} &amp;= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2)\Delta z_i \\
-\end{align}\end{split}\]</div>
+\end{aligned}\end{split}\]</div>
 <p>The thermal resistance is then computed in the same manner using the distances
 between cell centers <span class="math notranslate nohighlight">\(\Delta r, \Delta z\)</span>.</p>
 </section>
@@ -983,7 +983,7 @@ By default, does nothing.</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>variables</strong> (<em>Sequence</em><em>[</em><em>float</em><em>]</em>)</p></li>
-<li><p><strong>T</strong> (<em>dict</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em>)</p></li>
+<li><p><strong>T</strong> (<em>dict</em><em>[</em><a class="reference internal" href="calculation.html#stream.calculation.Calculation" title="stream.calculation.Calculation"><em>Calculation</em></a><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>] </em><em>| </em><em>None</em>)</p></li>
 <li><p><strong>source</strong> (<em>float</em><em> | </em><em>ndarray</em><em> | </em><em>None</em>)</p></li>
 <li><p><strong>t</strong> (<em>float</em><em> | </em><em>ndarray</em>)</p></li>
 <li><p><strong>power_input</strong> (<em>float</em><em> | </em><em>ndarray</em><em> | </em><em>None</em>)</p></li>
@@ -1171,7 +1171,7 @@ transverse flow.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>z_boundaries</strong> (<em>Meter</em>) – boundaries (no. cells + 1). Must be strictly monotonous.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties, see <a class="reference internal" href="utility_packages.html#module-stream.substances.light_water" title="stream.substances.light_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">light_water</span></code></a> or
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties, see <a class="reference internal" href="utility_packages.html#module-stream.substances.light_water" title="stream.substances.light_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">light_water</span></code></a> or
 <a class="reference internal" href="utility_packages.html#module-stream.substances.heavy_water" title="stream.substances.heavy_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">heavy_water</span></code></a>.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Channel geometry</p></li>
 <li><p><strong>pressure_func</strong> (<em>Callable</em>) – A function determining the pressure gradient in the channel.</p></li>
@@ -1274,7 +1274,7 @@ transfer coefficient to each wall in addition to the Channel properties.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>z_boundaries</strong> (<em>Meter</em>) – boundaries (no. cells + 1). Must be strictly monotonous.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Channel geometry</p></li>
 <li><p><strong>h_wall_func</strong> (<em>Callable</em>) – A function determining the heat transfer coefficient</p></li>
 <li><p><strong>pressure_func</strong> (<em>Callable</em>) – A function determining the pressure gradient in the channel.</p></li>
@@ -1471,7 +1471,7 @@ and receives its temperature, but this object is coupled by getting the heat flu
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>z_boundaries</strong> (<em>Meter</em>) – boundaries (no. cells + 1). Must be strictly monotonous.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties, see <a class="reference internal" href="utility_packages.html#module-stream.substances.light_water" title="stream.substances.light_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">light_water</span></code></a> or
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties, see <a class="reference internal" href="utility_packages.html#module-stream.substances.light_water" title="stream.substances.light_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">light_water</span></code></a> or
 <a class="reference internal" href="utility_packages.html#module-stream.substances.heavy_water" title="stream.substances.heavy_water"><code class="xref py py-mod docutils literal notranslate"><span class="pre">heavy_water</span></code></a>.</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Channel geometry</p></li>
 <li><p><strong>pressure_func</strong> (<em>Callable</em>) – A function determining the pressure gradient in the channel.</p></li>
@@ -1550,7 +1550,7 @@ the setup and analysis of channels, which are often analyzed thoroughly.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>key</strong> (<em>str</em>) – Variable name in general</p></li>
-<li><p><strong>direction</strong> (<a class="reference internal" href="#stream.calculations.heat_diffusion.Walls.left" title="stream.calculations.heat_diffusion.Walls.left"><em>left</em></a><em> or </em><a class="reference internal" href="#stream.calculations.heat_diffusion.Walls.right" title="stream.calculations.heat_diffusion.Walls.right"><em>right</em></a>) – The directionality, in a case where the channel has multiples of the same thing.</p></li>
+<li><p><strong>direction</strong> (<a class="reference internal" href="#stream.calculations.channel.Direction" title="stream.calculations.channel.Direction"><em>Direction</em></a>) – The directionality, in a case where the channel has multiples of the same thing.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -1703,7 +1703,7 @@ equation’s temporal derivative. Essentially, this is the equation:</p>
 <li><p><strong>q_left</strong> (<em>WPerM2K</em>) – Wall heat flux</p></li>
 <li><p><strong>q_right</strong> (<em>WPerM2K</em>) – Wall heat flux</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass flow of coolant, assumed constant along channel</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Temperature and pressure dependent coolant properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Temperature and pressure dependent coolant properties</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Geometrical properties of the channel</p></li>
 <li><p><strong>dz</strong> (<em>Meter</em>) – Cell sizes, which may vary.</p></li>
 </ul>
@@ -1900,7 +1900,7 @@ according to Idelchik chapter 6.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
 <li><p><strong>hydraulic_diameter</strong> (<em>Meter</em>) – Hydraulic diameter of the pipe.</p></li>
 <li><p><strong>area</strong> (<em>Meter2</em>) – Cross-sectional area of the pipe.</p></li>
 <li><p><strong>bend_radius</strong> (<em>Meter</em>) – The pipe’s axis radius of curvature, measured from the bend center to the center of the pipe.</p></li>
@@ -2004,7 +2004,7 @@ branch is switched on [kg/s].</p></li>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>f</strong> (<em>float</em>) – Darcy-Weisbach friction factor</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
 <li><p><strong>length</strong> (<em>Meter</em>)</p></li>
 <li><p><strong>hydraulic_diameter</strong> (<em>Meter</em>)</p></li>
 <li><p><strong>area</strong> (<em>Meter2</em>)</p></li>
@@ -2047,7 +2047,7 @@ incurred by gravity, i.e. <span class="math notranslate nohighlight">\(\Delta p 
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant Functional properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant Functional properties</p></li>
 <li><p><strong>disposition</strong> (<em>Meter</em>) – <span class="math notranslate nohighlight">\(\Delta h\)</span>, height difference upon which the pressure
 difference is incurred</p></li>
 <li><p><strong>gravity</strong> (<em>MPerS2</em>) – Gravitational acceleration constant</p></li>
@@ -2318,7 +2318,7 @@ drop.</p>
 <li><p><strong>clear_area</strong> (<em>Meter2</em>) – The total unobstructed mesh area</p></li>
 <li><p><strong>total_area</strong> (<em>Meter2</em>) – The total area</p></li>
 <li><p><strong>wire_diameter</strong> (<em>Meter</em>) – Diameter of the circular wire</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant property functions</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant property functions</p></li>
 <li><p><strong>name</strong> (<em>str</em>) – The name to give this calculation.</p></li>
 </ul>
 </dd>
@@ -2529,36 +2529,6 @@ singular <span class="math notranslate nohighlight">\(\ddot{m}=\Delta p/L\)</spa
 </dl>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="id0">
-<span class="sig-name descname"><span class="pre">bilinear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">L0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/calculations/ideal/inertia.html#bilinear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
-<dd><p>Creates a bi-linear inertia function, to be used in <a class="reference internal" href="#stream.calculations.ideal.inertia.Inertia" title="stream.calculations.ideal.inertia.Inertia"><code class="xref py py-class docutils literal notranslate"><span class="pre">Inertia</span></code></a>.</p>
-<p>The inertance is a positive geometric quantity <span class="math notranslate nohighlight">\((l/A)_T\)</span>, so it depends on
-the flow <em>magnitude</em> and stays positive for either flow direction:</p>
-<div class="math notranslate nohighlight">
-\[\begin{split}L=
-\begin{cases}
-    L_0 (|\dot{m}|/\dot{m}_0) &amp; \text{if $|\dot{m}| &lt; \dot{m}_0$} \\
-    L_0 &amp; \text{otherwise}
-\end{cases}\end{split}\]</div>
-<p>A small positive floor keeps <span class="math notranslate nohighlight">\(L&gt;0\)</span> through <span class="math notranslate nohighlight">\(\dot{m}=0\)</span>, avoiding the
-singular <span class="math notranslate nohighlight">\(\ddot{m}=\Delta p/L\)</span> at the flow-reversal instant.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>L0</strong> (<em>PerM</em>) – Inertia constant</p></li>
-<li><p><strong>mdot0</strong> (<em>KgPerS</em>) – The bi-linear <cite>knee</cite> current, under which the inertia is linearly decreasing.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>bi</strong> – The inertia function <span class="math notranslate nohighlight">\(L(\dot{m})\)</span></p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Callable[[KgPerS, …], PerM]</p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 </section>
 <section id="module-stream.calculations.flapper">
@@ -2595,7 +2565,7 @@ this function <span class="math notranslate nohighlight">\(r\)</span> controls t
 The <code class="docutils literal notranslate"><span class="pre">open_rate</span></code> parameter = <span class="math notranslate nohighlight">\(\lambda\)</span> is used such that
 <span class="math notranslate nohighlight">\(r(\lambda (t - t_\text{open}))\)</span> is the relaxation. Note that this way,
 the function should fulfill <span class="math notranslate nohighlight">\(r(x\leq0)=0, r(x\geq1)=1\)</span>.</p></li>
-<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
+<li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
 <li><p><strong>area</strong> (<em>Meter2</em>)</p></li>
 <li><p><strong>name</strong> (<em>str</em>)</p></li>
 </ul>
@@ -3024,7 +2994,7 @@ Where indices[<span class="math notranslate nohighlight">\(\ddot{m_i}\)</span>] 
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>graph</strong> (<em>MultiDiGraph</em>)</p></li>
 <li><p><strong>abs_pressure_comps</strong> (<em>Hashable</em>)</p></li>
-<li><p><strong>reference_node</strong> (<em>tuple</em><em>[</em><em>Hashable</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>]</em>)</p></li>
+<li><p><strong>reference_node</strong> (<em>tuple</em><em>[</em><em>Hashable</em><em>, </em><em>float</em><em> | </em><em>ndarray</em><em>] </em><em>| </em><em>None</em>)</p></li>
 <li><p><strong>name</strong> (<em>str</em>)</p></li>
 </ul>
 </dd>
@@ -3262,7 +3232,7 @@ For this reason, Aviv wrote a Eulogy:</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

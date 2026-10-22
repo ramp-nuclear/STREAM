@@ -124,7 +124,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">graph</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span>
         <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
-        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Kirchhoff"</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
@@ -352,7 +352,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span> <span class="n">abs_pressure</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"mdot"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span> <span class="s2">"abs_pressure"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))}</span>
 
 <div class="viewcode-block" id="Kirchhoff.loop_components">
 <a class="viewcode-back" href="../../../stream.calculations.html#stream.calculations.kirchhoff.Kirchhoff.loop_components">[docs]</a>
@@ -532,11 +532,11 @@
             <span class="n">path</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">dijkstra_path</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">)</span>
             <span class="n">comps_in_edge</span> <span class="o">=</span> <span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">u</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">edge</span> <span class="o">=</span> <span class="n">component_edge</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="n">u</span><span class="p">,</span> <span class="n">_v</span><span class="p">,</span> <span class="n">_k</span> <span class="o">=</span> <span class="n">edge</span> <span class="o">=</span> <span class="n">component_edge</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
             <span class="c1"># First, build the path to the u-node</span>
             <span class="n">path</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">dijkstra_path</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">u</span><span class="p">)</span>
             <span class="c1"># Then, from u along edge, add components until target is reached</span>
-            <span class="n">comps_in_edge</span> <span class="o">=</span> <span class="n">takewhile</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">:</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">target</span><span class="p">,</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="n">COMPS</span><span class="p">])</span>
+            <span class="n">comps_in_edge</span> <span class="o">=</span> <span class="n">takewhile</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">:</span> <span class="n">c</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">target</span><span class="p">,</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">[</span><span class="n">edge</span><span class="p">][</span><span class="n">COMPS</span><span class="p">])</span>
 
         <span class="n">comps_from_path</span> <span class="o">=</span> <span class="p">(</span><span class="n">comp</span> <span class="k">for</span> <span class="n">edge</span> <span class="ow">in</span> <span class="n">pairwise</span><span class="p">(</span><span class="n">path</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">g</span><span class="o">.</span><span class="n">edges</span><span class="p">[(</span><span class="o">*</span><span class="n">edge</span><span class="p">,</span> <span class="mi">0</span><span class="p">)][</span><span class="n">COMPS</span><span class="p">])</span>
 
@@ -556,12 +556,7 @@
 
     <span class="n">_counter</span> <span class="o">=</span> <span class="n">count</span><span class="p">()</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">weights</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">mdot_eps</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Calculation</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">mdot_eps</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 
 <span class="sd">        Parameters</span>
@@ -602,7 +597,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
 
     <span class="c1"># noinspection PyMethodOverriding</span>
 <div class="viewcode-block" id="Junction.calculate">
@@ -725,7 +720,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">graph</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span>
         <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">,</span>
-        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Kirchhoff"</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="o">*</span><span class="n">abs_pressure_comps</span><span class="p">,</span> <span class="n">reference_node</span><span class="o">=</span><span class="n">reference_node</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
@@ -765,11 +760,11 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables_by_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">mdot</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span>
-            <span class="n">abs_pressure</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">),</span>
-            <span class="n">mdot2</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span>
-        <span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"mdot"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">),</span>
+            <span class="s2">"abs_pressure"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">),</span>
+            <span class="s2">"mdot2"</span><span class="p">:</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span>
+        <span class="p">}</span></div>
 
 </pre></div>
 
@@ -781,7 +776,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

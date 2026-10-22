@@ -79,7 +79,7 @@
            <div itemprop="articleBody">
              
   <h1>Source code for test_general.test_calculation</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">hypothesis.strategies</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">st</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -91,9 +91,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation</span><span class="p">,</span> <span class="n">_concat</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Calculation_factory</span>
 
-<span class="n">Addition</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-<span class="n">Multiplication</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
-<span class="n">Division</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">z</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">z</span> <span class="o">/</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+<span class="n">Addition</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">y</span> <span class="o">+</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="p">{</span><span class="s2">"y"</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="n">Multiplication</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">y</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="p">{</span><span class="s2">"x"</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
+<span class="n">Division</span> <span class="o">=</span> <span class="n">Calculation_factory</span><span class="p">(</span><span class="k">lambda</span> <span class="n">z</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">z</span> <span class="o">/</span> <span class="n">x</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">],</span> <span class="p">{</span><span class="s2">"z"</span><span class="p">:</span> <span class="mi">0</span><span class="p">})</span>
 
 <span class="n">add</span> <span class="o">=</span> <span class="n">Addition</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Add"</span><span class="p">)</span>
 <span class="n">multiply</span> <span class="o">=</span> <span class="n">Multiplication</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Multiply"</span><span class="p">)</span>
@@ -105,10 +105,10 @@
 <span class="nd">@given</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">lists</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">floats</span><span class="p">(</span><span class="n">allow_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_unpack_correctly_unpacks_data</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
     <span class="c1"># noinspection PyTypeChecker</span>
-    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-        <span class="n">some_input</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">lst</span><span class="p">)),</span>
-        <span class="n">more_input</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">lst</span><span class="p">))),</span>
-    <span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"some_input"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">lst</span><span class="p">)),</span>
+        <span class="s2">"more_input"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">lst</span><span class="p">))),</span>
+    <span class="p">}</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">give_me_values</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">some_input</span><span class="p">,</span> <span class="n">more_input</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">some_input</span><span class="p">,</span> <span class="n">more_input</span>
@@ -128,7 +128,7 @@
 <span class="nd">@given</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">lists</span><span class="p">(</span><span class="n">st</span><span class="o">.</span><span class="n">floats</span><span class="p">(</span><span class="n">allow_nan</span><span class="o">=</span><span class="kc">False</span><span class="p">)))</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_unpack_correctly_excludes_parameters</span><span class="p">(</span><span class="n">lst</span><span class="p">):</span>
     <span class="n">input_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">enumerate</span><span class="p">(</span><span class="n">lst</span><span class="p">))</span>
-    <span class="n">kwargs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">some_input</span><span class="o">=</span><span class="n">input_dict</span><span class="p">,</span> <span class="n">more_input</span><span class="o">=</span><span class="n">input_dict</span><span class="p">)</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"some_input"</span><span class="p">:</span> <span class="n">input_dict</span><span class="p">,</span> <span class="s2">"more_input"</span><span class="p">:</span> <span class="n">input_dict</span><span class="p">}</span>
 
     <span class="n">output</span><span class="p">,</span> <span class="n">more_output</span> <span class="o">=</span> <span class="n">unpacked</span><span class="p">(</span><span class="n">_give_me_values</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="p">[</span><span class="s2">"more_input"</span><span class="p">])(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">array_equal</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">output</span><span class="p">),</span> <span class="nb">list</span><span class="p">(</span><span class="n">more_output</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
@@ -278,7 +278,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

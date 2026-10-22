@@ -19,8 +19,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -351,10 +351,10 @@
 <span class="n">calculation_graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">channels</span><span class="p">):</span>
     <span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"channel#</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span>
-    <span class="n">calculation_graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">|=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">)}</span>
+    <span class="n">calculation_graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">|=</span> <span class="p">{</span><span class="n">c</span><span class="p">:</span> <span class="p">{</span><span class="s2">"p_abs"</span><span class="p">:</span> <span class="n">p_abs</span><span class="p">}}</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">fuels</span><span class="p">):</span>
     <span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"fuel#</span><span class="si">{</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span>
-    <span class="n">calculation_graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">|=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power_per_plate</span><span class="p">)}</span>
+    <span class="n">calculation_graph</span><span class="o">.</span><span class="n">funcs</span> <span class="o">|=</span> <span class="p">{</span><span class="n">f</span><span class="p">:</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="n">power_per_plate</span><span class="p">}}</span>
 
 <span class="c1"># Finally, an aggregator can be initialized from the calculation graph</span>
 <span class="n">agr</span> <span class="o">=</span> <span class="n">calculation_graph</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
@@ -591,9 +591,9 @@
 <span class="c1"># To be later converted to an array the aggregator can read by the ``agr.load`` method</span>
 <span class="n">y0_guess</span> <span class="o">=</span> <span class="p">{}</span>
 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fuels</span><span class="p">:</span>
-    <span class="n">y0_guess</span> <span class="o">|=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T</span><span class="o">=</span><span class="n">T0</span><span class="p">,</span> <span class="n">T_wall_left</span><span class="o">=</span><span class="n">tw0</span><span class="p">,</span> <span class="n">T_wall_right</span><span class="o">=</span><span class="n">tw0</span><span class="p">)}</span>
+    <span class="n">y0_guess</span> <span class="o">|=</span> <span class="p">{</span><span class="n">f</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"T"</span><span class="p">:</span> <span class="n">T0</span><span class="p">,</span> <span class="s2">"T_wall_left"</span><span class="p">:</span> <span class="n">tw0</span><span class="p">,</span> <span class="s2">"T_wall_right"</span><span class="p">:</span> <span class="n">tw0</span><span class="p">}}</span>
 <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">channels</span><span class="p">:</span>
-    <span class="n">y0_guess</span> <span class="o">|=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">T_cool</span><span class="o">=</span><span class="n">tc0</span><span class="p">,</span> <span class="n">h_left</span><span class="o">=</span><span class="n">h0</span><span class="p">,</span> <span class="n">h_right</span><span class="o">=</span><span class="n">h0</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp0</span><span class="p">))}</span>
+    <span class="n">y0_guess</span> <span class="o">|=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">tc0</span><span class="p">,</span> <span class="s2">"h_left"</span><span class="p">:</span> <span class="n">h0</span><span class="p">,</span> <span class="s2">"h_right"</span><span class="p">:</span> <span class="n">h0</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dp0</span><span class="p">)}}</span>
 
 <span class="c1"># We now need to provide an initial guess for the kirchhoff element of the aggregator.</span>
 <span class="c1"># `` guess_steady_state `` gives a good primitive guess.</span>
@@ -760,7 +760,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -41,8 +41,12 @@ wall coefficients of each wall-coupled channel and adds up the absolute pressure
 imposes its flow, or a closed flapper, has no pressure that follows from the flow, and its guess is
 zero. :func:`~stream.composition.symmetric_plate_steady_state` solves a plate and its channel at a
 given flow, and :func:`~stream.composition.point_kinetics_steady_state` puts the kinetics at a given
-power and zero reactivity; :meth:`~stream.state.State.merge` lets the later seed win where two overlap. The flows and
-their signs are what one brings.
+power and zero reactivity; :meth:`~stream.state.State.merge` lets the later seed win where two overlap.
+For a network coupled to plates, :func:`~stream.composition.steady_state.guess_steady_state` builds the whole guess in
+one call: it completes the flows the junction balances and the known flows fix, walks the temperatures
+around the loop, then solves the hydraulics and the plates one block at a time. It still raises
+:class:`~stream.composition.subsystems.MissingFlowError` for a heated channel whose flow nothing on its loop fixes.
+Where nothing on a loop fixes its flow, the flow and its sign are what one brings.
 
 The two steps of a steady solve
 ===============================

@@ -97,7 +97,7 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABCMeta</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -160,7 +160,7 @@
 <span class="sd">        errors: Array1D</span>
 <span class="sd">            The error in ``variables``</span>
 <span class="sd">        """</span>
-        <span class="n">inputs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">dp</span><span class="o">=</span><span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">Tin</span><span class="o">=</span><span class="n">directed_Tin</span><span class="p">(</span><span class="n">Tin</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="p">,</span> <span class="n">mdot</span><span class="p">),</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">)</span> <span class="o">|</span> <span class="n">kwargs</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"dp"</span><span class="p">:</span> <span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">"Tin"</span><span class="p">:</span> <span class="n">directed_Tin</span><span class="p">(</span><span class="n">Tin</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="p">,</span> <span class="n">mdot</span><span class="p">),</span> <span class="s2">"mdot"</span><span class="p">:</span> <span class="n">mdot</span><span class="p">}</span> <span class="o">|</span> <span class="n">kwargs</span>
         <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
         <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_out</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
         <span class="n">out</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">variables</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">dp_out</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
@@ -170,7 +170,7 @@
 <div class="viewcode-block" id="LumpedComponent.indices">
 <a class="viewcode-back" href="../../../../stream.calculations.html#stream.calculations.ideal.ideal.LumpedComponent.indices">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">:</span> <span class="n">Name</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">Tin_minus</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="n">variable</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"Tin_minus"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}[</span><span class="n">variable</span><span class="p">]</span></div>
 
 
     <span class="n">indices</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Calculation</span><span class="o">.</span><span class="n">indices</span><span class="o">.</span><span class="vm">__doc__</span>
@@ -182,7 +182,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Name</span><span class="p">,</span> <span class="n">Place</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
 
     <span class="n">variables</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">Calculation</span><span class="o">.</span><span class="n">variables</span><span class="o">.</span><span class="vm">__doc__</span>
 
@@ -234,7 +234,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

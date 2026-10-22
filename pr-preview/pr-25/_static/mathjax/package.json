@@ -47,6 +47,12 @@
     "sre",
     "ui"
   ],
+  "devDependencies": {
+    "@mathjax/src": "^4.1.3"
+  },
+  "dependencies": {
+    "@mathjax/mathjax-newcm-font": "^4.1.3"
+  },
   "scripts": {
     "test": "echo 'No tests defined'",
     "===================================================================== clean": "",
@@ -65,11 +71,5 @@
     "prebuild": "npm run -s clean:node",
     "build": "npm run -s install:mj4 && npm run -s move",
     "postbuild": "npm run -s message 'Cleaning Up...' && npm run -s clean:node"
-  },
-  "devDependencies": {
-    "@mathjax/src": "^4.1.3"
-  },
-  "dependencies": {
-    "@mathjax/mathjax-newcm-font": "^4.1.3"
   }
 }

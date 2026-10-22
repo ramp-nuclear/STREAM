@@ -80,9 +80,10 @@
            <div itemprop="articleBody">
              
   <h1>Source code for stream.physical_models.heat_transfer_coefficient.single_phase</h1><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">reduce</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -219,16 +220,16 @@
     <span class="n">lam</span><span class="p">,</span> <span class="n">inter</span><span class="p">,</span> <span class="n">turb</span> <span class="o">=</span> <span class="n">flow_regimes</span><span class="p">(</span><span class="n">re_bulk</span><span class="p">,</span> <span class="n">re_bounds</span><span class="p">)</span>
 
     <span class="n">inp</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">coolant</span><span class="o">=</span><span class="n">coolant</span><span class="p">,</span>
-            <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span>
-            <span class="n">Dh</span><span class="o">=</span><span class="n">Dh</span><span class="p">,</span>
-            <span class="n">A</span><span class="o">=</span><span class="n">A</span><span class="p">,</span>
-            <span class="n">T_cool</span><span class="o">=</span><span class="n">T_cool</span><span class="p">,</span>
-            <span class="n">T_wall</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
-            <span class="n">coolant_funcs</span><span class="o">=</span><span class="n">coolant_funcs</span><span class="p">,</span>
-            <span class="n">Lh</span><span class="o">=</span><span class="n">Lh</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="p">{</span>
+            <span class="s2">"coolant"</span><span class="p">:</span> <span class="n">coolant</span><span class="p">,</span>
+            <span class="s2">"mdot"</span><span class="p">:</span> <span class="n">mdot</span><span class="p">,</span>
+            <span class="s2">"Dh"</span><span class="p">:</span> <span class="n">Dh</span><span class="p">,</span>
+            <span class="s2">"A"</span><span class="p">:</span> <span class="n">A</span><span class="p">,</span>
+            <span class="s2">"Lh"</span><span class="p">:</span> <span class="n">Lh</span><span class="p">,</span>
+            <span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">T_cool</span><span class="p">,</span>
+            <span class="s2">"T_wall"</span><span class="p">:</span> <span class="n">T_wall</span><span class="p">,</span>
+            <span class="s2">"coolant_funcs"</span><span class="p">:</span> <span class="n">coolant_funcs</span><span class="p">,</span>
+        <span class="p">}</span>
         <span class="o">|</span> <span class="n">kwargs</span>
     <span class="p">)</span>
     <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T_cool</span><span class="p">))</span>
@@ -237,11 +238,11 @@
     <span class="n">h_turb</span> <span class="o">=</span> <span class="n">turbulent</span><span class="p">(</span><span class="o">**</span><span class="n">inp</span><span class="p">)</span>
     <span class="n">h</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_turb</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">lam</span> <span class="o">+</span> <span class="n">inter</span><span class="p">):</span>
-        <span class="n">h_lam</span> <span class="o">=</span> <span class="n">laminar</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">(</span><span class="n">coolant</span><span class="o">=</span><span class="n">bulk</span><span class="p">)))</span>
+        <span class="n">h_lam</span> <span class="o">=</span> <span class="n">laminar</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"coolant"</span><span class="p">:</span> <span class="n">bulk</span><span class="p">}))</span>
         <span class="n">h</span><span class="p">[</span><span class="n">inter</span><span class="p">]</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span><span class="o">*</span><span class="n">re_bounds</span><span class="p">,</span> <span class="n">y1</span><span class="o">=</span><span class="n">h_lam</span><span class="p">,</span> <span class="n">y2</span><span class="o">=</span><span class="n">h_turb</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">re_bulk</span><span class="p">)[</span><span class="n">inter</span><span class="p">]</span>
         <span class="n">h</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span> <span class="o">=</span> <span class="n">h_lam</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span>
 
-    <span class="n">h_nat</span> <span class="o">=</span> <span class="n">natural</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="nb">dict</span><span class="p">(</span><span class="n">coolant</span><span class="o">=</span><span class="n">bulk</span><span class="p">)))</span>
+    <span class="n">h_nat</span> <span class="o">=</span> <span class="n">natural</span><span class="p">(</span><span class="o">**</span><span class="p">(</span><span class="n">inp</span> <span class="o">|</span> <span class="p">{</span><span class="s2">"coolant"</span><span class="p">:</span> <span class="n">bulk</span><span class="p">}))</span>
     <span class="c1"># Scoped: extreme solver iterates drive inf/0*inf through the cube norm and blend; the NaN/inf result is the caller's rejection signal, not a healthy-path event.</span>
     <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">invalid</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">over</span><span class="o">=</span><span class="s2">"ignore"</span><span class="p">):</span>
         <span class="n">h</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cbrt</span><span class="p">(</span><span class="n">h</span><span class="o">**</span><span class="mi">3</span> <span class="o">+</span> <span class="n">h_nat</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
@@ -397,7 +398,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

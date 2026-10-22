@@ -19,8 +19,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -101,9 +101,9 @@
 \[F_i = k_{i, l} \left[L_{i, l} - (x_i - x_{i - 1})\right] - k_{i, r} \left[L_{i, r} - (x_{i + 1} - x_i)\right]\]</div>
 <p>Therefore, a reasonable approach in building a calculation is implementing the following equations:</p>
 <div class="math notranslate nohighlight">
-\[\begin{split}\begin{align} \frac{dx}{dt} &amp;= v \\
+\[\begin{split}\begin{aligned} \frac{dx}{dt} &amp;= v \\
 \frac{dv}{dt} &amp;= a \\
-F &amp;= ma \end{align}\end{split}\]</div>
+F &amp;= ma \end{aligned}\end{split}\]</div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
@@ -146,18 +146,18 @@ F &amp;= ma \end{align}\end{split}\]</div>
         <span class="n">left_spring</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">k_left</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L_left</span> <span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x_left</span><span class="p">))</span>
         <span class="n">right_spring</span> <span class="o">=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">k_right</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">L_right</span> <span class="o">-</span> <span class="p">(</span><span class="n">x_right</span> <span class="o">-</span> <span class="n">x</span><span class="p">))</span>
         <span class="n">total_force</span> <span class="o">=</span> <span class="o">-</span><span class="n">left_spring</span> <span class="o">+</span> <span class="n">right_spring</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">v</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="n">total_force</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">load</span><span class="p">({</span><span class="s2">"x"</span><span class="p">:</span> <span class="n">v</span><span class="p">,</span> <span class="s2">"v"</span><span class="p">:</span> <span class="n">a</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">:</span> <span class="n">total_force</span> <span class="o">-</span> <span class="n">a</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">m</span><span class="p">})</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">asking</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">variable</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
             <span class="k">pass</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x_left</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">x_right</span><span class="o">=</span><span class="mi">1</span><span class="p">)[</span><span class="n">variable</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"x_left"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"x_right"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}[</span><span class="n">variable</span><span class="p">]</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">variables</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">v</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"x"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"v"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
 </pre></div>
 </div>
 </div>
@@ -170,7 +170,7 @@ F &amp;= ma \end{align}\end{split}\]</div>
 
 <span class="n">agr</span> <span class="o">=</span> <span class="n">Aggregator</span><span class="p">(</span>
     <span class="n">graph</span><span class="o">=</span><span class="n">DiGraph</span><span class="p">([(</span><span class="n">M1</span><span class="p">,</span> <span class="n">M2</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"x_left"</span><span class="p">)),</span> <span class="p">(</span><span class="n">M2</span><span class="p">,</span> <span class="n">M1</span><span class="p">,</span> <span class="n">vars_</span><span class="p">(</span><span class="s2">"x_right"</span><span class="p">))]),</span>
-    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x_left</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span> <span class="n">M2</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x_right</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)},</span>
+    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="p">{</span><span class="s2">"x_left"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span> <span class="n">M2</span><span class="p">:</span> <span class="p">{</span><span class="s2">"x_right"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">}},</span>
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
@@ -219,13 +219,13 @@ F &amp;= ma \end{align}\end{split}\]</div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
 <span class="n">agr</span><span class="o">.</span><span class="n">draw</span><span class="p">(</span>
-    <span class="n">node_options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
-        <span class="n">pos</span><span class="o">=</span><span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">M2</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)},</span>
-        <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="s2">"M1"</span><span class="p">,</span> <span class="n">M2</span><span class="p">:</span> <span class="s2">"M2"</span><span class="p">},</span>
-        <span class="n">node_size</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
-        <span class="n">font_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="p">),</span>
-    <span class="n">edge_options</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">label_pos</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">font_size</span><span class="o">=</span><span class="mi">18</span><span class="p">),</span>
+    <span class="n">node_options</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"pos"</span><span class="p">:</span> <span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">M2</span><span class="p">:</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)},</span>
+        <span class="s2">"labels"</span><span class="p">:</span> <span class="p">{</span><span class="n">M1</span><span class="p">:</span> <span class="s2">"M1"</span><span class="p">,</span> <span class="n">M2</span><span class="p">:</span> <span class="s2">"M2"</span><span class="p">},</span>
+        <span class="s2">"node_size"</span><span class="p">:</span> <span class="mi">2000</span><span class="p">,</span>
+        <span class="s2">"font_size"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">edge_options</span><span class="o">=</span><span class="p">{</span><span class="s2">"label_pos"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s2">"font_size"</span><span class="p">:</span> <span class="mi">18</span><span class="p">},</span>
 <span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">box</span><span class="p">()</span>
 </pre></div>
@@ -317,7 +317,7 @@ F &amp;= ma \end{align}\end{split}\]</div>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

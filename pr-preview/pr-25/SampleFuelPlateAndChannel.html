@@ -19,8 +19,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -59,7 +59,7 @@
 <li class="toctree-l3"><a class="reference internal" href="TheCubeProblem.html">The Cube Problem</a></li>
 <li class="toctree-l3"><a class="reference internal" href="PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Plates and Channels, an MTR Love Story</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Entering-data-for-fuel-plate-modeling">Entering data for fuel plate modeling</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Specifying-the-fuel-plate's-geometry-and-properties">Specifying the fuel plate’s geometry and properties</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Creating-a-model-of-the-fuel-plate">Creating a model of the fuel plate</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Defining-the-fuel-plate-using-the-defined-values-and-inputs">Defining the fuel plate using the defined values and inputs</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Creating-a-model-of-the-channel">Creating a model of the channel</a></li>
@@ -146,8 +146,8 @@
 </pre></div>
 </div>
 </div>
-<section id="Entering-data-for-fuel-plate-modeling">
-<h2>Entering data for fuel plate modeling<a class="headerlink" href="#Entering-data-for-fuel-plate-modeling" title="Link to this heading"></a></h2>
+<section id="Specifying-the-fuel-plate's-geometry-and-properties">
+<h2>Specifying the fuel plate’s geometry and properties<a class="headerlink" href="#Specifying-the-fuel-plate's-geometry-and-properties" title="Link to this heading"></a></h2>
 <p>We need to specify the discretization, dimensions and properties of the plate - both fuel and cladding:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
@@ -403,7 +403,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

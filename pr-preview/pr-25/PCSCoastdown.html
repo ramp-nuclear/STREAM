@@ -19,8 +19,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -58,8 +58,8 @@
 <li class="toctree-l3"><a class="reference internal" href="SeriesRLCCircuit.html">Series RLC Circuit</a></li>
 <li class="toctree-l3"><a class="reference internal" href="TheCubeProblem.html">The Cube Problem</a></li>
 <li class="toctree-l3 current"><a class="current reference internal" href="#">Primary Cooling System Coastdown</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Components">Components</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Assembling-a-Simulation">Assembling a Simulation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Primary-Cooling-System-Components">Primary Cooling System Components</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Assembling-the-Coastdown-Simulation">Assembling the Coastdown Simulation</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Analytic-Solution-of-the-Transient">Analytic Solution of the Transient</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Transient-Calculation">Transient Calculation</a></li>
 </ul>
@@ -132,10 +132,10 @@
 </pre></div>
 </div>
 </div>
-<section id="Components">
-<h2>Components<a class="headerlink" href="#Components" title="Link to this heading"></a></h2>
-<section id="Pump">
-<h3>Pump<a class="headerlink" href="#Pump" title="Link to this heading"></a></h3>
+<section id="Primary-Cooling-System-Components">
+<h2>Primary Cooling System Components<a class="headerlink" href="#Primary-Cooling-System-Components" title="Link to this heading"></a></h2>
+<section id="Primary-Pump">
+<h3>Primary Pump<a class="headerlink" href="#Primary-Pump" title="Link to this heading"></a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -178,8 +178,8 @@
 </div>
 </section>
 </section>
-<section id="Assembling-a-Simulation">
-<h2>Assembling a Simulation<a class="headerlink" href="#Assembling-a-Simulation" title="Link to this heading"></a></h2>
+<section id="Assembling-the-Coastdown-Simulation">
+<h2>Assembling the Coastdown Simulation<a class="headerlink" href="#Assembling-the-Coastdown-Simulation" title="Link to this heading"></a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -202,7 +202,7 @@
     <span class="n">fg</span><span class="p">,</span>
     <span class="n">inertial_comps</span><span class="o">=</span><span class="p">[</span><span class="n">flywheel</span><span class="p">],</span>
     <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
-    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">resistor</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">)},</span>
+    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">resistor</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T</span><span class="p">}},</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
 
@@ -271,9 +271,9 @@
                 <span class="s2">"(B -&gt; A, 0)"</span><span class="p">:</span> <span class="n">mdot0</span><span class="p">,</span>
                 <span class="s2">"(B -&gt; A, mdot2 0)"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
             <span class="p">},</span>
-            <span class="n">pump</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="n">dp0</span><span class="p">),</span>
-            <span class="n">resistor</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=-</span><span class="n">dp0</span><span class="p">),</span>
-            <span class="n">flywheel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">Tin</span><span class="o">=</span><span class="n">T</span><span class="p">,</span> <span class="n">pressure</span><span class="o">=</span><span class="mf">0.0</span><span class="p">),</span>
+            <span class="n">pump</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="n">dp0</span><span class="p">},</span>
+            <span class="n">resistor</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="o">-</span><span class="n">dp0</span><span class="p">},</span>
+            <span class="n">flywheel</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="p">{</span><span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span> <span class="s2">"pressure"</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
         <span class="p">}</span>
     <span class="p">)</span>
 <span class="p">)</span>
@@ -452,7 +452,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

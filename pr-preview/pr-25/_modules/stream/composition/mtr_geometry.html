@@ -93,8 +93,9 @@
 <span class="sd">The created objects are CalculationGraph objects which may be combined to eventually create an executable scheme.</span>
 <span class="sd">"""</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">more_itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">interleave_longest</span><span class="p">,</span> <span class="n">windowed</span>
@@ -107,12 +108,12 @@
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
     <span class="s2">"chain_fuels_channels"</span><span class="p">,</span>
+    <span class="s2">"one_sided_connection"</span><span class="p">,</span>
     <span class="s2">"plate"</span><span class="p">,</span>
     <span class="s2">"rod"</span><span class="p">,</span>
-    <span class="s2">"one_sided_connection"</span><span class="p">,</span>
     <span class="s2">"symmetric_plate"</span><span class="p">,</span>
-    <span class="s2">"x_boundaries"</span><span class="p">,</span>
     <span class="s2">"uniform_x_power_shape"</span><span class="p">,</span>
+    <span class="s2">"x_boundaries"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -445,7 +446,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

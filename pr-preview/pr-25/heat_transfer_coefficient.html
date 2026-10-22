@@ -18,8 +18,8 @@
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/es5/tex-chtml-full.js"></script>
+      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -134,7 +134,7 @@ is through the <a class="reference internal" href="#stream.physical_models.heat_
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperature.</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass current.</p></li>
 <li><p><strong>pressure</strong> (<em>Pascal</em>) – Coolant absolute static pressure at each cell.</p></li>
-<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
+<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – The effective hydraulic diameter used for Re, Nu values.</p></li>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Cross sectional flow area.</p></li>
 <li><p><strong>h_spl</strong> (<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.SinglePhaseLiquidHTC" title="stream.physical_models.heat_transfer_coefficient.SinglePhaseLiquidHTC"><em>SinglePhaseLiquidHTC</em></a>) – The single phase liquid (SPL) heat transfer coefficient function, which is returned when there is no boiling.</p></li>
@@ -244,13 +244,13 @@ natural function at stagnation. Requires <code class="docutils literal notransla
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant <cite>film</cite> properties. See in <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff" title="stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff"><code class="xref py py-func docutils literal notranslate"><span class="pre">wall_heat_transfer_coeff</span></code></a></p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant <cite>film</cite> properties. See in <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff" title="stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff"><code class="xref py py-func docutils literal notranslate"><span class="pre">wall_heat_transfer_coeff</span></code></a></p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass flow</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Flow area</p></li>
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperature</p></li>
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperature</p></li>
-<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
+<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
 <li><p><strong>pressure</strong> (<em>Pascal</em>) – Static pressure of the liquid.</p></li>
 </ul>
 </dd>
@@ -338,7 +338,7 @@ This is done through the Dittus-Boelter correlation, which holds for certain ver
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Characteristic flow mass current</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – The effective hydraulic diameter used for Re, Nu values.</p></li>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Cross sectional flow area.</p></li>
@@ -398,7 +398,7 @@ This is useful for ducts of case 1, where the channel is heated from all sides.<
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter.</p></li>
 <li><p><strong>nu</strong> (<em>float</em>) – Nusselt Number. Default is <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.FIXED_FLUXES" title="stream.physical_models.heat_transfer_coefficient.laminar.FIXED_FLUXES"><code class="xref py py-const docutils literal notranslate"><span class="pre">FIXED_FLUXES</span></code></a></p></li>
 </ul>
@@ -439,7 +439,7 @@ Nuclear Engineering Division, INVAP, December 2003</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Mass flow rate.</p></li>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Flow area.</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter.</p></li>
@@ -463,7 +463,7 @@ Nuclear Engineering Division, INVAP, December 2003</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Properties of the coolant.</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter.</p></li>
 <li><p><strong>aspect_ratio</strong> (<em>float in</em><em> [</em><em>0</em><em>,</em><em>1</em><em>]</em>) – The aspect ratio of the channel.</p></li>
 </ul>
@@ -569,7 +569,7 @@ Elenbaas<a class="footnote-reference brackets" href="#id9" id="id7" role="doc-no
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
 <li><p><strong>depth</strong> (<em>Meter</em>) – The depth, length between the two parallel plates</p></li>
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperature</p></li>
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Surface temperature</p></li>
@@ -622,14 +622,14 @@ laminar opposing flow (heated downflow), where buoyancy slows the fluid at the w
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant <cite>film</cite> properties. See in <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff" title="stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff"><code class="xref py py-func docutils literal notranslate"><span class="pre">wall_heat_transfer_coeff</span></code></a></p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant <cite>film</cite> properties. See in <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff" title="stream.physical_models.heat_transfer_coefficient.wall_heat_transfer_coeff"><code class="xref py py-func docutils literal notranslate"><span class="pre">wall_heat_transfer_coeff</span></code></a></p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass flow</p></li>
 <li><p><strong>Dh</strong> (<em>Meter</em>) – Hydraulic diameter</p></li>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Flow area</p></li>
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperature</p></li>
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperature</p></li>
 <li><p><strong>re_bounds</strong> (<em>tuple</em><em>[</em><em>Value</em><em>, </em><em>Value</em><em>]</em>) – Boundaries depicting transition between laminar, interim, and turbulent regimes.</p></li>
-<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.LiquidFuncs" title="stream.substances.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
+<li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
 <li><p><strong>Lh</strong> (<em>Meter</em>) – Heated length, used for the Graetz-number stagnation handover (and passed on
 to the <code class="docutils literal notranslate"><span class="pre">natural</span></code> function).</p></li>
 <li><p><strong>gz_band</strong> (<em>tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – Graetz-number band over which the composition hands over to the pure
@@ -741,7 +741,7 @@ This is simply the saturation temperature combined with the Bergles &amp; Rohsen
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperatures</p></li>
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Saturated Coolant properties</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Saturated Coolant properties</p></li>
 <li><p><strong>re</strong> (<em>Value</em>) – Reynolds Number</p></li>
 </ul>
 </dd>
@@ -806,7 +806,7 @@ boiling may be given by<a class="footnote-reference brackets" href="#br" id="id1
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperatures</p></li>
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
 <li><p><strong>n</strong> (<em>float</em>) – Dimensionless params. See equation above.</p></li>
 <li><p><strong>csf</strong> (<em>float</em>) – Dimensionless params. See equation above.</p></li>
 </ul>
@@ -858,7 +858,7 @@ use different subcooled boiling heat flux <cite>correlations</cite>:</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperature</p></li>
-<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.Liquid" title="stream.substances.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
+<li><p><strong>coolant</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.Liquid" title="stream.substances.liquid.Liquid"><em>Liquid</em></a>) – Coolant properties</p></li>
 <li><p><strong>re</strong> (<em>Value</em>) – Reynolds No., see <a class="reference internal" href="stream.physical_models.html#stream.physical_models.dimensionless.Re" title="stream.physical_models.dimensionless.Re"><code class="xref py py-func docutils literal notranslate"><span class="pre">Re</span></code></a></p></li>
 <li><p><strong>re_bounds</strong> (<em>tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – Regime boundaries</p></li>
 </ul>
@@ -1005,7 +1005,7 @@ This temperature may be used to assess the thermodynamical properties of the coo
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -85,8 +85,9 @@
 <span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span><span class="p">,</span> <span class="n">wraps</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Type</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cytoolz</span><span class="w"> </span><span class="kn">import</span> <span class="n">keymap</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiGraph</span><span class="p">,</span> <span class="n">MultiDiGraph</span>
@@ -111,6 +112,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">summed</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"FlowGraph"</span><span class="p">,</span>
     <span class="s2">"flow_edge"</span><span class="p">,</span>
     <span class="s2">"flow_graph"</span><span class="p">,</span>
     <span class="s2">"flow_graph_to_aggregator"</span><span class="p">,</span>
@@ -118,7 +120,6 @@
     <span class="s2">"in_parallel"</span><span class="p">,</span>
     <span class="s2">"in_series"</span><span class="p">,</span>
     <span class="s2">"kirchhoffify"</span><span class="p">,</span>
-    <span class="s2">"FlowGraph"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"stream.cycle"</span><span class="p">)</span>
@@ -247,10 +248,10 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">kirchhoffify</span><span class="p">(</span>
     <span class="n">agr</span><span class="p">:</span> <span class="n">BaseAgr</span><span class="p">,</span>
     <span class="n">k</span><span class="p">:</span> <span class="n">Kirchhoff</span><span class="p">,</span>
-    <span class="n">hydraulic_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">hydraulic_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CalculationGraph</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""Given a subset of the given CalculationGraph calculations which adhere to Kirchhoff's laws, construct a</span>
 <span class="sd">    CalculationGraph which contains Kirchhoff linked properly.</span>
@@ -364,7 +365,7 @@
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dst</span><span class="p">,</span> <span class="n">Junction</span><span class="p">):</span>
         <span class="n">dst</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">components</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">signify</span>
 
-    <span class="k">return</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="nb">dict</span><span class="p">(</span><span class="n">comps</span><span class="o">=</span><span class="n">components</span><span class="p">,</span> <span class="n">signify</span><span class="o">=</span><span class="n">signify</span><span class="p">)</span> <span class="o">|</span> <span class="n">kwargs</span></div>
+    <span class="k">return</span> <span class="n">edge</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">edge</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">{</span><span class="s2">"comps"</span><span class="p">:</span> <span class="n">components</span><span class="p">,</span> <span class="s2">"signify"</span><span class="p">:</span> <span class="n">signify</span><span class="p">}</span> <span class="o">|</span> <span class="n">kwargs</span></div>
 
 
 
@@ -412,11 +413,11 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">flow_graph_to_agr_and_k</span><span class="p">(</span>
     <span class="n">f_graph</span><span class="p">:</span> <span class="n">MultiDiGraph</span><span class="p">,</span>
     <span class="n">funcs</span><span class="p">:</span> <span class="n">ExternalFunctions</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">k_constructor</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Kirchhoff</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+    <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">k_constructor</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Kirchhoff</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Aggregator</span><span class="p">,</span> <span class="n">Kirchhoff</span><span class="p">]:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""Create an Aggregator and Kirchhoff objects from a flow graph.</span>
 
@@ -468,11 +469,11 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">edges</span><span class="p">,</span>
         <span class="n">funcs</span><span class="p">:</span> <span class="n">ExternalFunctions</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">k_constructor</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Kirchhoff</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">,</span>
+        <span class="n">reference_node</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Hashable</span><span class="p">,</span> <span class="n">Pascal</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">abs_pressure_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Hashable</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">inertial_comps</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ref_mdots</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Calculation</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">k_constructor</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">Kirchhoff</span><span class="p">]</span> <span class="o">=</span> <span class="n">Kirchhoff</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
 <span class="sd">        Parameters</span>
@@ -562,7 +563,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -81,7 +81,8 @@
   <h1>Source code for stream.composition.constructors</h1><div class="highlight"><pre>
 <span></span><span class="sa">r</span><span class="sd">"""Various alternative constructors for some calculations"""</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Protocol</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
@@ -99,7 +100,7 @@
     <span class="n">dp</span><span class="p">:</span> <span class="n">Pascal</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">behavior</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"constant"</span><span class="p">,</span> <span class="s2">"linear"</span><span class="p">,</span> <span class="s2">"parabolic"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"parabolic"</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DPCalculation</span><span class="p">:</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">"""Construct a resistor to flow from a known point in the :math:`(\Delta p, \dot{m})` phase space.</span>
@@ -219,7 +220,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

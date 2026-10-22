@@ -303,7 +303,7 @@
 <div class="viewcode-block" id="test_friction_factor_keyword_passing">
 <a class="viewcode-back" href="../../tests.test_libraries.html#test_libraries.test_pressure_drop.test_friction_factor_keyword_passing">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_friction_factor_keyword_passing</span><span class="p">():</span>
-    <span class="n">args</span> <span class="o">=</span> <span class="n">T</span><span class="p">,</span> <span class="n">Tw</span><span class="p">,</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">fluid</span><span class="p">,</span> <span class="n">pipe</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">light_water</span><span class="p">,</span> <span class="n">mock_pipe</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">_T</span><span class="p">,</span> <span class="n">_Tw</span><span class="p">,</span> <span class="n">_mdot</span><span class="p">,</span> <span class="n">_fluid</span><span class="p">,</span> <span class="n">_pipe</span> <span class="o">=</span> <span class="mf">60.0</span><span class="p">,</span> <span class="mf">80.0</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">light_water</span><span class="p">,</span> <span class="n">mock_pipe</span>
     <span class="k">assert</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"turbulent"</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span> <span class="o">!=</span> <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"turbulent"</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
     <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
         <span class="n">friction_factor</span><span class="p">(</span><span class="s2">"laminar"</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
@@ -413,7 +413,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 17, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 
