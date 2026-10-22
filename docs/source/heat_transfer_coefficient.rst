@@ -161,10 +161,18 @@ upflow envelope, clipped to :math:`[2/3, 1]` (:func:`~.Sudo_downflow_ratio`). It
 option is off by default because it rests on lower envelopes from one experiment in one gap.
 
 Below Gz 16 there are no data, and at stagnation the held laminar value is already conservative, so the
-law returns the ratio to 1 between Gz 16 and Gz 2, about one decade, as a fixed choice. That band is a
-judgment, not the result of an evaluation. For scale, with the option on, the peak clad temperature of the
-LOFA example with both pumps tripped moves by about 0.25 K in total. The band can be moved only by calling
-:func:`~.Sudo_downflow_ratio` directly with its ``fade`` argument.
+law returns the ratio to 1 between Gz 16 and Gz 2, about one decade; the upper end is the data limit. The
+lower end is bounded by construction: the ratio is clipped to :math:`[2/3, 1]`, so wherever the return ends,
+the band lowers the laminar value by at most a third, and only below Gz 16, at the lowest flows of the
+laminar range. In the LOFA example with both pumps tripped, for instance, ending the return anywhere from
+Gz 0.002 to Gz 8, or holding the plateau to stagnation, moves the wall temperature of the hot plate against
+the default by at most 3 K for less than twenty seconds around the reversal of the flow, and the peak clad
+temperature over every band from stagnation up to Gz 2000 spans 0.2 K. Starting the return above Gz 16 is
+not a choice of fade, because it cuts Sudo's law inside its data; in the same example it lowers the wall
+temperature during the coastdown by up to 7 K for half a minute to more than two minutes. Against the
+option off, the option itself raises the wall temperature of the hot plate in the same example by up to
+8 K during the laminar downflow of the coastdown, and the peak clad temperature by 0.2 K. The band can be
+moved only by calling :func:`~.Sudo_downflow_ratio` directly with its ``fade`` argument.
 
 The local Gz needs ``develop_length``, which a channel supplies per cell, counted from the end the flow
 enters.
