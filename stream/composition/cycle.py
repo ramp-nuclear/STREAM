@@ -4,8 +4,9 @@ constructing coolant cycles and adding Kirchhoff constraints to its flow
 """
 
 import logging
+from collections.abc import Hashable, Sequence
 from functools import partial, wraps
-from typing import Any, Hashable, Sequence, Type
+from typing import Any
 
 from cytoolz import keymap
 from networkx import DiGraph, MultiDiGraph
@@ -30,6 +31,7 @@ from stream.units import Celsius, KgPerS, Pascal
 from stream.utilities import summed
 
 __all__ = [
+    "FlowGraph",
     "flow_edge",
     "flow_graph",
     "flow_graph_to_aggregator",
@@ -37,7 +39,6 @@ __all__ = [
     "in_parallel",
     "in_series",
     "kirchhoffify",
-    "FlowGraph",
 ]
 
 logger = logging.getLogger("stream.cycle")
@@ -158,10 +159,10 @@ def in_parallel(
 def kirchhoffify(
     agr: BaseAgr,
     k: Kirchhoff,
-    hydraulic_comps: Sequence[Calculation] = None,
-    inertial_comps: Sequence[Calculation] = None,
-    ref_mdots: Sequence[Calculation] = None,
-    abs_pressure_comps: Sequence[Calculation] = None,
+    hydraulic_comps: Sequence[Calculation] | None = None,
+    inertial_comps: Sequence[Calculation] | None = None,
+    ref_mdots: Sequence[Calculation] | None = None,
+    abs_pressure_comps: Sequence[Calculation] | None = None,
 ) -> CalculationGraph:
     r"""Given a subset of the given CalculationGraph calculations which adhere to Kirchhoff's laws, construct a
     CalculationGraph which contains Kirchhoff linked properly.
@@ -269,7 +270,7 @@ def flow_edge(
     if isinstance(dst, Junction):
         dst.weights[components[-1]] = signify
 
-    return edge[0], edge[1], dict(comps=components, signify=signify) | kwargs
+    return edge[0], edge[1], {"comps": components, "signify": signify} | kwargs
 
 
 def flow_graph_to_aggregator(f_graph: MultiDiGraph, funcs: ExternalFunctions | None = None) -> CalculationGraph:
@@ -311,11 +312,11 @@ def flow_graph_to_aggregator(f_graph: MultiDiGraph, funcs: ExternalFunctions | N
 def flow_graph_to_agr_and_k(
     f_graph: MultiDiGraph,
     funcs: ExternalFunctions | None = None,
-    reference_node: tuple[Hashable, Pascal] = None,
-    abs_pressure_comps: Sequence[Hashable] = None,
-    inertial_comps: Sequence[Calculation] = None,
-    ref_mdots: Sequence[Calculation] = None,
-    k_constructor: Type[Kirchhoff] = Kirchhoff,
+    reference_node: tuple[Hashable, Pascal] | None = None,
+    abs_pressure_comps: Sequence[Hashable] | None = None,
+    inertial_comps: Sequence[Calculation] | None = None,
+    ref_mdots: Sequence[Calculation] | None = None,
+    k_constructor: type[Kirchhoff] = Kirchhoff,
 ) -> tuple[Aggregator, Kirchhoff]:
     r"""Create an Aggregator and Kirchhoff objects from a flow graph.
 
@@ -364,11 +365,11 @@ class FlowGraph:
         self,
         *edges,
         funcs: ExternalFunctions | None = None,
-        reference_node: tuple[Hashable, Pascal] = None,
-        abs_pressure_comps: Sequence[Hashable] = None,
-        inertial_comps: Sequence[Calculation] = None,
-        ref_mdots: Sequence[Calculation] = None,
-        k_constructor: Type[Kirchhoff] = Kirchhoff,
+        reference_node: tuple[Hashable, Pascal] | None = None,
+        abs_pressure_comps: Sequence[Hashable] | None = None,
+        inertial_comps: Sequence[Calculation] | None = None,
+        ref_mdots: Sequence[Calculation] | None = None,
+        k_constructor: type[Kirchhoff] = Kirchhoff,
     ):
         r"""
         Parameters

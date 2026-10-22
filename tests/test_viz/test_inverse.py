@@ -62,14 +62,14 @@ def test_required_power_for_min_chfr(sweep):
 
 
 def test_required_with_free_dimension_and_at(agr):
-    cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
+    cases = [{"power": p, "mdot": m, "depth": d} for p in (2e6, 4e6, 8e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     r = s.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot")
     assert r.dims == {"depth": [1.0, 2.0]}
     assert len(r.frame) == 4
     with pytest.warns(UserWarning, match="depth=1.5"):
-        r2 = s.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot", at=dict(depth=1.5))
-    assert r2.dims == {} and r2.fixed == dict(depth=1.5)
+        r2 = s.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot", at={"depth": 1.5})
+    assert r2.dims == {} and r2.fixed == {"depth": 1.5}
     assert len(r2.frame) == 2
 
 
@@ -77,11 +77,11 @@ def test_required_role_conflicts(sweep):
     with pytest.raises(ValueError, match="solve_for.*versus"):
         sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="power")
     with pytest.raises(ValueError, match="power.*where"):
-        sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot", where=dict(power=4e6))
+        sweep.required("CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot", where={"power": 4e6})
 
 
 def test_required_needs_two_points(holed_sweep):
-    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
+    cases = [{"power": p, "mdot": 0.3} for p in (2e6, 4e6)]
     frames = [holed_sweep.frames[1], None]
     with pytest.warns(UserWarning):
         s = Sweep(cases, frames, holed_sweep.agr)
@@ -98,7 +98,7 @@ def test_required_bracket_over_hole_warns(holed_sweep):
 
 
 def test_required_bracket_spanning_a_hole_names_the_case(agr):
-    cases = [dict(power=p, mdot=0.3) for p in (2e6, 4e6, 6e6)]
+    cases = [{"power": p, "mdot": 0.3} for p in (2e6, 4e6, 6e6)]
     frames = [make_case_frame(c["power"], c["mdot"]) for c in cases]
     frames[1] = None
     with pytest.warns(UserWarning, match="holes"):
@@ -115,7 +115,7 @@ def test_required_quantity_target(agr):
         falling = [("CC", "cold", 0, j, 10.0 - power / 1e6 + j) for j in range(4)]
         return frame(rising + falling)
 
-    cases = [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
+    cases = [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
     s = Sweep(cases, [rows(c["power"]) for c in cases], agr)
     r = s.required("hot", equals="cold", reduce="max", solve_for="power", versus="mdot")
     np.testing.assert_allclose(r.frame.value, [5e6, 5e6])
@@ -130,12 +130,12 @@ def test_required_rejects_an_unknown_method(sweep):
 
 
 def test_required_rejects_a_parameter_fixed_twice(agr):
-    cases = [dict(power=p, mdot=m, depth=d) for p in (2e6, 4e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
+    cases = [{"power": p, "mdot": m, "depth": d} for p in (2e6, 4e6) for m in (0.2, 0.3) for d in (1.0, 2.0)]
     s = Sweep(cases, [make_case_frame(c["power"], c["mdot"]) for c in cases], agr)
     with pytest.raises(ValueError, match="depth.*where.*at"):
         s.required(
             "CHFR", equals=1.5, reduce="min", solve_for="power", versus="mdot",
-            where=dict(depth=1.0), at=dict(depth=1.0),
+            where={"depth": 1.0}, at={"depth": 1.0},
         )
 
 
@@ -295,7 +295,7 @@ def test_required_quantity_target_with_a_limit_has_a_side(agr):
         falling = [("CC", "cold", 0, j, 10.0 - power / 1e6 + j) for j in range(4)]
         return frame(rising + falling)
 
-    cases = [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
+    cases = [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6, 8e6) for m in (0.2, 0.3)]
     s = Sweep(cases, [rows(c["power"]) for c in cases], agr, limits={"hot": at_most(0.0)})
     r = s.required("hot", equals="cold", reduce="max", solve_for="power", versus="mdot")
     assert list(r.frame.safe) == ["below", "below"] and r.safe_side == "below"

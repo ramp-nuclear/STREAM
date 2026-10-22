@@ -15,6 +15,6 @@ from stream.physical_models.decay_heat import (
 __all__ = [
     "actinides",
     "activation",
-    "fissions",
     "fission_products",
+    "fissions",
 ]

@@ -5,8 +5,9 @@ such a system.
 """
 
 from abc import abstractmethod
+from collections.abc import Iterable, Sequence
 from functools import wraps
-from typing import Any, Iterable, Optional, Protocol, Sequence, runtime_checkable
+from typing import Any, Optional, Protocol, runtime_checkable
 
 import numpy as np
 from cytoolz.dicttoolz import valmap
@@ -14,7 +15,7 @@ from cytoolz.dicttoolz import valmap
 from stream.units import Array1D, Name, Place, Value
 from stream.utilities import flatten_values
 
-__all__ = ["Calculation", "unpacked", "CalcState"]
+__all__ = ["CalcState", "Calculation", "unpacked"]
 CalcState = dict[Name, Value]
 
 
@@ -219,7 +220,6 @@ class Calculation(Protocol):
         variables: Sequence[float]
             Input
         """
-        pass
 
     def event_margin(self, variables: Sequence[float], **_) -> Array1D:
         r"""Continuous, signed event margins for this calculation.

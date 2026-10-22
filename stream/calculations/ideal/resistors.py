@@ -6,10 +6,11 @@ of the resistors here do not follow an Ohm's law (i.e. they are not linear).
 """
 
 import numbers
+from collections.abc import Callable, Sequence
 from copy import deepcopy
 from functools import partial
 from itertools import chain
-from typing import Callable, Protocol, Sequence
+from typing import Protocol
 
 import numpy as np
 from numba import njit
@@ -53,17 +54,17 @@ from stream.units import (
 from stream.utilities import summed
 
 __all__ = [
+    "Bend",
     "CheckValve",
     "DPCalculation",
-    "Resistor",
     "Friction",
     "Gravity",
     "LocalPressureDrop",
-    "Bend",
-    "ResistorSum",
-    "ResistorMul",
     "MultipliableCalculation",
     "RegimeDependentFriction",
+    "Resistor",
+    "ResistorMul",
+    "ResistorSum",
     "Screen",
     "VolumetricFlowResistor",
 ]

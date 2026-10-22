@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Iterable, Protocol, Sequence
+from collections.abc import Iterable, Sequence
+from typing import Protocol
 
 from more_itertools import unique_everseen
 from networkx import DiGraph
@@ -97,21 +98,21 @@ def draw_aggregator(graph: DiGraph, node_options=None, edge_options=None):
     # noinspection SpellCheckingInspection
     with rc_context({r"text.usetex": False}):
         labels = {n: uppercase_numeric_only(type(n).__name__) for n in graph}
-        default = dict(
-            pos=nx.circular_layout(graph),
-            labels=labels,
-            node_size=1200,
-            node_color="k",
-            font_color="w",
-            font_family="serif",
-            font_size=12,
-            node_shape="s",
-        )
+        default = {
+            "pos": nx.circular_layout(graph),
+            "labels": labels,
+            "node_size": 1200,
+            "node_color": "k",
+            "font_color": "w",
+            "font_family": "serif",
+            "font_size": 12,
+            "node_shape": "s",
+        }
         kwargs = default | node_options
         nx.draw_networkx(graph, **kwargs)
 
         edge_labels = {(u, v): d for u, v, d in graph.edges(data=VARS)}
-        default = dict(label_pos=0.2, edge_labels=edge_labels, font_size=10)
+        default = {"label_pos": 0.2, "edge_labels": edge_labels, "font_size": 10}
         edge_kwargs = default | edge_options
         nx.draw_networkx_edge_labels(graph, kwargs["pos"], **edge_kwargs)
 

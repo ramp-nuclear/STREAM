@@ -47,7 +47,7 @@ def test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_soluti
     PendulumCalculation = Calculation_factory(
         calculate=calculate,
         mass_vector=4 * [True] + [False],
-        variables=dict(x=0, y=1, u=2, v=3, lamda=4),
+        variables={"x": 0, "y": 1, "u": 2, "v": 3, "lamda": 4},
     )
 
     agr = Aggregator.from_decoupled(PendulumCalculation())
@@ -66,7 +66,7 @@ def test_dae_with_undetermined_var_fails_as_TransientRuntimeError():
     ExponentWithUndeterminedVar = Calculation_factory(
         calculate=lambda y: np.array([-y[0], 0.0]),
         mass_vector=[True, False],
-        variables=dict(x=0, free=1),
+        variables={"x": 0, "free": 1},
     )
     agr = Aggregator.from_decoupled(ExponentWithUndeterminedVar())
     with pytest.raises(TransientRuntimeError):
@@ -82,7 +82,7 @@ def test_dae_solver_accepts_all_algebraic_calculations():
     def residues(t, y, ydot, result):
         result[:] = [y[0] - y[1], y[0] + y[1]]
 
-    kwargs = dict(compute_initcond="yp0", old_api=False, algebraic_vars_idx=np.arange(2))
+    kwargs = {"compute_initcond": "yp0", "old_api": False, "algebraic_vars_idx": np.arange(2)}
     solver = dae("ida", residues, **kwargs)
     with ignore_warnings(DeprecationWarning):
         solution = solver.solve(tspan=[0, 0.001], y0=[100, 200], yp0=[-100, 300])
@@ -102,7 +102,7 @@ def _gravity_resistor_loop(resistance):
     P = Pump(pressure=1.0e4)
     R = ResistorSum(Gravity(light_water, disposition=1.0), Resistor(resistance=resistance), name="R")
     fg = flow_graph(flow_edge(("A", "B"), P), flow_edge(("B", "A"), R))
-    agr, K = agr_k(fg, {P.name: dict(Tin=T), R.name: dict(Tin=T)})
+    agr, K = agr_k(fg, {P.name: {"Tin": T}, R.name: {"Tin": T}})
 
     rho = light_water.density(T)
     head = rho * 9.80665 * 1.0
@@ -111,7 +111,7 @@ def _gravity_resistor_loop(resistance):
         st = State.merge(
             {K.name: {K.component_edge(P): mdot, K.component_edge(R): mdot}},
             State.uniform((R, P), T),
-            {R.name: dict(pressure=head - resistance * mdot), P.name: dict(pressure=1.0e4)},
+            {R.name: {"pressure": head - resistance * mdot}, P.name: {"pressure": 1.0e4}},
         )
         y = agr.load(st)
         J = ALG_jacobian(agr)(y).copy()
@@ -207,12 +207,12 @@ class _EchoInput:
     """A 3-variable calculation whose calculate() returns the result it was built with,
     whatever its length."""
 
-    variables = {"a": 0, "b": 1, "c": 2}
     mass_vector = np.array([False, False, False])
 
     def __init__(self, result, name="wrong"):
         self._result = result
         self.name = name
+        self.variables =  {"a": 0, "b": 1, "c": 2}
 
     def __len__(self):
         return 3
@@ -265,8 +265,8 @@ def test_compute_accepts_correct_length_result():
 
 def _coupled_algebraic_aggregator():
     """A tiny coupled 2-variable algebraic system with a unique root (y=2, x=1)."""
-    Addition = Calculation_factory(lambda y, *, x: y - x - 1.0, [False], dict(y=0))
-    Multiplication = Calculation_factory(lambda x, *, y: x - 0.5 * y, [False], dict(x=0))
+    Addition = Calculation_factory(lambda y, *, x: y - x - 1.0, [False], {"y": 0})
+    Multiplication = Calculation_factory(lambda x, *, y: x - 0.5 * y, [False], {"x": 0})
     add = Addition(name="Add")
     multiply = Multiplication(name="Multiply")
     graph = DiGraph([(add, multiply, vars_("y")), (multiply, add, vars_("x"))])
@@ -285,7 +285,7 @@ def test_solve_with_time_none_points_at_solve_steady(eq_type):
 def _blowup_aggregator():
     """y' = y^2 with y0 = 1: a finite-time blowup at t = 1 that makes RK45 fail
     (step size underflow / overflow) before reaching the requested horizon."""
-    Blowup = Calculation_factory(calculate=lambda y: y**2, mass_vector=[True], variables=dict(y=0))
+    Blowup = Calculation_factory(calculate=lambda y: y**2, mass_vector=[True], variables={"y": 0})
     return Aggregator.from_decoupled(Blowup())
 
 
@@ -295,15 +295,14 @@ def test_ode_backend_raises_on_solver_failure_instead_of_truncating():
     against the requested time vector, which crashes save())."""
     agr = _blowup_aggregator()
     time = np.linspace(0.0, 2.0, 101)
-    with ignore_warnings(RuntimeWarning):  # overflow in y**2
-        with pytest.raises(TransientRuntimeError):
-            agr.solve(np.array([1.0]), time)
+    with ignore_warnings(RuntimeWarning), pytest.raises(TransientRuntimeError):  # overflow in y**2
+        agr.solve(np.array([1.0]), time)
 
 
 def test_ode_backend_solution_time_and_data_stay_aligned():
     """On a well-posed ODE the ODE branch must rebind time from the solver so
     len(time) == data rows and save() round-trips without an IndexError."""
-    Decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables=dict(y=0))
+    Decay = Calculation_factory(calculate=lambda y: -y, mass_vector=[True], variables={"y": 0})
     agr = Aggregator.from_decoupled(Decay())
     time = np.linspace(0.0, 1.0, 11)
     sol = agr.solve(np.array([1.0]), time)

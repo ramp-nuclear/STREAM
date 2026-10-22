@@ -67,11 +67,11 @@ from the smallest radius (0 for a cylinder). The integration is the same (since 
 are :math:`r`-dependent. Specifically:
 
 .. math::
-    \begin{align}
+    \begin{aligned}
     A_{i, j-1/2} &= 2\pi r_{j-1/2}\Delta z_i \\
     A_{i-1/2, j} = A_{i+1/2, j} &= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2) \\
     V_{ij} &= \pi (r_{j+1/2} ^ 2 - r_{j-1/2} ^ 2)\Delta z_i \\
-    \end{align}
+    \end{aligned}
 
 The thermal resistance is then computed in the same manner using the distances
 between cell centers :math:`\Delta r, \Delta z`.
@@ -79,9 +79,10 @@ between cell centers :math:`\Delta r, \Delta z`.
 
 import logging
 import pickle
+from collections.abc import Callable, Sequence
 from dataclasses import astuple, dataclass
 from functools import partial
-from typing import Callable, Sequence, Type, TypeVar
+from typing import Self
 
 import numpy as np
 from cachetools import cached
@@ -122,14 +123,14 @@ from stream.utilities import (
 logger = logging.getLogger("stream.fuel")
 
 __all__ = [
-    "cylindrical_areas_volumes",
     "Fuel",
+    "Solid",
+    "Walls",
+    "cylindrical_areas_volumes",
     "r_diffusion",
     "rz_diffusion",
     "x_diffusion",
     "xz_diffusion",
-    "Solid",
-    "Walls",
 ]
 
 
@@ -155,7 +156,6 @@ class Walls:
         return self.top, self.bottom
 
 
-_T = TypeVar("_T")
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,7 +175,7 @@ class Solid:
     conductivity: WPerMK
 
     @classmethod
-    def from_array(cls: Type[_T], array: np.array) -> _T:
+    def from_array(cls, array: np.array) -> Self:
         """Create a Solid from an array of Solid scalars
 
         Parameters
@@ -453,7 +453,7 @@ def r_diffusion(
     """
     dx = np.diff(x)
     dz = np.diff(z)
-    r_areas, z_areas, volumes = cylindrical_areas_volumes(r=x, z=z)
+    r_areas, _z_areas, volumes = cylindrical_areas_volumes(r=x, z=z)
     return generic_2d_diffusion(
         T=T,
         T_walls=T_walls,
@@ -522,10 +522,10 @@ def _z_bulk(a):
 
 
 bulks = _x_bulk, _z_bulk
-left = dict(indices=0, axis=1)
-right = dict(indices=-1, axis=1)
-top = dict(indices=0, axis=0)
-bottom = dict(indices=-1, axis=0)
+left = {"indices": 0, "axis": 1}
+right = {"indices": -1, "axis": 1}
+top = {"indices": 0, "axis": 0}
+bottom = {"indices": -1, "axis": 0}
 edges = (left, right, top, bottom)
 
 
@@ -754,11 +754,11 @@ class Fuel(Calculation):
         self.walls_eq = dataclass_map(Walls, T_wall_func)
 
         # Variables
-        self._vars = dict(
-            T=slice(0, n * m),
-            T_wall_left=slice(n * m, (1 + n) * m),
-            T_wall_right=slice((1 + n) * m, (2 + n) * m),
-        )
+        self._vars = {
+            "T": slice(0, n * m),
+            "T_wall_left": slice(n * m, (1 + n) * m),
+            "T_wall_right": slice((1 + n) * m, (2 + n) * m),
+        }
         logger.log(STREAM_DEBUG, f"New {self.name}, {m} by {n}")
 
     @unpacked
@@ -835,13 +835,13 @@ class Fuel(Calculation):
         return out
 
     def indices(self, variable: Name, asking=None) -> Place:
-        return dict(
-            T_left=self._vars["T_wall_right"],
-            T_right=self._vars["T_wall_left"],
-            T_top=self._indices[-1, :],
-            T_bottom=self._indices[0, :],
-            T=self._indices[self.meat == 1],
-        )[variable]
+        return {
+            "T_left": self._vars["T_wall_right"],
+            "T_right": self._vars["T_wall_left"],
+            "T_top": self._indices[-1, :],
+            "T_bottom": self._indices[0, :],
+            "T": self._indices[self.meat == 1],
+        }[variable]
 
     @property
     def mass_vector(self) -> Sequence[bool]:

@@ -1,6 +1,7 @@
+from collections.abc import Sequence
 from enum import Enum
 from functools import partial, reduce
-from typing import Literal, Protocol, Sequence
+from typing import Literal, Protocol
 
 import numpy as np
 
@@ -129,16 +130,16 @@ def regime_dependent_h_spl(
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
 
     inp = (
-        dict(
-            coolant=coolant,
-            mdot=mdot,
-            Dh=Dh,
-            A=A,
-            T_cool=T_cool,
-            T_wall=T_wall,
-            coolant_funcs=coolant_funcs,
-            Lh=Lh,
-        )
+        {
+            "coolant": coolant,
+            "mdot": mdot,
+            "Dh": Dh,
+            "A": A,
+            "Lh": Lh,
+            "T_cool": T_cool,
+            "T_wall": T_wall,
+            "coolant_funcs": coolant_funcs,
+        }
         | kwargs
     )
     h = np.empty(len(T_cool))
@@ -147,11 +148,11 @@ def regime_dependent_h_spl(
     h_turb = turbulent(**inp)
     h[turb] = h_turb[turb]
     if np.any(lam + inter):
-        h_lam = laminar(**(inp | dict(coolant=bulk)))
+        h_lam = laminar(**(inp | {"coolant": bulk}))
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
-    h_nat = natural(**(inp | dict(coolant=bulk)))
+    h_nat = natural(**(inp | {"coolant": bulk}))
     # Scoped: extreme solver iterates drive inf/0*inf through the cube norm and blend; the NaN/inf result is the caller's rejection signal, not a healthy-path event.
     with np.errstate(invalid="ignore", over="ignore"):
         h = np.cbrt(h**3 + h_nat**3)

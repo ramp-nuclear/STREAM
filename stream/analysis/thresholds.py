@@ -16,9 +16,10 @@ ONB_left=onb_left, ONB_right=onb_right)
 
 """
 
+from collections.abc import Callable
 from copy import deepcopy
 from inspect import signature
-from typing import Callable, Protocol
+from typing import Protocol
 
 import numpy as np
 

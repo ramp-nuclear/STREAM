@@ -23,7 +23,7 @@ from stream.units import (
     g as local_gravity,
 )
 
-__all__ = ["flow_regimes", "Gr", "Nu", "Pe", "Pr", "Ra", "Re", "Re_mdot"]
+__all__ = ["Gr", "Nu", "Pe", "Pr", "Ra", "Re", "Re_mdot", "flow_regimes"]
 
 
 @njit

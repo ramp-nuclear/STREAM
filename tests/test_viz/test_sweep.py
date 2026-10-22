@@ -81,7 +81,7 @@ def test_levels_are_sorted_unique(sweep):
 
 
 def test_case_of(sweep):
-    assert sweep.case_of(3) == dict(power=4e6, mdot=0.3)
+    assert sweep.case_of(3) == {"power": 4e6, "mdot": 0.3}
 
 
 def test_hole_recorded_and_messages_travel(grid_cases, agr):
@@ -105,16 +105,16 @@ def test_misaligned_lists_raise(grid_cases, agr):
 
 def test_non_float_case_value_raises(agr):
     with pytest.raises(TypeError, match="case 0.*'tag'.*'up'"):
-        Sweep([dict(power=1.0, tag=["up"])], [make_case_frame(1.0, 0.3)], agr)
+        Sweep([{"power": 1.0, "tag": ["up"]}], [make_case_frame(1.0, 0.3)], agr)
 
 
 def test_integers_become_floats(agr):
-    s = Sweep([dict(power=2)], [make_case_frame(2.0, 0.3)], agr)
+    s = Sweep([{"power": 2}], [make_case_frame(2.0, 0.3)], agr)
     assert s.cases[0]["power"] == 2.0 and isinstance(s.cases[0]["power"], float)
 
 
 def test_differing_keys_raise(agr):
-    cases = [dict(power=1.0, mdot=0.3), dict(power=1.0)]
+    cases = [{"power": 1.0, "mdot": 0.3}, {"power": 1.0}]
     with pytest.raises(ValueError, match="case 1.*mdot"):
         Sweep(cases, [make_case_frame(1.0, 0.3)] * 2, agr)
 
@@ -122,13 +122,13 @@ def test_differing_keys_raise(agr):
 def test_transient_frame_refused(agr):
     df = make_case_frame(1.0, 0.3).assign(time=0.0)
     with pytest.raises(ValueError, match="case 0.*time.*steady"):
-        Sweep([dict(power=1.0)], [df], agr)
+        Sweep([{"power": 1.0}], [df], agr)
 
 
 def test_missing_columns_refused(agr):
     df = make_case_frame(1.0, 0.3).drop(columns=["j"])
     with pytest.raises(ValueError, match="case 0.*'j'"):
-        Sweep([dict(power=1.0)], [df], agr)
+        Sweep([{"power": 1.0}], [df], agr)
 
 
 def test_banded_predicate_and_zero_columns(grid_cases, agr):
@@ -155,14 +155,14 @@ def test_negative_band_raises(agr):
     df = make_case_frame(1.0, 0.3, banded=True)
     df.loc[2, "stat"] = -1.0
     with pytest.raises(ValueError, match="case 0.*stat.*row 2"):
-        Sweep([dict(power=1.0)], [df], agr)
+        Sweep([{"power": 1.0}], [df], agr)
 
 
 def test_non_finite_rows_dropped_with_warning(agr):
     df = make_case_frame(1.0, 0.3)
     df.loc[1, "value"] = np.nan
     with pytest.warns(UserWarning, match="case 0.*row 1"):
-        s = Sweep([dict(power=1.0)], [df], agr)
+        s = Sweep([{"power": 1.0}], [df], agr)
     assert len(s.table) == len(df) - 1
 
 
@@ -209,7 +209,7 @@ def test_where_refusals(sweep):
         sweep.profile("T_cool", where={"depth": 1.0})
     with pytest.raises(ValueError, match="mdot=0.35.*0.2, 0.3"):
         sweep.profile("T_cool", where={"mdot": 0.35})
-    with pytest.raises(ValueError, match="power is a number; got 'x'"):
+    with pytest.raises(TypeError, match="power is a number; got 'x'"):
         sweep.profile("T_cool", where={"power": "x"})
 
 
@@ -252,7 +252,7 @@ def test_a_calculation_the_aggregator_lacks_is_named(agr):
 
 
 def test_zero_band_warning_fires_once_for_all_cases(agr):
-    cases = [dict(power=1.0), dict(power=2.0), dict(power=3.0)]
+    cases = [{"power": 1.0}, {"power": 2.0}, {"power": 3.0}]
     frames = [
         make_case_frame(1.0, 0.3),
         make_case_frame(2.0, 0.3, banded=True),
@@ -272,7 +272,7 @@ def test_non_finite_warning_fires_once_for_all_cases(agr):
     df1 = make_case_frame(2.0, 0.3)
     df1.loc[2, "value"] = np.nan
     with pytest.warns(UserWarning) as record:
-        Sweep([dict(power=1.0), dict(power=2.0)], [df0, df1], agr)
+        Sweep([{"power": 1.0}, {"power": 2.0}], [df0, df1], agr)
     non_finite = [w for w in record.list if "non-finite" in str(w.message)]
     assert len(non_finite) == 1
     assert "case 0" in str(non_finite[0].message)
@@ -281,13 +281,13 @@ def test_non_finite_warning_fires_once_for_all_cases(agr):
 
 def test_reserved_parameter_name_raises(agr):
     with pytest.raises(ValueError, match="'value'.*case, calculation, variable, i, j, value, sys, stat"):
-        Sweep([dict(power=1.0, value=2.0)], [make_case_frame(1.0, 0.3)], agr)
+        Sweep([{"power": 1.0, "value": 2.0}], [make_case_frame(1.0, 0.3)], agr)
 
 
 def test_categorical_columns_survive_concat_with_differing_calculations(agr):
     df0 = frame([("CC", "T_cool", 0, 0, 40.0)])
     df1 = frame([("plate", "T", 0, 0, 50.0)])
-    s = Sweep([dict(power=1.0), dict(power=2.0)], [df0, df1], agr)
+    s = Sweep([{"power": 1.0}, {"power": 2.0}], [df0, df1], agr)
     assert str(s.table.calculation.dtype) == "category"
     assert str(s.table.variable.dtype) == "category"
     assert set(s.table.calculation.cat.categories) == {"CC", "plate"}
@@ -308,7 +308,7 @@ def test_a_plate_without_bounds_weighs_its_cells_equally(agr):
 
 
 def wall_cases():
-    return [dict(power=p, wall_law=w) for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6)]
+    return [{"power": p, "wall_law": w} for w in ("regime", "Dittus") for p in (2e6, 4e6, 6e6)]
 
 
 def wall_sweep(agr):
@@ -342,12 +342,12 @@ def test_string_parameter_colours_and_titles(agr):
     sweep = wall_sweep(agr)
     r = sweep.reduce("CHFR", "min", versus="power")
     assert r.dims == {"wall_law": ["regime", "Dittus"]}
-    fig, ax = r.plot()
+    _, ax = r.plot()
     assert [t.get_text() for t in ax.get_legend().get_texts()] == ["regime", "Dittus"]
     assert ax.get_legend().get_title().get_text() == "wall_law"
-    fig, axes = r.plot(col="wall_law")
+    _fig, axes = r.plot(col="wall_law")
     assert axes[0, 0].get_title().startswith("wall_law = regime")
-    assert sweep.profile("CHFR", where=dict(power=4e6, wall_law="Dittus")).subtitle == "Power = 4e+06 W, wall_law = Dittus, CC"
+    assert sweep.profile("CHFR", where={"power": 4e6, "wall_law": "Dittus"}).subtitle == "Power = 4e+06 W, wall_law = Dittus, CC"
 
 
 def test_string_parameter_refused_as_an_axis(agr):
@@ -362,7 +362,7 @@ def test_string_parameter_refused_as_an_axis(agr):
 
 def test_cases_product():
     out = cases(power=[2e6, 4e6], mdot=[0.2, 0.3], Tin=300.0, wall_law="regime")
-    assert out[:2] == [dict(power=2e6, mdot=0.2, Tin=300.0, wall_law="regime"), dict(power=2e6, mdot=0.3, Tin=300.0, wall_law="regime")]
+    assert out[:2] == [{"power": 2e6, "mdot": 0.2, "Tin": 300.0, "wall_law": "regime"}, {"power": 2e6, "mdot": 0.3, "Tin": 300.0, "wall_law": "regime"}]
     assert len(out) == 4
     with pytest.raises(ValueError, match="power has no levels"):
         cases(power=[])
@@ -397,7 +397,7 @@ def test_fill_holes_interpolates_a_bracketed_hole(agr, grid_cases):
 
 
 def test_fill_holes_averages_two_bracketing_parameters(agr):
-    cs = [dict(power=p, mdot=m) for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3, 0.4)]
+    cs = [{"power": p, "mdot": m} for p in (2e6, 4e6, 6e6) for m in (0.2, 0.3, 0.4)]
     sweep = holed(agr, None, 4, cases_=cs)
     assert sweep.filled == {4: {"power": (1, 7), "mdot": (3, 5)}}
     t = sweep.table

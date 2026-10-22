@@ -216,7 +216,10 @@ def _frozen_inputs(agr: Aggregator, block: set, y: np.ndarray, t: Second) -> dic
                     f"wholly from inside or wholly from outside."
                 )
             if isinstance(v, Junction):
-                raise ValueError(
+                # Ruff is wrong here, we find that this is a value problem by 
+                # looking at the data type, but the problem is in the data 
+                # structure, not the data type.
+                raise ValueError(  # ruff: ignore[TRY004]
                     f"{v} is a Junction on the block boundary; junctions mix their inputs by "
                     f"source and cannot be frozen. Put the junction and its neighbours in the same block."
                 )
@@ -567,7 +570,7 @@ def _cluster_seed(
         left = fed.get("left", fed.get("right", np.full(f.m, T0)))
         right = fed.get("right", left)
         interior = np.tile(((left + right) / 2.0)[:, None], (1, f.n))
-        state[f.name] = dict(T=interior, T_wall_left=left, T_wall_right=right)
+        state[f.name] = {"T": interior, "T_wall_left": left, "T_wall_right": right}
     return State(state)
 
 

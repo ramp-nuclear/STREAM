@@ -12,8 +12,9 @@ The combination of calculations into an MTR-like setup, containing:
 The created objects are CalculationGraph objects which may be combined to eventually create an executable scheme.
 """
 
+from collections.abc import Callable, Iterable, Sequence
 from copy import deepcopy
-from typing import Callable, Iterable, Literal, Sequence
+from typing import Literal
 
 import numpy as np
 from more_itertools import interleave_longest, windowed
@@ -26,12 +27,12 @@ from stream.utilities import concat, cosine_shape
 
 __all__ = [
     "chain_fuels_channels",
+    "one_sided_connection",
     "plate",
     "rod",
-    "one_sided_connection",
     "symmetric_plate",
-    "x_boundaries",
     "uniform_x_power_shape",
+    "x_boundaries",
 ]
 
 

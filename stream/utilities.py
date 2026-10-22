@@ -7,10 +7,11 @@ and more.
 """
 
 import warnings
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial, reduce, singledispatch
 from operator import add
-from typing import Any, Callable, Iterable, ParamSpec, Protocol, Sequence, Type, TypeVar
+from typing import Any, ParamSpec, Protocol, Self, TypeVar
 
 import numpy as np
 from cytoolz import valmap
@@ -59,7 +60,7 @@ def cosine_shape(
     x: Array1D,
     ppf: float = np.pi / 2,
     *,
-    xmax: float = None,
+    xmax: float | None = None,
 ) -> Array1D:
     r"""
     Creates a normalized cosine profile for cells whose boundaries are `x`,
@@ -260,7 +261,7 @@ def flatten_values(d: dict[Any, Value], dtype=np.float64) -> Value:
 
 
 @contextmanager
-def ignore_warnings(warn_type: Type[Warning]):
+def ignore_warnings(warn_type: type[Warning]):
     warnings.filterwarnings("ignore", category=warn_type)
     yield
     try:
@@ -418,17 +419,16 @@ def lin_interp(x1: Value, x2: Value, y1: Value, y2: Value, x: Value) -> Value:
 
 
 _P = ParamSpec("_P")
-_T = TypeVar("_T")
 
 
 class _FloatWorthy(Protocol):
-    def __add__(self: _T, other: float) -> _T: ...
+    def __add__(self, other: float) -> Self: ...
 
-    def __radd__(self: _T, other: float) -> _T: ...
+    def __radd__(self, other: float) -> Self: ...
 
-    def __mul__(self: _T, other: float) -> _T: ...
+    def __mul__(self, other: float) -> Self: ...
 
-    def __rmul__(self: _T, other: float) -> _T: ...
+    def __rmul__(self, other: float) -> Self: ...
 
 
 _G = TypeVar("_G", bound=_FloatWorthy)
@@ -708,7 +708,7 @@ class _DataclassMap(Protocol):
 _FieldMap = _DataclassMap
 
 
-def dataclass_map(dc: Type[T], f: _FieldMap) -> _DataclassMap:
+def dataclass_map(dc: type[T], f: _FieldMap) -> _DataclassMap:
     """
     If a function should work in the same manner on all fields of a dataclass,
     create that function and return it.

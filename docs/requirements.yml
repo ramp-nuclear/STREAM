@@ -16,7 +16,6 @@ dependencies:
   - dask
   - yaml
   - jupyter
-  - mathjax
   - matplotlib
   - nbsphinx
   - networkx

@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from enum import Enum
-from typing import Iterable, TypedDict, Unpack
+from typing import TypedDict, Unpack
 
 import numpy as np
 

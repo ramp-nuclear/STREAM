@@ -4,8 +4,8 @@ References
     .. [#Idelchik] Handbook of Hydraulic Resistance, I. E. Idelchik, ????
 """
 
+from collections.abc import Callable
 from functools import partial
-from typing import Callable
 
 import numpy as np
 from numba import njit

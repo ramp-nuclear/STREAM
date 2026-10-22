@@ -1,6 +1,6 @@
+from collections.abc import Sequence
 from contextlib import nullcontext
 from itertools import count
-from typing import Sequence
 
 import numpy as np
 import pytest
@@ -93,10 +93,10 @@ def test_composition_of_specific_agrs_yields_known_agr():
     c = CalculationGraph.connect(a, b, edge)
 
     assert list(c.graph.edges(data=True)) == [
-        (1, 2, dict(data="hello")),
-        (2, 3, dict(data="hi")),
-        (2, 4, dict(variables="var")),
-        (3, 4, dict(data="welcome")),
+        (1, 2, {"data": "hello"}),
+        (2, 3, {"data": "hi"}),
+        (2, 4, {"variables": "var"}),
+        (3, 4, {"data": "welcome"}),
     ]
     assert list(c.funcs.keys()) == [1, 4]
 
@@ -122,7 +122,7 @@ def test_ida_root_functions():
         last_call[:] = (y, t)
         return y
 
-    options = dict(rtol=1e-9)
+    options = {"rtol": 1e-9}
 
     out, _ = differential_algebraic(
         F=F,
@@ -231,7 +231,7 @@ def test_ida_continuous_mode():
 
         @property
         def variables(self) -> dict[str, Place]:
-            return dict(y=1)
+            return {"y": 1}
 
         @unpacked
         def should_continue(self, y, **kwargs):
@@ -311,7 +311,7 @@ def test_create_constraints_for_a_known_example():
     calc = Calculation_factory(
         lambda v, **_: v - np.array([-1, 0, 1]),
         [False] * 3,
-        dict(v_neg=0, v_zero=1, v_pos=2),
+        {"v_neg": 0, "v_zero": 1, "v_pos": 2},
     )()
     agr = Aggregator.from_decoupled(calc)
     assert np.all(
@@ -332,7 +332,7 @@ def test_create_constraints_with_unequal_category_sizes():
     calc = Calculation_factory(
         lambda v, **_: v - np.zeros(3),
         [False] * 3,
-        dict(mdot_a=0, mdot_b=1, h=2),
+        {"mdot_a": 0, "mdot_b": 1, "h": 2},
     )()
     agr = Aggregator.from_decoupled(calc)
     result = create_constraints(agr, non_negative=["mdot_a", "mdot_b"], positive=["h"])
@@ -346,7 +346,7 @@ def test_create_constraints_with_bad_name_errors_well():
     calc = Calculation_factory(
         lambda v, **_: v - np.array([-1, 0, 1]),
         [False] * 3,
-        dict(v_neg=0, v_zero=1, v_pos=2),
+        {"v_neg": 0, "v_zero": 1, "v_pos": 2},
     )()
     agr = Aggregator.from_decoupled(calc)
     with pytest.raises(KeyError, match="moo. Must be one of"):

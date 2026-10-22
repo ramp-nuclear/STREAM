@@ -6,9 +6,10 @@ A set of utilities for analysing an :ref:`Aggregator` system before solving or a
 of a debugging process
 """
 
+from collections.abc import Callable, Iterator
 from enum import Enum
 from inspect import Parameter, signature
-from typing import Callable, Iterator, Literal
+from typing import Literal
 
 from IPython.display import Markdown, display
 from rich.table import Table
@@ -146,5 +147,5 @@ def report(
         case _:
             raise ValueError(
                 f"Printer '{printer}' is not registered, please use one "
-                f"of the following: {list(v.value for v in Printer)}"
+                f"of the following: {[v.value for v in Printer]}"
             )

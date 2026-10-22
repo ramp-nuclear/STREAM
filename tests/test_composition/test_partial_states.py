@@ -31,7 +31,7 @@ def test_uniform_with_an_example():
 
 keys = st.characters(whitelist_categories="L")
 calculations = st.integers(1, 5).flatmap(lambda n: st.builds(HasVariables, st.just(str(n)), *(n * [keys])))
-calc_lists = st.lists(calculations, min_size=1).filter(lambda lst: len(set(c.name for c in lst)) == len(lst))
+calc_lists = st.lists(calculations, min_size=1).filter(lambda lst: len({c.name for c in lst}) == len(lst))
 vars_indices = st.lists(st.integers(min_value=0), min_size=1)
 
 

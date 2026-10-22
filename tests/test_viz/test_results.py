@@ -7,7 +7,7 @@ from stream.viz import Result, Sweep, at, at_least, at_most
 
 
 def test_profile_single_case(sweep):
-    r = sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3})
     assert isinstance(r, Result) and r.kind == "profile"
     assert r.x == "z"
     assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "z", "lower", "value", "upper", "inner_lower", "inner_upper", "filled"]
@@ -16,32 +16,32 @@ def test_profile_single_case(sweep):
     np.testing.assert_allclose(r.frame.value, [44.0, 49.0, 54.0, 59.0])
     assert (r.frame.lower == r.frame.value).all()
     assert r.dims == {}
-    assert r.fixed == dict(power=4e6, mdot=0.3)
+    assert r.fixed == {"power": 4e6, "mdot": 0.3}
     assert r.calculation == "CC"
     assert r.ylabel == "Coolant temperature [°C]"
     assert r.subtitle == "Power = 4e+06 W, Mass flow = 0.3 kg/s, CC"
 
 
 def test_profile_family_has_free_dimension(sweep):
-    r = sweep.profile("CHFR", of="CC", where=dict(mdot=0.3))
+    r = sweep.profile("CHFR", of="CC", where={"mdot": 0.3})
     assert r.dims == {"power": [2e6, 4e6, 6e6, 8e6]}
-    assert r.fixed == dict(mdot=0.3)
+    assert r.fixed == {"mdot": 0.3}
     assert len(r.frame) == 16
 
 
 def test_profile_two_quantities_and_unit_check(sweep):
-    r = sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+    r = sweep.profile(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
     assert r.dims == {"quantity": ["T_cool", "CHFR"]}
     sweep.labels = {"CHFR": ("CHF ratio", "")}
     with pytest.raises(ValueError, match="'CHFR'.*dimensionless.*'T_cool'.*°C"):
-        sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+        sweep.profile(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
 
 
 def test_profile_rejects_rank_0_and_2(sweep):
     with pytest.raises(ValueError, match="'power'.*scalar.*reduce"):
-        sweep.profile("power", of="CC", where=dict(power=4e6, mdot=0.3))
+        sweep.profile("power", of="CC", where={"power": 4e6, "mdot": 0.3})
     with pytest.raises(ValueError, match="'T'.*field.*axis"):
-        sweep.profile("T", of="plate", where=dict(power=4e6, mdot=0.3))
+        sweep.profile("T", of="plate", where={"power": 4e6, "mdot": 0.3})
 
 
 def test_profile_uses_cell_index_without_coordinates(agr):
@@ -54,7 +54,7 @@ def test_profile_uses_cell_index_without_coordinates(agr):
 
 def test_profile_skips_holes_with_warning(holed_sweep):
     with pytest.warns(UserWarning, match="case 7 .*power=8e\\+06, mdot=0.3"):
-        r = holed_sweep.profile("T_cool", of="CC", where=dict(mdot=0.3))
+        r = holed_sweep.profile("T_cool", of="CC", where={"mdot": 0.3})
     assert r.dims == {"power": [2e6, 4e6, 6e6]}
 
 
@@ -78,23 +78,22 @@ def test_profile_of_calculations_with_different_x_names_raises(agr):
 
 
 def test_profile_without_a_solved_case_names_the_selection(holed_sweep):
-    with pytest.warns(UserWarning, match="case 7"):
-        with pytest.raises(ValueError, match="no solved case.*power=8e\\+06, mdot=0.3.*'T_cool'"):
-            holed_sweep.profile("T_cool", of="CC", where=dict(power=8e6, mdot=0.3))
+    with pytest.warns(UserWarning, match="case 7"), pytest.raises(ValueError, match="no solved case.*power=8e\\+06, mdot=0.3.*'T_cool'"):
+        holed_sweep.profile("T_cool", of="CC", where={"power": 8e6, "mdot": 0.3})
 
 
 def test_profile_envelopes_from_bands(banded_sweep):
-    r = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), sigma=2.0)
+    r = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}, sigma=2.0)
     np.testing.assert_allclose(r.frame.upper - r.frame.value, 0.1 + 2 * 0.05)
     np.testing.assert_allclose(r.frame.value - r.frame.lower, 0.1 + 2 * 0.05)
     np.testing.assert_allclose(r.frame.inner_upper - r.frame.value, 0.1)
     np.testing.assert_allclose(r.frame.value - r.frame.inner_lower, 0.1)
-    r0 = banded_sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3), uncertainty=False)
+    r0 = banded_sweep.profile("T_cool", where={"power": 4e6, "mdot": 0.3}, uncertainty=False)
     assert (r0.frame.upper == r0.frame.value).all() and (r0.frame.inner_lower == r0.frame.value).all()
 
 
 def test_field_single_case(sweep):
-    f = sweep.field("T", where=dict(power=4e6, mdot=0.3))
+    f = sweep.field("T", where={"power": 4e6, "mdot": 0.3})
     assert isinstance(f, Result) and f.kind == "field"
     assert f.arrays["value"].shape == (2, 3)
     np.testing.assert_allclose(f.arrays["value"][1], [60.0, 61.0, 62.0])
@@ -106,7 +105,7 @@ def test_field_single_case(sweep):
 
 
 def test_field_values_are_the_three_arrays(sweep):
-    f = sweep.field("T", where=dict(power=4e6, mdot=0.3))
+    f = sweep.field("T", where={"power": 4e6, "mdot": 0.3})
     lower, value, upper = f.values()
     np.testing.assert_array_equal(value, f.arrays["value"])
     np.testing.assert_array_equal(lower, f.arrays["lower"])
@@ -115,12 +114,12 @@ def test_field_values_are_the_three_arrays(sweep):
 
 def test_field_requires_one_case(sweep):
     with pytest.raises(ValueError, match="4 cases.*one"):
-        sweep.field("T", where=dict(mdot=0.3))
+        sweep.field("T", where={"mdot": 0.3})
 
 
 def test_field_takes_one_quantity_of_one_calculation(sweep):
     with pytest.raises(ValueError, match="one quantity of one calculation.*'T_cool'.*'CHFR'"):
-        sweep.field(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+        sweep.field(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
 
 
 def test_field_fills_a_dropped_cell_with_nan(agr):
@@ -145,19 +144,19 @@ def test_mesh_shorter_than_the_frame_is_named(agr):
 
 
 def test_reduce_min_versus_power(sweep):
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     assert r.kind == "curve" and r.x == "power"
     assert list(r.frame.columns) == ["quantity", "calculation", "power", "mdot", "case", "lower", "value", "upper", "inner_lower", "inner_upper", "filled"]
     np.testing.assert_allclose(r.frame.power, [2e6, 4e6, 6e6, 8e6])
     np.testing.assert_allclose(r.frame.value, 1.5 * 4e6 / np.array([2e6, 4e6, 6e6, 8e6]))
-    assert r.dims == {} and r.fixed == dict(mdot=0.3)
+    assert r.dims == {} and r.fixed == {"mdot": 0.3}
     assert r.ylabel == "min CHFR"
     assert r.question.sigma == 1.0
 
 
 def test_reduce_keeps_values_on_their_own_coordinate_after_a_dropped_cell(agr):
     rows = [("CC", "T_cool", 0, j, v) for j, v in enumerate((np.nan, 45.0, 50.0, 55.0))]
-    cases = [dict(power=2e6), dict(power=4e6)]
+    cases = [{"power": 2e6}, {"power": 4e6}]
     with pytest.warns(UserWarning, match="non-finite"):
         s = Sweep(cases, [frame(rows), frame(rows)], agr)
     assert s.reduce("T_cool", "where_min", versus="power").frame.value.iloc[0] == pytest.approx(0.15)
@@ -180,10 +179,10 @@ def test_reduce_with_axis_survives_a_dropped_cell(agr):
 def test_a_quantity_missing_in_one_case_leaves_the_others_alone(agr):
     live = [("plate", "T", i, j, 50.0 + 10 * i + j) for i in range(2) for j in range(3)]
     dead = [("plate", "T", i, j, np.nan) for i in range(2) for j in range(3)]
-    cases = [dict(power=2e6), dict(power=4e6)]
+    cases = [{"power": 2e6}, {"power": 4e6}]
     with pytest.warns(UserWarning, match="non-finite"):
         s = Sweep(cases, [frame(live), frame(dead)], agr)
-    f = s.field("T", where=dict(power=4e6))
+    f = s.field("T", where={"power": 4e6})
     assert f.arrays["value"].shape == (2, 3) and np.isnan(f.arrays["value"]).all()
     r = s.reduce("T", "max", versus="power")
     np.testing.assert_allclose(r.frame.value, [62.0, np.nan])
@@ -191,7 +190,7 @@ def test_a_quantity_missing_in_one_case_leaves_the_others_alone(agr):
 
 def test_reduce_versus_refuses_a_reducer_that_leaves_a_profile(sweep):
     with pytest.raises(ValueError, match="'T'.*plate.*leaves a profile.*axis="):
-        sweep.reduce("T", at(z=0.25), versus="power", where=dict(mdot=0.3))
+        sweep.reduce("T", at(z=0.25), versus="power", where={"mdot": 0.3})
 
 
 def test_reduce_free_parameter_becomes_dimension(sweep):
@@ -201,40 +200,40 @@ def test_reduce_free_parameter_becomes_dimension(sweep):
 
 
 def test_reduce_several_quantities(sweep):
-    r = sweep.reduce(["CHFR", "T_cool"], "max", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce(["CHFR", "T_cool"], "max", versus="power", where={"mdot": 0.3})
     assert r.dims == {"quantity": ["CHFR", "T_cool"]}
     assert r.ylabel == "max CHFR, Coolant temperature [°C]"
 
 
 def test_reduce_scalar_passes_through(sweep):
-    r = sweep.reduce("power", "min", versus="mdot", where=dict(power=4e6))
+    r = sweep.reduce("power", "min", versus="mdot", where={"power": 4e6})
     np.testing.assert_allclose(r.frame.value, [4e6, 4e6])
     assert r.ylabel == "Power [W]"
 
 
 def test_reduce_where_min_and_at(sweep):
-    r = sweep.reduce("CHFR", "where_min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "where_min", versus="power", where={"mdot": 0.3})
     np.testing.assert_allclose(r.frame.value, 0.25)
     assert r.ylabel == "where_min CHFR [m]"
-    r2 = sweep.reduce("T_cool", at(z=0.35), versus="power", where=dict(mdot=0.3))
+    r2 = sweep.reduce("T_cool", at(z=0.35), versus="power", where={"mdot": 0.3})
     np.testing.assert_allclose(r2.frame.value, [57.0, 59.0, 61.0, 63.0])
     assert r2.ylabel == "at z=0.35 Coolant temperature [°C]"
 
 
 def test_where_with_axis_reports_the_collapsed_coordinate(sweep):
-    r = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
+    r = sweep.reduce("T", "where_max", axis="x", where={"power": 4e6, "mdot": 0.3})
     assert r.ylabel == "where_max Temperature [m]"
     sweep.labels = {"x": ("x", "mm", 1e3)}
-    scaled = sweep.reduce("T", "where_max", axis="x", where=dict(power=4e6, mdot=0.3))
+    scaled = sweep.reduce("T", "where_max", axis="x", where={"power": 4e6, "mdot": 0.3})
     assert scaled.ylabel == "where_max Temperature [mm]"
 
 
 def test_reduce_with_axis_returns_profile(sweep):
-    r = sweep.reduce("T", "max", axis="x", where=dict(power=4e6, mdot=0.3))
+    r = sweep.reduce("T", "max", axis="x", where={"power": 4e6, "mdot": 0.3})
     assert r.kind == "profile" and r.x == "z"
     np.testing.assert_allclose(r.frame.value, [52.0, 62.0])
     with pytest.raises(ValueError, match="versus.*axis"):
-        sweep.reduce("T", "max", axis="x", versus="power", where=dict(mdot=0.3))
+        sweep.reduce("T", "max", axis="x", versus="power", where={"mdot": 0.3})
 
 
 def test_reduce_requires_versus_without_axis(sweep):
@@ -244,12 +243,12 @@ def test_reduce_requires_versus_without_axis(sweep):
 
 def test_reduce_versus_must_be_free(sweep):
     with pytest.raises(ValueError, match="power.*where"):
-        sweep.reduce("CHFR", "min", versus="power", where=dict(power=4e6))
+        sweep.reduce("CHFR", "min", versus="power", where={"power": 4e6})
 
 
 def test_reduce_skips_holes(holed_sweep):
     with pytest.warns(UserWarning, match="case 7"):
-        r = holed_sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+        r = holed_sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     np.testing.assert_allclose(r.frame.power, [2e6, 4e6, 6e6])
 
 
@@ -257,13 +256,12 @@ def test_reduce_without_a_solved_case_names_the_selection(grid_cases, agr):
     frames = [None if case["mdot"] == 0.3 else make_case_frame(**case) for case in grid_cases]
     with pytest.warns(UserWarning, match="holes"):
         s = Sweep(grid_cases, frames, agr)
-    with pytest.warns(UserWarning, match="case 1"):
-        with pytest.raises(ValueError, match="no solved case.*mdot=0.3.*'CHFR'"):
-            s.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    with pytest.warns(UserWarning, match="case 1"), pytest.raises(ValueError, match="no solved case.*mdot=0.3.*'CHFR'"):
+        s.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
 
 
 def test_reduce_envelopes(banded_sweep):
-    r = banded_sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = banded_sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     np.testing.assert_allclose(r.frame.value - r.frame.lower, 0.15)
     np.testing.assert_allclose(r.frame.upper - r.frame.value, 0.15)
 
@@ -271,7 +269,7 @@ def test_reduce_envelopes(banded_sweep):
 def test_quantities_scaled_differently_cannot_share_an_axis(sweep):
     sweep.labels = {"T_cool": ("Coolant", "°C", 1.0), "CHFR": ("CHF ratio", "°C", 10.0)}
     with pytest.raises(ValueError, match="'CHFR'.*scaled by 10.*'T_cool' by 1"):
-        sweep.profile(["T_cool", "CHFR"], of="CC", where=dict(power=4e6, mdot=0.3))
+        sweep.profile(["T_cool", "CHFR"], of="CC", where={"power": 4e6, "mdot": 0.3})
 
 
 def test_reduce_with_two_parameters_is_a_map(sweep):
@@ -287,8 +285,8 @@ def test_map_refusals(sweep, agr):
     with pytest.raises(ValueError, match="'Tin' is not a sweep parameter"):
         sweep.reduce("CHFR", "min", versus=("power", "Tin"))
     with pytest.raises(ValueError, match="mdot is a map axis and cannot also be fixed in where="):
-        sweep.reduce("CHFR", "min", versus=("power", "mdot"), where=dict(mdot=0.3))
-    cs = [dict(power=p, wall_law=w) for w in ("a", "b") for p in (2e6, 4e6)]
+        sweep.reduce("CHFR", "min", versus=("power", "mdot"), where={"mdot": 0.3})
+    cs = [{"power": p, "wall_law": w} for w in ("a", "b") for p in (2e6, 4e6)]
     cat = Sweep(cs, [make_case_frame(c["power"], 0.3) for c in cs], agr)
     with pytest.raises(ValueError, match="wall_law is categorical"):
         cat.reduce("CHFR", "min", versus=("power", "wall_law"))
@@ -303,12 +301,12 @@ def test_reduce_lists_unfilled_holes_in_the_selection(agr, grid_cases):
         r = sweep.reduce("CHFR", "min", versus=("power", "mdot"))
     assert r.holes == [grid_cases[3]]
     with pytest.warns(UserWarning, match="skipping unsolved"):
-        assert sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3)).holes == [grid_cases[3]]
-    assert sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.2)).holes == []
+        assert sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3}).holes == [grid_cases[3]]
+    assert sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.2}).holes == []
 
 
 def test_map_axis_with_one_level_is_refused(agr):
-    cs = [dict(power=p, mdot=0.3) for p in (2e6, 4e6)]
+    cs = [{"power": p, "mdot": 0.3} for p in (2e6, 4e6)]
     one = Sweep(cs, [make_case_frame(**c) for c in cs], agr)
     with pytest.raises(ValueError, match="mdot has one level; a map needs at least two levels on each axis"):
         one.reduce("CHFR", "min", versus=("power", "mdot"))
@@ -319,12 +317,12 @@ def test_filled_cases_are_selected_and_flagged(agr, grid_cases):
     frames[3] = None
     with pytest.warns(UserWarning):
         sweep = Sweep(grid_cases, frames, agr, fill_holes=True)
-    r = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    r = sweep.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
     assert len(r.frame) == 4 and list(r.frame.sort_values("power").filled) == [False, True, False, False]
     assert r.holes == []
-    p = sweep.profile("CHFR", where=dict(power=4e6, mdot=0.3))
+    p = sweep.profile("CHFR", where={"power": 4e6, "mdot": 0.3})
     assert p.frame.filled.all()
-    f = sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3))
+    f = sweep.field("T", of="plate", where={"power": 4e6, "mdot": 0.3})
     assert f.frame.filled.all() and f.subtitle.endswith(", interpolated")
 
 
@@ -372,7 +370,7 @@ def test_reduce_limiting_on_a_map(agr, grid_cases):
     sweep = two_channel_sweep(agr, grid_cases, CHFR=at_least(1.3))
     r = sweep.reduce("CHFR", "min", versus=("power", "mdot"), of=["CC", "hot"], limiting=True)
     assert r.kind == "map" and len(r.frame) == 8 and set(r.frame.calculation) == {"hot"}
-    fig, ax = r.plot()
+    fig, _ax = r.plot()
     plt.close(fig)
 
 

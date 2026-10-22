@@ -1,6 +1,7 @@
 r"""Various alternative constructors for some calculations"""
 
-from typing import Literal, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Literal, Protocol
 
 import numpy as np
 
@@ -16,7 +17,7 @@ def ResistorFromKnownPoint(
     dp: Pascal = None,
     mdot: KgPerS = None,
     behavior: Literal["constant", "linear", "parabolic"] = "parabolic",
-    name: str = None,
+    name: str | None = None,
     **kwargs,
 ) -> DPCalculation:
     r"""Construct a resistor to flow from a known point in the :math:`(\Delta p, \dot{m})` phase space.

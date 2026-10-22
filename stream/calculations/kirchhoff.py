@@ -41,7 +41,7 @@ class Kirchhoff(Calculation):
         self,
         graph: MultiDiGraph,
         *abs_pressure_comps: Hashable,
-        reference_node: tuple[Hashable, Pascal] = None,
+        reference_node: tuple[Hashable, Pascal] | None = None,
         name: str = "Kirchhoff",
     ):
         r"""
@@ -260,7 +260,7 @@ class Kirchhoff(Calculation):
 
     @property
     def variables_by_type(self) -> dict[str, Place]:
-        return dict(mdot=slice(0, self._n), abs_pressure=slice(self._n, len(self)))
+        return {"mdot": slice(0, self._n), "abs_pressure": slice(self._n, len(self))}
 
     def loop_components(self, i: int) -> list[Calculation]:
         """Return loop ``i``'s components"""
@@ -422,11 +422,11 @@ def build_paths(g: MultiDiGraph, comps_order, source, component_edge, *targets) 
             path = nx.dijkstra_path(g, source=source, target=target)
             comps_in_edge = ()
         else:
-            u, v, k = edge = component_edge(target)
+            u, _v, _k = edge = component_edge(target)
             # First, build the path to the u-node
             path = nx.dijkstra_path(g, source=source, target=u)
             # Then, from u along edge, add components until target is reached
-            comps_in_edge = takewhile(lambda c: c is not target, g.edges[edge][COMPS])
+            comps_in_edge = takewhile(lambda c, target=target: c is not target, g.edges[edge][COMPS])
 
         comps_from_path = (comp for edge in pairwise(path) for comp in g.edges[(*edge, 0)][COMPS])
 
@@ -443,12 +443,7 @@ class Junction(Calculation):
 
     _counter = count()
 
-    def __init__(
-        self,
-        name: str = None,
-        weights: dict[Calculation, float] = None,
-        mdot_eps: KgPerS | None = None,
-    ):
+    def __init__(self, name: str | None = None, weights: dict[Calculation, float] | None = None, mdot_eps: KgPerS | None = None):
         r"""
 
         Parameters
@@ -486,7 +481,7 @@ class Junction(Calculation):
 
     @property
     def variables(self) -> dict[str, Place]:
-        return dict(Tin=0)
+        return {"Tin": 0}
 
     # noinspection PyMethodOverriding
     def calculate(
@@ -600,7 +595,7 @@ class KirchhoffWDerivatives(Kirchhoff):
         self,
         graph: MultiDiGraph,
         *abs_pressure_comps: Hashable,
-        reference_node: tuple[Hashable, Pascal] = None,
+        reference_node: tuple[Hashable, Pascal] | None = None,
         name: str = "Kirchhoff",
     ):
         super().__init__(graph, *abs_pressure_comps, reference_node=reference_node, name=name)
@@ -634,8 +629,8 @@ class KirchhoffWDerivatives(Kirchhoff):
 
     @property
     def variables_by_type(self) -> dict[str, Place]:
-        return dict(
-            mdot=slice(0, self._n),
-            abs_pressure=slice(self._n, self._n_),
-            mdot2=slice(self._n_, len(self)),
-        )
+        return {
+            "mdot": slice(0, self._n),
+            "abs_pressure": slice(self._n, self._n_),
+            "mdot2": slice(self._n_, len(self)),
+        }
