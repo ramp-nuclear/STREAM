@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 75 1000 445" width="1000" height="445" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/></marker>
+  </defs>
+  <rect y="75" width="1000" height="445" fill="#ffffff"/>
+
+  <g fill="none" stroke="#333" stroke-width="2">
+    <path d="M256,230 L424,230"/>
+    <path d="M436,230 L460,230 L500,140 L660,140 L700,230 L724,230"/>
+    <path d="M436,230 L460,230 L500,320 L660,320 L700,230 L724,230"/>
+    <path d="M736,230 L860,230 L860,460 L110,460 L110,230 L244,230"/>
+  </g>
+
+  <g stroke="#1f5fbf" stroke-width="2" marker-end="url(#b)">
+    <line x1="384" y1="230" x2="412" y2="230"/>
+    <line x1="624" y1="140" x2="652" y2="140"/>
+    <line x1="624" y1="320" x2="652" y2="320"/>
+    <line x1="860" y1="384" x2="860" y2="414"/>
+    <line x1="600" y1="460" x2="570" y2="460"/>
+    <line x1="110" y1="314" x2="110" y2="284"/>
+    <line x1="208" y1="230" x2="236" y2="230"/>
+  </g>
+
+  <g stroke="#333" stroke-width="1.5" fill="#f2f2f2">
+    <rect x="300" y="218" width="80" height="24"/>
+    <rect x="540" y="128" width="80" height="24"/>
+    <rect x="540" y="308" width="80" height="24"/>
+    <rect x="830" y="333" width="60" height="24"/>
+    <rect x="610" y="448" width="60" height="24"/>
+    <rect x="80" y="333" width="60" height="24"/>
+    <rect x="148" y="218" width="56" height="24"/>
+  </g>
+  <g font-weight="bold" text-anchor="middle" fill="#333">
+    <text x="340" y="234">Pump</text>
+    <text x="580" y="144">BranchA</text>
+    <text x="580" y="324">BranchB</text>
+    <text x="860" y="349">Down</text>
+    <text x="640" y="464">HX</text>
+    <text x="110" y="349">Up</text>
+    <text x="176" y="234">Return</text>
+  </g>
+
+  <g fill="#fff" stroke="#333" stroke-width="2">
+    <circle cx="250" cy="230" r="6"/>
+    <circle cx="430" cy="230" r="6"/>
+    <circle cx="730" cy="230" r="6"/>
+  </g>
+  <g font-weight="bold" text-anchor="middle" fill="#333">
+    <text x="250" y="212">J_low</text>
+    <text x="430" y="212">J_split</text>
+    <text x="730" y="212">J_merge</text>
+  </g>
+
+  <g text-anchor="middle" fill="#555">
+    <text x="250" y="262">reference_node=</text>
+    <text x="250" y="277">(J_low, 2e5)</text>
+    <text x="580" y="100">Resistor(200.0)</text>
+    <text x="580" y="350">Resistor(600.0), signify=3.0:</text>
+    <text x="580" y="365">stands for three</text>
+    <text x="176" y="190">Resistor(100.0)</text>
+  </g>
+  <g text-anchor="middle" fill="#d9480f">
+    <text x="340" y="208">+head (6e4 Pa)</text>
+    <text x="580" y="116">−R·mdot</text>
+    <text x="580" y="381">−R·mdot</text>
+    <text x="176" y="206">−R·mdot</text>
+    <text x="640" y="440">no gain</text>
+  </g>
+
+  <g text-anchor="end">
+    <text x="820" y="335" fill="#555">Gravity,</text>
+    <text x="820" y="350" fill="#555">disposition=5.0</text>
+    <text x="820" y="366" fill="#d9480f">a drop: +ρg·5 m</text>
+  </g>
+  <g text-anchor="start">
+    <text x="150" y="335" fill="#555">Gravity,</text>
+    <text x="150" y="350" fill="#555">disposition=-5.0</text>
+    <text x="150" y="366" fill="#d9480f">a climb: −ρg·5 m</text>
+  </g>
+
+  <circle cx="676" cy="460" r="4" fill="#d9480f"/>
+  <g text-anchor="middle">
+    <text x="676" y="490" fill="#d9480f">p_abs read here</text>
+    <text x="676" y="506" fill="#555">abs_pressure_comps=[hx]</text>
+  </g>
+
+  <g stroke="#888" stroke-width="1">
+    <line x1="930" y1="230" x2="930" y2="460"/>
+    <line x1="924" y1="230" x2="936" y2="230"/>
+    <line x1="924" y1="460" x2="936" y2="460"/>
+  </g>
+  <text x="942" y="349" fill="#555">5 m</text>
+
+  <text x="430" y="425" text-anchor="middle" fill="#555">around a loop the gains cancel</text>
+  <text x="110" y="500" fill="#555" font-style="italic">not to scale; only the return changes height</text>
+</svg>

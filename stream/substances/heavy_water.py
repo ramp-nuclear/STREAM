@@ -1,6 +1,6 @@
 r""":math:`\text{D}_2\text{O}` constants and correlations,
 as given in [#simantov]_. The user facing function is of type
-:class:`~.stream.data_classes.LiquidFuncs`
+:class:`~stream.substances.liquid.LiquidFuncs`
 
 >>> type(heavy_water)
 <class 'stream.substances.liquid.LiquidFuncs'>
