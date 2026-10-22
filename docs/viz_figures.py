@@ -1,10 +1,13 @@
 """Make the figures of the visualization page from a plate-and-channel sweep.
 
 The sweep is 120 steady states of a symmetric fuel plate and its coolant
-channel over power, mass flow and axial power shape; the five figures are
-written as PNG files to ``docs/source/_static/viz`` or to the directory given
-as the only argument. It takes about two minutes and is run by hand, never by
-the docs build.
+channel over power, mass flow and axial power shape. Five figures draw that
+sweep; a sixth draws a smaller sweep of the cosine shape with uncertainty bands,
+as a band and as error bars, and a seventh draws one answer of the sweep with
+the default style and with a custom one. The figures are written as PNG files
+to ``docs/source/_static/viz`` or to the directory given as the only argument.
+It takes about two minutes and is run by hand, never by the docs build. The
+figures are written with matplotlib 3.10; another version changes the bytes of all of them.
 """
 
 import sys
@@ -18,13 +21,14 @@ import numpy as np
 
 from stream import EffectivePipe, Solid, light_water
 from stream.analysis.thresholds import Saha_Zuber_OSV, Sudo_Kaminaga_CHF, threshold_analysis
+from stream.analysis.UQ import Uncertainty, UQModel
 from stream.calculations import ChannelAndContacts, Fuel
 from stream.calculations.channel import Direction, SaturationReachedError
 from stream.composition import symmetric_plate, uniform_x_power_shape, x_boundaries
 from stream.composition.subsystems import symmetric_plate_steady_state
 from stream.physical_models.heat_transfer_coefficient import spl_htc, wall_heat_transfer_coeff
 from stream.utilities import cosine_shape
-from stream.viz import Sweep, at_least, at_most, cases, run_cases
+from stream.viz import Label, Style, Sweep, at_least, at_most, cases, run_cases
 
 TIN, P_ABS = 40.0, 2e5
 L, W, GAP, N = 0.7, 0.070, 0.002, 14
@@ -102,12 +106,43 @@ def model(power, mdot, shape):
     return state.to_dataframe()
 
 
+def banded(power, mdot, shape):
+    uq = UQModel(dict(power=power, mdot=mdot), partial(model, shape=shape))
+    return uq.uq_attach(power=Uncertainty(systematic_relative=0.02), mdot=Uncertainty(statistical_relative=0.03))
+
+
 def sweep():
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         cs = cases(power=POWERS, mdot=MDOTS, shape=list(SHAPES))
         frames = run_cases(model, cs)
         return Sweep(cs, frames, PLATES["cosine"][2], labels=LABELS, limits=LIMITS)
+
+
+def banded_sweep(s):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        few = cases(power=[15e3, 30e3, 45e3, 60e3], mdot=[0.2, 0.3, 0.5], shape="cosine")
+        return Sweep(few, run_cases(banded, few), s.agr, labels=s.labels, limits=s.limits)
+
+
+def uncertainty(s):
+    chfr = banded_sweep(s).reduce("CHFR", "min", versus="power", sigma=2.0)
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+    chfr.plot(ax=left, color="mdot", band="split")
+    chfr.plot(ax=right, color="mdot", errorbars=True)
+    return fig
+
+
+def looks(s):
+    sheet = Style(palette=("#1b9e77", "#d95f02", "#7570b3"), number_format=".3g", limit_color="#d62728")
+    chfr = s.reduce("CHFR", "min", versus="power", where={"mdot": 0.3})
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+    chfr.plot(ax=left, crossing="mark")
+    chfr.plot(ax=right, crossing="mark", style_sheet=sheet, labels={"power": Label("Power", "kW", 1e-3)})
+    left.set_title("Style()")
+    right.set_title("sheet")
+    return fig
 
 
 def figures(s):
@@ -132,8 +167,13 @@ OPTIONS = {
 def main(out):
     matplotlib.use("Agg")
     out.mkdir(parents=True, exist_ok=True)
-    for name, result in figures(sweep()).items():
+    s = sweep()
+    for name, result in figures(s).items():
         fig, _ = result.plot(**OPTIONS[name])
+        fig.savefig(out / f"{name}.png", dpi=130, bbox_inches="tight")
+        plt.close(fig)
+    for name, draw in {"uncertainty": uncertainty, "looks": looks}.items():
+        fig = draw(s)
         fig.savefig(out / f"{name}.png", dpi=130, bbox_inches="tight")
         plt.close(fig)
 

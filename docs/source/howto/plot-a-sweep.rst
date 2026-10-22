@@ -5,7 +5,7 @@ Plot a sweep
 Build a :class:`~stream.viz.Sweep` from the cases and their result frames, ask it a question, and call ``.plot()`` on the answer, or read its ``frame``.
 
 Each task below starts from what you want to look at and ends at the call that draws it.
-The figures come from ``docs/viz_figures.py``, a fuel plate and its coolant channel solved over ten powers, six mass flows and two axial power shapes.
+The figures come from ``docs/viz_figures.py``, a fuel plate and its coolant channel solved over ten powers, six mass flows and two axial power shapes, and the uncertainty figure from a smaller banded sweep.
 
 Build the sweep
 ---------------
@@ -128,17 +128,27 @@ A model that returns its frame with ``uq_attach`` bands gives a banded sweep: th
 
     from functools import partial
 
+    import matplotlib.pyplot as plt
+
     from stream.analysis.UQ import UQModel, Uncertainty
 
     def banded(power, mdot, shape):
         uq = UQModel(dict(power=power, mdot=mdot), partial(model, shape=shape))
         return uq.uq_attach(power=Uncertainty(systematic_relative=0.02), mdot=Uncertainty(statistical_relative=0.03))
 
-    frames = run_cases(banded, cases_)
-    sweep = Sweep(cases_, frames, agr)
-    sweep.reduce("CHFR", "min", versus="power", sigma=2.0).plot(color="mdot", band="split")
+    few = cases(power=[15e3, 30e3, 45e3, 60e3], mdot=[0.2, 0.3, 0.5], shape="cosine")
+    banded_sweep = Sweep(few, run_cases(banded, few), agr, labels=sweep.labels, limits=sweep.limits)
+    chfr = banded_sweep.reduce("CHFR", "min", versus="power", sigma=2.0)
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+    chfr.plot(ax=left, color="mdot", band="split")
+    chfr.plot(ax=right, color="mdot", errorbars=True)
 
-- ``band=`` draws ``"total"`` (the default), ``"split"`` (the systematic part darker inside the total) or ``"none"``; ``plot(errorbars=True)`` draws error bars instead.
+.. figure:: ../_static/viz/uncertainty.png
+   :width: 100%
+
+- ``UQModel`` solves each case once more per uncertain parameter, so the banded sweep above is a small grid of the cosine shape.
+- ``band=`` draws ``"total"`` (the default), ``"split"`` or ``"none"``. On the left, ``"split"`` shades the systematic part darker inside the total band; the total band reaches ``sys`` plus two ``stat`` from the line, because the question uses ``sigma=2.0``.
+- ``plot(errorbars=True)`` draws the total band as error bars at each case, as on the right.
 - ``sigma=`` on the question is the multiple of ``stat`` in the envelopes; ``sys`` is added as it is.
 - ``plot(bound="lower")`` or ``bound="upper"`` draws an envelope instead of the nominal value, and a crossing or a limit contour follows it.
 
@@ -150,12 +160,12 @@ The sweep warns once with every hole, and each question warns again with the hol
 
 .. code-block:: python
 
-    sweep = Sweep(cases_, frames, agr, fill_holes=True)
-    print(sweep.holes, sweep.filled)
+    patched = Sweep(cases_, frames, agr, fill_holes=True)
+    print(patched.holes, patched.filled)
 
 - ``fill_holes=True`` interpolates a hole between its two solved neighbours along a numeric parameter; a hole at the edge of the sweep, or next to another hole, stays a hole.
 - A filled case draws with an open marker and carries ``filled=True`` in every frame, and ``required`` warns when a crossing rests on it.
-- ``sweep.holes`` maps each hole to its message and ``sweep.filled`` each filled hole to the cases it was interpolated from.
+- ``patched.holes`` maps each hole to its message and ``patched.filled`` each filled hole to the cases it was interpolated from.
 
 Run the cases in parallel
 -------------------------
@@ -189,10 +199,17 @@ Change the look
     from stream.viz import Label, Style
 
     sheet = Style(palette=("#1b9e77", "#d95f02", "#7570b3"), number_format=".3g", limit_color="#d62728")
-    sweep.reduce("CHFR", "min", versus="power").plot(style_sheet=sheet, labels={"power": Label("Power", "kW", 1e-3, ".0f")})
+    chfr = sweep.reduce("CHFR", "min", versus="power", where=dict(mdot=0.3))
+    chfr.plot(crossing="mark")
+    chfr.plot(crossing="mark", style_sheet=sheet, labels={"power": Label("Power", "kW", 1e-3)})
     with sheet:
         fig, ax = plt.subplots()
         ax.plot(measured_z, measured_temperature)
+
+.. figure:: ../_static/viz/looks.png
+   :width: 100%
+
+The left panel is the first ``plot`` with the default ``Style()``. The right panel is the second: ``sheet`` gives it the palette, the red limit and the ``".3g"`` crossing values, and the label override renames the axis.
 
 - ``style_sheet=`` on ``plot`` takes a :class:`~stream.viz.Style`: palette, sizes, the limit's colour and hatch, the map's levels, and the number format of every printed value.
 - ``labels=`` on ``plot`` overrides the sweep's labels for one figure. A :class:`~stream.viz.Label` or its tuple ``(display, unit, scale, fmt)`` sets how a name prints; ``fmt`` is a format spec such as ``".1f"`` or a function of the scaled number.
