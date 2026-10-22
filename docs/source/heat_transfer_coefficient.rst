@@ -85,7 +85,7 @@ the same on both sides of it. The Elenbaas natural term is added to the forced v
 every flow: in a 2 mm gap at up to 30 K superheat it adds under 1 %; the gain grows roughly as the fourth
 power of the gap and with the superheat, and from about 4 mm it lifts the low-flow value.
 
-.. figure:: _static/htc/h_vs_re.png
+.. plot:: htc_figures.py h_versus_re
    :width: 100%
 
    Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, with the ``re_bounds`` band shaded.
@@ -94,7 +94,7 @@ Every switch in the law is fed by the flow, never by the wall superheat the coef
 into, and the cube norm only adds. The wall heat flux :math:`h \cdot \Delta T` then rises monotonically
 with the superheat, so a flow-fed closure gives a cell's wall balance one root per heat flux.
 
-.. figure:: _static/htc/wall_balance.png
+.. plot:: htc_figures.py wall_balance
    :width: 100%
 
    Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20, which coincide on the held laminar value, crossing a 15 kW/m² flux once.

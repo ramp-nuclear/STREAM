@@ -37,7 +37,7 @@ makes the friction pressure linear in the flow, so it passes through zero flow a
 continuous in both directions. The viscosity correction ``k_H`` multiplies the laminar factor only and
 fades out across ``re_bounds``.
 
-.. figure:: _static/htc/friction_through_zero.png
+.. plot:: htc_figures.py friction_through_zero
    :width: 100%
 
    Pressure difference of a 0.7 m long, 2 mm gap channel in ten cells against mass flow, with gravity, crossing zero flow at the hydrostatic head.
