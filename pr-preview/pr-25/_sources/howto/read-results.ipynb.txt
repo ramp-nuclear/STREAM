@@ -83,7 +83,7 @@
     ")\n",
     "mdot0, p_abs, power, T_in = 0.5, 1.8e5, 25e3, 38.0\n",
     "steady = symmetric_plate_steady_state(channel, fuel, mdot=mdot0, p_abs=p_abs, power=power, Tin=T_in)\n",
-    "funcs = {channel: dict(mdot=lambda t: mdot0 / (1 + t / 20.0), p_abs=p_abs, Tin=T_in), fuel: dict(power=power)}\n",
+    "funcs = {channel: {\"mdot\": lambda t: mdot0 / (1 + t / 20.0), \"p_abs\": p_abs, \"Tin\": T_in}, fuel: {\"power\": power}}\n",
     "agr = symmetric_plate(channel, fuel, funcs=funcs).to_aggregator()\n",
     "y = agr.load(steady)\n",
     "print(f\"type:         {type(steady).__name__}\")\n",

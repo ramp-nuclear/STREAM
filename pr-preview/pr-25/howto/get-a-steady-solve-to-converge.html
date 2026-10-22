@@ -119,8 +119,25 @@ explains the background.</p>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">State</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span><span class="p">,</span> <span class="n">Gravity</span><span class="p">,</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">KirchhoffWDerivatives</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Solid</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span><span class="p">,</span> <span class="n">guess_steady_state</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ChannelAndContacts</span><span class="p">,</span>
+    <span class="n">Fuel</span><span class="p">,</span>
+    <span class="n">Gravity</span><span class="p">,</span>
+    <span class="n">HeatExchanger</span><span class="p">,</span>
+    <span class="n">Junction</span><span class="p">,</span>
+    <span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
+    <span class="n">Pump</span><span class="p">,</span>
+    <span class="n">Solid</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FlowGraph</span><span class="p">,</span>
+    <span class="n">flow_edge</span><span class="p">,</span>
+    <span class="n">guess_steady_state</span><span class="p">,</span>
+    <span class="n">symmetric_plate</span><span class="p">,</span>
+    <span class="n">symmetric_plate_steady_state</span><span class="p">,</span>
+    <span class="n">uniform_x_power_shape</span><span class="p">,</span>
+    <span class="n">x_boundaries</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.jacobians</span><span class="w"> </span><span class="kn">import</span> <span class="n">ALG_jacobian</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.pressure_drop</span><span class="w"> </span><span class="kn">import</span> <span class="n">friction_factor</span><span class="p">,</span> <span class="n">pressure_diff</span><span class="p">,</span> <span class="n">rectangular_laminar_correction</span>
@@ -189,7 +206,7 @@ explains the background.</p>
         <span class="n">k_constructor</span><span class="o">=</span><span class="n">KirchhoffWDerivatives</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">fg</span><span class="o">.</span><span class="n">check_gravity_mismatch</span><span class="p">()</span>
-    <span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">)})</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+    <span class="n">agr</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span> <span class="o">+</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">fuel</span><span class="p">:</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="n">power</span><span class="p">}})</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">agr</span><span class="p">,</span> <span class="n">fg</span><span class="p">,</span> <span class="n">pump</span>
 </pre></div>
 </div>
