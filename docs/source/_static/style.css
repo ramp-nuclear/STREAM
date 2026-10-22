@@ -1,3 +1,118 @@
-.wy-nav-content {
-    max-width: 1000px !important;
+body {
+    --code-font-size: 14px;
+}
+
+.main {
+    min-width: 0;
+}
+
+.content {
+    width: auto;
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.toc-drawer {
+    flex: none;
+}
+
+article[role="main"] p,
+article[role="main"] li,
+article[role="main"] dd,
+article[role="main"] blockquote {
+    line-height: 1.6;
+}
+
+article[role="main"] p:not(:has(img, svg, object, pre, table)),
+article[role="main"] li:not(:has(img, svg, object, pre, table)),
+article[role="main"] dd:not(:has(img, svg, object, pre, table)),
+article[role="main"] blockquote:not(:has(img, svg, object, pre, table)),
+article[role="main"] .admonition:not(:has(img, svg, object, pre, table)) {
+    max-width: 37em;
+}
+
+article[role="main"] .nbinput pre,
+article[role="main"] .nboutput pre {
+    font-size: var(--code-font-size);
+    line-height: 1.45;
+}
+
+article[role="main"] figure img,
+article[role="main"] p > img,
+article[role="main"] p > object,
+article[role="main"] .nboutput img {
+    display: block;
+    width: 100%;
+    max-width: 1300px;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+article[role="main"] figure {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+article[role="main"] figcaption {
+    text-align: center;
+}
+
+article[role="main"] p:has(> img, > object) + p:has(> em:only-child) {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+article[role="main"] table.docutils {
+    width: auto;
+    max-width: min(100%, 1300px);
+}
+
+article[role="main"] table.docutils td,
+article[role="main"] table.docutils th {
+    white-space: normal;
+}
+
+article[role="main"] div.rendered_html table {
+    font-size: 14px;
+    color: var(--color-foreground-primary);
+}
+
+article[role="main"] div.rendered_html thead {
+    border-bottom-color: var(--color-foreground-border);
+}
+
+article[role="main"] div.rendered_html tbody tr:nth-child(odd) {
+    background: var(--color-background-secondary);
+}
+
+article[role="main"] div.rendered_html tbody tr:hover {
+    background: var(--color-background-hover);
+}
+
+article[role="main"] div.nboutput div.output_area.stderr {
+    background: var(--color-admonition-title-background--error);
+}
+
+@media (min-width: 63em) {
+    .sidebar-drawer {
+        width: auto;
+    }
+}
+
+@media (min-width: 1400px) {
+    html {
+        font-size: 112.5%;
+    }
+
+    body {
+        --code-font-size: 15px;
+    }
+
+    article[role="main"] div.rendered_html table {
+        font-size: 15px;
+    }
 }

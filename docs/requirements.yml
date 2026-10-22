@@ -21,6 +21,6 @@ dependencies:
   - networkx
   - numpydoc
   - sphinx
-  - sphinx_rtd_theme
+  - furo
   - hypothesis
   - pytest
