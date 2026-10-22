@@ -10,6 +10,7 @@
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -306,7 +307,7 @@ For a rectangular pipe, corrections must be made.</p>
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperatures</p></li>
-<li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperatures</p></li>
+<li><p><strong>T_wall</strong> (<em>Celsius</em><em> | </em><em>None</em>) – Wall temperatures, read only when <code class="docutils literal notranslate"><span class="pre">k_H</span></code> is given.</p></li>
 <li><p><strong>mdot</strong> (<em>KgPerS</em>) – Coolant mass flow rate</p></li>
 <li><p><strong>fluid</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties</p></li>
 <li><p><strong>pipe</strong> (<a class="reference internal" href="utility_packages.html#stream.pipe_geometry.EffectivePipe" title="stream.pipe_geometry.EffectivePipe"><em>EffectivePipe</em></a>) – Pipe geometry</p></li>
@@ -408,17 +409,25 @@ Thus, a correction must be made.</p>
 </div>
 </dd></dl>
 
-<p>With <a class="reference internal" href="#stream.physical_models.pressure_drop.friction.regime_dependent_friction" title="stream.physical_models.pressure_drop.friction.regime_dependent_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_friction</span></code></a> below <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>, the laminar factor <span class="math notranslate nohighlight">\(64/(\text{Re}\,k_R)\)</span>
-makes the friction pressure linear in the flow, so it passes through zero flow and reverses with it,
-continuous in both directions. The viscosity correction <code class="docutils literal notranslate"><span class="pre">k_H</span></code> multiplies the laminar factor only and
-fades out across <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>.</p>
+<section id="through-zero-flow-and-the-wall-viscosity-correction">
+<h3>Through zero flow, and the wall-viscosity correction<a class="headerlink" href="#through-zero-flow-and-the-wall-viscosity-correction" title="Link to this heading"></a></h3>
+<p>The friction law runs through the same loss-of-flow transients as the wall heat transfer coefficient.
+Below <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code> the laminar factor <span class="math notranslate nohighlight">\(64/(\text{Re}\,k_R)\)</span> makes the friction pressure linear in the
+flow, so it passes through zero flow and reverses with it, continuous in both directions.</p>
+<p>The risk is the viscosity correction <code class="docutils literal notranslate"><span class="pre">k_H</span></code>, a laminar correlation for the heated wall thinning the fluid
+next to it. Applied in every regime, it would change a turbulent factor it was never fitted for. Reading the
+wall viscosity on every call would tie the law to the wall temperature even when no correction is asked
+for, and a solver iterate whose temperature leaves the viscosity fit would then divide by zero.</p>
+<p><a class="reference internal" href="#stream.physical_models.pressure_drop.friction.regime_dependent_friction" title="stream.physical_models.pressure_drop.friction.regime_dependent_friction"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_friction</span></code></a> applies <code class="docutils literal notranslate"><span class="pre">k_H</span></code> to the laminar factor only, so it fades out across
+<code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>, and reads the wall viscosity only when <code class="docutils literal notranslate"><span class="pre">k_H</span></code> is given.</p>
 <figure class="align-default" id="id10">
-<a class="reference internal image-reference" href="_images/friction_through_zero.png"><img alt="_images/friction_through_zero.png" src="_images/friction_through_zero.png" style="width: 100%;" />
+<a class="plot-directive reference internal image-reference" href="_images/htc_figures_friction_through_zero.png"><img alt="Channel pressure difference against mass flow, crossing zero flow at the hydrostatic head." class="plot-directive" src="_images/htc_figures_friction_through_zero.png" style="width: 100%;" />
 </a>
 <figcaption>
 <p><span class="caption-text">Pressure difference of a 0.7 m long, 2 mm gap channel in ten cells against mass flow, with gravity, crossing zero flow at the hydrostatic head.</span><a class="headerlink" href="#id10" title="Link to this image"></a></p>
 </figcaption>
 </figure>
+</section>
 </section>
 <section id="module-stream.physical_models.pressure_drop.local">
 <span id="local"></span><h2>Local<a class="headerlink" href="#module-stream.physical_models.pressure_drop.local" title="Link to this heading"></a></h2>
@@ -822,7 +831,7 @@ This function calculates frictional, inertial, and gravitational pressure drops.
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 21, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

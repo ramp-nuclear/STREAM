@@ -9,6 +9,7 @@
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../_static/plot_directive.css" />
 
   
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
@@ -116,7 +117,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.pipe_geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">light_water</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances.mocks</span><span class="w"> </span><span class="kn">import</span> <span class="n">mock_liquid_funcs</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">lin_interp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">just</span><span class="p">,</span> <span class="n">lin_interp</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.conftest</span><span class="w"> </span><span class="kn">import</span> <span class="n">mock_pipe</span><span class="p">,</span> <span class="n">normal_floats</span><span class="p">,</span> <span class="n">pos_medium_floats</span>
 
@@ -407,9 +408,10 @@
 <div class="viewcode-block" id="test_regime_dependent_friction_viscosity_correction_is_laminar_only">
 <a class="viewcode-back" href="../../tests.test_libraries.html#test_libraries.test_pressure_drop.test_regime_dependent_friction_viscosity_correction_is_laminar_only">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_regime_dependent_friction_viscosity_correction_is_laminar_only</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""A k_H of 2 doubles the laminar factor, leaves the turbulent factor alone and lands between them in transition."""</span>
     <span class="n">kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">20.0</span><span class="p">]),</span> <span class="s2">"T_wall"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">20.0</span><span class="p">]),</span> <span class="s2">"fluid"</span><span class="p">:</span> <span class="n">mock_liquid_funcs</span><span class="p">,</span>
           <span class="s2">"pipe"</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">"re_bounds"</span><span class="p">:</span> <span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">4000.0</span><span class="p">),</span> <span class="s2">"k_R"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
-    <span class="n">double</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">heat_wet_ratio</span><span class="p">,</span> <span class="n">mu_ratio</span><span class="p">:</span> <span class="mf">2.0</span>
+    <span class="n">double</span> <span class="o">=</span> <span class="n">just</span><span class="p">(</span><span class="mf">2.0</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span> <span class="n">k_H</span><span class="o">=</span><span class="n">double</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">),</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">500.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">8000.0</span><span class="p">,</span> <span class="n">k_H</span><span class="o">=</span><span class="n">double</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">),</span> <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">8000.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">))</span>
     <span class="n">mid</span> <span class="o">=</span> <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">mdot</span><span class="o">=</span><span class="mf">3000.0</span><span class="p">,</span> <span class="n">k_H</span><span class="o">=</span><span class="n">double</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span>
@@ -417,15 +419,16 @@
 
 
 
-<div class="viewcode-block" id="test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction">
-<a class="viewcode-back" href="../../tests.test_libraries.html#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction</span><span class="p">():</span>
+<div class="viewcode-block" id="test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given">
+<a class="viewcode-back" href="../../tests.test_libraries.html#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">"""Without k_H the wall temperature is never read, so T_wall=None works; with k_H the viscosity ratio needs it."""</span>
     <span class="n">fluid</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span><span class="n">mock_liquid_funcs</span><span class="p">,</span> <span class="n">viscosity</span><span class="o">=</span><span class="k">lambda</span> <span class="n">T</span><span class="p">:</span> <span class="mf">1.0</span> <span class="o">+</span> <span class="mf">0.0</span> <span class="o">*</span> <span class="n">T</span><span class="p">)</span>
     <span class="n">kw</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"T_cool"</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">20.0</span><span class="p">]),</span> <span class="s2">"mdot"</span><span class="p">:</span> <span class="mf">500.0</span><span class="p">,</span> <span class="s2">"fluid"</span><span class="p">:</span> <span class="n">fluid</span><span class="p">,</span> <span class="s2">"pipe"</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
           <span class="s2">"re_bounds"</span><span class="p">:</span> <span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">4000.0</span><span class="p">),</span> <span class="s2">"k_R"</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
     <span class="k">assert</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)))</span>
-    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
-        <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k_H</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"k_H needs T_wall"</span><span class="p">):</span>
+        <span class="n">regime_dependent_friction</span><span class="p">(</span><span class="n">T_wall</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">k_H</span><span class="o">=</span><span class="n">just</span><span class="p">(</span><span class="mf">1.0</span><span class="p">),</span> <span class="o">**</span><span class="n">kw</span><span class="p">)</span></div>
 
 </pre></div>
 
@@ -437,7 +440,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 21, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -10,6 +10,7 @@
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -84,7 +85,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_pressure_difference_for_a_few_simple_cases"><code class="docutils literal notranslate"><span class="pre">test_pressure_difference_for_a_few_simple_cases</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_rectangular_laminar_correction_for_precalculated_case"><code class="docutils literal notranslate"><span class="pre">test_rectangular_laminar_correction_for_precalculated_case</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_assigns_regimes_correctly"><code class="docutils literal notranslate"><span class="pre">test_regime_dependent_friction_assigns_regimes_correctly</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction"><code class="docutils literal notranslate"><span class="pre">test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given"><code class="docutils literal notranslate"><span class="pre">test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_viscosity_correction_is_laminar_only"><code class="docutils literal notranslate"><span class="pre">test_regime_dependent_friction_viscosity_correction_is_laminar_only</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_turbulent_friction_for_precalculated_case"><code class="docutils literal notranslate"><span class="pre">test_turbulent_friction_for_precalculated_case</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#test_libraries.test_pressure_drop.test_viscosity_correction_for_precalculated_case"><code class="docutils literal notranslate"><span class="pre">test_viscosity_correction_for_precalculated_case</span></code></a></li>
@@ -405,14 +406,16 @@ current decreases, since gravity offsets friction</p>
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction">
-<span class="sig-name descname"><span class="pre">test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_libraries/test_pressure_drop.html#test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_with_a_correction" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dt class="sig sig-object py" id="test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given">
+<span class="sig-name descname"><span class="pre">test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_libraries/test_pressure_drop.html#test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_reads_the_wall_viscosity_only_when_k_H_is_given" title="Link to this definition"></a></dt>
+<dd><p>Without k_H the wall temperature is never read, so T_wall=None works; with k_H the viscosity ratio needs it.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="test_libraries.test_pressure_drop.test_regime_dependent_friction_viscosity_correction_is_laminar_only">
 <span class="sig-name descname"><span class="pre">test_regime_dependent_friction_viscosity_correction_is_laminar_only</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_libraries/test_pressure_drop.html#test_regime_dependent_friction_viscosity_correction_is_laminar_only"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_libraries.test_pressure_drop.test_regime_dependent_friction_viscosity_correction_is_laminar_only" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>A k_H of 2 doubles the laminar factor, leaves the turbulent factor alone and lands between them in transition.</p>
+</dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="test_libraries.test_pressure_drop.test_turbulent_friction_for_precalculated_case">
@@ -492,7 +495,7 @@ current decreases, since gravity offsets friction</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 21, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

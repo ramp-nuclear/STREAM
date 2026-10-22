@@ -10,6 +10,7 @@
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
@@ -402,6 +403,13 @@ numbers from 100 to 50,000, are</p>
 ratio, <span class="math notranslate nohighlight">\(0.4575\,\text{Gz}^{0.1}\)</span>, is clipped to <span class="math notranslate nohighlight">\([2/3, 1]\)</span> and, below
 Gz 16 where there are no data, fades back to 1 over <code class="docutils literal notranslate"><span class="pre">fade</span></code> by a smooth step on
 <span class="math notranslate nohighlight">\(\log_{10}\text{Gz}\)</span>. A non-positive Graetz number returns 1.</p>
+<p>The default <code class="docutils literal notranslate"><span class="pre">fade</span></code> returns the ratio to 1 over about one decade of Graetz number
+below the data limit of 16, because at zero flow the laminar law already holds the
+fully developed value, which is the conservative choice at stagnation. A lower first
+value holds the plateau further down, and a narrow band just below 16 keeps it almost
+to the data limit. <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_h_spl</span></code></a> always uses the default; another
+<code class="docutils literal notranslate"><span class="pre">fade</span></code> applies only when this function is called directly. The choice is discussed
+in <a class="reference internal" href="#htc-low-flow"><span class="std std-ref">Low flow, reversal and natural circulation</span></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -659,22 +667,19 @@ Rayleigh number enters in absolute value; <code class="docutils literal notransl
 <h3>Composed HTC Functions<a class="headerlink" href="#composed-htc-functions" title="Link to this heading"></a></h3>
 <dl class="py function">
 <dt class="sig sig-object py" id="stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl">
-<span class="sig-name descname"><span class="pre">regime_dependent_h_spl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_funcs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downflow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">laminar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">developing_laminar_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turbulent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">Dittus_Boelter_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">natural</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">Elenbaas_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/heat_transfer_coefficient/single_phase.html#regime_dependent_h_spl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="Link to this definition"></a></dt>
-<dd><p>A flow-regime-dependent single phase heat transfer coefficient function.</p>
-<p>The forced part interpolates linearly on the bulk Reynolds number between the
-<code class="docutils literal notranslate"><span class="pre">laminar</span></code> function (bulk properties) and the <code class="docutils literal notranslate"><span class="pre">turbulent</span></code> one (film properties)
-over <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>. The natural term is added by the cube norm
-<span class="math notranslate nohighlight">\(h = (h_f^3 + h_n^3)^{1/3}\)</span><a class="footnote-reference brackets" href="#churchill" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>11<span class="fn-bracket">]</span></a>. For a 2 mm gap at up to 30 K
-superheat it adds under 1 %; it grows about as the fourth power of the gap and
-matters from about 4 mm.</p>
-<p>At zero flow the laminar law holds its fully developed value, which lies below the
-conduction limit of a stagnant heated slab, so no separate stagnant limit is
-needed; upflow data place the coefficient at the laminar value<a class="footnote-reference brackets" href="#sudo" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>12<span class="fn-bracket">]</span></a>. Every
-switch is fed by the flow, so <span class="math notranslate nohighlight">\(h(T_{wall}) \cdot \Delta T\)</span> is monotone and a
-cell’s wall balance has one root. Without a downflow law heated laminar downflow
-is over-predicted: <code class="docutils literal notranslate"><span class="pre">downflow=&quot;sudo&quot;</span></code> scales the laminar value by
-<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio" title="stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sudo_downflow_ratio</span></code></a> in laminar flow along gravity, before the
-interpolation. It is off by default.</p>
+<span class="sig-name descname"><span class="pre">regime_dependent_h_spl</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coolant</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mdot</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Dh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_cool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_wall</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re_bounds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coolant_funcs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Lh</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9.80665</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">downflow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">develop_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">laminar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">developing_laminar_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">turbulent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">Dittus_Boelter_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">natural</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">Elenbaas_h_spl&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/stream/physical_models/heat_transfer_coefficient/single_phase.html#regime_dependent_h_spl"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="Link to this definition"></a></dt>
+<dd><p>Single phase wall heat transfer coefficient for channels whose flow may fall to
+zero, reverse or run on natural circulation.</p>
+<p>Pick it for a heated channel that passes through laminar, transitional and turbulent
+flow in one run, such as a loss-of-flow transient. It stays continuous through zero
+flow and gives each cell’s wall balance one root per heat flux.</p>
+<p>The forced part interpolates linearly on the bulk Reynolds number over <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>
+between the <code class="docutils literal notranslate"><span class="pre">laminar</span></code> function (bulk properties) and the <code class="docutils literal notranslate"><span class="pre">turbulent</span></code> one (film
+properties). The <code class="docutils literal notranslate"><span class="pre">natural</span></code> term is added to it by the cube norm
+<span class="math notranslate nohighlight">\(h = (h_f^3 + h_n^3)^{1/3}\)</span><a class="footnote-reference brackets" href="#churchill" id="id12" role="doc-noteref"><span class="fn-bracket">[</span>11<span class="fn-bracket">]</span></a>. At zero flow the laminar function
+holds its fully developed value, so <span class="math notranslate nohighlight">\(h\)</span> is continuous through reversal.</p>
+<p>The reasoning, the size of the natural term and the downflow data are in
+<a class="reference internal" href="#htc-low-flow"><span class="std std-ref">Low flow, reversal and natural circulation</span></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -684,15 +689,22 @@ interpolation. It is off by default.</p>
 <li><p><strong>A</strong> (<em>Meter2</em>) – Flow area</p></li>
 <li><p><strong>T_cool</strong> (<em>Celsius</em>) – Coolant bulk temperature</p></li>
 <li><p><strong>T_wall</strong> (<em>Celsius</em>) – Wall temperature</p></li>
-<li><p><strong>re_bounds</strong> (<em>tuple</em><em>[</em><em>Value</em><em>, </em><em>Value</em><em>]</em>) – Boundaries depicting transition between laminar, interim, and turbulent regimes.</p></li>
+<li><p><strong>re_bounds</strong> (<em>tuple</em><em>[</em><em>Value</em><em>, </em><em>Value</em><em>]</em>) – Reynolds numbers where laminar flow ends and turbulent flow begins in this
+geometry; <span class="math notranslate nohighlight">\(h\)</span> is interpolated linearly between them.</p></li>
 <li><p><strong>coolant_funcs</strong> (<a class="reference internal" href="utility_packages.html#stream.substances.liquid.LiquidFuncs" title="stream.substances.liquid.LiquidFuncs"><em>LiquidFuncs</em></a>) – Coolant properties functions.</p></li>
 <li><p><strong>Lh</strong> (<em>Meter</em>) – Heated length, passed on to the <code class="docutils literal notranslate"><span class="pre">laminar</span></code>, <code class="docutils literal notranslate"><span class="pre">turbulent</span></code> and <code class="docutils literal notranslate"><span class="pre">natural</span></code>
 functions.</p></li>
-<li><p><strong>g</strong> (<em>MPerS2</em>) – Same <code class="docutils literal notranslate"><span class="pre">g</span></code> as <a class="reference internal" href="pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff" title="stream.physical_models.pressure_drop.pressure_diff"><code class="xref py py-func docutils literal notranslate"><span class="pre">pressure_diff</span></code></a>: positive flow runs along gravity when
-<code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, a riser passes <code class="docutils literal notranslate"><span class="pre">-g</span></code>, and <code class="docutils literal notranslate"><span class="pre">0.0</span></code> drops the natural term.</p></li>
-<li><p><strong>downflow</strong> (<em>Literal</em><em>[</em><em>&quot;sudo&quot;</em><em>] </em><em>| </em><em>None</em>) – <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) or <code class="docutils literal notranslate"><span class="pre">&quot;sudo&quot;</span></code>, which multiplies the laminar value by the
-ratio on the local Graetz number Re Pr Dh / <code class="docutils literal notranslate"><span class="pre">develop_length</span></code> in flow along
-gravity. It needs <code class="docutils literal notranslate"><span class="pre">develop_length</span></code> and has no effect when <code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">==</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>g</strong> (<em>MPerS2</em>) – Gravity signed by the channel’s orientation, the same value the channel’s
+<a class="reference internal" href="pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff" title="stream.physical_models.pressure_drop.pressure_diff"><code class="xref py py-func docutils literal notranslate"><span class="pre">pressure_diff</span></code></a> gets: positive flow runs along gravity when <code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, a
+riser passes <code class="docutils literal notranslate"><span class="pre">-g</span></code>, and a horizontal channel passes <code class="docutils literal notranslate"><span class="pre">0.0</span></code>, which drops the
+natural term.</p></li>
+<li><p><strong>downflow</strong> (<em>Literal</em><em>[</em><em>&quot;sudo&quot;</em><em>] </em><em>| </em><em>None</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;sudo&quot;</span></code> for a heated channel whose laminar flow runs along gravity when the
+conservative wall temperature is wanted: in that flow the laminar value is scaled
+by <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio" title="stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sudo_downflow_ratio</span></code></a><a class="footnote-reference brackets" href="#sudo" id="id13" role="doc-noteref"><span class="fn-bracket">[</span>12<span class="fn-bracket">]</span></a>. <code class="docutils literal notranslate"><span class="pre">None</span></code> (default) keeps the laminar
+value in both directions. It has no effect when <code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">==</span> <span class="pre">0</span></code>.</p></li>
+<li><p><strong>develop_length</strong> (<em>Meter</em><em> | </em><em>None</em>) – Distance counted from the end the flow enters. A channel supplies it per cell, so pass it only
+when calling the law directly. The developing laminar law uses it, and
+<code class="docutils literal notranslate"><span class="pre">downflow=&quot;sudo&quot;</span></code> requires it.</p></li>
 <li><p><strong>laminar</strong> (<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs" title="stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs"><em>SinglePhaseLiquidHTCExArgs</em></a>) – Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.</p></li>
 <li><p><strong>turbulent</strong> (<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs" title="stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs"><em>SinglePhaseLiquidHTCExArgs</em></a>) – Turbulent heat transfer coefficient</p></li>
 <li><p><strong>natural</strong> (<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs" title="stream.physical_models.heat_transfer_coefficient.single_phase.SinglePhaseLiquidHTCExArgs"><em>SinglePhaseLiquidHTCExArgs</em></a>) – Natural convection heat transfer coefficient, evaluated with bulk properties.</p></li>
@@ -746,39 +758,113 @@ J. Nucl. Sci. Technol. 22(3):202-212, 1985.</p>
 </dd></dl>
 
 <section id="low-flow-reversal-and-natural-circulation">
-<h4>Low flow, reversal and natural circulation<a class="headerlink" href="#low-flow-reversal-and-natural-circulation" title="Link to this heading"></a></h4>
-<p>As a channel’s flow falls, <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_h_spl</span></code></a> moves from Dittus-Boelter through the
-<code class="docutils literal notranslate"><span class="pre">re_bounds</span></code> band to the developing laminar law, and at zero flow the laminar law holds its fully
-developed value. Without the downflow law the coefficient is therefore continuous through stagnation and
-the same on both sides of it. The Elenbaas natural term is added to the forced value by the cube norm at
-every flow: in a 2 mm gap at up to 30 K superheat it adds under 1 %; the gain grows roughly as the fourth
-power of the gap and with the superheat, and from about 4 mm it lifts the low-flow value.</p>
+<span id="htc-low-flow"></span><h4>Low flow, reversal and natural circulation<a class="headerlink" href="#low-flow-reversal-and-natural-circulation" title="Link to this heading"></a></h4>
+<section id="the-problem">
+<h5>The problem<a class="headerlink" href="#the-problem" title="Link to this heading"></a></h5>
+<p>In a loss-of-flow transient the pump coasts down, and the flow in a heated channel passes through zero,
+reverses and settles into natural circulation. The wall heat transfer coefficient <span class="math notranslate nohighlight">\(h\)</span> must follow it,
+but its correlations are forced-flow ones. The laminar law is keyed on the Graetz number
+<span class="math notranslate nohighlight">\(\text{Gz} = \text{Re}\,\text{Pr}\,D_h/x\)</span>, with <span class="math notranslate nohighlight">\(x\)</span> the distance from the inlet. A large Gz
+means a thin thermal boundary layer and a high <span class="math notranslate nohighlight">\(h\)</span>. As the flow dies Gz goes to zero and the law
+settles on its fully developed value, Nu about 8 in a wide plate channel.</p>
+<p>That zero-flow limit lies outside the data the laminar law was fitted to, so holding it at stagnation has
+to be justified. Handing over instead to a natural-convection correlation is tempting, for example
+Elenbaas’s correlation for natural convection between vertical heated plates. In the LOFA example’s hot
+channel, a 2.2 mm plate gap, at 10 K superheat, though, Elenbaas gives 136 W/m²K against a laminar
+1161 W/m²K (Nu about 8), so <span class="math notranslate nohighlight">\(h\)</span> drops almost an order of magnitude in the narrow band around zero
+flow where such a handover acts, within a few units of Re of zero.</p>
+<p>Each cell’s wall temperature is the root of its wall balance: the plate’s heat flux equals
+<span class="math notranslate nohighlight">\(h\,\Delta T\)</span>, with <span class="math notranslate nohighlight">\(\Delta T\)</span> the wall superheat. When <span class="math notranslate nohighlight">\(h\)</span> jumps, the root jumps, and the
+solver must cut its step to cross it at every reversal. A switch to natural convection keyed on the
+superheat is worse. <span class="math notranslate nohighlight">\(h\,\Delta T\)</span> can then fall while <span class="math notranslate nohighlight">\(\Delta T\)</span> rises, and one heat flux has
+three wall temperatures. Newton lands on whichever root its guess leads to, so a steady solve depends on
+its start and a transient can jump between branches.</p>
+</section>
+<section id="what-the-law-does">
+<h5>What the law does<a class="headerlink" href="#what-the-law-does" title="Link to this heading"></a></h5>
+<p><a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_h_spl</span></code></a> holds the laminar law at its fully developed value through zero flow, so
+<span class="math notranslate nohighlight">\(h\)</span> is the same on both sides of reversal. This is safe. Fluid at rest between two plates heated at
+uniform flux conducts with Nu 12 on <span class="math notranslate nohighlight">\(D_h\)</span>, above the laminar value of about 8, so the held value
+understates <span class="math notranslate nohighlight">\(h\)</span> at stagnation. Sudo’s upflow lower limit at low Graetz number in a narrow channel,
+described below, is of the same order, so the held value is not out of line with measurements.</p>
+<p>The Elenbaas natural value <span class="math notranslate nohighlight">\(h_n\)</span> is added to the forced value <span class="math notranslate nohighlight">\(h_f\)</span> at every flow by the cube
+norm <span class="math notranslate nohighlight">\(h = (h_f^3 + h_n^3)^{1/3}\)</span>, a smooth maximum that only adds. Its share grows with the superheat
+and about as the fourth power of the gap. In a 2 mm gap at up to 30 K superheat it adds under 1 %; from
+about 4 mm it lifts the low-flow value.</p>
+<p>Both switches in the law, the laminar to turbulent interpolation and the direction weight of the downflow
+option below, are fed by the flow, never by the wall superheat. The superheat enters only through the
+natural term and the film properties, the coolant properties at the film temperature (by default the mean
+of the wall and bulk temperatures) that the turbulent law uses. For water both raise <span class="math notranslate nohighlight">\(h\)</span>, so
+<span class="math notranslate nohighlight">\(h\,\Delta T\)</span> rises monotonically and the balance has one root.</p>
 <figure class="align-default" id="id18">
-<a class="reference internal image-reference" href="_images/h_vs_re.png"><img alt="_images/h_vs_re.png" src="_images/h_vs_re.png" style="width: 100%;" />
+<a class="plot-directive reference internal image-reference" href="_images/htc_figures_h_versus_re.png"><img alt="Wall HTC against signed Re for three gaps, flat through zero flow in the 2 mm gap." class="plot-directive" src="_images/htc_figures_h_versus_re.png" style="width: 100%;" />
 </a>
 <figcaption>
-<p><span class="caption-text">Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, with the <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code> band shaded.</span><a class="headerlink" href="#id18" title="Link to this image"></a></p>
+<p><span class="caption-text">Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, <code class="docutils literal notranslate"><span class="pre">re_bounds</span></code> band shaded.
+The 2 mm gap is flat through zero flow; wider gaps rise on the natural term.</span><a class="headerlink" href="#id18" title="Link to this image"></a></p>
 </figcaption>
 </figure>
-<p>Every switch in the law is fed by the flow, never by the wall superheat the coefficient feeds back
-into, and the cube norm only adds. The wall heat flux <span class="math notranslate nohighlight">\(h \cdot \Delta T\)</span> then rises monotonically
-with the superheat, so a flow-fed closure gives a cell’s wall balance one root per heat flux.</p>
-<figure class="align-default" id="id19">
-<a class="reference internal image-reference" href="_images/wall_balance.png"><img alt="_images/wall_balance.png" src="_images/wall_balance.png" style="width: 100%;" />
+<figure class="align-default" id="id20">
+<a class="plot-directive reference internal image-reference" href="_images/htc_figures_wall_balance.png"><img alt="Wall heat flux against superheat at Re 100 and Re 20, both rising monotonically." class="plot-directive" src="_images/htc_figures_wall_balance.png" style="width: 100%;" />
 </a>
 <figcaption>
-<p><span class="caption-text">Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20, which coincide on the held laminar value, crossing a 15 kW/m² flux once.</span><a class="headerlink" href="#id19" title="Link to this image"></a></p>
+<p><span class="caption-text">Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20. Both rise monotonically and coincide
+on the held laminar value, so the 15 kW/m² line crosses them once.</span><a class="headerlink" href="#id20" title="Link to this image"></a></p>
 </figcaption>
 </figure>
-<p>The channel’s orientation enters through <code class="docutils literal notranslate"><span class="pre">g</span></code>, the same gravity its pressure law
-(<a class="reference internal" href="pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff" title="stream.physical_models.pressure_drop.pressure_diff"><code class="xref py py-func docutils literal notranslate"><span class="pre">pressure_diff</span></code></a>) uses: positive flow runs along gravity when <code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>, a riser passes the
-negated gravity and a horizontal channel passes <code class="docutils literal notranslate"><span class="pre">0.0</span></code>, which drops the natural term. Laminar flow along
-gravity past a heated wall is slowed at the wall by buoyancy, which the default law ignores and so
-over-predicts. Passing <code class="docutils literal notranslate"><span class="pre">downflow=&quot;sudo&quot;</span></code> scales the laminar value by <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio" title="stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sudo_downflow_ratio</span></code></a>,
-from the narrow-channel measurements of Sudo et al. (about half the laminar coefficient at Re 250 to 400),
-on the local Graetz number; the law applies the ratio of Sudo’s downflow and upflow envelopes, never below
-2/3, and it needs <code class="docutils literal notranslate"><span class="pre">develop_length</span></code>. It lowers the coefficient and raises the wall
-temperature, the conservative side, and is off by default.</p>
+</section>
+<section id="orientation">
+<h5>Orientation<a class="headerlink" href="#orientation" title="Link to this heading"></a></h5>
+<p>The law takes the direction of gravity as <code class="docutils literal notranslate"><span class="pre">g</span></code>, with the convention of <a class="reference internal" href="pressure_drop.html#stream.physical_models.pressure_drop.pressure_diff" title="stream.physical_models.pressure_drop.pressure_diff"><code class="xref py py-func docutils literal notranslate"><span class="pre">pressure_diff</span></code></a>: positive
+flow runs along gravity when <code class="docutils literal notranslate"><span class="pre">g</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>. A channel whose positive flow runs down passes <code class="docutils literal notranslate"><span class="pre">g</span></code>, a riser
+passes it negated, and a horizontal channel passes <code class="docutils literal notranslate"><span class="pre">0.0</span></code>, which drops the natural term and the downflow
+option.</p>
+</section>
+<section id="heated-downflow-and-the-sudo-option">
+<h5>Heated downflow and the Sudo option<a class="headerlink" href="#heated-downflow-and-the-sudo-option" title="Link to this heading"></a></h5>
+<p>When flow past a heated wall runs along gravity, the warm fluid at the wall is buoyant and pushes against
+the flow. In laminar flow this slows the fluid at the wall and lowers <span class="math notranslate nohighlight">\(h\)</span>, which the forced law cannot
+see. Sudo et al. measured it in a 2.25 mm gap heated on both sides: at Re 250 to 400 the downflow
+coefficient was about half the laminar value. They give lower envelopes of their laminar data for each
+direction as laws in the local Gz, for Gz above 16, with no data below.</p>
+<p><code class="docutils literal notranslate"><span class="pre">downflow=&quot;sudo&quot;</span></code> multiplies the laminar value in flow along gravity by the ratio of the downflow to the
+upflow envelope, clipped to <span class="math notranslate nohighlight">\([2/3, 1]\)</span> (<a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio" title="stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sudo_downflow_ratio</span></code></a>). It fades out across
+<code class="docutils literal notranslate"><span class="pre">re_bounds</span></code> with the laminar part. A lower <span class="math notranslate nohighlight">\(h\)</span> means a hotter wall, the conservative side. The
+option is off by default because it rests on lower envelopes from one experiment in one gap.</p>
+<p>Below Gz 16 there are no data, and at stagnation the held laminar value is already conservative, so the
+law returns the ratio to 1 between Gz 16 and Gz 2, about one decade; the upper end is the data limit. The
+lower end is bounded by construction: the ratio is clipped to <span class="math notranslate nohighlight">\([2/3, 1]\)</span>, so wherever the return ends,
+the band lowers the laminar value by at most a third, and only below Gz 16, at the lowest flows of the
+laminar range. In the LOFA example with both pumps tripped, for instance, ending the return anywhere from
+Gz 0.002 to Gz 8, or holding the plateau to stagnation, moves the wall temperature of the hot plate against
+the default by at most 3 K for less than twenty seconds around the reversal of the flow, and the peak clad
+temperature over every band from stagnation up to Gz 2000 spans 0.2 K. Starting the return above Gz 16 is
+not a choice of fade, because it cuts Sudo’s law inside its data; in the same example it lowers the wall
+temperature during the coastdown by up to 7 K for half a minute to more than two minutes. Against the
+option off, the option itself raises the wall temperature of the hot plate in the same example by up to
+8 K during the laminar downflow of the coastdown, and the peak clad temperature by 0.2 K. The band can be
+moved only by calling <a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio" title="stream.physical_models.heat_transfer_coefficient.laminar.Sudo_downflow_ratio"><code class="xref py py-func docutils literal notranslate"><span class="pre">Sudo_downflow_ratio</span></code></a> directly with its <code class="docutils literal notranslate"><span class="pre">fade</span></code> argument.</p>
+<p>The local Gz needs <code class="docutils literal notranslate"><span class="pre">develop_length</span></code>, which a channel supplies per cell, counted from the end the flow
+enters.</p>
+</section>
+<section id="using-it">
+<h5>Using it<a class="headerlink" href="#using-it" title="Link to this heading"></a></h5>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">h_spl</span> <span class="o">=</span> <span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">),</span> <span class="n">aspect_ratio</span><span class="o">=</span><span class="n">gap</span> <span class="o">/</span> <span class="n">width</span><span class="p">,</span>
+                <span class="n">Lh</span><span class="o">=</span><span class="n">heated_length</span><span class="p">,</span> <span class="n">g</span><span class="o">=</span><span class="n">g</span><span class="p">,</span> <span class="n">downflow</span><span class="o">=</span><span class="s2">"sudo"</span><span class="p">)</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">re_bounds</span></code>: where laminar flow ends and turbulent flow begins in this geometry; <span class="math notranslate nohighlight">\(h\)</span> is
+interpolated linearly between them. Sudo’s narrow-channel data put the transition at 2000 to 4000; the
+figures and the LOFA example use 2000 to 5000.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">aspect_ratio</span></code>: the gap over the width, used by the laminar law.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Lh</span></code>: the heated length, used by Elenbaas.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">g</span></code>: the gravity signed by the channel’s orientation, as above.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">downflow</span></code>: <code class="docutils literal notranslate"><span class="pre">&quot;sudo&quot;</span></code> for a heated channel with laminar flow along gravity when the conservative wall
+temperature is wanted.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">develop_length</span></code>: not passed here; the channel supplies it per cell.</p></li>
+</ul>
+</section>
 </section>
 </section>
 </section>
@@ -1118,7 +1204,7 @@ This temperature may be used to assess the thermodynamical properties of the coo
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 21, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 

@@ -9,6 +9,7 @@
       <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/plot_directive.css" />
 
   
       <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
@@ -321,7 +322,7 @@
 <a class="viewcode-back" href="../../../../pressure_drop.html#stream.physical_models.pressure_drop.friction.regime_dependent_friction">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">regime_dependent_friction</span><span class="p">(</span>
     <span class="n">T_cool</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
-    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mdot</span><span class="p">:</span> <span class="n">KgPerS</span><span class="p">,</span>
     <span class="n">fluid</span><span class="p">:</span> <span class="n">LiquidFuncs</span><span class="p">,</span>
     <span class="n">pipe</span><span class="p">:</span> <span class="n">EffectivePipe</span><span class="p">,</span>
@@ -337,8 +338,8 @@
 <span class="sd">    ----------</span>
 <span class="sd">    T_cool: Celsius</span>
 <span class="sd">        Coolant bulk temperatures</span>
-<span class="sd">    T_wall: Celsius</span>
-<span class="sd">        Wall temperatures</span>
+<span class="sd">    T_wall: Celsius | None</span>
+<span class="sd">        Wall temperatures, read only when ``k_H`` is given.</span>
 <span class="sd">    mdot: KgPerS</span>
 <span class="sd">        Coolant mass flow rate</span>
 <span class="sd">    fluid: LiquidFuncs</span>
@@ -382,6 +383,8 @@
     <span class="n">f_turb</span> <span class="o">=</span> <span class="n">turbulent</span><span class="p">(</span><span class="n">re_bulk</span> <span class="o">*</span> <span class="n">k_R</span><span class="p">)</span>
     <span class="n">f_lam</span> <span class="o">=</span> <span class="n">laminar</span><span class="p">(</span><span class="n">re_bulk</span> <span class="o">*</span> <span class="n">k_R</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">k_H</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">T_wall</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"k_H needs T_wall to read the wall viscosity"</span><span class="p">)</span>
         <span class="n">mu_ratio</span> <span class="o">=</span> <span class="n">fluid</span><span class="o">.</span><span class="n">viscosity</span><span class="p">(</span><span class="n">T_wall</span><span class="p">)</span> <span class="o">/</span> <span class="n">mu_bulk</span>
         <span class="n">f_lam</span> <span class="o">=</span> <span class="n">f_lam</span> <span class="o">*</span> <span class="n">k_H</span><span class="p">(</span><span class="n">pipe</span><span class="o">.</span><span class="n">heated_perimeter</span> <span class="o">/</span> <span class="n">pipe</span><span class="o">.</span><span class="n">wet_perimeter</span><span class="p">,</span> <span class="n">mu_ratio</span><span class="p">)</span>
 
@@ -511,7 +514,7 @@
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 21, 2026.
+      <span class="lastupdated">Last updated on Oct 22, 2026.
       </span></p>
   </div>
 
