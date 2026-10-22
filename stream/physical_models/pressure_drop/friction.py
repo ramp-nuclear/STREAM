@@ -221,7 +221,7 @@ def laminar_friction(re: Value) -> Value:
 
 def regime_dependent_friction(
     T_cool: Celsius,
-    T_wall: Celsius,
+    T_wall: Celsius | None,
     mdot: KgPerS,
     fluid: LiquidFuncs,
     pipe: EffectivePipe,
@@ -237,8 +237,8 @@ def regime_dependent_friction(
     ----------
     T_cool: Celsius
         Coolant bulk temperatures
-    T_wall: Celsius
-        Wall temperatures
+    T_wall: Celsius | None
+        Wall temperatures, read only when ``k_H`` is given.
     mdot: KgPerS
         Coolant mass flow rate
     fluid: LiquidFuncs

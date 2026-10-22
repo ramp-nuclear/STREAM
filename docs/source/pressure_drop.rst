@@ -49,6 +49,7 @@ for, and a solver iterate whose temperature leaves the viscosity fit would then 
 
 .. plot:: htc_figures.py friction_through_zero
    :width: 100%
+   :alt: Channel pressure difference against mass flow, crossing zero flow at the hydrostatic head.
 
    Pressure difference of a 0.7 m long, 2 mm gap channel in ten cells against mass flow, with gravity, crossing zero flow at the hydrostatic head.
 

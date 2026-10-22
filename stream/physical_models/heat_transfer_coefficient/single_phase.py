@@ -119,7 +119,7 @@ def regime_dependent_h_spl(
         by :func:`~.Sudo_downflow_ratio` [#Sudo]_. ``None`` (default) keeps the laminar
         value in both directions. It has no effect when ``g == 0``.
     develop_length: Meter | None
-        Distance from the channel inlet. A channel supplies it per cell, so pass it only
+        Distance counted from the end the flow enters. A channel supplies it per cell, so pass it only
         when calling the law directly. The developing laminar law uses it, and
         ``downflow="sudo"`` requires it.
     laminar: SinglePhaseLiquidHTCExArgs

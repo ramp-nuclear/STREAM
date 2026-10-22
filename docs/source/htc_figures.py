@@ -98,4 +98,3 @@ def friction_through_zero():
     ax.set_xlabel("mass flow, positive along gravity [kg/s]")
     ax.set_ylabel("pressure difference [kPa]")
     ax.legend()
-
