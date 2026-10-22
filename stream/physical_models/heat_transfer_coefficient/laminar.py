@@ -405,7 +405,9 @@ def Sudo_downflow_ratio(gz: Value, fade: tuple[float, float] = (2.0, 16.0)) -> V
     below the data limit of 16, because at zero flow the laminar law already holds the
     fully developed value, which is the conservative choice at stagnation. A lower first
     value holds the plateau further down, and a narrow band just below 16 keeps it almost
-    to the data limit. The choice is discussed in :ref:`htc-low-flow`.
+    to the data limit. :func:`~.regime_dependent_h_spl` always uses the default; another
+    ``fade`` applies only when this function is called directly. The choice is discussed
+    in :ref:`htc-low-flow`.
 
     Parameters
     ----------

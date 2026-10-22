@@ -32,8 +32,8 @@ Friction
 .. automodule:: stream.physical_models.pressure_drop.friction
    :members:
 
-Low and reversed flow
----------------------
+Through zero flow, and the wall-viscosity correction
+----------------------------------------------------
 
 The friction law runs through the same loss-of-flow transients as the wall heat transfer coefficient.
 Below ``re_bounds`` the laminar factor :math:`64/(\text{Re}\,k_R)` makes the friction pressure linear in the
