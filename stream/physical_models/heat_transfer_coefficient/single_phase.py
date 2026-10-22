@@ -70,23 +70,21 @@ def regime_dependent_h_spl(
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
     **kwargs,
 ) -> WPerM2K:
-    r"""A flow-regime-dependent single phase heat transfer coefficient function.
+    r"""Single phase wall heat transfer coefficient for channels whose flow may fall to
+    zero, reverse or run on natural circulation.
 
-    The forced part interpolates linearly on the bulk Reynolds number between the
-    ``laminar`` function (bulk properties) and the ``turbulent`` one (film properties)
-    over ``re_bounds``. The natural term is added by the cube norm
-    :math:`h = (h_f^3 + h_n^3)^{1/3}` [#Churchill]_. For a 2 mm gap at up to 30 K
-    superheat it adds under 1 %; it grows about as the fourth power of the gap and
-    matters from about 4 mm.
+    Pick it for a heated channel that passes through laminar, transitional and turbulent
+    flow in one run, such as a loss-of-flow transient. It stays continuous through zero
+    flow and gives each cell's wall balance one root per heat flux.
 
-    At zero flow the laminar law holds its fully developed value, which lies below the
-    conduction limit of a stagnant heated slab, so no separate stagnant limit is
-    needed; upflow data place the coefficient at the laminar value [#Sudo]_. Every
-    switch is fed by the flow, so :math:`h(T_{wall}) \cdot \Delta T` is monotone and a
-    cell's wall balance has one root. Without a downflow law heated laminar downflow
-    is over-predicted: ``downflow="sudo"`` scales the laminar value by
-    :func:`~.Sudo_downflow_ratio` in laminar flow along gravity, before the
-    interpolation. It is off by default.
+    The forced part interpolates linearly on the bulk Reynolds number over ``re_bounds``
+    between the ``laminar`` function (bulk properties) and the ``turbulent`` one (film
+    properties). The ``natural`` term is added to it by the cube norm
+    :math:`h = (h_f^3 + h_n^3)^{1/3}` [#Churchill]_. At zero flow the laminar function
+    holds its fully developed value, so :math:`h` is continuous through reversal.
+
+    The reasoning, the size of the natural term and the downflow data are in
+    :ref:`htc-low-flow`.
 
     Parameters
     ----------
@@ -103,22 +101,27 @@ def regime_dependent_h_spl(
     T_wall: Celsius
         Wall temperature
     re_bounds: tuple[Value, Value]
-        Boundaries depicting transition between laminar, interim, and turbulent regimes.
+        Reynolds numbers where laminar flow ends and turbulent flow begins in this
+        geometry; :math:`h` is interpolated linearly between them.
     coolant_funcs: LiquidFuncs
         Coolant properties functions.
     Lh: Meter
         Heated length, passed on to the ``laminar``, ``turbulent`` and ``natural``
         functions.
     g: MPerS2
-        Same ``g`` as :func:`~.pressure_diff`: positive flow runs along gravity when
-        ``g > 0``, a riser passes ``-g``, and ``0.0`` drops the natural term.
+        Gravity signed by the channel's orientation, the same value the channel's
+        :func:`~.pressure_diff` gets: positive flow runs along gravity when ``g > 0``, a
+        riser passes ``-g``, and a horizontal channel passes ``0.0``, which drops the
+        natural term.
     downflow: Literal["sudo"] | None
-        ``None`` (default) or ``"sudo"``, which multiplies the laminar value by the
-        ratio on the local Graetz number Re Pr Dh / ``develop_length`` in flow along
-        gravity. It needs ``develop_length`` and has no effect when ``g == 0``.
+        ``"sudo"`` for a heated channel whose laminar flow runs along gravity when the
+        conservative wall temperature is wanted: in that flow the laminar value is scaled
+        by :func:`~.Sudo_downflow_ratio` [#Sudo]_. ``None`` (default) keeps the laminar
+        value in both directions. It has no effect when ``g == 0``.
     develop_length: Meter | None
-        Distance from the channel inlet, a per-cell array in a channel. The developing
-        laminar law uses it, and ``downflow="sudo"`` requires it.
+        Distance from the channel inlet. A channel supplies it per cell, so pass it only
+        when calling the law directly. The developing laminar law uses it, and
+        ``downflow="sudo"`` requires it.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs

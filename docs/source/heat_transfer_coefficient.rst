@@ -80,36 +80,100 @@ Composed HTC Functions
 Low flow, reversal and natural circulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As a channel's flow falls, :func:`~.regime_dependent_h_spl` moves from Dittus-Boelter through the
-``re_bounds`` band to the developing laminar law, and at zero flow the laminar law holds its fully
-developed value. Without the downflow law the coefficient is therefore continuous through stagnation and
-the same on both sides of it. The Elenbaas natural term is added to the forced value by the cube norm at
-every flow: in a 2 mm gap at up to 30 K superheat it adds under 1 %; the gain grows roughly as the fourth
-power of the gap and with the superheat, and from about 4 mm it lifts the low-flow value.
+The problem
+^^^^^^^^^^^
+
+In a loss-of-flow transient the pump coasts down, and the flow in a heated channel passes through zero,
+reverses and settles into natural circulation. The wall heat transfer coefficient :math:`h` must follow it,
+but its correlations are forced-flow ones. The laminar law is keyed on the Graetz number
+:math:`\text{Gz} = \text{Re}\,\text{Pr}\,D_h/x`, with :math:`x` the distance from the inlet. A large Gz
+means a thin thermal boundary layer and a high :math:`h`. As the flow dies Gz goes to zero and the law
+settles on its fully developed value, Nu about 8.2 between wide plates.
+
+A forced-flow law says nothing about stagnation itself, so the closure must choose a value there. Handing
+over to a natural-convection correlation is tempting. In a 2.2 mm plate channel at 10 K superheat, though,
+the Elenbaas value is 136 W/m²K against a laminar 1161 W/m²K, so :math:`h` drops almost an order of
+magnitude in the narrow band around zero flow where such a handover acts (:math:`|\text{Re}|` below 3.6).
+
+Each cell's wall temperature is the root of its wall balance: the plate's heat flux equals
+:math:`h\,\Delta T`, with :math:`\Delta T` the wall superheat. When :math:`h` jumps, the root jumps, and the
+solver must cut its step to cross it at every reversal. A switch to natural convection keyed on the
+superheat is worse. :math:`h\,\Delta T` can then fall while :math:`\Delta T` rises, and one heat flux has
+three wall temperatures. Newton lands on whichever root its guess leads to, so a steady solve depends on
+its start and a transient can jump between branches. One root per heat flux keeps the wall temperature a
+single-valued function of the flow and the heat flux.
+
+What the law does
+^^^^^^^^^^^^^^^^^
+
+:func:`~.regime_dependent_h_spl` holds the laminar law at its fully developed value through zero flow, so
+:math:`h` is the same on both sides of reversal. This is safe. Fluid at rest between two plates heated at
+uniform flux conducts with Nu 12 on :math:`D_h`, above 8.2, so the held value understates :math:`h` at
+stagnation. Upflow data in narrow channels put the coefficient at the laminar value.
+
+The Elenbaas natural value :math:`h_n` is added to the forced value :math:`h_f` at every flow by the cube
+norm :math:`h = (h_f^3 + h_n^3)^{1/3}`, a smooth maximum that only adds. Its share grows with the superheat
+and about as the fourth power of the gap. In a 2 mm gap at up to 30 K superheat it adds under 1 %; from
+about 4 mm it lifts the low-flow value.
+
+Every switch is fed by the flow, never by the wall superheat. The superheat enters only through the film
+properties and the natural term, which both raise :math:`h`, so :math:`h\,\Delta T` rises monotonically and
+the balance has one root.
 
 .. plot:: htc_figures.py h_versus_re
    :width: 100%
 
-   Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, with the ``re_bounds`` band shaded.
-
-Every switch in the law is fed by the flow, never by the wall superheat the coefficient feeds back
-into, and the cube norm only adds. The wall heat flux :math:`h \cdot \Delta T` then rises monotonically
-with the superheat, so a flow-fed closure gives a cell's wall balance one root per heat flux.
+   Wall HTC of a 70 mm wide heated channel at 10 K superheat against signed Re, ``re_bounds`` band shaded.
+   The 2 mm gap is flat through zero flow; wider gaps rise on the natural term.
 
 .. plot:: htc_figures.py wall_balance
    :width: 100%
 
-   Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20, which coincide on the held laminar value, crossing a 15 kW/m² flux once.
+   Wall heat flux against superheat in a 2 mm gap at Re 100 and Re 20. Both rise monotonically and coincide
+   on the held laminar value, so the 15 kW/m² line crosses them once.
 
-The channel's orientation enters through ``g``, the same gravity its pressure law
-(:func:`~.pressure_diff`) uses: positive flow runs along gravity when ``g > 0``, a riser passes the
-negated gravity and a horizontal channel passes ``0.0``, which drops the natural term. Laminar flow along
-gravity past a heated wall is slowed at the wall by buoyancy, which the default law ignores and so
-over-predicts. Passing ``downflow="sudo"`` scales the laminar value by :func:`~.Sudo_downflow_ratio`,
-from the narrow-channel measurements of Sudo et al. (about half the laminar coefficient at Re 250 to 400),
-on the local Graetz number; the law applies the ratio of Sudo's downflow and upflow envelopes, never below
-2/3, and it needs ``develop_length``. It lowers the coefficient and raises the wall
-temperature, the conservative side, and is off by default.
+Orientation
+^^^^^^^^^^^
+
+The law takes the direction of gravity as ``g``, with the convention of :func:`~.pressure_diff`: positive
+flow runs along gravity when ``g > 0``. A channel whose positive flow runs down passes the gravity, a riser
+passes it negated, and a horizontal channel passes ``0.0``, which drops the natural term and the downflow
+option.
+
+Heated downflow and the Sudo option
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When flow past a heated wall runs along gravity, the warm fluid at the wall is buoyant and pushes against
+the flow. In laminar flow this slows the fluid at the wall and lowers :math:`h`, which the forced law cannot
+see. Sudo et al. measured it in a 2.25 mm gap heated on both sides: at Re 250 to 400 the downflow
+coefficient was about half the laminar value. They give lower envelopes of their laminar data for each
+direction as laws in the local Gz, for Gz above 16, with no data below.
+
+``downflow="sudo"`` multiplies the laminar value in flow along gravity by the ratio of the downflow to the
+upflow envelope, clipped to :math:`[2/3, 1]` (:func:`~.Sudo_downflow_ratio`). It fades out across
+``re_bounds`` with the laminar part. A lower :math:`h` means a hotter wall, the conservative side. The
+option is off by default because it rests on lower envelopes from one experiment in one gap.
+
+Below Gz 16 there are no data, and at stagnation the held laminar value is already conservative, so the
+ratio returns to 1 as Gz falls toward zero. The ``fade`` argument of :func:`~.Sudo_downflow_ratio`, (2, 16)
+by default, does this over the decade below the data limit; a lower first value holds the reduction
+further down. The local Gz needs ``develop_length``, which a channel supplies per cell, counted from the end
+the flow enters.
+
+Using it
+^^^^^^^^
+
+.. code-block:: python
+
+   h_spl = spl_htc("regime_dependent", re_bounds=(2000.0, 5000.0), aspect_ratio=gap / width,
+                   Lh=heated_length, g=g, downflow="sudo")
+
+- ``re_bounds``: where laminar flow ends and turbulent flow begins in this geometry; :math:`h` is
+  interpolated linearly between them. Sudo's narrow-channel data put the transition at 2000 to 4000.
+- ``g``: the gravity signed by the channel's orientation, as above.
+- ``downflow``: ``"sudo"`` for a heated channel with laminar flow along gravity when the conservative wall
+  temperature is wanted.
+- ``develop_length``: not passed here; the channel supplies it per cell.
 
 
 Incipience (INC)
