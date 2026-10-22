@@ -39,7 +39,6 @@ mathjax_path = "mathjax/tex-chtml.js"
 mathjax4_config = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}}
 
 extensions = [
-    "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
@@ -81,25 +80,14 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "Parallel thermosyphone 
 #           'scrolls',
 #           'sphinxdoc',
 #           'traditional']
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
-html_sidebars = {"**": ["localtoc.html", "sourcelink.html", "searchbox.html"]}
 html_theme_options = {
+    "header_links_before_dropdown": 8,
     "navigation_with_keys": True,
-    # canonical_url=,
-    # analytics_id=,
-    "collapse_navigation": True,
-    "sticky_navigation": True,
-    "navigation_depth": 4,
-    "includehidden": True,
-    # titles_only=,
-    "logo_only": True,
-    "prev_next_buttons_location": "bottom",
-    "style_external_links": False,
-    # style_nav_header_background=,
 }
 modindex_common_prefix = ["stream.", "stream.calculations."]
 add_function_parentheses = False
