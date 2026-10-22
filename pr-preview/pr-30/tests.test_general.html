@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>General Framework Tests &#8212; STREAM 1.1.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="_static/documentation_options.js?v=2a705162"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'tests.test_general';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Calculations Tests" href="tests.test_calculations.html" />
+    <link rel="prev" title="Tests" href="tests.html" />
+    <link href="_static/style.css" rel="stylesheet" type="text/css">
+
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">STREAM 1.1.0 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="stream.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quickstart Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="tests.html">
+    Tests
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="stream.html">
+    Documentation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Installation.html">
+    Installation
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart.html">
+    Quickstart Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="Contributing.html">
+    Contributing
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="tests.html">
+    Tests
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a aria-current="page" class="current reference internal" href="#">General Framework Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tests.integration.html">Integration Tests</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="tests.html" class="nav-link">Tests</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">General Framework Tests</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-test_general">
+<span id="general-framework-tests"></span><h1>General Framework Tests<a class="headerlink" href="#module-test_general" title="Link to this heading">#</a></h1>
+<section id="aggregator-tests">
+<h2>Aggregator Tests<a class="headerlink" href="#aggregator-tests" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_example_aggregator_has_known_shape" title="test_general.test_aggregator.test_example_aggregator_has_known_shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_example_aggregator_has_known_shape</span></code></a></p></td>
+<td><p>Creating simple aggregator input</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_save" title="test_general.test_aggregator.test_save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_save</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_collision_of_calculations_raises_by_example" title="test_general.test_aggregator.test_collision_of_calculations_raises_by_example"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_collision_of_calculations_raises_by_example</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_load" title="test_general.test_aggregator.test_load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_load</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_compute_of_a_graph_vs_known_implementation" title="test_general.test_aggregator.test_compute_of_a_graph_vs_known_implementation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_compute_of_a_graph_vs_known_implementation</span></code></a></p></td>
+<td><p>Tests data transfer through the Aggregator</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_composition_of_specific_agrs_yields_known_agr" title="test_general.test_aggregator.test_composition_of_specific_agrs_yields_known_agr"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_composition_of_specific_agrs_yields_known_agr</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_aggregator_input_works_as_expected" title="test_general.test_aggregator.test_aggregator_input_works_as_expected"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_aggregator_input_works_as_expected</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_ida_root_functions" title="test_general.test_aggregator.test_ida_root_functions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_ida_root_functions</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_agr_input_connect" title="test_general.test_aggregator.test_agr_input_connect"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_agr_input_connect</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_ida_continuous_mode" title="test_general.test_aggregator.test_ida_continuous_mode"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_ida_continuous_mode</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_aggregator.test_associated_calculations_for_a_known_example" title="test_general.test_aggregator.test_associated_calculations_for_a_known_example"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_associated_calculations_for_a_known_example</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function" id="module-test_general.test_aggregator">
+<dt class="sig sig-object py" id="test_general.test_aggregator.mock_agr">
+<span class="sig-name descname"><span class="pre">mock_agr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#mock_agr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.mock_agr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_add_variables_accepts_added_variables_correctly">
+<span class="sig-name descname"><span class="pre">test_add_variables_accepts_added_variables_correctly</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_add_variables_accepts_added_variables_correctly"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_add_variables_accepts_added_variables_correctly" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist">
+<span class="sig-name descname"><span class="pre">test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_add_variables_is_idempotent">
+<span class="sig-name descname"><span class="pre">test_add_variables_is_idempotent</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_add_variables_is_idempotent"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_add_variables_is_idempotent" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_aggregator_input_works_as_expected">
+<span class="sig-name descname"><span class="pre">test_aggregator_input_works_as_expected</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_aggregator_input_works_as_expected"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_aggregator_input_works_as_expected" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_agr_identifies_missing_variables_in_indices_for_known_examples">
+<span class="sig-name descname"><span class="pre">test_agr_identifies_missing_variables_in_indices_for_known_examples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">graph</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expectation</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_agr_identifies_missing_variables_in_indices_for_known_examples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_agr_identifies_missing_variables_in_indices_for_known_examples" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_agr_input_connect">
+<span class="sig-name descname"><span class="pre">test_agr_input_connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_agr_input_connect"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_agr_input_connect" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_associated_calculations_for_a_known_example">
+<span class="sig-name descname"><span class="pre">test_associated_calculations_for_a_known_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_associated_calculations_for_a_known_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_associated_calculations_for_a_known_example" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_collision_of_calculations_raises_by_example">
+<span class="sig-name descname"><span class="pre">test_collision_of_calculations_raises_by_example</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_collision_of_calculations_raises_by_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_collision_of_calculations_raises_by_example" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_composition_of_specific_agrs_yields_known_agr">
+<span class="sig-name descname"><span class="pre">test_composition_of_specific_agrs_yields_known_agr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_composition_of_specific_agrs_yields_known_agr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_composition_of_specific_agrs_yields_known_agr" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_compute_of_a_graph_vs_known_implementation">
+<span class="sig-name descname"><span class="pre">test_compute_of_a_graph_vs_known_implementation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_compute_of_a_graph_vs_known_implementation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_compute_of_a_graph_vs_known_implementation" title="Link to this definition">#</a></dt>
+<dd><p>Tests data transfer through the Aggregator</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_connect_deep_merges_funcs_for_a_shared_calculation">
+<span class="sig-name descname"><span class="pre">test_connect_deep_merges_funcs_for_a_shared_calculation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_connect_deep_merges_funcs_for_a_shared_calculation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_connect_deep_merges_funcs_for_a_shared_calculation" title="Link to this definition">#</a></dt>
+<dd><p>Connecting two graphs that both carry funcs for the same calculation must
+union the inner name bindings rather than keep only the second dict.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_connect_routes_a_repeated_explicit_edge_variable_once">
+<span class="sig-name descname"><span class="pre">test_connect_routes_a_repeated_explicit_edge_variable_once</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_connect_routes_a_repeated_explicit_edge_variable_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_connect_routes_a_repeated_explicit_edge_variable_once" title="Link to this definition">#</a></dt>
+<dd><p>An explicit edge naming a variable the edge already routes adds no duplicate.
+Only the set of names is checked, not their order, because the variables reach
+calculate() as keyword arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_connect_unions_shared_edge_variables_in_either_order">
+<span class="sig-name descname"><span class="pre">test_connect_unions_shared_edge_variables_in_either_order</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_connect_unions_shared_edge_variables_in_either_order"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_connect_unions_shared_edge_variables_in_either_order" title="Link to this definition">#</a></dt>
+<dd><p>An edge present in both graphs carries the union of their variables whichever
+graph comes first. Only the set matters, not the order, because the variables
+reach calculate() as keyword arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_create_constraints_for_a_known_example">
+<span class="sig-name descname"><span class="pre">test_create_constraints_for_a_known_example</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_create_constraints_for_a_known_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_create_constraints_for_a_known_example" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_create_constraints_with_bad_name_errors_well">
+<span class="sig-name descname"><span class="pre">test_create_constraints_with_bad_name_errors_well</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_create_constraints_with_bad_name_errors_well"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_create_constraints_with_bad_name_errors_well" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_create_constraints_with_unequal_category_sizes">
+<span class="sig-name descname"><span class="pre">test_create_constraints_with_unequal_category_sizes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_create_constraints_with_unequal_category_sizes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_create_constraints_with_unequal_category_sizes" title="Link to this definition">#</a></dt>
+<dd><p>Categories of different sizes must not crash the mutual-exclusivity assertion.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_example_aggregator_has_known_shape">
+<span class="sig-name descname"><span class="pre">test_example_aggregator_has_known_shape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_example_aggregator_has_known_shape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_example_aggregator_has_known_shape" title="Link to this definition">#</a></dt>
+<dd><p>Creating simple aggregator input</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_ida_continuous_mode">
+<span class="sig-name descname"><span class="pre">test_ida_continuous_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_ida_continuous_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_ida_continuous_mode" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_ida_root_functions">
+<span class="sig-name descname"><span class="pre">test_ida_root_functions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_ida_root_functions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_ida_root_functions" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_load">
+<span class="sig-name descname"><span class="pre">test_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_load" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_load_reconstructs_a_timeseries_saved_from_integer_times">
+<span class="sig-name descname"><span class="pre">test_load_reconstructs_a_timeseries_saved_from_integer_times</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_load_reconstructs_a_timeseries_saved_from_integer_times"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_load_reconstructs_a_timeseries_saved_from_integer_times" title="Link to this definition">#</a></dt>
+<dd><p>Saving a solve over integer times keys the timeseries by plain floats, and
+load() recognises the result as a timeseries.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_load_reverses_save_by_example">
+<span class="sig-name descname"><span class="pre">test_load_reverses_save_by_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_load_reverses_save_by_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_load_reverses_save_by_example" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_mutually_exclusive_handles_unequal_length_categories">
+<span class="sig-name descname"><span class="pre">test_mutually_exclusive_handles_unequal_length_categories</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_mutually_exclusive_handles_unequal_length_categories"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_mutually_exclusive_handles_unequal_length_categories" title="Link to this definition">#</a></dt>
+<dd><p>mutually_exclusive must accept differently-sized categories, not only the
+accidental equal-length case that flattens into a 2-D array.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_save">
+<span class="sig-name descname"><span class="pre">test_save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_save" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_aggregator.test_to_dataframe_detects_integer_keyed_timeseries">
+<span class="sig-name descname"><span class="pre">test_to_dataframe_detects_integer_keyed_timeseries</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_aggregator.html#test_to_dataframe_detects_integer_keyed_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_aggregator.test_to_dataframe_detects_integer_keyed_timeseries" title="Link to this definition">#</a></dt>
+<dd><p>to_dataframe must recognise an integer-keyed timeseries and emit a time column.</p>
+</dd></dl>
+
+</section>
+<section id="data-representation-tests">
+<h2>Data Representation Tests<a class="headerlink" href="#data-representation-tests" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_dataframes.test_dataframe_of_vertical_vector_has_multiple_i_single_j" title="test_general.test_dataframes.test_dataframe_of_vertical_vector_has_multiple_i_single_j"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_dataframe_of_vertical_vector_has_multiple_i_single_j</span></code></a></p></td>
+<td><p>Tests that a dataframe with vertical vectors has multiple values of i and only 1 value of j.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_dataframes.test_state_of_vertical_vector_is_vertical" title="test_general.test_dataframes.test_state_of_vertical_vector_is_vertical"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_state_of_vertical_vector_is_vertical</span></code></a></p></td>
+<td><p>Tests that a vertically created dataframe is read as vertical vectors.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_dataframes.test_state_to_dataframe_and_back_is_same" title="test_general.test_dataframes.test_state_to_dataframe_and_back_is_same"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_state_to_dataframe_and_back_is_same</span></code></a></p></td>
+<td><p>Tests that going to dataframe and back is unity.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_dataframes.test_statetimeseries_to_dataframe_and_back_is_same" title="test_general.test_dataframes.test_statetimeseries_to_dataframe_and_back_is_same"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_statetimeseries_to_dataframe_and_back_is_same</span></code></a></p></td>
+<td><p>Tests that <a class="reference internal" href="aggregator.html#stream.state.state_timeseries_from_dataframe" title="stream.state.state_timeseries_from_dataframe"><code class="xref py py-func docutils literal notranslate"><span class="pre">state_timeseries_from_dataframe</span></code></a> is the inverse of <code class="xref py py-func docutils literal notranslate"><span class="pre">state_timeseries_to_dataframe</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_dataframes.test_solution_to_statetimeseries_and_back_is_same_by_example" title="test_general.test_dataframes.test_solution_to_statetimeseries_and_back_is_same_by_example"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_solution_to_statetimeseries_and_back_is_same_by_example</span></code></a></p></td>
+<td><p>Tests that <code class="xref py py-meth docutils literal notranslate"><span class="pre">solution_from_states</span></code> is the inverse of <code class="xref py py-meth docutils literal notranslate"><span class="pre">solution_from_states</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p id="module-test_general.test_dataframes">Tests for states and dataframes.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.mock_agr">
+<span class="sig-name descname"><span class="pre">mock_agr</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#mock_agr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.mock_agr" title="Link to this definition">#</a></dt>
+<dd><p>Simple aggregator example</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.test_dataframe_of_vertical_vector_has_multiple_i_single_j">
+<span class="sig-name descname"><span class="pre">test_dataframe_of_vertical_vector_has_multiple_i_single_j</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#test_dataframe_of_vertical_vector_has_multiple_i_single_j"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.test_dataframe_of_vertical_vector_has_multiple_i_single_j" title="Link to this definition">#</a></dt>
+<dd><p>Tests that a dataframe with vertical vectors has multiple values of i and
+only 1 value of j.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.test_solution_to_statetimeseries_and_back_is_same_by_example">
+<span class="sig-name descname"><span class="pre">test_solution_to_statetimeseries_and_back_is_same_by_example</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mock_agr</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#test_solution_to_statetimeseries_and_back_is_same_by_example"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.test_solution_to_statetimeseries_and_back_is_same_by_example" title="Link to this definition">#</a></dt>
+<dd><p>Tests that <code class="xref py py-meth docutils literal notranslate"><span class="pre">solution_from_states</span></code> is the
+inverse of <code class="xref py py-meth docutils literal notranslate"><span class="pre">solution_from_states</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.test_state_of_vertical_vector_is_vertical">
+<span class="sig-name descname"><span class="pre">test_state_of_vertical_vector_is_vertical</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#test_state_of_vertical_vector_is_vertical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.test_state_of_vertical_vector_is_vertical" title="Link to this definition">#</a></dt>
+<dd><p>Tests that a vertically created dataframe is read as vertical vectors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.test_state_to_dataframe_and_back_is_same">
+<span class="sig-name descname"><span class="pre">test_state_to_dataframe_and_back_is_same</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#test_state_to_dataframe_and_back_is_same"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.test_state_to_dataframe_and_back_is_same" title="Link to this definition">#</a></dt>
+<dd><p>Tests that going to dataframe and back is unity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_dataframes.test_statetimeseries_to_dataframe_and_back_is_same">
+<span class="sig-name descname"><span class="pre">test_statetimeseries_to_dataframe_and_back_is_same</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_dataframes.html#test_statetimeseries_to_dataframe_and_back_is_same"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_dataframes.test_statetimeseries_to_dataframe_and_back_is_same" title="Link to this definition">#</a></dt>
+<dd><p>Tests that <a class="reference internal" href="aggregator.html#stream.state.state_timeseries_from_dataframe" title="stream.state.state_timeseries_from_dataframe"><code class="xref py py-func docutils literal notranslate"><span class="pre">state_timeseries_from_dataframe</span></code></a>
+is the inverse of <code class="xref py py-func docutils literal notranslate"><span class="pre">state_timeseries_to_dataframe</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="calculation-framework-tests">
+<h2>Calculation (Framework) Tests<a class="headerlink" href="#calculation-framework-tests" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_calculation.test_unpack_correctly_unpacks_data" title="test_general.test_calculation.test_unpack_correctly_unpacks_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_unpack_correctly_unpacks_data</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_calculation.test_concat_is_at_most_1d" title="test_general.test_calculation.test_concat_is_at_most_1d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_concat_is_at_most_1d</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_calculation.test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat" title="test_general.test_calculation.test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_calculation.test_default_save_has_correct_output_for_one_structure" title="test_general.test_calculation.test_default_save_has_correct_output_for_one_structure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_default_save_has_correct_output_for_one_structure</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_calculation.test_default_save_is_compatible_with_calc_variables" title="test_general.test_calculation.test_default_save_is_compatible_with_calc_variables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_default_save_is_compatible_with_calc_variables</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_calculation.test_default_load_for_one_structure" title="test_general.test_calculation.test_default_load_for_one_structure"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_default_load_for_one_structure</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_calculation.test_default_load_is_inverse_of_default_save" title="test_general.test_calculation.test_default_load_is_inverse_of_default_save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_default_load_is_inverse_of_default_save</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function" id="module-test_general.test_calculation">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_concat_is_at_most_1d">
+<span class="sig-name descname"><span class="pre">test_concat_is_at_most_1d</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_concat_is_at_most_1d"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_concat_is_at_most_1d" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat">
+<span class="sig-name descname"><span class="pre">test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_default_load_for_one_structure">
+<span class="sig-name descname"><span class="pre">test_default_load_for_one_structure</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_default_load_for_one_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_default_load_for_one_structure" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_default_load_is_inverse_of_default_save">
+<span class="sig-name descname"><span class="pre">test_default_load_is_inverse_of_default_save</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_default_load_is_inverse_of_default_save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_default_load_is_inverse_of_default_save" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_default_save_has_correct_output_for_one_structure">
+<span class="sig-name descname"><span class="pre">test_default_save_has_correct_output_for_one_structure</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_default_save_has_correct_output_for_one_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_default_save_has_correct_output_for_one_structure" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_default_save_is_compatible_with_calc_variables">
+<span class="sig-name descname"><span class="pre">test_default_save_is_compatible_with_calc_variables</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_default_save_is_compatible_with_calc_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_default_save_is_compatible_with_calc_variables" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_unpack_correctly_excludes_parameters">
+<span class="sig-name descname"><span class="pre">test_unpack_correctly_excludes_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_unpack_correctly_excludes_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_unpack_correctly_excludes_parameters" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_unpack_correctly_unpacks_data">
+<span class="sig-name descname"><span class="pre">test_unpack_correctly_unpacks_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_unpack_correctly_unpacks_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_unpack_correctly_unpacks_data" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_unpack_does_not_mislabel_a_user_keyerror">
+<span class="sig-name descname"><span class="pre">test_unpack_does_not_mislabel_a_user_keyerror</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_unpack_does_not_mislabel_a_user_keyerror"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_unpack_does_not_mislabel_a_user_keyerror" title="Link to this definition">#</a></dt>
+<dd><p>A KeyError raised inside the wrapped body (e.g. a correlation dict miss)
+must propagate as itself, not be rewritten as a decorator misconfiguration.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_unpack_excluded_but_absent_variable_falls_back_to_default">
+<span class="sig-name descname"><span class="pre">test_unpack_excluded_but_absent_variable_falls_back_to_default</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_unpack_excluded_but_absent_variable_falls_back_to_default"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_unpack_excluded_but_absent_variable_falls_back_to_default" title="Link to this definition">#</a></dt>
+<dd><p>An excluded variable that was never routed must fall back to the wrapped
+function’s own default rather than crashing the decorator.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_calculation.test_unpack_preserves_exception_type_when_args_are_empty">
+<span class="sig-name descname"><span class="pre">test_unpack_preserves_exception_type_when_args_are_empty</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_calculation.html#test_unpack_preserves_exception_type_when_args_are_empty"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_calculation.test_unpack_preserves_exception_type_when_args_are_empty" title="Link to this definition">#</a></dt>
+<dd><p>An exception constructed with no args (e.g. raise RuntimeError()) must
+surface as its own type, with its args untouched.</p>
+</dd></dl>
+
+</section>
+<section id="solver-backend-tests">
+<h2>Solver Backend Tests<a class="headerlink" href="#solver-backend-tests" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution" title="test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution</span></code></a></p></td>
+<td><p>This is an example given by the Scikits.Odes developers for a simple usage case: A planar pendulum.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError" title="test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_dae_with_undetermined_var_fails_as_TransientRuntimeError</span></code></a></p></td>
+<td><p>This test constructs a calculation in which one variable is free, meaning its algebraic equation returns 0 for any input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations" title="test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_dae_solver_accepts_all_algebraic_calculations</span></code></a></p></td>
+<td><p>Testing the possibility of working with an all algebraic set of equations in scikits.odes.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function" id="module-test_general.test_solvers">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_alg_jacobian_does_not_zero_out_subquantum_slopes">
+<span class="sig-name descname"><span class="pre">test_alg_jacobian_does_not_zero_out_subquantum_slopes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_alg_jacobian_does_not_zero_out_subquantum_slopes"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_alg_jacobian_does_not_zero_out_subquantum_slopes" title="Link to this definition">#</a></dt>
+<dd><p>A laminar-scale slope below one quantization step of the 1e-12 floor
+(~1.82 for the 9.7 kPa head) must not be returned as 0.0, which would make the
+Jacobian singular in the mdot subspace at the at-rest state.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot">
+<span class="sig-name descname"><span class="pre">test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot" title="Link to this definition">#</a></dt>
+<dd><p>The FD step floor must be ~sqrt(eps), not 1e-12, so that the mdot column of
+a dp row is not quantized to the ulp of the large gravity head at flow reversal
+(mdot -&gt; 0); the derivative stays ~1.0.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_alg_quasi_static_early_stop_keeps_time_and_data_aligned">
+<span class="sig-name descname"><span class="pre">test_alg_quasi_static_early_stop_keeps_time_and_data_aligned</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_alg_quasi_static_early_stop_keeps_time_and_data_aligned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_alg_quasi_static_early_stop_keeps_time_and_data_aligned" title="Link to this definition">#</a></dt>
+<dd><p>On an early stop the output must stay aligned (time length == data rows) and
+include the stop-triggering solved row, so save() round-trips without an
+IndexError.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_compute_accepts_correct_length_result">
+<span class="sig-name descname"><span class="pre">test_compute_accepts_correct_length_result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_compute_accepts_correct_length_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_compute_accepts_correct_length_result" title="Link to this definition">#</a></dt>
+<dd><p>The guard must not reject a correctly-shaped result.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_compute_rejects_wrong_length_calculate_result">
+<span class="sig-name descname"><span class="pre">test_compute_rejects_wrong_length_calculate_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_compute_rejects_wrong_length_calculate_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_compute_rejects_wrong_length_calculate_result" title="Link to this definition">#</a></dt>
+<dd><p>compute() must reject any size mismatch and name the offending calculation.
+A scalar or length-1 return would silently broadcast across the section, and a
+length-2 return would raise a bare numpy ValueError naming no calculation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_compute_reports_every_wrong_length_result_at_once">
+<span class="sig-name descname"><span class="pre">test_compute_reports_every_wrong_length_result_at_once</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_compute_reports_every_wrong_length_result_at_once"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_compute_reports_every_wrong_length_result_at_once" title="Link to this definition">#</a></dt>
+<dd><p>All calculations whose result length differs from their section are named in
+one error, each with its expected and returned lengths.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time">
+<span class="sig-name descname"><span class="pre">test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time" title="Link to this definition">#</a></dt>
+<dd><p>A restart that fails mid-integration raises with the accumulated trajectory
+attached: earlier segments plus the failed segment’s partial output, without
+repeating the restart time.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory">
+<span class="sig-name descname"><span class="pre">test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory" title="Link to this definition">#</a></dt>
+<dd><p>When a restarted DAE solve fails in its consistent-initialization step the
+error carries no trajectory of its own; the TransientRuntimeError still
+propagates and carries the segments integrated before it on e.t/e.y.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_dae_forwards_the_algebraic_error_test_option_only_when_given">
+<span class="sig-name descname"><span class="pre">test_dae_forwards_the_algebraic_error_test_option_only_when_given</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">monkeypatch</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">passed</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expected</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_dae_forwards_the_algebraic_error_test_option_only_when_given"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_dae_forwards_the_algebraic_error_test_option_only_when_given" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations">
+<span class="sig-name descname"><span class="pre">test_dae_solver_accepts_all_algebraic_calculations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_dae_solver_accepts_all_algebraic_calculations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations" title="Link to this definition">#</a></dt>
+<dd><p>Testing the possibility of working with an all algebraic set of equations
+in scikits.odes.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution">
+<span class="sig-name descname"><span class="pre">test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution" title="Link to this definition">#</a></dt>
+<dd><p>This is an example given by the Scikits.Odes developers for a simple
+usage case: A planar pendulum. For further explanation please refer to
+their documentation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError">
+<span class="sig-name descname"><span class="pre">test_dae_with_undetermined_var_fails_as_TransientRuntimeError</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_dae_with_undetermined_var_fails_as_TransientRuntimeError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError" title="Link to this definition">#</a></dt>
+<dd><p>This test constructs a calculation in which one variable is free, meaning
+its algebraic equation returns 0 for any input. It is also disconnected
+from the rest of the equations.</p>
+<p>Such a calculation is expected to fail.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_event_loop_dae_on_event_raise_carries_pre_event_trajectory">
+<span class="sig-name descname"><span class="pre">test_event_loop_dae_on_event_raise_carries_pre_event_trajectory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_event_loop_dae_on_event_raise_carries_pre_event_trajectory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_event_loop_dae_on_event_raise_carries_pre_event_trajectory" title="Link to this definition">#</a></dt>
+<dd><p>When an event handler raises, the exception propagates with the trajectory
+up to and including the crossing attached as e.t and e.y.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_event_loop_raises_instead_of_hanging_on_nonadvancing_root">
+<span class="sig-name descname"><span class="pre">test_event_loop_raises_instead_of_hanging_on_nonadvancing_root</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_event_loop_raises_instead_of_hanging_on_nonadvancing_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_event_loop_raises_instead_of_hanging_on_nonadvancing_root" title="Link to this definition">#</a></dt>
+<dd><p>A root that does not advance past the restart time (a condition that
+re-roots at the segment start) raises instead of looping forever.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_ode_backend_raises_on_solver_failure_instead_of_truncating">
+<span class="sig-name descname"><span class="pre">test_ode_backend_raises_on_solver_failure_instead_of_truncating</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_ode_backend_raises_on_solver_failure_instead_of_truncating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_ode_backend_raises_on_solver_failure_instead_of_truncating" title="Link to this definition">#</a></dt>
+<dd><p>An ODE solver failure must surface as TransientRuntimeError rather than
+returning only the reached t_eval points (a truncated data array misaligned
+against the requested time vector, which crashes save()).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_ode_backend_solution_time_and_data_stay_aligned">
+<span class="sig-name descname"><span class="pre">test_ode_backend_solution_time_and_data_stay_aligned</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_ode_backend_solution_time_and_data_stay_aligned"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_ode_backend_solution_time_and_data_stay_aligned" title="Link to this definition">#</a></dt>
+<dd><p>On a well-posed ODE the ODE branch must rebind time from the solver so
+len(time) == data rows and save() round-trips without an IndexError.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_solvers.test_solve_with_time_none_points_at_solve_steady">
+<span class="sig-name descname"><span class="pre">test_solve_with_time_none_points_at_solve_steady</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eq_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_solvers.html#test_solve_with_time_none_points_at_solve_steady"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_solvers.test_solve_with_time_none_points_at_solve_steady" title="Link to this definition">#</a></dt>
+<dd><p>solve() integrates or steps through time points; without them it raises and
+names solve_steady, the steady root find.</p>
+</dd></dl>
+
+</section>
+<section id="utilities-tests">
+<h2>Utilities Tests<a class="headerlink" href="#utilities-tests" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_utilities.test_pair_mean_for_one_simple_case" title="test_general.test_utilities.test_pair_mean_for_one_simple_case"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_pair_mean_for_one_simple_case</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_utilities.test_just" title="test_general.test_utilities.test_just"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_just</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_utilities.test_offset" title="test_general.test_utilities.test_offset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_offset</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_utilities.test_offset_of_an_unknown_type_raises_TypeError" title="test_general.test_utilities.test_offset_of_an_unknown_type_raises_TypeError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_offset_of_an_unknown_type_raises_TypeError</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#test_general.test_utilities.test_cosine_shape_with_ppf_1_is_uniform" title="test_general.test_utilities.test_cosine_shape_with_ppf_1_is_uniform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_cosine_shape_with_ppf_1_is_uniform</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#test_general.test_utilities.test_cosine_shape_achieves_maximum_at_center" title="test_general.test_utilities.test_cosine_shape_achieves_maximum_at_center"><code class="xref py py-obj docutils literal notranslate"><span class="pre">test_cosine_shape_achieves_maximum_at_center</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py function" id="module-test_general.test_utilities">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_extrapolation_endpoints_are_zero_for_high_resolution">
+<span class="sig-name descname"><span class="pre">test_cosine_extrapolation_endpoints_are_zero_for_high_resolution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_extrapolation_endpoints_are_zero_for_high_resolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_extrapolation_endpoints_are_zero_for_high_resolution" title="Link to this definition">#</a></dt>
+<dd><p>This test ensures that the underlying cosine function nullifies at its
+extrapolation points.</p>
+<p>The test needs high resolution because the return value is cell-integrated,
+so it never truly nullifies in a cell, unless a cell goes beyond the
+extrapolation points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_extrapolation_has_maximum_at_midpoint">
+<span class="sig-name descname"><span class="pre">test_cosine_extrapolation_has_maximum_at_midpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_extrapolation_has_maximum_at_midpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_extrapolation_has_maximum_at_midpoint" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_extrapolation_has_sum_1_over_inner_region">
+<span class="sig-name descname"><span class="pre">test_cosine_extrapolation_has_sum_1_over_inner_region</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_extrapolation_has_sum_1_over_inner_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_extrapolation_has_sum_1_over_inner_region" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_shape_achieves_maximum_at_center">
+<span class="sig-name descname"><span class="pre">test_cosine_shape_achieves_maximum_at_center</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_shape_achieves_maximum_at_center"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_shape_achieves_maximum_at_center" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_shape_max_is_like_ppf_for_high_resolution">
+<span class="sig-name descname"><span class="pre">test_cosine_shape_max_is_like_ppf_for_high_resolution</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_shape_max_is_like_ppf_for_high_resolution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_shape_max_is_like_ppf_for_high_resolution" title="Link to this definition">#</a></dt>
+<dd><p>This test ensures that the underlying cosine shape’s max to mean ratio
+meets the desired PPF value.</p>
+<p>Since the function returns cell-integrated values, in order to approximate
+the ppf value we need a high enough resolution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_shape_sums_to_1">
+<span class="sig-name descname"><span class="pre">test_cosine_shape_sums_to_1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_shape_sums_to_1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_shape_sums_to_1" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_shape_throws_for_illegal_ppf">
+<span class="sig-name descname"><span class="pre">test_cosine_shape_throws_for_illegal_ppf</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_shape_throws_for_illegal_ppf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_shape_throws_for_illegal_ppf" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_cosine_shape_with_ppf_1_is_uniform">
+<span class="sig-name descname"><span class="pre">test_cosine_shape_with_ppf_1_is_uniform</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_cosine_shape_with_ppf_1_is_uniform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_cosine_shape_with_ppf_1_is_uniform" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_just">
+<span class="sig-name descname"><span class="pre">test_just</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_just"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_just" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_offset">
+<span class="sig-name descname"><span class="pre">test_offset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_offset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_offset" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_offset_of_an_unknown_type_raises_TypeError">
+<span class="sig-name descname"><span class="pre">test_offset_of_an_unknown_type_raises_TypeError</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_offset_of_an_unknown_type_raises_TypeError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_offset_of_an_unknown_type_raises_TypeError" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_pair_mean_1d_is_pair_mean">
+<span class="sig-name descname"><span class="pre">test_pair_mean_1d_is_pair_mean</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_pair_mean_1d_is_pair_mean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_pair_mean_1d_is_pair_mean" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_pair_mean_for_one_simple_case">
+<span class="sig-name descname"><span class="pre">test_pair_mean_for_one_simple_case</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_pair_mean_for_one_simple_case"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_pair_mean_for_one_simple_case" title="Link to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="test_general.test_utilities.test_uniform_x_power_shape_works_with_clad_N_equals_zero">
+<span class="sig-name descname"><span class="pre">test_uniform_x_power_shape_works_with_clad_N_equals_zero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/test_general/test_utilities.html#test_uniform_x_power_shape_works_with_clad_N_equals_zero"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#test_general.test_utilities.test_uniform_x_power_shape_works_with_clad_N_equals_zero" title="Link to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="tests.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Tests</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="tests.test_calculations.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Calculations Tests</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#aggregator-tests">Aggregator Tests</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.mock_agr"><code class="docutils literal notranslate"><span class="pre">mock_agr</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_add_variables_accepts_added_variables_correctly"><code class="docutils literal notranslate"><span class="pre">test_add_variables_accepts_added_variables_correctly</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist"><code class="docutils literal notranslate"><span class="pre">test_add_variables_creates_new_edge_if_referenced_edge_doesnt_exist</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_add_variables_is_idempotent"><code class="docutils literal notranslate"><span class="pre">test_add_variables_is_idempotent</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_aggregator_input_works_as_expected"><code class="docutils literal notranslate"><span class="pre">test_aggregator_input_works_as_expected</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_agr_identifies_missing_variables_in_indices_for_known_examples"><code class="docutils literal notranslate"><span class="pre">test_agr_identifies_missing_variables_in_indices_for_known_examples</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_agr_input_connect"><code class="docutils literal notranslate"><span class="pre">test_agr_input_connect</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_associated_calculations_for_a_known_example"><code class="docutils literal notranslate"><span class="pre">test_associated_calculations_for_a_known_example</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_collision_of_calculations_raises_by_example"><code class="docutils literal notranslate"><span class="pre">test_collision_of_calculations_raises_by_example</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_composition_of_specific_agrs_yields_known_agr"><code class="docutils literal notranslate"><span class="pre">test_composition_of_specific_agrs_yields_known_agr</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_compute_of_a_graph_vs_known_implementation"><code class="docutils literal notranslate"><span class="pre">test_compute_of_a_graph_vs_known_implementation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_connect_deep_merges_funcs_for_a_shared_calculation"><code class="docutils literal notranslate"><span class="pre">test_connect_deep_merges_funcs_for_a_shared_calculation</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_connect_routes_a_repeated_explicit_edge_variable_once"><code class="docutils literal notranslate"><span class="pre">test_connect_routes_a_repeated_explicit_edge_variable_once</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_connect_unions_shared_edge_variables_in_either_order"><code class="docutils literal notranslate"><span class="pre">test_connect_unions_shared_edge_variables_in_either_order</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_create_constraints_for_a_known_example"><code class="docutils literal notranslate"><span class="pre">test_create_constraints_for_a_known_example</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_create_constraints_with_bad_name_errors_well"><code class="docutils literal notranslate"><span class="pre">test_create_constraints_with_bad_name_errors_well</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_create_constraints_with_unequal_category_sizes"><code class="docutils literal notranslate"><span class="pre">test_create_constraints_with_unequal_category_sizes</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_example_aggregator_has_known_shape"><code class="docutils literal notranslate"><span class="pre">test_example_aggregator_has_known_shape</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_ida_continuous_mode"><code class="docutils literal notranslate"><span class="pre">test_ida_continuous_mode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_ida_root_functions"><code class="docutils literal notranslate"><span class="pre">test_ida_root_functions</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_load"><code class="docutils literal notranslate"><span class="pre">test_load</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_load_reconstructs_a_timeseries_saved_from_integer_times"><code class="docutils literal notranslate"><span class="pre">test_load_reconstructs_a_timeseries_saved_from_integer_times</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_load_reverses_save_by_example"><code class="docutils literal notranslate"><span class="pre">test_load_reverses_save_by_example</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_mutually_exclusive_handles_unequal_length_categories"><code class="docutils literal notranslate"><span class="pre">test_mutually_exclusive_handles_unequal_length_categories</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_save"><code class="docutils literal notranslate"><span class="pre">test_save</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_aggregator.test_to_dataframe_detects_integer_keyed_timeseries"><code class="docutils literal notranslate"><span class="pre">test_to_dataframe_detects_integer_keyed_timeseries</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#data-representation-tests">Data Representation Tests</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.mock_agr"><code class="docutils literal notranslate"><span class="pre">mock_agr</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.test_dataframe_of_vertical_vector_has_multiple_i_single_j"><code class="docutils literal notranslate"><span class="pre">test_dataframe_of_vertical_vector_has_multiple_i_single_j</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.test_solution_to_statetimeseries_and_back_is_same_by_example"><code class="docutils literal notranslate"><span class="pre">test_solution_to_statetimeseries_and_back_is_same_by_example</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.test_state_of_vertical_vector_is_vertical"><code class="docutils literal notranslate"><span class="pre">test_state_of_vertical_vector_is_vertical</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.test_state_to_dataframe_and_back_is_same"><code class="docutils literal notranslate"><span class="pre">test_state_to_dataframe_and_back_is_same</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_dataframes.test_statetimeseries_to_dataframe_and_back_is_same"><code class="docutils literal notranslate"><span class="pre">test_statetimeseries_to_dataframe_and_back_is_same</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#calculation-framework-tests">Calculation (Framework) Tests</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_concat_is_at_most_1d"><code class="docutils literal notranslate"><span class="pre">test_concat_is_at_most_1d</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat"><code class="docutils literal notranslate"><span class="pre">test_concat_of_dictionaried_arrays_is_the_same_as_their_numpy_concat</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_default_load_for_one_structure"><code class="docutils literal notranslate"><span class="pre">test_default_load_for_one_structure</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_default_load_is_inverse_of_default_save"><code class="docutils literal notranslate"><span class="pre">test_default_load_is_inverse_of_default_save</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_default_save_has_correct_output_for_one_structure"><code class="docutils literal notranslate"><span class="pre">test_default_save_has_correct_output_for_one_structure</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_default_save_is_compatible_with_calc_variables"><code class="docutils literal notranslate"><span class="pre">test_default_save_is_compatible_with_calc_variables</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_unpack_correctly_excludes_parameters"><code class="docutils literal notranslate"><span class="pre">test_unpack_correctly_excludes_parameters</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_unpack_correctly_unpacks_data"><code class="docutils literal notranslate"><span class="pre">test_unpack_correctly_unpacks_data</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_unpack_does_not_mislabel_a_user_keyerror"><code class="docutils literal notranslate"><span class="pre">test_unpack_does_not_mislabel_a_user_keyerror</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_unpack_excluded_but_absent_variable_falls_back_to_default"><code class="docutils literal notranslate"><span class="pre">test_unpack_excluded_but_absent_variable_falls_back_to_default</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_calculation.test_unpack_preserves_exception_type_when_args_are_empty"><code class="docutils literal notranslate"><span class="pre">test_unpack_preserves_exception_type_when_args_are_empty</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solver-backend-tests">Solver Backend Tests</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_alg_jacobian_does_not_zero_out_subquantum_slopes"><code class="docutils literal notranslate"><span class="pre">test_alg_jacobian_does_not_zero_out_subquantum_slopes</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot"><code class="docutils literal notranslate"><span class="pre">test_alg_jacobian_step_floor_is_accurate_for_near_zero_mdot</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_alg_quasi_static_early_stop_keeps_time_and_data_aligned"><code class="docutils literal notranslate"><span class="pre">test_alg_quasi_static_early_stop_keeps_time_and_data_aligned</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_compute_accepts_correct_length_result"><code class="docutils literal notranslate"><span class="pre">test_compute_accepts_correct_length_result</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_compute_rejects_wrong_length_calculate_result"><code class="docutils literal notranslate"><span class="pre">test_compute_rejects_wrong_length_calculate_result</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_compute_reports_every_wrong_length_result_at_once"><code class="docutils literal notranslate"><span class="pre">test_compute_reports_every_wrong_length_result_at_once</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time"><code class="docutils literal notranslate"><span class="pre">test_continuous_mode_restart_failure_surfaces_full_trajectory_without_repeating_restart_time</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory"><code class="docutils literal notranslate"><span class="pre">test_continuous_mode_restart_ic_failure_surfaces_with_partial_trajectory</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_dae_forwards_the_algebraic_error_test_option_only_when_given"><code class="docutils literal notranslate"><span class="pre">test_dae_forwards_the_algebraic_error_test_option_only_when_given</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_dae_solver_accepts_all_algebraic_calculations"><code class="docutils literal notranslate"><span class="pre">test_dae_solver_accepts_all_algebraic_calculations</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution"><code class="docutils literal notranslate"><span class="pre">test_dae_solver_using_planar_pendulum_against_scikits_odes_documented_solution</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_dae_with_undetermined_var_fails_as_TransientRuntimeError"><code class="docutils literal notranslate"><span class="pre">test_dae_with_undetermined_var_fails_as_TransientRuntimeError</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_event_loop_dae_on_event_raise_carries_pre_event_trajectory"><code class="docutils literal notranslate"><span class="pre">test_event_loop_dae_on_event_raise_carries_pre_event_trajectory</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_event_loop_raises_instead_of_hanging_on_nonadvancing_root"><code class="docutils literal notranslate"><span class="pre">test_event_loop_raises_instead_of_hanging_on_nonadvancing_root</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_ode_backend_raises_on_solver_failure_instead_of_truncating"><code class="docutils literal notranslate"><span class="pre">test_ode_backend_raises_on_solver_failure_instead_of_truncating</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_ode_backend_solution_time_and_data_stay_aligned"><code class="docutils literal notranslate"><span class="pre">test_ode_backend_solution_time_and_data_stay_aligned</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_solvers.test_solve_with_time_none_points_at_solve_steady"><code class="docutils literal notranslate"><span class="pre">test_solve_with_time_none_points_at_solve_steady</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#utilities-tests">Utilities Tests</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_extrapolation_endpoints_are_zero_for_high_resolution"><code class="docutils literal notranslate"><span class="pre">test_cosine_extrapolation_endpoints_are_zero_for_high_resolution</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_extrapolation_has_maximum_at_midpoint"><code class="docutils literal notranslate"><span class="pre">test_cosine_extrapolation_has_maximum_at_midpoint</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_extrapolation_has_sum_1_over_inner_region"><code class="docutils literal notranslate"><span class="pre">test_cosine_extrapolation_has_sum_1_over_inner_region</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_shape_achieves_maximum_at_center"><code class="docutils literal notranslate"><span class="pre">test_cosine_shape_achieves_maximum_at_center</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_shape_max_is_like_ppf_for_high_resolution"><code class="docutils literal notranslate"><span class="pre">test_cosine_shape_max_is_like_ppf_for_high_resolution</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_shape_sums_to_1"><code class="docutils literal notranslate"><span class="pre">test_cosine_shape_sums_to_1</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_shape_throws_for_illegal_ppf"><code class="docutils literal notranslate"><span class="pre">test_cosine_shape_throws_for_illegal_ppf</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_cosine_shape_with_ppf_1_is_uniform"><code class="docutils literal notranslate"><span class="pre">test_cosine_shape_with_ppf_1_is_uniform</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_just"><code class="docutils literal notranslate"><span class="pre">test_just</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_offset"><code class="docutils literal notranslate"><span class="pre">test_offset</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_offset_of_an_unknown_type_raises_TypeError"><code class="docutils literal notranslate"><span class="pre">test_offset_of_an_unknown_type_raises_TypeError</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_pair_mean_1d_is_pair_mean"><code class="docutils literal notranslate"><span class="pre">test_pair_mean_1d_is_pair_mean</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_pair_mean_for_one_simple_case"><code class="docutils literal notranslate"><span class="pre">test_pair_mean_for_one_simple_case</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#test_general.test_utilities.test_uniform_x_power_shape_works_with_clad_N_equals_zero"><code class="docutils literal notranslate"><span class="pre">test_uniform_x_power_shape_works_with_clad_N_equals_zero</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/tests.test_general.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

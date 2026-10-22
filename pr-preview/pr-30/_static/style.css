@@ -1,0 +1,112 @@
+html {
+    --pst-font-size-base: 16px;
+    --pst-font-size-h1: 2.2rem;
+    --pst-font-size-h2: 1.6rem;
+    --pst-font-size-h3: 1.3rem;
+    --pst-font-size-h4: 1.15rem;
+    font-size: var(--pst-font-size-base);
+}
+
+.bd-page-width {
+    max-width: 100%;
+}
+
+.bd-sidebar-primary {
+    --pst-sidebar-primary-width: 340px;
+    flex: 0 0 340px;
+}
+
+.bd-main .bd-content .bd-article-container {
+    max-width: 100%;
+}
+
+.bd-article p,
+.bd-article li,
+.bd-article dd,
+.bd-article blockquote {
+    line-height: 1.6;
+}
+
+.bd-article p:not(:has(img, svg, object, pre, table)),
+.bd-article li:not(:has(img, svg, object, pre, table)),
+.bd-article dd:not(:has(img, svg, object, pre, table)),
+.bd-article blockquote:not(:has(img, svg, object, pre, table)),
+.bd-article .admonition:not(:has(img, svg, object, pre, table)) {
+    max-width: 48em;
+}
+
+.bd-article code {
+    font-size: 0.9em;
+}
+
+.bd-article pre code {
+    font-size: inherit;
+}
+
+.bd-article pre,
+.bd-article .nbinput pre,
+.bd-article .nboutput pre {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.bd-article img,
+.bd-article object,
+.bd-article .nboutput img,
+.bd-article figure img {
+    display: block;
+    width: 100%;
+    max-width: 1300px;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.bd-article figure {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.bd-article figcaption {
+    text-align: center;
+}
+
+.bd-article p:has(> img, > object) + p:has(> em:only-child) {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.bd-article table.table {
+    width: 100%;
+    max-width: 1300px;
+    margin-left: 0;
+}
+
+.bd-article table.table td,
+.bd-article table.table th {
+    white-space: normal;
+}
+
+.bd-article div.rendered_html table {
+    margin-left: 0;
+    font-size: 14px;
+}
+
+@media (min-width: 1400px) {
+    html {
+        --pst-font-size-base: 18px;
+    }
+
+    .bd-article pre,
+    .bd-article .nbinput pre,
+    .bd-article .nboutput pre {
+        font-size: 15px;
+    }
+
+    .bd-article div.rendered_html table {
+        font-size: 15px;
+    }
+}
