@@ -64,6 +64,7 @@ def regime_dependent_h_spl(
     Lh: Meter,
     g: MPerS2 = local_gravity,
     downflow: Literal["sudo"] | None = None,
+    develop_length: Meter | None = None,
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
@@ -115,6 +116,9 @@ def regime_dependent_h_spl(
         ``None`` (default) or ``"sudo"``, which multiplies the laminar value by the
         ratio on the local Graetz number Re Pr Dh / ``develop_length`` in flow along
         gravity. It needs ``develop_length`` and has no effect when ``g == 0``.
+    develop_length: Meter | None
+        Distance from the channel inlet, a per-cell array in a channel. The developing
+        laminar law uses it, and ``downflow="sudo"`` requires it.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
@@ -145,7 +149,7 @@ def regime_dependent_h_spl(
     """
     if downflow not in (None, "sudo"):
         raise ValueError(f"Unknown downflow law {downflow!r}, expected None or 'sudo'")
-    if downflow == "sudo" and "develop_length" not in kwargs:
+    if downflow == "sudo" and develop_length is None:
         raise TypeError("regime_dependent_h_spl with downflow='sudo' requires develop_length")
     re_bulk = Re_mdot(mdot, A, Dh, coolant_funcs.viscosity(T_cool))
 
@@ -162,6 +166,7 @@ def regime_dependent_h_spl(
             "T_wall": T_wall,
             "coolant_funcs": coolant_funcs,
         }
+        | ({"develop_length": develop_length} if develop_length is not None else {})
         | kwargs
     )
     h = np.empty(len(T_cool))
@@ -174,7 +179,7 @@ def regime_dependent_h_spl(
         if downflow == "sudo" and g != 0.0:
             pr_bulk = Pr(bulk.specific_heat, bulk.viscosity, bulk.conductivity)
             with np.errstate(divide="ignore"):
-                gz_local = re_bulk * pr_bulk * Dh / kwargs["develop_length"]
+                gz_local = re_bulk * pr_bulk * Dh / develop_length
             w = smooth_step(np.sign(g) * np.sign(mdot) * re_bulk, 0.0, 1.0)
             h_lam = h_lam * (1.0 - w * (1.0 - Sudo_downflow_ratio(gz_local)))
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]

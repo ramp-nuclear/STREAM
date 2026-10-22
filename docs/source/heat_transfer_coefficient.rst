@@ -75,6 +75,8 @@ Composed HTC Functions
 .. autofunction:: stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl
 .. autofunction:: stream.physical_models.heat_transfer_coefficient.single_phase.maximal_h_spl
 
+.. _htc-low-flow:
+
 Low flow, reversal and natural circulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

@@ -401,6 +401,12 @@ def Sudo_downflow_ratio(gz: Value, fade: tuple[float, float] = (2.0, 16.0)) -> V
     Gz 16 where there are no data, fades back to 1 over ``fade`` by a smooth step on
     :math:`\log_{10}\text{Gz}`. A non-positive Graetz number returns 1.
 
+    The default ``fade`` returns the ratio to 1 over about one decade of Graetz number
+    below the data limit of 16, because at zero flow the laminar law already holds the
+    fully developed value, which is the conservative choice at stagnation. A lower first
+    value holds the plateau further down, and a narrow band just below 16 keeps it almost
+    to the data limit. The choice is discussed in :ref:`htc-low-flow`.
+
     Parameters
     ----------
     gz: Value

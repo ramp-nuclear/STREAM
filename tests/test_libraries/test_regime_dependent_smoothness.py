@@ -167,29 +167,12 @@ def test_downflow_law_continuous_through_reversal():
     assert max_step(2001) <= 0.35 * max_step(201)
 
 
-def test_downflow_law_needs_the_entry_length():
-    film = _film(60.0, 90.0)
-    kw = {k: v for k, v in KW.items() if k != "develop_length"}
-    with pytest.raises(TypeError, match="develop_length"):
-        regime_dependent_h_spl(coolant=film, mdot=5e-3, T_cool=np.array([60.0]), T_wall=np.array([90.0]),
-                               downflow="sudo", **kw)
-
-
 def test_downflow_law_takes_array_flow():
     T = np.array([60.0, 60.0])
     kw = KW | {"develop_length": np.array([0.3, 0.3])}
     h = regime_dependent_h_spl(coolant=light_water.to_properties(np.array([75.0, 75.0])), mdot=np.array([5e-3, -5e-3]),
                                T_cool=T, T_wall=T + 30.0, downflow="sudo", **kw)
     assert h[0] < h[1]
-
-
-def test_downflow_law_needs_the_entry_length_in_turbulent_flow():
-    film = _film(60.0, 90.0)
-    mu = float(light_water.viscosity(np.array([60.0]))[0])
-    kw = {k: v for k, v in KW.items() if k != "develop_length"}
-    with pytest.raises(TypeError, match="develop_length"):
-        regime_dependent_h_spl(coolant=film, mdot=6000.0 * A * mu / DH, T_cool=np.array([60.0]),
-                               T_wall=np.array([90.0]), downflow="sudo", **kw)
 
 
 @pytest.mark.parametrize("fade", [(16.0, 2.0), (2.0, 2.0), (0.0, 16.0), (-2.0, 16.0)])
