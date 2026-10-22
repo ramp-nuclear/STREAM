@@ -66,6 +66,6 @@ def test_result_public_fields(agr, grid_cases):
 
 def test_docs_page_carries_every_line_of_the_package_example():
     example = viz.__doc__.split("::\n\n", 1)[1].split("\n\n", 1)[0]
-    page = (Path(viz.__file__).parents[2] / "docs/source/viz.rst").read_text()
+    page = (Path(viz.__file__).parents[2] / "docs/source/howto/plot-a-sweep.rst").read_text()
     assert all(line.strip() in page for line in example.splitlines())
     assert "automodule" not in page
