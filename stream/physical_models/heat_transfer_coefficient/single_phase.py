@@ -5,8 +5,9 @@ from typing import Literal, Protocol
 
 import numpy as np
 
-from stream.physical_models.dimensionless import Re_mdot, flow_regimes
+from stream.physical_models.dimensionless import Pr, Re_mdot, flow_regimes
 from stream.physical_models.heat_transfer_coefficient.laminar import (
+    Sudo_downflow_ratio,
     constant_Nusselt_h_spl,
     developing_laminar_h_spl,
     fully_developed_laminar_h_spl,
@@ -19,7 +20,8 @@ from stream.physical_models.heat_transfer_coefficient.turbulent import (
 )
 from stream.smoothing import smooth_step
 from stream.substances import Liquid, LiquidFuncs
-from stream.units import Celsius, KgPerS, Meter, Meter2, Pascal, Value, WPerM2K
+from stream.units import Celsius, KgPerS, Meter, Meter2, MPerS2, Pascal, Value, WPerM2K
+from stream.units import g as local_gravity
 from stream.utilities import lin_interp
 
 
@@ -60,32 +62,29 @@ def regime_dependent_h_spl(
     re_bounds: tuple[Value, Value],
     coolant_funcs: LiquidFuncs,
     Lh: Meter,
-    gz_band: tuple[float, float] = (0.01, 0.1),
+    g: MPerS2 = local_gravity,
+    downflow: Literal["sudo"] | None = None,
+    develop_length: Meter | None = None,
     laminar: SinglePhaseLiquidHTCExArgs = developing_laminar_h_spl,
     turbulent: SinglePhaseLiquidHTCExArgs = Dittus_Boelter_h_spl,
     natural: SinglePhaseLiquidHTCExArgs = Elenbaas_h_spl,
     **kwargs,
 ) -> WPerM2K:
-    r"""A flow-regime-dependent single phase heat transfer coefficient function.
+    r"""Single phase wall heat transfer coefficient for channels whose flow may fall to
+    zero, reverse or run on natural circulation.
 
-    The forced-convection part interpolates linearly on the bulk-evaluated Reynolds
-    number between the ``laminar`` and ``turbulent`` functions, with ``re_bounds``
-    setting the transition band. The laminar function is passed bulk properties,
-    the turbulent one film properties.
+    Pick it for a heated channel that passes through laminar, transitional and turbulent
+    flow in one run, such as a loss-of-flow transient. It stays continuous through zero
+    flow and gives each cell's wall balance one root per heat flux.
 
-    Buoyancy enters by **superposition**, not by substitution: the natural-convection
-    contribution is combined with the forced value through the Churchill cube norm
-    :math:`h = (h_f^3 + h_n^3)^{1/3}` (aiding internal mixed convection only ever
-    *enhances* heat transfer). Finally, when the through-flow renewal genuinely dies —
-    Graetz number :math:`\text{Gz} = \text{Pe}\,D_h/L_h` below ``gz_band`` — the value
-    hands over to the pure ``natural`` (stagnant-channel) function, so a flow-reversal
-    instant recovers the buoyant-cavity limit.
+    The forced part interpolates linearly on the bulk Reynolds number over ``re_bounds``
+    between the ``laminar`` function (bulk properties) and the ``turbulent`` one (film
+    properties). The ``natural`` term is added to it by the cube norm
+    :math:`h = (h_f^3 + h_n^3)^{1/3}` [#Churchill]_. At zero flow the laminar function
+    holds its fully developed value, so :math:`h` is continuous through reversal.
 
-    Every switch here is fed by the flow (Re, Gz), never by the wall superheat the
-    result feeds back into, and the superposition only adds — so :math:`h(T_{wall})
-    \cdot \Delta T` is monotone and a cell's wall balance has a unique root. The
-    superposition is the aiding-flow form, so it over-predicts the coefficient in
-    laminar opposing flow (heated downflow), where buoyancy slows the fluid at the wall.
+    The reasoning, the size of the natural term and the downflow data are in
+    :ref:`htc-low-flow`.
 
     Parameters
     ----------
@@ -102,17 +101,27 @@ def regime_dependent_h_spl(
     T_wall: Celsius
         Wall temperature
     re_bounds: tuple[Value, Value]
-        Boundaries depicting transition between laminar, interim, and turbulent regimes.
+        Reynolds numbers where laminar flow ends and turbulent flow begins in this
+        geometry; :math:`h` is interpolated linearly between them.
     coolant_funcs: LiquidFuncs
         Coolant properties functions.
     Lh: Meter
-        Heated length, used for the Graetz-number stagnation handover (and passed on
-        to the ``natural`` function).
-    gz_band: tuple[float, float]
-        Graetz-number band over which the composition hands over to the pure
-        ``natural`` function as the through-flow vanishes. The default engages only
-        at genuine stagnation scale (Pe below ~0.1·Lh/Dh); every circulating steady
-        state sits far above it.
+        Heated length, passed on to the ``laminar``, ``turbulent`` and ``natural``
+        functions.
+    g: MPerS2
+        Gravity signed by the channel's orientation, the same value the channel's
+        :func:`~.pressure_diff` gets: positive flow runs along gravity when ``g > 0``, a
+        riser passes ``-g``, and a horizontal channel passes ``0.0``, which drops the
+        natural term.
+    downflow: Literal["sudo"] | None
+        ``"sudo"`` for a heated channel whose laminar flow runs along gravity when the
+        conservative wall temperature is wanted: in that flow the laminar value is scaled
+        by :func:`~.Sudo_downflow_ratio` [#Sudo]_. ``None`` (default) keeps the laminar
+        value in both directions. It has no effect when ``g == 0``.
+    develop_length: Meter | None
+        Distance counted from the end the flow enters. A channel supplies it per cell, so pass it only
+        when calling the law directly. The developing laminar law uses it, and
+        ``downflow="sudo"`` requires it.
     laminar: SinglePhaseLiquidHTCExArgs
         Laminar heat transfer coefficient. It is evaluated with bulk coolant properties.
     turbulent: SinglePhaseLiquidHTCExArgs
@@ -124,7 +133,27 @@ def regime_dependent_h_spl(
     -------
     h: WPerM2K
         Heat transfer coefficient
+
+    Raises
+    ------
+    TypeError
+        If ``downflow="sudo"`` is given without ``develop_length``.
+    ValueError
+        If ``downflow`` is neither ``None`` nor ``"sudo"``.
+
+    References
+    ----------
+    .. [#Churchill] S. W. Churchill, "A comprehensive correlating equation for laminar,
+       assisting, forced and free convection", AIChE J. 23(1):10-16, 1977.
+    .. [#Sudo] Y. Sudo, K. Miyata, H. Ikawa, M. Ohkawara, M. Kaminaga, "Experimental
+       study of differences in single-phase forced-convection heat transfer
+       characteristics between upflow and downflow for narrow rectangular channel",
+       J. Nucl. Sci. Technol. 22(3):202-212, 1985.
     """
+    if downflow not in (None, "sudo"):
+        raise ValueError(f"Unknown downflow law {downflow!r}, expected None or 'sudo'")
+    if downflow == "sudo" and develop_length is None:
+        raise TypeError("regime_dependent_h_spl with downflow='sudo' requires develop_length")
     re_bulk = Re_mdot(mdot, A, Dh, coolant_funcs.viscosity(T_cool))
 
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
@@ -140,6 +169,7 @@ def regime_dependent_h_spl(
             "T_wall": T_wall,
             "coolant_funcs": coolant_funcs,
         }
+        | ({"develop_length": develop_length} if develop_length is not None else {})
         | kwargs
     )
     h = np.empty(len(T_cool))
@@ -149,17 +179,18 @@ def regime_dependent_h_spl(
     h[turb] = h_turb[turb]
     if np.any(lam + inter):
         h_lam = laminar(**(inp | {"coolant": bulk}))
+        if downflow == "sudo" and g != 0.0:
+            pr_bulk = Pr(bulk.specific_heat, bulk.viscosity, bulk.conductivity)
+            with np.errstate(divide="ignore"):
+                gz_local = re_bulk * pr_bulk * Dh / develop_length
+            w = smooth_step(np.sign(g) * np.sign(mdot) * re_bulk, 0.0, 1.0)
+            h_lam = h_lam * (1.0 - w * (1.0 - Sudo_downflow_ratio(gz_local)))
         h[inter] = lin_interp(*re_bounds, y1=h_lam, y2=h_turb, x=re_bulk)[inter]
         h[lam] = h_lam[lam]
 
-    h_nat = natural(**(inp | {"coolant": bulk}))
-    # Scoped: extreme solver iterates drive inf/0*inf through the cube norm and blend; the NaN/inf result is the caller's rejection signal, not a healthy-path event.
+    h_nat = natural(**(inp | {"coolant": bulk, "g": g})) if g != 0.0 else np.zeros_like(h)
     with np.errstate(invalid="ignore", over="ignore"):
-        h = np.cbrt(h**3 + h_nat**3)
-        pe = np.abs(re_bulk) * bulk.viscosity * bulk.specific_heat / bulk.conductivity
-        with np.errstate(divide="ignore"):  # log10(0) -> -inf -> weight 0 at true stagnation
-            w_flow = smooth_step(np.log10(pe * Dh / Lh), np.log10(gz_band[0]), np.log10(gz_band[1]))
-        return w_flow * h + (1.0 - w_flow) * h_nat
+        return np.cbrt(h**3 + h_nat**3)
 
 
 def maximal_h_spl(
@@ -257,10 +288,8 @@ def spl_htc(
         :widths: 20, 80
 
         * - **regime_dependent**
-          - :func:`regime_dependent_h_spl`: forced part interpolated on the
-            :func:`~.Re` No. over ``re_bounds``, natural part added by Churchill
-            cube-norm superposition, with a Graetz-number handover to the pure
-            natural function at stagnation. Requires ``Lh``.
+          - :func:`regime_dependent_h_spl`: forced part interpolated on the Re number
+            over ``re_bounds``, natural part added by the cube norm; requires ``Lh``.
         * - **laminar**
           - :func:`~.laminar_h_spl`. Requires the ``aspect_ratio = channel_depth / channel_width`` parameter.
         * - **laminar_constant_nu**

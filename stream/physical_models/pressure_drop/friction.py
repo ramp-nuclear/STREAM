@@ -221,7 +221,7 @@ def laminar_friction(re: Value) -> Value:
 
 def regime_dependent_friction(
     T_cool: Celsius,
-    T_wall: Celsius,
+    T_wall: Celsius | None,
     mdot: KgPerS,
     fluid: LiquidFuncs,
     pipe: EffectivePipe,
@@ -237,8 +237,8 @@ def regime_dependent_friction(
     ----------
     T_cool: Celsius
         Coolant bulk temperatures
-    T_wall: Celsius
-        Wall temperatures
+    T_wall: Celsius | None
+        Wall temperatures, read only when ``k_H`` is given.
     mdot: KgPerS
         Coolant mass flow rate
     fluid: LiquidFuncs
@@ -256,7 +256,9 @@ def regime_dependent_friction(
     k_H: Callable[[float, float], float] | None
         Viscosity factor function, which takes as input
         :math:`k_H(P_\text{heat}/P_\text{wet}, \mu_\text{wall} / \mu_\text{bulk})`.
-        By default, it is omitted.
+        By default, it is omitted. It is a laminar correction: it multiplies the laminar factor only, so it
+        fades out across ``re_bounds`` and never touches the turbulent factor. The wall viscosity is read only
+        when ``k_H`` is given.
         See :func:`viscosity_correction`.
     turbulent: Callable[[Value], Value]
         Strategy for calculating the friction coefficient for turbulent flow.
@@ -279,6 +281,11 @@ def regime_dependent_friction(
     lam, inter, turb = flow_regimes(re_bulk, re_bounds)
     f_turb = turbulent(re_bulk * k_R)
     f_lam = laminar(re_bulk * k_R)
+    if k_H is not None:
+        if T_wall is None:
+            raise TypeError("k_H needs T_wall to read the wall viscosity")
+        mu_ratio = fluid.viscosity(T_wall) / mu_bulk
+        f_lam = f_lam * k_H(pipe.heated_perimeter / pipe.wet_perimeter, mu_ratio)
 
     f[lam] = f_lam[lam]
     f[inter] = lin_interp(
@@ -289,11 +296,7 @@ def regime_dependent_friction(
         x=re_bulk[inter],
     )
     f[turb] = f_turb[turb]
-
-    heat_wet_ratio = pipe.heated_perimeter / pipe.wet_perimeter
-    mu_ratio = fluid.viscosity(T_wall) / mu_bulk
-
-    return f * (1.0 if k_H is None else k_H(heat_wet_ratio, mu_ratio))
+    return f
 
 
 GeneralDarcyFactor = Callable[[Celsius, Celsius, KgPerS, LiquidFuncs, EffectivePipe], Value]
@@ -354,8 +357,8 @@ def friction_factor(
 
         * - **regime_dependent**
           - :func:`regime_dependent_friction`, which depends on the :func:`~.Re` No., given ``re_bounds``.
-            Importantly, employs :func:`viscosity <viscosity_correction>` and geometry (e.g. :func:`rectangular
-            <rectangular_laminar_correction>`) corrections upon the laminar and turbulent factors.
+            Importantly, employs a geometry correction (e.g. :func:`rectangular <rectangular_laminar_correction>`)
+            upon all regimes and a :func:`viscosity <viscosity_correction>` correction upon the laminar factor only.
         * - **laminar**
           - :func:`laminar_friction`. Does not employ corrections as described
             above.

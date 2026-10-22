@@ -32,6 +32,7 @@ import numpy as np
 from stream.physical_models.dimensionless import Re_mdot
 from stream.physical_models.heat_transfer_coefficient.laminar import (
     Marco_Han_Nusselt,
+    Sudo_downflow_ratio,
     two_sided_heating_nusselt,
 )
 from stream.physical_models.heat_transfer_coefficient.single_phase import (
@@ -67,6 +68,7 @@ __all__ = [
     "Marco_Han_Nusselt",
     "McAdams_SCB_heat_flux",
     "SinglePhaseLiquidHTCExArgs",
+    "Sudo_downflow_ratio",
     "film_temperature",
     "maximal_h_spl",
     "regime_dependent_h_spl",

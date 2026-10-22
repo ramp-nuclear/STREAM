@@ -164,8 +164,8 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
     """In this test, the reynolds number is set to be just mdot,
     thus it is directly compared with the re regime bounds. The laminar and turbulent
     spl values are set to be simply given values, and are compared with the
-    interpolation scheme. The natural contribution is zeroed and the stagnation
-    handover forced off, isolating the forced-convection interpolation."""
+    interpolation scheme. The natural contribution is zeroed, isolating the
+    forced-convection interpolation."""
     re_bounds = (min(re), max(re))
     h = regime_dependent_h_spl(
         mock_liquid_funcs.to_properties(np.array([100.0]), 1e5),
@@ -180,7 +180,6 @@ def test_regime_dependent_h_spl_assigns_regimes_correctly(re, lam, turb, md):
         turbulent=just(np.atleast_1d(turb)),
         coolant_funcs=mock_liquid_funcs,
         Lh=1.0,
-        gz_band=(1e-12, 2e-12),
     )
     if md < re_bounds[0]:
         assert np.allclose(h, lam)
@@ -203,6 +202,12 @@ def test_elenbaas_finite_when_wall_not_hotter_than_coolant():
     assert np.allclose(cooled, hot)
     # Isothermal wall: the conduction limit.
     assert np.all(np.isfinite(Elenbaas_h_spl(T_wall=np.array([50.0, 50.0]), **kw)))
+
+
+def test_elenbaas_without_gravity_is_zero_and_finite():
+    cool = light_water.to_properties(np.array([50.0]))
+    h = Elenbaas_h_spl(coolant=cool, depth=0.003, T_cool=np.array([50.0]), T_wall=np.array([70.0]), Lh=0.6, g=0.0)
+    assert np.all(np.isfinite(h)) and np.all(h >= 0.0) and h[0] < 1e-20
 
 
 def test_elenbaas_h_is_finite_and_positive_for_a_wall_colder_than_coolant():
