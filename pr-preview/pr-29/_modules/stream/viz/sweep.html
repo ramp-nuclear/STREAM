@@ -1,0 +1,944 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.viz.sweep &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.viz.sweep</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.viz.sweep</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The container: cases, frames and the aggregator, stacked and checked."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">itertools</span><span class="w"> </span><span class="kn">import</span> <span class="n">product</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numbers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Real</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MappingProxyType</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">SaturationReachedError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.solvers</span><span class="w"> </span><span class="kn">import</span> <span class="n">AlgRuntimeError</span><span class="p">,</span> <span class="n">TransientRuntimeError</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._common</span><span class="w"> </span><span class="kn">import</span> <span class="n">_case_text</span><span class="p">,</span> <span class="n">_Coords</span><span class="p">,</span> <span class="n">_level_text</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._inverse</span><span class="w"> </span><span class="kn">import</span> <span class="n">required</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._results</span><span class="w"> </span><span class="kn">import</span> <span class="n">_Question</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">profile</span><span class="p">,</span> <span class="n">reduce</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.labels</span><span class="w"> </span><span class="kn">import</span> <span class="n">STREAM_LABELS</span><span class="p">,</span> <span class="n">Labels</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.limits</span><span class="w"> </span><span class="kn">import</span> <span class="n">Limit</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Sweep"</span><span class="p">,</span> <span class="s2">"cases"</span><span class="p">,</span> <span class="s2">"run_cases"</span><span class="p">]</span>
+
+
+<span class="n">STATE_COLUMNS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"calculation"</span><span class="p">,</span> <span class="s2">"variable"</span><span class="p">,</span> <span class="s2">"i"</span><span class="p">,</span> <span class="s2">"j"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">)</span>
+<span class="n">BAND_COLUMNS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"sys"</span><span class="p">,</span> <span class="s2">"stat"</span><span class="p">)</span>
+<span class="n">RESERVED_COLUMNS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"case"</span><span class="p">,)</span> <span class="o">+</span> <span class="n">STATE_COLUMNS</span> <span class="o">+</span> <span class="n">BAND_COLUMNS</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"filled"</span><span class="p">,</span> <span class="s2">"safe"</span><span class="p">,</span> <span class="s2">"binder"</span><span class="p">)</span>
+<span class="n">RANKS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"scalar"</span><span class="p">,</span> <span class="s2">"profile"</span><span class="p">,</span> <span class="s2">"field"</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_FrameList</span><span class="p">(</span><span class="nb">list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A list of result frames that remembers why some slots are ``None``."""</span>
+
+    <span class="n">failures</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">:</span> <span class="n">Iterable</span> <span class="o">=</span> <span class="p">()):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failures</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="cases">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cases</span><span class="p">(</span><span class="o">**</span><span class="n">levels</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Use this to lay out every combination of parameter levels you want solved.</span>
+
+<span class="sd">    The product of the given levels, one dict per case.</span>
+
+<span class="sd">    Each keyword is a parameter and its levels; a single number or string is a</span>
+<span class="sd">    parameter with one level. The last parameter varies fastest::</span>
+
+<span class="sd">        cases(power=[2e6, 4e6], mdot=[0.2, 0.3], Tin=300.0)</span>
+
+<span class="sd">    gives four cases, ``power=2e6, mdot=0.2`` first. Pass the list to</span>
+<span class="sd">    :func:`run_cases`, then the list and the frames to :class:`Sweep`.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">levels</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"cases() needs at least one parameter"</span><span class="p">)</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">values</span> <span class="ow">in</span> <span class="n">levels</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[</span><span class="n">values</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Real</span><span class="p">))</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> has no levels"</span><span class="p">)</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">levels</span><span class="p">,</span> <span class="n">combo</span><span class="p">))</span> <span class="k">for</span> <span class="n">combo</span> <span class="ow">in</span> <span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">axes</span><span class="p">)]</span></div>
+
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_Failure</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The message of a case whose solve raised one of the caught exceptions."""</span>
+
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_attempt</span><span class="p">(</span><span class="n">model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">],</span> <span class="n">catch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">case</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">model</span><span class="p">(</span><span class="o">**</span><span class="n">case</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">catch</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_Failure</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="run_cases">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.run_cases">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_cases</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">],</span>
+    <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="n">catch</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">AlgRuntimeError</span><span class="p">,</span> <span class="n">TransientRuntimeError</span><span class="p">,</span> <span class="n">SaturationReachedError</span><span class="p">),</span>
+    <span class="n">mapper</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="nb">map</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_FrameList</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Use this when one function solves one case, to solve the whole grid in order and keep the failures as holes.</span>
+
+<span class="sd">    Solve every case with ``model(**case)`` and collect the frames for :class:`Sweep`.</span>
+
+<span class="sd">    ::</span>
+
+<span class="sd">        frames = run_cases(model, cases_)</span>
+<span class="sd">        sweep = Sweep(cases_, frames, agr)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    model:</span>
+<span class="sd">        Called as ``model(**case)`` for every case; returns that case's</span>
+<span class="sd">        ``State.to_dataframe()``.</span>
+<span class="sd">    cases:</span>
+<span class="sd">        One dict per case, as :func:`cases` makes them.</span>
+<span class="sd">    catch:</span>
+<span class="sd">        The exceptions that make a case a hole. The default holds the three</span>
+<span class="sd">        ways a STREAM solve reports that it did not finish: ``AlgRuntimeError``</span>
+<span class="sd">        and ``TransientRuntimeError`` from :mod:`stream.solvers` and</span>
+<span class="sd">        ``SaturationReachedError`` from :mod:`stream.calculations.channel`.</span>
+<span class="sd">        Only these become holes; any other exception, a bug in the model</span>
+<span class="sd">        among them, propagates.</span>
+<span class="sd">    mapper:</span>
+<span class="sd">        How the cases are run: any map that keeps the order of the cases,</span>
+<span class="sd">        called as ``mapper(f, cases)``. The model is called in the mapper's</span>
+<span class="sd">        workers. The builtin ``map`` (the default) runs the cases one after</span>
+<span class="sd">        the other. A process pool (``ProcessPoolExecutor().map`` or</span>
+<span class="sd">        ``multiprocessing.Pool.map``) pickles the model, so it must be a</span>
+<span class="sd">        module-level function; threads and dask take any callable::</span>
+
+<span class="sd">            from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor</span>
+
+<span class="sd">            with ThreadPoolExecutor() as pool:</span>
+<span class="sd">                frames = run_cases(model, cases_, mapper=pool.map)</span>
+<span class="sd">            with ProcessPoolExecutor() as pool:</span>
+<span class="sd">                frames = run_cases(model, cases_, mapper=pool.map)</span>
+<span class="sd">            frames = run_cases(model, cases_, mapper=lambda f, xs: dask.compute(*(dask.delayed(f)(x) for x in xs)))</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list</span>
+<span class="sd">        One frame per case, in the order of ``cases``, with ``None`` in the</span>
+<span class="sd">        slot of a hole. Its ``failures`` maps the index of each hole to the</span>
+<span class="sd">        exception text, and one warning lists every failed case.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Uncertainty enters through the model: a model that returns its state's</span>
+<span class="sd">    frame with ``uq_attach`` bands (``sys`` and ``stat`` columns) gives a</span>
+<span class="sd">    banded sweep.</span>
+<span class="sd">    """</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">_FrameList</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">out</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mapper</span><span class="p">(</span><span class="n">partial</span><span class="p">(</span><span class="n">_attempt</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">catch</span><span class="p">),</span> <span class="n">cases</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">_Failure</span><span class="p">):</span>
+            <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+            <span class="n">frames</span><span class="o">.</span><span class="n">failures</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">message</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">frames</span><span class="o">.</span><span class="n">failures</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">msg</span> <span class="ow">in</span> <span class="n">frames</span><span class="o">.</span><span class="n">failures</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span><span class="si">}</span><span class="s2"> of </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span><span class="si">}</span><span class="s2"> cases failed:</span><span class="se">\n</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">frames</span></div>
+
+
+
+<div class="viewcode-block" id="Sweep">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sweep</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Use this to ask questions of steady states solved over a grid of design parameters.</span>
+
+<span class="sd">    Cases, result frames and the aggregator they came from.</span>
+
+<span class="sd">    Build one from your own loop or from :func:`cases` and :func:`run_cases`,</span>
+<span class="sd">    then ask it a question, :meth:`profile`, :meth:`field`, :meth:`reduce`</span>
+<span class="sd">    (two parameters on ``versus`` make a map) or :meth:`required`, and call</span>
+<span class="sd">    ``.plot()`` on the answer or read its ``frame``. What is true of the whole</span>
+<span class="sd">    sweep is set here: labels, limits and whether holes are filled::</span>
+
+<span class="sd">        cases_ = cases(power=[2e6, 4e6, 6e6], mdot=[0.2, 0.3])</span>
+<span class="sd">        frames = run_cases(model, cases_)</span>
+<span class="sd">        sweep = Sweep(cases_, frames, agr, limits={"CHFR": at_least(1.3)})</span>
+
+<span class="sd">    Ask ``print(sweep)`` for the parameters and their levels, the quantities of</span>
+<span class="sd">    each calculation, the holes and the limits. The sweep keeps its data</span>
+<span class="sd">    readable: ``cases``, ``frames``, the aggregator ``agr``, the stacked</span>
+<span class="sd">    ``table``, ``holes``, ``filled``, ``limits`` and ``labels``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cases:</span>
+<span class="sd">        One dict per case, all with the same keys. A value is a number, or a</span>
+<span class="sd">        string for a parameter that is a choice (a wall law, a correlation);</span>
+<span class="sd">        each parameter is one or the other in every case. A choice can colour,</span>
+<span class="sd">        style or panel a figure, never be an axis.</span>
+<span class="sd">    frames:</span>
+<span class="sd">        One ``State.to_dataframe()`` result per case, or ``None`` for a case</span>
+<span class="sd">        whose solve failed (a hole). The list :func:`run_cases` returns also</span>
+<span class="sd">        carries each hole's message.</span>
+<span class="sd">    agr:</span>
+<span class="sd">        The aggregator, static across the sweep, used for coordinates.</span>
+<span class="sd">    labels:</span>
+<span class="sd">        A :class:`~stream.viz.Labels`, or a mapping from name to a :class:`~stream.viz.Label` or its</span>
+<span class="sd">        shorthand tuple: display names, units and scales, merged over the</span>
+<span class="sd">        module defaults.</span>
+<span class="sd">    limits:</span>
+<span class="sd">        The limits the design must respect, one per quantity::</span>
+
+<span class="sd">            limits={"CHFR": at_least(1.3), "T_clad": at_most(900.0)}</span>
+
+<span class="sd">        A declared limit is drawn on every figure that shows the quantity,</span>
+<span class="sd">        gives ``required`` its target and ``limiting=True`` its meaning.</span>
+<span class="sd">        Quantities that share axes and one limit get one line between them.</span>
+<span class="sd">    fill_holes:</span>
+<span class="sd">        ``True`` fills a hole when, along a numeric parameter and with every</span>
+<span class="sd">        other parameter equal, the grid levels immediately below and above it</span>
+<span class="sd">        are solved cases; the fill interpolates linearly between the two (the</span>
+<span class="sd">        mean over the parameters that bracket it). A hole that no numeric</span>
+<span class="sd">        parameter brackets this way (at the edge of the sweep, or next to</span>
+<span class="sd">        another hole, along every one of them) stays a hole. Filled rows carry</span>
+<span class="sd">        ``filled=True`` in every frame, draw with an open marker (a field</span>
+<span class="sd">        ends its subtitle with ``, interpolated``) and are listed in</span>
+<span class="sd">        ``filled``. Off by default because an interpolated case is a guess.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">cases</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">frames</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">DataFrame</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+        <span class="n">agr</span><span class="p">,</span>
+        <span class="n">labels</span><span class="p">:</span> <span class="n">Labels</span> <span class="o">|</span> <span class="n">Mapping</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limits</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Limit</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">fill_holes</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical</span> <span class="o">=</span> <span class="n">_check_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span> <span class="k">else</span> <span class="p">()</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">)</span><span class="si">}</span><span class="s2"> cases but </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span><span class="si">}</span><span class="s2"> frames; the two lists must align"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">frames</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agr</span> <span class="o">=</span> <span class="n">agr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span>
+        <span class="n">failures</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="s2">"failures"</span><span class="p">,</span> <span class="p">{})</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">failures</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">:</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span> <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">": </span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">m</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="o">.</span><span class="n">items</span><span class="p">()]</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"holes in the sweep:</span><span class="se">\n</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">checked</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_check_frame</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frames</span><span class="p">)</span> <span class="k">if</span> <span class="n">f</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">banded</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">_has_band</span><span class="p">(</span><span class="n">f</span><span class="p">)</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">checked</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bad_rows</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stack</span><span class="p">(</span><span class="n">checked</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fill_holes</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">fill_holes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_holes</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">table</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">limits</span> <span class="o">=</span> <span class="n">MappingProxyType</span><span class="p">(</span><span class="n">_check_limits</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_coords_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">n_holes</span><span class="p">,</span> <span class="n">n_filled</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">)</span>
+        <span class="n">head</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Sweep: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="si">}</span><span class="s2"> case</span><span class="si">{</span><span class="s1">'s'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">n_holes</span><span class="si">}</span><span class="s2"> hole</span><span class="si">{</span><span class="s1">'s'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">n_holes</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">head</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">" (</span><span class="si">{</span><span class="n">n_filled</span><span class="si">}</span><span class="s2"> filled)"</span> <span class="k">if</span> <span class="n">n_holes</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fill_holes</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="n">head</span> <span class="o">+=</span> <span class="s2">", uncertainty bands"</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">banded</span> <span class="k">else</span> <span class="s2">", no uncertainty"</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">head</span><span class="p">]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_level_text</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">(</span><span class="n">p</span><span class="p">))</span><span class="si">}</span><span class="s2">]"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  parameters: </span><span class="si">{</span><span class="n">params</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">calc</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">variable</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span> <span class="o">==</span> <span class="n">calc</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">calc</span><span class="si">}</span><span class="s2">: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">RANKS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_rank</span><span class="p">(</span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="n">calc</span><span class="p">)]</span><span class="si">}</span><span class="s2">)"</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">names</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"  limits: "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">lim</span><span class="o">.</span><span class="n">text</span><span class="p">()</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">q</span><span class="p">,</span> <span class="n">lim</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">limits</span><span class="o">.</span><span class="n">items</span><span class="p">()))</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">message</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">"  holes: "</span> <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">))</span> <span class="k">else</span> <span class="s2">"         "</span>
+            <span class="n">text</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2">)"</span> <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">": </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">message</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">+=</span> <span class="s2">", filled along "</span> <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Sweep.single">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.single">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">single</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">frame</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sweep</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A sweep of one case and no parameters."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">([{}],</span> <span class="p">[</span><span class="n">frame</span><span class="p">],</span> <span class="n">agr</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">limits</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span>
+
+    <span class="nd">@labels</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">labels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span> <span class="o">=</span> <span class="n">STREAM_LABELS</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">n_cases</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Sweep.case_of">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.case_of">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">case_of</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The parameter values of case ``index``."""</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">index</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Sweep.levels">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.levels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">levels</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The distinct values of ``parameter``: sorted when numeric, in order of first appearance when a string."""</span>
+        <span class="k">if</span> <span class="n">parameter</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parameter</span><span class="si">!r}</span><span class="s2"> is not a sweep parameter; the parameters are </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">values</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checked</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">pieces</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">zero_band_lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">non_finite_lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">checked</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">banded</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">_has_band</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+                    <span class="n">zero_band_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2">) carries no nonzero uncertainty; its band is zero"</span>
+                    <span class="p">)</span>
+                    <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">sys</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">stat</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+                <span class="n">f</span><span class="p">[</span><span class="s2">"sys"</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"sys"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">f</span><span class="p">[</span><span class="s2">"stat"</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="s2">"stat"</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+                <span class="n">bad</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">[[</span><span class="s2">"value"</span><span class="p">,</span> <span class="s2">"sys"</span><span class="p">,</span> <span class="s2">"stat"</span><span class="p">]])</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">BAND_COLUMNS</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span><span class="p">])</span>
+                <span class="n">bad</span> <span class="o">=</span> <span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"value"</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">bad</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_bad_rows</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">bad</span><span class="p">])</span>
+                <span class="n">non_finite_lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">])</span><span class="si">}</span><span class="s2">) has non-finite values in row "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">_bad_rows</span><span class="p">[</span><span class="n">k</span><span class="p">]))</span><span class="si">}</span><span class="s2">; treated as missing"</span>
+                <span class="p">)</span>
+                <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="p">[</span><span class="o">~</span><span class="n">bad</span><span class="p">]</span>
+            <span class="n">front</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"case"</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">]}</span>
+            <span class="n">f</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="o">**</span><span class="n">front</span><span class="p">,</span> <span class="n">filled</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">pieces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">front</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">front</span> <span class="ow">and</span> <span class="n">c</span> <span class="o">!=</span> <span class="s2">"filled"</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"filled"</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="n">zero_band_lines</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"cases with no nonzero uncertainty get a zero band:</span><span class="se">\n</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">zero_band_lines</span><span class="p">),</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">non_finite_lines</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"non-finite values treated as missing:</span><span class="se">\n</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">non_finite_lines</span><span class="p">),</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pieces</span><span class="p">:</span>
+            <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"case"</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="o">*</span><span class="n">STATE_COLUMNS</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">BAND_COLUMNS</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">banded</span> <span class="k">else</span> <span class="p">[])</span> <span class="o">+</span> <span class="p">[</span><span class="s2">"filled"</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+        <span class="n">table</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">pieces</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"calculation"</span><span class="p">,</span> <span class="s2">"variable"</span><span class="p">):</span>
+            <span class="n">table</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"category"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">table</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fill</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+        <span class="n">numeric</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical</span><span class="p">]</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"calculation"</span><span class="p">,</span> <span class="s2">"variable"</span><span class="p">,</span> <span class="s2">"i"</span><span class="p">,</span> <span class="s2">"j"</span><span class="p">]</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"value"</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">BAND_COLUMNS</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">banded</span> <span class="k">else</span> <span class="p">[])</span>
+        <span class="n">pieces</span><span class="p">,</span> <span class="n">lines</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">:</span>
+            <span class="n">case</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+            <span class="n">parts</span><span class="p">,</span> <span class="n">brackets</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">numeric</span><span class="p">:</span>
+                <span class="n">same</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_cases</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_equal</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">q</span><span class="p">],</span> <span class="n">case</span><span class="p">[</span><span class="n">q</span><span class="p">])</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="k">if</span> <span class="n">q</span> <span class="o">!=</span> <span class="n">p</span><span class="p">)</span>
+                <span class="p">]</span>
+                <span class="n">below</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">same</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">p</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">case</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span>
+                <span class="n">above</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">same</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">p</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">case</span><span class="p">[</span><span class="n">p</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">below</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">above</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">lo</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">below</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">p</span><span class="p">])</span>
+                <span class="n">hi</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">above</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">m</span><span class="p">][</span><span class="n">p</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">lo</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span> <span class="ow">or</span> <span class="n">hi</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">case</span> <span class="o">==</span> <span class="n">lo</span><span class="p">]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+                <span class="n">b</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="n">table</span><span class="o">.</span><span class="n">case</span> <span class="o">==</span> <span class="n">hi</span><span class="p">]</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">a</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">index</span><span class="p">):</span>
+                    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: cases </span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2"> do not share one frame layout along </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">; not used"</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span>
+                    <span class="p">)</span>
+                    <span class="k">continue</span>
+                <span class="n">t</span> <span class="o">=</span> <span class="p">(</span><span class="n">case</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">lo</span><span class="p">][</span><span class="n">p</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">hi</span><span class="p">][</span><span class="n">p</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">[</span><span class="n">lo</span><span class="p">][</span><span class="n">p</span><span class="p">])</span>
+                <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="n">columns</span><span class="p">]</span> <span class="o">+</span> <span class="n">t</span> <span class="o">*</span> <span class="p">(</span><span class="n">b</span><span class="p">[</span><span class="n">columns</span><span class="p">]</span> <span class="o">-</span> <span class="n">a</span><span class="p">[</span><span class="n">columns</span><span class="p">]))</span>
+                <span class="n">brackets</span><span class="p">[</span><span class="n">p</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">parts</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">mean</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="n">mean</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">case</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="o">**</span><span class="n">case</span><span class="p">,</span> <span class="n">filled</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="nb">list</span><span class="p">(</span><span class="n">table</span><span class="o">.</span><span class="n">columns</span><span class="p">)]</span>
+            <span class="n">pieces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filled</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">brackets</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">_case_text</span><span class="p">(</span><span class="n">case</span><span class="p">)</span><span class="si">}</span><span class="s2">): "</span>
+                <span class="o">+</span> <span class="s2">"; "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"along </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2"> between case </span><span class="si">{</span><span class="n">lo</span><span class="si">}</span><span class="s2"> and case </span><span class="si">{</span><span class="n">hi</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="n">lo</span><span class="p">,</span> <span class="n">hi</span><span class="p">)</span> <span class="ow">in</span> <span class="n">brackets</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">"filled unsolved case(s) by interpolation:</span><span class="se">\n</span><span class="s2">  "</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">  "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pieces</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">table</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">table</span><span class="p">,</span> <span class="o">*</span><span class="n">pieces</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"calculation"</span><span class="p">,</span> <span class="s2">"variable"</span><span class="p">):</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">"category"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_equal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a</span> <span class="o">==</span> <span class="n">b</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical</span> <span class="k">else</span> <span class="nb">bool</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_hole</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">index</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">holes</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nearest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``where`` with each value snapped to the grid, or raised on."""</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">wanted</span> <span class="ow">in</span> <span class="p">(</span><span class="n">where</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">levels</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">wanted</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">levels</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">wanted</span><span class="si">!r}</span><span class="s2"> is not a level of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">; the levels are </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">levels</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">wanted</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">wanted</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> is a number; got </span><span class="si">{</span><span class="n">wanted</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">hits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">levels</span><span class="p">,</span> <span class="n">wanted</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-9</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">hits</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">levels</span><span class="p">[</span><span class="n">hits</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">nearest</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">wanted</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> is not on the grid; the values of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> are "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">v</span><span class="si">:</span><span class="s1">g</span><span class="si">}</span><span class="s1">'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">levels</span><span class="p">)</span><span class="si">}</span><span class="s2"> (pass nearest=True to snap)"</span>
+                <span class="p">)</span>
+            <span class="n">used</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">levels</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">levels</span> <span class="o">-</span> <span class="n">wanted</span><span class="p">))])</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">wanted</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2"> is not on the grid; using </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">used</span><span class="si">:</span><span class="s2">g</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">stacklevel</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">used</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_select</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">nearest</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Indices of the cases matching ``where``; every case when ``where`` is empty."""</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resolve</span><span class="p">(</span><span class="n">where</span><span class="p">,</span> <span class="n">nearest</span><span class="p">)</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="p">[</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">case</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cases</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_matches</span><span class="p">(</span><span class="n">case</span><span class="p">,</span> <span class="n">wanted</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">keep</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_matches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">case</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">wanted</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_equal</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">case</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">wanted</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_rank</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">calculation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""0, 1 or 2 from the index layout of the quantity's rows.</span>
+
+<span class="sd">        A profile stored in a single cell is indistinguishable from a scalar and reads as rank 0.</span>
+<span class="sd">        """</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span> <span class="o">==</span> <span class="n">calculation</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">variable</span> <span class="o">==</span> <span class="n">quantity</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">quantity</span><span class="si">!r}</span><span class="s2"> of </span><span class="si">{</span><span class="n">calculation</span><span class="si">!r}</span><span class="s2"> is not in the sweep"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">i</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">2</span>
+        <span class="k">return</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">rows</span><span class="o">.</span><span class="n">j</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">0</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Resolve ``quantity`` and ``of`` to lists, defaulting when unambiguous."""</span>
+        <span class="n">calcs</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+        <span class="n">quantities</span> <span class="o">=</span> <span class="p">[</span><span class="n">quantity</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">quantity</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">quantity</span> <span class="ow">or</span> <span class="p">[])</span>
+        <span class="k">if</span> <span class="n">of</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">owners</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="p">{</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">calcs</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantities</span> <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="p">[(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span> <span class="o">==</span> <span class="n">c</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">variable</span> <span class="o">==</span> <span class="n">q</span><span class="p">)]</span><span class="o">.</span><span class="n">empty</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">owners</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span><span class="w"> </span><span class="n">quantities</span><span class="p">))</span><span class="si">}</span><span class="s2"> belong(s) to </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">owners</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'no calculation'</span><span class="si">}</span><span class="s2">; pass of= to choose"</span>
+                <span class="p">)</span>
+            <span class="n">ofs</span> <span class="o">=</span> <span class="n">owners</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ofs</span> <span class="o">=</span> <span class="p">[</span><span class="n">of</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">of</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="n">of</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">ofs</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">calcs</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">c</span><span class="si">!r}</span><span class="s2"> is not a calculation in the sweep; the calculations are </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">calcs</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="n">have</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">variable</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">table</span><span class="o">.</span><span class="n">calculation</span> <span class="o">==</span> <span class="n">c</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+            <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantities</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">q</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">have</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">q</span><span class="si">!r}</span><span class="s2"> is not a variable of </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">; it has </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">have</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">quantities</span><span class="p">,</span> <span class="n">ofs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_coords</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">calculation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_Coords</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The mesh of ``calculation`` from the aggregator, or ``None`` when it has none."""</span>
+        <span class="k">if</span> <span class="n">calculation</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coords_cache</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">calc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agr</span><span class="p">[</span><span class="n">calculation</span><span class="p">]</span>
+            <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">known</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_calculation_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agr</span><span class="p">))</span> <span class="ow">or</span> <span class="s2">"no calculations"</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"the frames hold </span><span class="si">{</span><span class="n">calculation</span><span class="si">!r}</span><span class="s2"> but the aggregator does not; it holds </span><span class="si">{</span><span class="n">known</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">error</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_coords_cache</span><span class="p">[</span><span class="n">calculation</span><span class="p">]</span> <span class="o">=</span> <span class="n">_coords_of</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coords_cache</span><span class="p">[</span><span class="n">calculation</span><span class="p">]</span>
+
+<div class="viewcode-block" id="Sweep.profile">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.profile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nearest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Use this to see how a quantity varies along the channel in one case or a family of cases.</span>
+
+<span class="sd">        A profile quantity against its mesh coordinate, one line per selected case.</span>
+
+<span class="sd">        Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by</span>
+<span class="sd">        :meth:`~stream.viz.Result.plot`.</span>
+
+<span class="sd">        ::</span>
+
+<span class="sd">            sweep.profile("T_cool", where=dict(power=4e6, mdot=0.3)).plot()</span>
+<span class="sd">            sweep.profile("T_cool", where=dict(mdot=0.3)).plot(color="power")</span>
+<span class="sd">            sweep.profile(["CHFR", "OSVR"], where=dict(power=4e6, mdot=0.3)).plot(col="quantity")</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        quantity:</span>
+<span class="sd">            One name or a list of names, all of one unit, each a profile (one</span>
+<span class="sd">            value per cell along one axis).</span>
+<span class="sd">        of:</span>
+<span class="sd">            The calculation(s) that own the quantity, when ambiguous.</span>
+<span class="sd">        where:</span>
+<span class="sd">            Parameters fixed at a grid level, as a dict; a choice parameter takes</span>
+<span class="sd">            one of its strings (``where=dict(power=4e6, wall_law="regime")``).</span>
+<span class="sd">        nearest:</span>
+<span class="sd">            Snap ``where`` values to the nearest grid level instead of raising.</span>
+<span class="sd">        sigma:</span>
+<span class="sd">            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.</span>
+<span class="sd">        uncertainty:</span>
+<span class="sd">            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_Question</span><span class="p">(</span><span class="s2">"profile"</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="p">,</span> <span class="n">where</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sweep.field">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.field">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nearest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Use this to see a quantity over both axes of a plate, such as the fuel temperature, in one case.</span>
+
+<span class="sd">        A field quantity of exactly one case, drawn as a colour mesh over its two axes.</span>
+
+<span class="sd">        Asked by ``where``, ``of``, ``nearest``, ``sigma`` and ``uncertainty``; drawn by</span>
+<span class="sd">        :meth:`~stream.viz.Result.plot`.</span>
+
+<span class="sd">        ::</span>
+
+<span class="sd">            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot()</span>
+<span class="sd">            sweep.field("T", of="plate", where=dict(power=4e6, mdot=0.3)).plot(bound="upper", show_limit="shade")</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        quantity:</span>
+<span class="sd">            One name, a field (one value per cell over two axes).</span>
+<span class="sd">        of:</span>
+<span class="sd">            The calculation(s) that own the quantity, when ambiguous.</span>
+<span class="sd">        where:</span>
+<span class="sd">            Parameters fixed at a grid level, as a dict, enough to pick one case; a choice parameter takes</span>
+<span class="sd">            one of its strings (``where=dict(power=4e6, wall_law="regime")``).</span>
+<span class="sd">        nearest:</span>
+<span class="sd">            Snap ``where`` values to the nearest grid level instead of raising.</span>
+<span class="sd">        sigma:</span>
+<span class="sd">            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.</span>
+<span class="sd">        uncertainty:</span>
+<span class="sd">            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_Question</span><span class="p">(</span><span class="s2">"field"</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="p">,</span> <span class="n">where</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sweep.reduce">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.reduce">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">reducer</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nearest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+               <span class="n">uncertainty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">limiting</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Use this to see how the worst value of a quantity moves with one parameter, or over two as a map.</span>
+
+<span class="sd">        Collapse a quantity per case and plot it against a parameter, against two parameters as a map, or along one field axis.</span>
+
+<span class="sd">        Asked by the reducer, ``versus``, ``of``, ``where``, ``axis``, ``nearest``, ``sigma``,</span>
+<span class="sd">        ``uncertainty`` and ``limiting``; drawn by :meth:`~stream.viz.Result.plot`.</span>
+
+<span class="sd">        ::</span>
+
+<span class="sd">            sweep.reduce("CHFR", "min", versus="power")</span>
+<span class="sd">            sweep.reduce("CHFR", "min", versus="power").plot(color="mdot")</span>
+<span class="sd">            sweep.reduce("CHFR", "min", versus=("power", "mdot")).plot()</span>
+<span class="sd">            sweep.reduce("T", "max", axis="x")</span>
+<span class="sd">            sweep.reduce("CHFR", "min", versus="power", of=channels, limiting=True)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        quantity:</span>
+<span class="sd">            One name or a list of names, all of one unit.</span>
+<span class="sd">        reducer:</span>
+<span class="sd">            How the cells of each case are collapsed:</span>
+
+<span class="sd">            * ``"min"``: the smallest cell value;</span>
+<span class="sd">            * ``"max"``: the largest cell value;</span>
+<span class="sd">            * ``"mean"``: the mean weighted by cell size;</span>
+<span class="sd">            * ``"where_min"``: the coordinate of the smallest value;</span>
+<span class="sd">            * ``"where_max"``: the coordinate of the largest value;</span>
+<span class="sd">            * ``at(z=...)``, ``at(x=...)`` or ``at(cell=...)``: the value of one cell;</span>
+<span class="sd">            * a callable ``f(values, coords)``: whatever it returns.</span>
+
+<span class="sd">            A scalar quantity is taken as it is. A ``where_*`` reducer gives a</span>
+<span class="sd">            location and a callable an unknown value, so their results carry no</span>
+<span class="sd">            limit: ``show_limit="line"`` draws nothing, and ``show_limit="shade"`` or</span>
+<span class="sd">            ``limiting=True`` raises.</span>
+<span class="sd">        versus:</span>
+<span class="sd">            A numeric parameter for the x axis, or a pair of two numeric</span>
+<span class="sd">            parameters (a tuple or a list) for a map (filled contours, the limit</span>
+<span class="sd">            as a contour). When</span>
+<span class="sd">            the map's reducer is the limit's own (``min`` for ``at_least``,</span>
+<span class="sd">            ``max`` for ``at_most``), its limit contour is the curve</span>
+<span class="sd">            ``required(solve_for=versus[0], versus=versus[1])`` draws.</span>
+<span class="sd">        of:</span>
+<span class="sd">            The calculation(s) that own the quantity, when ambiguous.</span>
+<span class="sd">        where:</span>
+<span class="sd">            Parameters fixed at a grid level.</span>
+<span class="sd">        axis:</span>
+<span class="sd">            Collapse a field along one axis and keep a profile along the other,</span>
+<span class="sd">            instead of ``versus``:</span>
+
+<span class="sd">            * ``"z"``: collapse along z, a profile along x;</span>
+<span class="sd">            * ``"x"``: collapse along x, a profile along z.</span>
+<span class="sd">        nearest:</span>
+<span class="sd">            Snap ``where`` values to the nearest grid level instead of raising.</span>
+<span class="sd">        sigma:</span>
+<span class="sd">            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.</span>
+<span class="sd">        uncertainty:</span>
+<span class="sd">            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.</span>
+<span class="sd">        limiting:</span>
+<span class="sd">            ``True`` keeps, per case, only the calculation (and quantity) that</span>
+<span class="sd">            binds: the smallest reduced value for a limit that is ``at_least``, the</span>
+<span class="sd">            largest for ``at_most``. The frame names it in ``calculation`` and</span>
+<span class="sd">            ``quantity``. Needs every quantity's limit declared, all with one</span>
+<span class="sd">            side and one value: values are compared as they are, so across</span>
+<span class="sd">            quantities it is meaningful only when they share a limit value; use</span>
+<span class="sd">            ``required(..., limiting=True)`` for quantities with different limits.</span>
+<span class="sd">        """</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="s2">"profile"</span> <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">"map"</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">versus</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">))</span> <span class="k">else</span> <span class="s2">"curve"</span>
+        <span class="k">return</span> <span class="n">reduce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_Question</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="p">,</span> <span class="n">where</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">,</span> <span class="n">reducer</span><span class="o">=</span><span class="n">reducer</span><span class="p">,</span>
+                                      <span class="n">versus</span><span class="o">=</span><span class="n">versus</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">limiting</span><span class="o">=</span><span class="n">limiting</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sweep.required">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Sweep.required">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">required</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">equals</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">solve_for</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reduce</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">of</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">at</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">method</span><span class="o">=</span><span class="s2">"linear"</span><span class="p">,</span> <span class="n">nearest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">uncertainty</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">limiting</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Use this to find how far a parameter can go before a quantity reaches its limit.</span>
+
+<span class="sd">        The value of ``solve_for`` at which the reduced quantity meets its limit, against ``versus``.</span>
+
+<span class="sd">        Asked by ``equals``, ``solve_for``, ``versus``, ``reduce``, ``of``, ``at``, ``where``,</span>
+<span class="sd">        ``nearest``, ``sigma``, ``uncertainty`` and ``limiting``; drawn by</span>
+<span class="sd">        :meth:`~stream.viz.Result.plot`.</span>
+
+<span class="sd">        Each quantity is reduced over the mesh per case, the curve along</span>
+<span class="sd">        ``solve_for`` is walked at every level of ``versus`` (and of every other</span>
+<span class="sd">        free parameter), and the crossing is interpolated::</span>
+
+<span class="sd">            sweep.required("CHFR", solve_for="power", versus="mdot")</span>
+<span class="sd">            sweep.required("CHFR", equals=1.5, solve_for="power", versus="mdot")</span>
+<span class="sd">            sweep.required(["CHFR", "OSVR"], solve_for="power", versus="mdot")</span>
+<span class="sd">            sweep.required(["CHFR", "OSVR"], equals={"CHFR": 1.3, "OSVR": 1.1}, solve_for="power", versus="mdot")</span>
+<span class="sd">            sweep.required(["CHFR", "OSVR"], of=channels, solve_for="power", versus="mdot", limiting=True)</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        quantity:</span>
+<span class="sd">            One name or a list of names. Each is walked on its own, so their</span>
+<span class="sd">            units may differ.</span>
+<span class="sd">        equals:</span>
+<span class="sd">            The target. ``None`` (the default) uses each quantity's declared limit;</span>
+<span class="sd">            a number applies to every quantity; a quantity name walks the</span>
+<span class="sd">            difference to that quantity (``equals="q_CHF"``); a dict gives each</span>
+<span class="sd">            quantity its own.</span>
+<span class="sd">        solve_for:</span>
+<span class="sd">            Required. The parameter to walk along. Numeric.</span>
+<span class="sd">        versus:</span>
+<span class="sd">            Required. The parameter on the x axis. Numeric.</span>
+<span class="sd">        reduce:</span>
+<span class="sd">            The mesh reducer, any value ``reduce()`` takes. ``None`` uses ``min``</span>
+<span class="sd">            for a limit that is ``at_least`` and ``max`` for one that is</span>
+<span class="sd">            ``at_most`` (``min`` without a declared limit); one reducer applies to</span>
+<span class="sd">            every quantity; a dict gives each its own.</span>
+<span class="sd">        of:</span>
+<span class="sd">            The calculation(s) that own the quantity, when ambiguous.</span>
+<span class="sd">        at:</span>
+<span class="sd">            Parameters fixed at a value, on or off the grid; off the grid, the</span>
+<span class="sd">            walk is interpolated between the two neighbouring levels.</span>
+<span class="sd">        where:</span>
+<span class="sd">            Parameters fixed at a grid level.</span>
+<span class="sd">        method:</span>
+<span class="sd">            How the crossing is interpolated between grid points:</span>
+
+<span class="sd">            * ``"linear"``: straight lines between them (the default);</span>
+<span class="sd">            * ``"pchip"``: a monotone cubic through them.</span>
+<span class="sd">        nearest:</span>
+<span class="sd">            Snap ``where`` values to the nearest grid level instead of raising.</span>
+<span class="sd">        sigma:</span>
+<span class="sd">            The multiple of ``stat`` in the envelopes; ``sys`` is added as it is.</span>
+<span class="sd">        uncertainty:</span>
+<span class="sd">            ``False`` drops the envelopes; ``lower`` and ``upper`` equal ``value``.</span>
+<span class="sd">        limiting:</span>
+<span class="sd">            ``True`` keeps, at each level of ``versus`` (and of every other free</span>
+<span class="sd">            parameter), only the quantity and the calculation that bind, the</span>
+<span class="sd">            smallest required value when the safe side lies below it and the</span>
+<span class="sd">            largest when above. A quantity safe everywhere at that level does not</span>
+<span class="sd">            bind there; one safe nowhere makes the level infeasible (its value</span>
+<span class="sd">            is NaN). The frame names the binder in ``quantity`` and</span>
+<span class="sd">            ``calculation``, and the plot colours the markers by it. Needs every</span>
+<span class="sd">            quantity's limit declared, and the quantities that cross at one level</span>
+<span class="sd">            safe on the same side of their crossings.</span>
+<span class="sd">            What is compared is the required value of ``solve_for``, so</span>
+<span class="sd">            quantities of different units and limits combine.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Result</span>
+<span class="sd">            A curve whose ``frame`` has one row per crossing with ``lower``,</span>
+<span class="sd">            ``value``, ``upper`` (the walked envelopes), ``filled`` (whether the</span>
+<span class="sd">            crossing rests on an interpolated case) and ``safe``. Every envelope</span>
+<span class="sd">            is walked on its own; ``lower`` and ``upper`` are the smaller and</span>
+<span class="sd">            the larger of the two walked bounds, so they bracket ``value``</span>
+<span class="sd">            whether the quantity rises or falls with ``solve_for``, and both are</span>
+<span class="sd">            missing when either walk finds no crossing. ``safe`` says where the</span>
+<span class="sd">            quantity is safe:</span>
+
+<span class="sd">            * ``"below"``: below the crossing, in ``solve_for``;</span>
+<span class="sd">            * ``"above"``: above it;</span>
+<span class="sd">            * ``"everywhere"``: the walk never reaches the target and every</span>
+<span class="sd">              solved point is safe;</span>
+<span class="sd">            * ``"nowhere"``: the walk never reaches the target and every solved</span>
+<span class="sd">              point is unsafe;</span>
+<span class="sd">            * ``None``: no limit is declared for the quantity.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">required</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">_Question</span><span class="p">(</span><span class="s2">"curve"</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">of</span><span class="p">,</span> <span class="n">where</span> <span class="ow">or</span> <span class="p">{},</span> <span class="n">nearest</span><span class="p">,</span> <span class="n">sigma</span><span class="p">,</span> <span class="n">uncertainty</span><span class="p">,</span> <span class="n">reducer</span><span class="o">=</span><span class="n">reduce</span><span class="p">,</span>
+                                        <span class="n">versus</span><span class="o">=</span><span class="n">versus</span><span class="p">,</span> <span class="n">limiting</span><span class="o">=</span><span class="n">limiting</span><span class="p">,</span> <span class="n">solve_for</span><span class="o">=</span><span class="n">solve_for</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">equals</span><span class="p">,</span>
+                                        <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">at</span><span class="o">=</span><span class="n">at</span> <span class="ow">or</span> <span class="p">{}))</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_calculation_names</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">agr</span><span class="p">,</span> <span class="s2">"graph"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="n">node</span><span class="p">))</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="p">(</span><span class="n">agr</span> <span class="k">if</span> <span class="n">graph</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">graph</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coords_of</span><span class="p">(</span><span class="n">calc</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_Coords</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"z_centers"</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"x_centers"</span><span class="p">):</span>
+        <span class="n">zc</span><span class="p">,</span> <span class="n">xc</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">z_centers</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">x_centers</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="n">zb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">z_bounds</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"z_bounds"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">xb</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">x_bounds</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"x_bounds"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">zw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">zb</span><span class="p">))</span> <span class="k">if</span> <span class="n">zb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">zc</span><span class="p">)</span>
+        <span class="n">xw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">xb</span><span class="p">))</span> <span class="k">if</span> <span class="n">xb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">xc</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_Coords</span><span class="p">(</span>
+            <span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="s2">"x"</span><span class="p">),</span>
+            <span class="n">centers</span><span class="o">=</span><span class="p">(</span><span class="n">zc</span><span class="p">,</span> <span class="n">xc</span><span class="p">),</span>
+            <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="n">zb</span><span class="p">,</span> <span class="n">xb</span><span class="p">),</span>
+            <span class="n">weights</span><span class="o">=</span><span class="p">(</span><span class="n">zw</span><span class="p">,</span> <span class="n">xw</span><span class="p">),</span>
+            <span class="n">mask</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">meat</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"meat"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"centers"</span><span class="p">):</span>
+        <span class="n">centers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">centers</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+        <span class="n">bounds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">calc</span><span class="o">.</span><span class="n">bounds</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">calc</span><span class="p">,</span> <span class="s2">"bounds"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">bounds</span><span class="p">))</span> <span class="k">if</span> <span class="n">bounds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">centers</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_Coords</span><span class="p">(</span><span class="n">names</span><span class="o">=</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,),</span> <span class="n">centers</span><span class="o">=</span><span class="p">(</span><span class="n">centers</span><span class="p">,),</span> <span class="n">bounds</span><span class="o">=</span><span class="p">(</span><span class="n">bounds</span><span class="p">,),</span> <span class="n">weights</span><span class="o">=</span><span class="p">(</span><span class="n">weights</span><span class="p">,))</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_limits</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Limit</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">limits</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"limits= must be a mapping from quantity to a limit from at_least() or at_most(), not </span><span class="si">{</span><span class="n">limits</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">variables</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">table</span><span class="p">[</span><span class="s2">"variable"</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">table</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">limit</span> <span class="ow">in</span> <span class="p">(</span><span class="n">limits</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="n">Limit</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"limits[</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2">] must come from at_least() or at_most(), not </span><span class="si">{</span><span class="n">limit</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">variables</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> in limits= is not a variable of any calculation; the variables are </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">variables</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">out</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">limit</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_cases</span><span class="p">(</span><span class="n">cases</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">keys</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">kinds</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">case</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cases</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">case</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> must be a dict of parameter values, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">case</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">case</span><span class="p">)</span>
+            <span class="n">reserved</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">keys</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">RESERVED_COLUMNS</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">reserved</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"parameter name(s) </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span><span class="w"> </span><span class="n">reserved</span><span class="p">))</span><span class="si">}</span><span class="s2"> clash with the sweep table's own columns; "</span>
+                    <span class="sa">f</span><span class="s2">"the reserved names are </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">RESERVED_COLUMNS</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">case</span><span class="p">)</span> <span class="o">!=</span> <span class="n">keys</span> <span class="ow">and</span> <span class="nb">set</span><span class="p">(</span><span class="n">case</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">(</span><span class="n">keys</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> has parameters </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">case</span><span class="p">)</span><span class="si">}</span><span class="s2"> but case 0 has </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">clean</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">v</span> <span class="o">=</span> <span class="n">case</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">kind</span> <span class="o">=</span> <span class="s2">"a string"</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Real</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: parameter </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> must be a number or a string, not </span><span class="si">{</span><span class="n">v</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">kind</span><span class="p">,</span> <span class="n">v</span> <span class="o">=</span> <span class="s2">"a number"</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+            <span class="n">seen</span> <span class="o">=</span> <span class="n">kinds</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">k</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">seen</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">kind</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"parameter </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2"> in case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">seen</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> in case </span><span class="si">{</span><span class="n">seen</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">; "</span>
+                    <span class="s2">"a parameter is one or the other"</span>
+                <span class="p">)</span>
+            <span class="n">clean</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">clean</span><span class="p">)</span>
+    <span class="n">categorical</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">kinds</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"a string"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">categorical</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_frame</span><span class="p">(</span><span class="n">k</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+    <span class="k">if</span> <span class="s2">"time"</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: the frame has a 'time' column; only steady-state frames are supported"</span><span class="p">)</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">STATE_COLUMNS</span> <span class="k">if</span> <span class="n">c</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: the frame lacks column(s) </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">BAND_COLUMNS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span> <span class="ow">and</span> <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">f</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"case </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: negative </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2"> in row </span><span class="si">{</span><span class="n">rows</span><span class="si">}</span><span class="s2">; uncertainties are non-negative"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">f</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_has_band</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="n">f</span><span class="o">.</span><span class="n">columns</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">BAND_COLUMNS</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">bool</span><span class="p">((</span><span class="n">f</span><span class="p">[</span><span class="s2">"sys"</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="ow">or</span> <span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="s2">"stat"</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">())</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 22, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

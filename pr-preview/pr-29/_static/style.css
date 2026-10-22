@@ -1,0 +1,164 @@
+html {
+    font-size: 16px;
+}
+
+body,
+.wy-body-for-nav,
+.wy-nav-content-wrap,
+.wy-nav-content {
+    background: #fff;
+}
+
+.wy-nav-side {
+    font-size: 16px;
+}
+
+.wy-nav-content {
+    max-width: none;
+    padding: 1.618em 3em 3em;
+}
+
+.rst-content p,
+.rst-content li,
+.rst-content dd,
+.rst-content dl dd,
+.rst-content blockquote,
+.rst-content .line-block,
+.rst-content .section ul,
+.rst-content .section ol,
+.rst-content section ul,
+.rst-content section ol {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.rst-content p {
+    margin-bottom: 1.2em;
+}
+
+.rst-content h1 {
+    font-size: 2.2rem;
+}
+
+.rst-content h2 {
+    font-size: 1.6rem;
+}
+
+.rst-content h3 {
+    font-size: 1.3rem;
+}
+
+.rst-content h4 {
+    font-size: 1.1rem;
+}
+
+.rst-content p:not(:has(img, svg, object, pre, table)),
+.rst-content li:not(:has(img, svg, object, pre, table)),
+.rst-content dd:not(:has(img, svg, object, pre, table)),
+.rst-content blockquote:not(:has(img, svg, object, pre, table)),
+.rst-content .admonition:not(:has(img, svg, object, pre, table)) {
+    max-width: 48em;
+}
+
+.rst-content code,
+.rst-content tt {
+    font-size: 0.9em;
+}
+
+.rst-content pre code,
+.rst-content pre tt {
+    font-size: inherit;
+}
+
+.rst-content div[class^="highlight"] pre,
+.rst-content pre.literal-block,
+.rst-content .nbinput pre,
+.rst-content .nboutput pre {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.rst-content img,
+.rst-content object,
+.rst-content .nboutput img,
+.rst-content .figure img,
+.rst-content figure img {
+    display: block;
+    width: 100%;
+    max-width: 1300px;
+    height: auto;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rst-content figure,
+.rst-content div.figure {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rst-content figcaption,
+.rst-content .figure .caption {
+    text-align: center;
+}
+
+.rst-content p:has(> img, > object) + p:has(> em:only-child) {
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.rst-content section > h2,
+.rst-content section > h3,
+.rst-content .section > h2,
+.rst-content .section > h3 {
+    margin-top: 1.4em;
+}
+
+.rst-content div.nbinput,
+.rst-content div.nboutput {
+    margin-bottom: 1.4em;
+}
+
+.rst-content div.nbinput:has(+ div.nboutput) {
+    margin-bottom: 0;
+}
+
+.rst-content table.docutils {
+    width: 100%;
+    max-width: 1300px;
+}
+
+.rst-content table.docutils td,
+.rst-content table.docutils th {
+    white-space: normal;
+}
+
+.rst-content .wy-table-responsive table td,
+.rst-content .wy-table-responsive table th {
+    white-space: normal;
+}
+
+.rst-content div.rendered_html table {
+    margin-left: 0;
+    font-size: 14px;
+}
+
+@media (min-width: 1400px) {
+    html {
+        font-size: 18px;
+    }
+
+    .rst-content div[class^="highlight"] pre,
+    .rst-content pre.literal-block,
+    .rst-content .nbinput pre,
+    .rst-content .nboutput pre {
+        font-size: 15px;
+    }
+
+    .rst-content div.rendered_html table {
+        font-size: 15px;
+    }
+}

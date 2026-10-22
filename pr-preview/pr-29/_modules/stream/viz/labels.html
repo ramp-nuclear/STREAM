@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.viz.labels &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link href="../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.viz.labels</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.viz.labels</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Display names, units and scales for everything the figures print."""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Label"</span><span class="p">,</span> <span class="s2">"Labels"</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Label">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Label">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Label</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""How one name is shown.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    display:</span>
+<span class="sd">        Text used on axes, legend titles and subtitles. ``None`` hides the</span>
+<span class="sd">        entry from legends while the thing it labels is still drawn.</span>
+<span class="sd">    unit:</span>
+<span class="sd">        Unit of the number after ``scale`` is applied, in matplotlib math</span>
+<span class="sd">        text. An empty string means dimensionless and prints no bracket.</span>
+<span class="sd">    scale:</span>
+<span class="sd">        Factor applied to the stored numbers before drawing or printing.</span>
+<span class="sd">    fmt:</span>
+<span class="sd">        How a number of this name prints: a Python format spec applied after</span>
+<span class="sd">        ``scale`` (``".1f"``, ``".3g"``, ``",.0f"``, ``".2e"``) or a callable</span>
+<span class="sd">        taking the scaled number and returning text. ``None`` uses the</span>
+<span class="sd">        registry's default.</span>
+<span class="sd">    color:</span>
+<span class="sd">        Optional fixed colour for this name when it is a legend level.</span>
+<span class="sd">    """</span>
+
+    <span class="n">display</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">color</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_label</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">spec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Turn a registry entry into a :class:`Label`.</span>
+
+<span class="sd">    Accepted forms: a ``Label``; ``None`` (hidden); a string (display only);</span>
+<span class="sd">    a 2-tuple ``(display, unit)``; a 3-tuple ``(display, unit, scale)``;</span>
+<span class="sd">    a 4-tuple ``(display, unit, scale, fmt)`` with ``fmt`` a format spec or a callable.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">spec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="n">Label</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">spec</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> 
+        <span class="ow">and</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">4</span> 
+        <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">[:</span><span class="mi">2</span><span class="p">])</span> 
+        <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">4</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">callable</span><span class="p">(</span><span class="n">spec</span><span class="p">[</span><span class="mi">3</span><span class="p">]))</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">Label</span><span class="p">(</span><span class="o">*</span><span class="n">spec</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"label for </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> must be a string, a (display, unit) tuple, a (display, unit, scale) "</span>
+        <span class="sa">f</span><span class="s2">"tuple, a (display, unit, scale, fmt) tuple with fmt a format spec or a callable, a Label "</span>
+        <span class="sa">f</span><span class="s2">"or None, not </span><span class="si">{</span><span class="n">spec</span><span class="si">!r}</span><span class="s2">"</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="Labels">
+<a class="viewcode-back" href="../../../viz.html#stream.viz.Labels">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Labels</span><span class="p">(</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""A registry from internal names to :class:`Label` records.</span>
+
+<span class="sd">    Lookups never fail: a name with no entry displays as itself with no unit.</span>
+<span class="sd">    Later registries win in :meth:`merged`, their ``default_format`` too.</span>
+
+<span class="sd">    A number prints with its label's ``fmt`` when it declares one, else with</span>
+<span class="sd">    ``default_format``, a Python format spec (``".4g"`` unless given). A</span>
+<span class="sd">    registry's own ``default_format`` reaches ``Result.subtitle``,</span>
+<span class="sd">    ``Result.ylabel`` and direct :meth:`value` and :meth:`describe` calls;</span>
+<span class="sd">    in figures :meth:`~stream.viz.Result.plot` replaces it with the style</span>
+<span class="sd">    sheet's ``number_format``.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entries</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">".4g"</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Label</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">_as_label</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">entries</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">default_format</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Label</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">Label</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">known</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether ``name`` has an entry."""</span>
+        <span class="k">return</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">merged</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Labels</span> <span class="o">|</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A new registry with ``other``'s entries overriding this one's.</span>
+
+<span class="sd">        When ``other`` is a :class:`Labels`, its ``default_format`` wins too.</span>
+<span class="sd">        """</span>
+        <span class="n">merged</span> <span class="o">=</span> <span class="n">Labels</span><span class="p">(</span><span class="n">default_format</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">default_format</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Labels</span><span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span><span class="p">)</span>
+        <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">other</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">merged</span><span class="o">.</span><span class="n">_entries</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">Labels</span><span class="p">(</span><span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">_entries</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Labels</span><span class="p">)</span> <span class="k">else</span> <span class="n">other</span><span class="o">.</span><span class="n">_entries</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">merged</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_default_format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Labels</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A copy whose numbers without a format of their own print with ``fmt``."""</span>
+        <span class="n">copy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">merged</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">copy</span><span class="o">.</span><span class="n">default_format</span> <span class="o">=</span> <span class="n">fmt</span>
+        <span class="k">return</span> <span class="n">copy</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">unit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The unit string, or ``None`` when the name has no entry."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">unit</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_entries</span> <span class="k">else</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">scale</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">display</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The display text of ``name``, or ``name`` itself when the entry hides it."""</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">display</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">label</span><span class="o">.</span><span class="n">display</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">axis</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``Display [unit]``, or ``Display`` when the unit is empty."""</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> [</span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">]"</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">unit</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``x`` scaled and formatted for printing; a string is returned as it is.</span>
+
+<span class="sd">        The format is the label's ``fmt`` when it has one, else ``default_format``.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">x</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="n">label</span><span class="o">.</span><span class="n">scale</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="n">label</span><span class="o">.</span><span class="n">fmt</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_format</span>
+        <span class="k">return</span> <span class="n">fmt</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span> <span class="k">else</span> <span class="nb">format</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">fmt</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">describe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixed</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``Display = value unit`` for each fixed parameter, comma separated."""</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">fixed</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">label</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">unit</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" </span><span class="si">{</span><span class="n">label</span><span class="o">.</span><span class="n">unit</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">label</span><span class="o">.</span><span class="n">unit</span> <span class="k">else</span> <span class="s2">""</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">display</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="si">}{</span><span class="n">unit</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span></div>
+
+
+
+<span class="n">STREAM_LABELS</span> <span class="o">=</span> <span class="n">Labels</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">"T_cool"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Coolant temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_in"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Inlet temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_out"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Outlet temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"Tin"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Inlet temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_wall, left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Wall temperature, left"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_wall, right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Wall temperature, right"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_wall_left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Wall temperature, left"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"T_wall_right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Wall temperature, right"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">),</span>
+        <span class="s2">"q, left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Heat flux, left"</span><span class="p">,</span> <span class="s2">"W/m$^2$"</span><span class="p">),</span>
+        <span class="s2">"q, right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Heat flux, right"</span><span class="p">,</span> <span class="s2">"W/m$^2$"</span><span class="p">),</span>
+        <span class="s2">"h_left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Heat transfer coefficient, left"</span><span class="p">,</span> <span class="s2">"W/m$^2$K"</span><span class="p">),</span>
+        <span class="s2">"h_right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Heat transfer coefficient, right"</span><span class="p">,</span> <span class="s2">"W/m$^2$K"</span><span class="p">),</span>
+        <span class="s2">"static_pressure"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Static pressure"</span><span class="p">,</span> <span class="s2">"Pa"</span><span class="p">),</span>
+        <span class="s2">"absolute_pressure"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Absolute pressure"</span><span class="p">,</span> <span class="s2">"Pa"</span><span class="p">),</span>
+        <span class="s2">"pressure"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Pressure drop"</span><span class="p">,</span> <span class="s2">"Pa"</span><span class="p">),</span>
+        <span class="s2">"static_pressure_drop"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Static pressure drop"</span><span class="p">,</span> <span class="s2">"Pa"</span><span class="p">),</span>
+        <span class="s2">"mass_flow"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mass flow"</span><span class="p">,</span> <span class="s2">"kg/s"</span><span class="p">),</span>
+        <span class="s2">"velocity"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Velocity"</span><span class="p">,</span> <span class="s2">"m/s"</span><span class="p">),</span>
+        <span class="s2">"Re"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Reynolds number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">".0f"</span><span class="p">),</span>
+        <span class="s2">"Pe"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Péclet number"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">".0f"</span><span class="p">),</span>
+        <span class="s2">"Gr, left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Grashof number, left"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"Gr, right"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Grashof number, right"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"power"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Power"</span><span class="p">,</span> <span class="s2">"W"</span><span class="p">),</span>
+        <span class="s2">"reactivity"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Reactivity"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"dPdt"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Power rate"</span><span class="p">,</span> <span class="s2">"W/s"</span><span class="p">),</span>
+        <span class="s2">"ck"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Precursor concentration"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"level"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Level"</span><span class="p">,</span> <span class="s2">"m"</span><span class="p">),</span>
+        <span class="s2">"z"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="s2">"m"</span><span class="p">),</span>
+        <span class="s2">"x"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"x"</span><span class="p">,</span> <span class="s2">"m"</span><span class="p">),</span>
+        <span class="s2">"cell"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Cell"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="s2">"quantity"</span><span class="p">:</span> <span class="s2">"Quantity"</span><span class="p">,</span>
+        <span class="s2">"calculation"</span><span class="p">:</span> <span class="s2">"Calculation"</span><span class="p">,</span>
+        <span class="s2">"band"</span><span class="p">:</span> <span class="s2">"uncertainty"</span><span class="p">,</span>
+        <span class="s2">"band_sys"</span><span class="p">:</span> <span class="s2">"systematic"</span><span class="p">,</span>
+        <span class="s2">"band_total"</span><span class="p">:</span> <span class="s2">"systematic + statistical"</span><span class="p">,</span>
+        <span class="s2">"binding"</span><span class="p">:</span> <span class="s2">"binding"</span><span class="p">,</span>
+        <span class="s2">"filled"</span><span class="p">:</span> <span class="s2">"interpolated"</span><span class="p">,</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 22, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

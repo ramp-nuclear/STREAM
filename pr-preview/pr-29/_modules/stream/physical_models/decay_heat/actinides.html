@@ -1,0 +1,165 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.decay_heat.actinides &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.decay_heat.actinides</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.decay_heat.actinides</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.decay_heat</span><span class="w"> </span><span class="kn">import</span> <span class="n">activation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">DecayHeatFunction</span><span class="p">,</span> <span class="n">MeV</span><span class="p">,</span> <span class="n">MeVPerFission</span><span class="p">,</span> <span class="n">Second</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Np239_profile"</span><span class="p">,</span> <span class="s2">"U239_profile"</span><span class="p">,</span> <span class="s2">"contribution"</span><span class="p">]</span>
+
+<span class="n">CapturesPerFission</span> <span class="o">=</span> <span class="nb">float</span>
+
+<span class="n">U239_profile</span> <span class="o">=</span> <span class="n">activation</span><span class="o">.</span><span class="n">profile</span><span class="p">(</span><span class="n">U239_decay_rate</span> <span class="o">:=</span> <span class="mf">4.91e-04</span><span class="p">)</span>
+<span class="n">Np239_profile</span> <span class="o">=</span> <span class="n">activation</span><span class="o">.</span><span class="n">double_decay_profile</span><span class="p">(</span><span class="n">U239_decay_rate</span><span class="p">,</span> <span class="n">Np239_decay_rate</span> <span class="o">:=</span> <span class="mf">3.41e-06</span><span class="p">)</span>
+
+<span class="n">E_U</span><span class="p">:</span> <span class="n">MeV</span> <span class="o">=</span> <span class="mf">0.460</span>
+<span class="n">E_Np</span><span class="p">:</span> <span class="n">MeV</span> <span class="o">=</span> <span class="mf">0.405</span>
+
+
+<div class="viewcode-block" id="contribution">
+<a class="viewcode-back" href="../../../../decay_heat.html#stream.physical_models.decay_heat.actinides.contribution">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">contribution</span><span class="p">(</span><span class="n">R</span><span class="p">:</span> <span class="n">CapturesPerFission</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DecayHeatFunction</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""Gives a profile of the actinides contribution as described in</span>
+<span class="sd">    [#ANS2014]_ and :eq:`actinides_contribution`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    R: CapturesPerFission</span>
+<span class="sd">        Ratio of neutron captures in :math:`^{238}U` to fission events at operation time.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    DecayHeatFunction</span>
+<span class="sd">        Actinides (U239, Np239) total contribution</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; contribution(0.005)(0, np.inf).item()</span>
+<span class="sd">    0.004325</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_profile</span><span class="p">(</span><span class="n">t</span><span class="p">:</span> <span class="n">Second</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="n">Second</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MeVPerFission</span><span class="p">:</span>
+<span class="w">        </span><span class="sa">r</span><span class="sd">"""</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        t: Second</span>
+<span class="sd">            Times after shutdown</span>
+<span class="sd">        T: Second</span>
+<span class="sd">            Operation time</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Value</span>
+<span class="sd">            At times `t` after shutdown, :math:`(F_{U}(t, T)+F_{Np}(t, T))`</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">E_U</span> <span class="o">*</span> <span class="n">U239_profile</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="n">E_Np</span> <span class="o">*</span> <span class="n">Np239_profile</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">T</span><span class="p">))</span> <span class="o">*</span> <span class="n">R</span>
+
+    <span class="k">return</span> <span class="n">_profile</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 22, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

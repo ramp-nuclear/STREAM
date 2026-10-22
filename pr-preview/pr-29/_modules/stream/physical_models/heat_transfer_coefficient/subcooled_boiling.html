@@ -1,0 +1,311 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>stream.physical_models.heat_transfer_coefficient.subcooled_boiling &mdash; STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=2a705162"></script>
+      <script src="../../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link href="../../../../_static/style.css" rel="stylesheet" type="text/css">
+
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html">
+            
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stream.html">Documentation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../quickstart.html">Quickstart Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../Contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tests.html">Tests</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">STREAM</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+          <li class="breadcrumb-item"><a href="../heat_transfer_coefficient.html">stream.physical_models.heat_transfer_coefficient</a></li>
+      <li class="breadcrumb-item active">stream.physical_models.heat_transfer_coefficient.subcooled_boiling</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for stream.physical_models.heat_transfer_coefficient.subcooled_boiling</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">numba</span><span class="w"> </span><span class="kn">import</span> <span class="n">njit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.dimensionless</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pr</span><span class="p">,</span> <span class="n">flow_regimes</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.substances</span><span class="w"> </span><span class="kn">import</span> <span class="n">Liquid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.units</span><span class="w"> </span><span class="kn">import</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">Value</span><span class="p">,</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">g</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">lin_interp</span>
+
+
+<div class="viewcode-block" id="Bergles_Rohsenhow_SCB_heat_flux">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.subcooled_boiling.Bergles_Rohsenhow_SCB_heat_flux">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bergles_Rohsenhow_SCB_heat_flux</span><span class="p">(</span>
+    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.26</span><span class="p">,</span> <span class="n">csf</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.011</span><span class="p">,</span> <span class="o">**</span><span class="n">_</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Given the wall initial boiling temperature, the heat flux for subcooled</span>
+<span class="sd">    boiling may be given by [#BR]_</span>
+
+<span class="sd">    .. math:: q_\text{SCB}''(T_{wall})</span>
+<span class="sd">        = \left[\frac{c_p(T_{wall,inc}-T_{sat})}{h_{fg}}</span>
+<span class="sd">        \frac{\text{Pr}^{-n}}{C_{sf}}\right]^{1/0.33}</span>
+<span class="sd">        \frac{\mu_l h_{fg}}{\sqrt{\sigma/(g(\rho_l - \rho_v))}}</span>
+
+<span class="sd">    Where the coolant properties are those in saturation temperature.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperatures</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Coolant properties</span>
+<span class="sd">    n, csf: float</span>
+<span class="sd">        Dimensionless params. See equation above.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q: WPerM2</span>
+<span class="sd">        Appropriate heat flux</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+
+<span class="sd">    &gt;&gt;&gt; from stream.substances import light_water</span>
+<span class="sd">    &gt;&gt;&gt; liquid = light_water.to_properties(10.)</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenhow_SCB_heat_flux(liquid.sat_temperature, liquid)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenhow_SCB_heat_flux(120., liquid, n=np.inf)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenhow_SCB_heat_flux(120., liquid, csf=np.inf)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_BR_q_scb_inner</span><span class="p">(</span>
+        <span class="n">cp</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">specific_heat</span><span class="p">,</span>
+        <span class="n">T_wall</span><span class="o">=</span><span class="n">T_wall</span><span class="p">,</span>
+        <span class="n">T_sat</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">,</span>
+        <span class="n">hfg</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">latent_heat</span><span class="p">,</span>
+        <span class="n">mu</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">viscosity</span><span class="p">,</span>
+        <span class="n">k</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">conductivity</span><span class="p">,</span>
+        <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+        <span class="n">csf</span><span class="o">=</span><span class="n">csf</span><span class="p">,</span>
+        <span class="n">rho</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">density</span><span class="p">,</span>
+        <span class="n">steam_rho</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">vapor_density</span><span class="p">,</span>
+        <span class="n">sigma</span><span class="o">=</span><span class="n">coolant</span><span class="o">.</span><span class="n">surface_tension</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_BR_q_scb_inner</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span> <span class="n">T_wall</span><span class="p">,</span> <span class="n">T_sat</span><span class="p">,</span> <span class="n">hfg</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">csf</span><span class="p">,</span> <span class="n">rho</span><span class="p">,</span> <span class="n">steam_rho</span><span class="p">,</span> <span class="n">sigma</span><span class="p">):</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">cp</span> <span class="o">*</span> <span class="p">(</span><span class="n">T_wall</span> <span class="o">-</span> <span class="n">T_sat</span><span class="p">)</span> <span class="o">/</span> <span class="n">hfg</span>
+    <span class="n">b</span> <span class="o">=</span> <span class="n">Pr</span><span class="p">(</span><span class="n">cp</span><span class="p">,</span> <span class="n">mu</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="n">n</span><span class="p">)</span> <span class="o">/</span> <span class="n">csf</span>
+    <span class="n">d_rho</span> <span class="o">=</span> <span class="n">rho</span> <span class="o">-</span> <span class="n">steam_rho</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">mu</span> <span class="o">*</span> <span class="n">hfg</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">sigma</span> <span class="o">/</span> <span class="p">(</span><span class="n">g</span> <span class="o">*</span> <span class="n">d_rho</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">c</span> <span class="o">*</span> <span class="p">(</span><span class="n">a</span> <span class="o">*</span> <span class="n">b</span><span class="p">)</span> <span class="o">**</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">0.33</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="McAdams_SCB_heat_flux">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.subcooled_boiling.McAdams_SCB_heat_flux">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">McAdams_SCB_heat_flux</span><span class="p">(</span><span class="n">T_sat</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span> <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    A correlation for heat flux at the Subcooled Boiling (SCB) regime. [#tecdoc]_</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_sat: Celsius</span>
+<span class="sd">        Coolant saturation temperature.</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall (or interface) temperature.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q: WPerM2</span>
+<span class="sd">        heat flux at the Subcooled Boiling (SCB) regime</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; McAdams_SCB_heat_flux(T_sat=100., T_wall=100.)</span>
+<span class="sd">    0.0</span>
+<span class="sd">    &gt;&gt;&gt; McAdams_SCB_heat_flux(T_sat=100., T_wall=120.)</span>
+<span class="sd">    237730.12702161702</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [#tecdoc] IAEA TECDOC-233</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="mf">2.26</span> <span class="o">*</span> <span class="p">(</span><span class="n">T_wall</span> <span class="o">-</span> <span class="n">T_sat</span><span class="p">)</span> <span class="o">**</span> <span class="mf">3.86</span></div>
+
+
+
+<div class="viewcode-block" id="regime_dependent_q_scb">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.subcooled_boiling.regime_dependent_q_scb">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">regime_dependent_q_scb</span><span class="p">(</span>
+    <span class="n">T_wall</span><span class="p">:</span> <span class="n">Celsius</span><span class="p">,</span>
+    <span class="n">coolant</span><span class="p">:</span> <span class="n">Liquid</span><span class="p">,</span>
+    <span class="n">re</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">re_bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+    <span class="o">**</span><span class="n">_</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WPerM2</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A flow-regime-dependent Subcooled Boiling heat flux function.</span>
+
+<span class="sd">    Different flow regimes (different ``re`` values, partitioned by ``re_bounds``)</span>
+<span class="sd">    use different subcooled boiling heat flux `correlations`:</span>
+
+<span class="sd">    .. list-table::</span>
+<span class="sd">        :widths: 20,80</span>
+
+<span class="sd">        * - **Turbulent**</span>
+<span class="sd">          - :func:`McAdams &lt;McAdams_SCB_heat_flux&gt;`</span>
+<span class="sd">        * - **Laminar**</span>
+<span class="sd">          - :func:`Bergles-Rosenhow &lt;Bergles_Rohsenhow_SCB_heat_flux&gt;`</span>
+<span class="sd">        * - **Interim**</span>
+<span class="sd">          - Interpolation between the limit values, see :func:`.lin_interp`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_wall: Celsius</span>
+<span class="sd">        Wall temperature</span>
+<span class="sd">    coolant: Liquid</span>
+<span class="sd">        Coolant properties</span>
+<span class="sd">    re: Value</span>
+<span class="sd">        Reynolds No., see :func:`~stream.physical_models.dimensionless.Re`</span>
+<span class="sd">    re_bounds: tuple[float, float]</span>
+<span class="sd">        Regime boundaries</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    q_SCB: WPerM2</span>
+<span class="sd">        Subcooled boiling heat flux</span>
+<span class="sd">    """</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">T_wall</span><span class="p">))</span>
+    <span class="n">T_sat</span> <span class="o">=</span> <span class="n">coolant</span><span class="o">.</span><span class="n">sat_temperature</span>
+
+    <span class="n">lam</span><span class="p">,</span> <span class="n">inter</span><span class="p">,</span> <span class="n">turb</span> <span class="o">=</span> <span class="n">flow_regimes</span><span class="p">(</span><span class="n">re</span><span class="p">,</span> <span class="n">re_bounds</span><span class="p">)</span>
+
+    <span class="n">q</span><span class="p">[</span><span class="n">lam</span><span class="p">]</span> <span class="o">=</span> <span class="n">Bergles_Rohsenhow_SCB_heat_flux</span><span class="p">(</span><span class="n">T_wall</span><span class="p">[</span><span class="n">lam</span><span class="p">],</span> <span class="n">coolant</span><span class="p">[</span><span class="n">lam</span><span class="p">])</span>
+    <span class="n">q</span><span class="p">[</span><span class="n">inter</span><span class="p">]</span> <span class="o">=</span> <span class="n">lin_interp</span><span class="p">(</span>
+        <span class="n">x1</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">x2</span><span class="o">=</span><span class="n">re_bounds</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">x</span><span class="o">=</span><span class="n">re</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span>
+        <span class="n">y2</span><span class="o">=</span><span class="n">McAdams_SCB_heat_flux</span><span class="p">(</span><span class="n">T_sat</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span> <span class="n">T_wall</span><span class="p">[</span><span class="n">inter</span><span class="p">]),</span>
+        <span class="n">y1</span><span class="o">=</span><span class="n">Bergles_Rohsenhow_SCB_heat_flux</span><span class="p">(</span><span class="n">T_wall</span><span class="p">[</span><span class="n">inter</span><span class="p">],</span> <span class="n">coolant</span><span class="p">[</span><span class="n">inter</span><span class="p">]),</span>
+    <span class="p">)</span>
+    <span class="n">q</span><span class="p">[</span><span class="n">turb</span><span class="p">]</span> <span class="o">=</span> <span class="n">McAdams_SCB_heat_flux</span><span class="p">(</span><span class="n">T_sat</span><span class="p">[</span><span class="n">turb</span><span class="p">],</span> <span class="n">T_wall</span><span class="p">[</span><span class="n">turb</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">q</span></div>
+
+
+
+<div class="viewcode-block" id="Bergles_Rohsenhow_partial_SCB">
+<a class="viewcode-back" href="../../../../heat_transfer_coefficient.html#stream.physical_models.heat_transfer_coefficient.subcooled_boiling.Bergles_Rohsenhow_partial_SCB">[docs]</a>
+<span class="nd">@njit</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bergles_Rohsenhow_partial_SCB</span><span class="p">(</span><span class="n">q_spl</span><span class="p">:</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">q_scb</span><span class="p">:</span> <span class="n">WPerM2</span><span class="p">,</span> <span class="n">q_scb_inc</span><span class="p">:</span> <span class="n">WPerM2</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Value</span><span class="p">:</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""</span>
+<span class="sd">    Between INC and the fully developed boiling curve, the heat flux for some T_wall is deduced by using the SPL curve</span>
+<span class="sd">    and the SCB curve.</span>
+
+<span class="sd">    .. math:: q_{partial,scb}''=q_{spl}''\left[1+\left\{ \frac{q_{scb}''}</span>
+<span class="sd">        {q_{spl}''}\left(1-\frac{q_{scb,inc}''}{q_{scb}''}\right)\right\}</span>
+<span class="sd">        ^{2}\right]^{0.5}</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    q_spl: WPerM2</span>
+<span class="sd">        Single Phase heat flux at T_wall.</span>
+<span class="sd">    q_scb: WPerM2</span>
+<span class="sd">        SCB heat flux at T_wall.</span>
+<span class="sd">    q_scb_inc: WPerM2</span>
+<span class="sd">        SCB heat flux at INC temperature.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    multiplicative_factor: Value</span>
+<span class="sd">        Correction for the heat transfer coefficient (h) or equivalently the heat flux (q'').</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; Bergles_Rohsenhow_partial_SCB(1., 1., 1.)</span>
+<span class="sd">    1.0</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="p">(</span><span class="n">q_scb</span> <span class="o">/</span> <span class="n">q_spl</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">q_scb_inc</span> <span class="o">/</span> <span class="n">q_scb</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">**</span> <span class="mf">0.5</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+      <span class="lastupdated">Last updated on Oct 22, 2026.
+      </span></p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
