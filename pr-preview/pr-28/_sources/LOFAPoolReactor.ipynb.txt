@@ -77,7 +77,7 @@
     "\n",
     "![The four core groups as plate stacks between the pool top and the plenum, and as four parallel edges of the flow graph](_static/lofa/lofa-core.svg)\n",
     "\n",
-    "*One channel and one plate per group; the edge weight `signify` is the plate count.*\n",
+    "*One channel and one plate per group; the edge weight signify is the plate count.*\n",
     "\n",
     "Simulating 401 channels one by one would be wasteful, as plates of a group behave identically. Each group is therefore one channel, one plate, and one edge in the flow network, and that edge carries a `signify` weight equal to the group's plate count: the edge's flow is the flow of one plate, and the junctions it connects see that flow multiplied by the plate count. The table below gives the share of the core power each single plate receives and the per-plate flow of the design point. That flow is an estimate, the channel's area times the square root of its hydraulic diameter anchored at 0.5 kg/s for a 2.2 mm gap; it sizes the pumps and the initial guess, and is not the law the solved steady state is checked against below."
    ]
@@ -113,7 +113,7 @@
     "\n",
     "![The pool reactor's loop in elevation, from the pool surface down to the pumps](_static/lofa/lofa-loop.svg)\n",
     "\n",
-    "*The loop `build` makes, in elevation: seven junctions, twelve edges, the pool as the free surface.*"
+    "*The loop build() makes, in elevation: seven junctions, twelve edges, the pool as the free surface.*"
    ]
   },
   {

@@ -1,48 +1,66 @@
 Examples
 ========
 
-The following examples should serve as a guide of sorts for different aspects of the STREAM package.
+The examples are meant to be read in the order below, from a loop of three components to a pool reactor through a
+loss of flow.
 
-Creating a General :ref:`Calculation`
--------------------------------------
+From a first loop to a fuel rod
+-------------------------------
+
+- :doc:`quickstart` builds a pump, a pipe and a cooler into a loop, solves its steady state and checks the flow by
+  hand.
+- :doc:`SeriesRLCCircuit` writes the resistor, the inductor and the capacitor as three :ref:`Calculation` classes
+  of its own and solves the circuit in time.
+- :doc:`TheCubeProblem` wires twelve resistors on the edges of a cube with junctions and recovers the cube's
+  equivalent resistance.
+- :doc:`Parallel thermosyphone driven flow` drives three parallel vertical branches by buoyancy alone, each at
+  its own temperature, and checks the flows against the closed-form solution.
+- :doc:`PCSCoastdown` adds a flywheel to a pump and a resistor and compares the coastdown transient with its
+  analytic solution.
+- :doc:`SampleFuelPlateAndChannel` couples a fuel plate to the coolant channel that cools it.
+- :doc:`MultiplePlatesInRod` stacks such plates and channels into a rod and solves it in a loop with a pump and a
+  heat exchanger.
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
+   quickstart.ipynb
    SeriesRLCCircuit.ipynb
-   CoupledSprings.ipynb
-   PlanarPendulum.ipynb
-
-
-Simulating Nuclear Thermohydraulic Systems
-------------------------------------------
-
-.. toctree::
-   :maxdepth: 1
-
+   TheCubeProblem.ipynb
+   Parallel thermosyphone driven flow.ipynb
    PCSCoastdown.ipynb
    SampleFuelPlateAndChannel.ipynb
    MultiplePlatesInRod.ipynb
 
-Kirchhoff Specific Examples
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+More calculations
+-----------------
+
+- :doc:`CoupledSprings` writes one calculation for a mass between two springs and couples two of them.
+- :doc:`PlanarPendulum` writes a pendulum as one calculation with an algebraic constraint for its string.
 
 .. toctree::
-   :maxdepth: 1
-	      
-   TheCubeProblem.ipynb
+   :hidden:
 
-Loss of Flow
+   CoupledSprings.ipynb
+   PlanarPendulum.ipynb
+
+Loss of flow
 ------------
 
-A pool reactor assembled step by step from the library's components, shipped as :mod:`stream.examples.lofa`,
-then taken from its operating point through a loss of flow into natural circulation.
+A pool reactor assembled step by step from the library's components, shipped as :doc:`the examples package <stream.examples>`, then taken
+from its operating point through a loss of flow into natural circulation.
+
+- :doc:`LOFABuildingTheLoop` puts the reactor together one part at a time and solves a first steady state.
+- :doc:`LOFAPoolReactor` solves the operating point and checks it against hand estimates.
+- :doc:`LOFABothPumpsTrip` follows both pumps tripping, through the reactor trip and the flapper opening, into
+  natural circulation.
+- :doc:`LOFAVariations` trips one pump, keeps the flapper shut, and measures how far the reported times and
+  temperatures can be trusted.
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
 
    LOFABuildingTheLoop.ipynb
    LOFAPoolReactor.ipynb
    LOFABothPumpsTrip.ipynb
    LOFAVariations.ipynb
-
