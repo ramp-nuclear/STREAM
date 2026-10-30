@@ -16,14 +16,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Ruff check
       uses: astral-sh/ruff-action@v3
 
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: setup-micromamba
       uses: mamba-org/setup-micromamba@v2.0.6
       with:
@@ -58,7 +58,7 @@ jobs:
       group: gh-pages-deploy
       cancel-in-progress: false
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Download docs artifact
       uses: actions/download-artifact@v4
       with:
