@@ -11,9 +11,8 @@ The pattern to use this is as follows:
 >>> post_analysis = threshold_analysis(CHF=Sudo_Kaminaga_CHF, OSV=osv, \
 ONB_left=onb_left, ONB_right=onb_right)
 >>> # agr = Aggregator(...)
->>> # state = agr.solve_steady(...)
->>> # state = post_analysis(state, agr, "channel")  # Given that "channel" is how the Channel is
->>> #                                               # called in agr
+>>> # state = agr.save(agr.solve_steady(...))
+>>> # state = post_analysis(state, agr, "channel")  # "channel" is the Channel's name in agr
 
 """
 

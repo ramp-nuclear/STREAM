@@ -3,7 +3,6 @@ The :class:`Aggregator` class defined below is the beating heart of **STREAM**.
 
 It defines a methodology where several (separate) calculations can be simulated in a coupled manner.
 Such coupling is defined through a graph, and is simulated through several backends (see :ref:`Backends`).
-The main scheme is neatly presented in :ref:`Documentation`.
 
 .. autosummary::
     :nosignatures:
