@@ -1,5 +1,6 @@
 body {
     --code-font-size: 14px;
+    --text-width: 54em;
 }
 
 .main {
@@ -8,7 +9,7 @@ body {
 
 .content {
     width: auto;
-    flex: 1 1 0;
+    flex: 0 1 var(--text-width);
     min-width: 0;
 }
 
@@ -23,12 +24,9 @@ article[role="main"] blockquote {
     line-height: 1.6;
 }
 
-article[role="main"] p:not(:has(img, svg, object, pre, table)),
-article[role="main"] li:not(:has(img, svg, object, pre, table)),
-article[role="main"] dd:not(:has(img, svg, object, pre, table)),
-article[role="main"] blockquote:not(:has(img, svg, object, pre, table)),
-article[role="main"] .admonition:not(:has(img, svg, object, pre, table)) {
-    max-width: 37em;
+article[role="main"] p:not(table p, figcaption p, .admonition-title, .rubric, .nboutput p) {
+    text-align: justify;
+    hyphens: auto;
 }
 
 article[role="main"] .nbinput pre,
@@ -37,43 +35,49 @@ article[role="main"] .nboutput pre {
     line-height: 1.45;
 }
 
+.sig:not(.sig-inline) {
+    background: var(--color-code-background);
+    border: 1px solid var(--color-background-border);
+}
+
+.sig:not(.sig-inline):hover {
+    background: var(--color-background-hover);
+}
+
+article[role="main"] img,
+article[role="main"] object,
+article[role="main"] video {
+    max-width: 100%;
+    height: auto;
+}
+
 article[role="main"] figure img,
 article[role="main"] p > img,
 article[role="main"] p > object,
 article[role="main"] .nboutput img {
     display: block;
-    width: 100%;
-    max-width: 1300px;
-    height: auto;
     margin-left: auto;
     margin-right: auto;
 }
 
-article[role="main"] figure {
-    max-width: 1300px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-article[role="main"] figcaption {
-    text-align: center;
-}
-
+article[role="main"] figcaption,
 article[role="main"] p:has(> img, > object) + p:has(> em:only-child) {
-    max-width: 1300px;
-    margin-left: auto;
-    margin-right: auto;
     text-align: center;
 }
 
 article[role="main"] table.docutils {
     width: auto;
-    max-width: min(100%, 1300px);
+    max-width: 100%;
 }
 
 article[role="main"] table.docutils td,
 article[role="main"] table.docutils th {
     white-space: normal;
+}
+
+article[role="main"] table.indextable td,
+article[role="main"] table.domainindex-table td {
+    overflow-wrap: anywhere;
 }
 
 article[role="main"] div.rendered_html table {
@@ -97,9 +101,9 @@ article[role="main"] div.nboutput div.output_area.stderr {
     background: var(--color-admonition-title-background--error);
 }
 
-@media (min-width: 63em) {
+@media (min-width: 82em) {
     .sidebar-drawer {
-        width: auto;
+        width: calc((100% - var(--text-width) - 36em) / 2 + 15em);
     }
 }
 
