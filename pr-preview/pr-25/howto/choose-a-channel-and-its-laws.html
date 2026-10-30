@@ -1,113 +1,310 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Build a plate, an assembly or a rod" href="build-a-plate-or-rod.html"><link rel="prev" title="Wire a flow network" href="wire-a-flow-network.html">
+
+    <!-- Generated with Sphinx 9.2.0 and Furo 2025.12.19 -->
+        <title>Choose a channel and its laws - STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/style.css?v=36af31e0" />
+    
+    
 
 
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Choose a channel and its laws &mdash; STREAM 1.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
-      <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
-      <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
-
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
   
-      <script src="../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=2a705162"></script>
-      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
-      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="../_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
-    <script src="../_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Build a plate, an assembly or a rod" href="build-a-plate-or-rod.html" />
-    <link rel="prev" title="Wire a flow network" href="wire-a-flow-network.html" />
-    <link href="../_static/style.css" rel="stylesheet" type="text/css">
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
 
-</head>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
-          
-          
-          <a href="../index.html">
-            
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
-<li class="toctree-l2 current"><a class="reference internal" href="index.html#building">Building</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">Choose a channel and its laws</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#The-class-and-the-pipe">The class and the pipe</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Give-it-its-laws">Give it its laws</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Evaluate-the-laws">Evaluate the laws</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Swap-the-wall-law">Swap the wall law</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Risers-and-saturation">Risers and saturation</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
-<li class="toctree-l3"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
-<li class="toctree-l3"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#reading">Reading</a></li>
-<li class="toctree-l2"><a class="reference internal" href="index.html#plotting">Plotting</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../tests.html">Tests</a></li>
-</ul>
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
 
-        </div>
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">STREAM 1.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
       </div>
-    </nav>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">STREAM 1.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../Examples.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SeriesRLCCircuit.html">Series RLC Circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../TheCubeProblem.html">The Cube Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Parallel%20thermosyphone%20driven%20flow.html">Parallel Thermosyphon-Driven flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SampleFuelPlateAndChannel.html">Plates and Channels, an MTR Love Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CoupledSprings.html">Coupled Masses and Springs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PlanarPendulum.html">Planar Pendulum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAPoolReactor.html">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">How-to guides</a><input aria-label="Toggle navigation of How-to guides" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Choose a channel and its laws</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get-a-steady-solve-to-converge.html">Get a steady solve to converge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run-a-transient-and-set-tolerances.html">Run a transient and set tolerances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="trip-stop-and-restart.html">Trip, stop and restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diagnose-a-failing-solve.html">Diagnose a failing solve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="read-results.html">Read results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compute-margins.html">Compute margins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot-a-sweep.html">Plot a sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../explanation/index.html">Explanation</a><input aria-label="Toggle navigation of Explanation" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/natural-circulation.html">Natural circulation and flow reversal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/steady-states-and-guesses.html">Steady states and guesses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/sign-conventions.html">Sign conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stream.html">Documentation</a><input aria-label="Toggle navigation of Documentation" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calculation.html">Calculation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.calculations.html">Calculations</a><input aria-label="Toggle navigation of Calculations" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.composition.html">Composition</a><input aria-label="Toggle navigation of Composition" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.physical_models.html">Physical Models</a><input aria-label="Toggle navigation of Physical Models" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../decay_heat.html">Decay Heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viz.html">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utility_packages.html">Utility Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stream.examples.html">Examples package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tests.html">Tests</a><input aria-label="Toggle navigation of Tests" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.integration.html">Integration Tests</a></li>
+</ul>
+</li>
+</ul>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../index.html">STREAM</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="index.html">How-to guides</a></li>
-      <li class="breadcrumb-item active">Choose a channel and its laws</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/howto/choose-a-channel-and-its-laws.ipynb.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <section id="Choose-a-channel-and-its-laws">
-<h1>Choose a channel and its laws<a class="headerlink" href="#Choose-a-channel-and-its-laws" title="Link to this heading"></a></h1>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/howto/choose-a-channel-and-its-laws.ipynb.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="Choose-a-channel-and-its-laws">
+<h1>Choose a channel and its laws<a class="headerlink" href="#Choose-a-channel-and-its-laws" title="Link to this heading">¶</a></h1>
 <p><a class="reference internal" href="wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a> puts components on the edges of a loop. This page picks the channel past a plate, gives it its two laws and their hidden arguments, evaluates them on a uniform state, and swaps in Dittus-Boelter.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
@@ -128,7 +325,7 @@
 </div>
 </div>
 <section id="The-class-and-the-pipe">
-<h2>The class and the pipe<a class="headerlink" href="#The-class-and-the-pipe" title="Link to this heading"></a></h2>
+<h2>The class and the pipe<a class="headerlink" href="#The-class-and-the-pipe" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">Channel</span></code> takes its wall coefficients from outside and serves an unheated bypass or pool column. <code class="docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> computes both wall coefficients itself. It also reads <code class="docutils literal notranslate"><span class="pre">p_abs</span></code>, the absolute inlet pressure, which has no default: list the channel in the flow graph’s <code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code>, or bind it through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. <code class="docutils literal notranslate"><span class="pre">ChannelHeatFlux</span></code>, imported from <code class="docutils literal notranslate"><span class="pre">stream.calculations.channel</span></code> only, takes the heat flux itself from its neighbour and is meant for toy problems.</p>
 <p><code class="docutils literal notranslate"><span class="pre">EffectivePipe.rectangular(length,</span> <span class="pre">edge1,</span> <span class="pre">edge2,</span> <span class="pre">heated_edge)</span></code> is a gap heated on both wide sides, or on one with <code class="docutils literal notranslate"><span class="pre">one_sided=&quot;left&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;right&quot;</span></code>; its shorter edge is its <code class="docutils literal notranslate"><span class="pre">depth</span></code>. <code class="docutils literal notranslate"><span class="pre">EffectivePipe.circular(length,</span> <span class="pre">diameter)</span></code> is a tube without <code class="docutils literal notranslate"><span class="pre">depth</span></code>. The cell makes a 2.2 mm plate gap, 0.7 m by 70 mm.</p>
 <p><img alt="A ChannelAndContacts in elevation, ten cells between a left and a right wall with positive flow running down, and its rectangular pipe in cross-section." src="../_images/channel-and-its-laws.svg" /></p>
@@ -156,8 +353,9 @@ hydraulic diameter: 4.266 mm
 <p>Depth over width feeds both laws.</p>
 </section>
 <section id="Give-it-its-laws">
-<h2>Give it its laws<a class="headerlink" href="#Give-it-its-laws" title="Link to this heading"></a></h2>
+<h2>Give it its laws<a class="headerlink" href="#Give-it-its-laws" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">h_wall_func</span></code> is <code class="docutils literal notranslate"><span class="pre">wall_heat_transfer_coeff</span></code> with a single-phase law <code class="docutils literal notranslate"><span class="pre">h_spl</span></code> bound in by <code class="docutils literal notranslate"><span class="pre">partial</span></code>, and <code class="docutils literal notranslate"><span class="pre">pressure_func</span></code> is <code class="docutils literal notranslate"><span class="pre">pressure_diff</span></code> with a friction factor <code class="docutils literal notranslate"><span class="pre">f</span></code>. <code class="docutils literal notranslate"><span class="pre">spl_htc</span></code> and <code class="docutils literal notranslate"><span class="pre">friction_factor</span></code> pick a law by name and pass every other keyword on unchecked; those keywords are the hidden arguments.</p>
+<div class="table-wrapper docutils container">
 <table class="docutils align-default">
 <thead>
 <tr class="row-odd"><th class="head"><p>law</p></th>
@@ -184,6 +382,7 @@ hydraulic diameter: 4.266 mm
 </tr>
 </tbody>
 </table>
+</div>
 <p>The channel supplies <code class="docutils literal notranslate"><span class="pre">depth</span></code> and the entrance distance. A missing hidden argument dies with a <code class="docutils literal notranslate"><span class="pre">TypeError</span></code> when the law first reads it: <code class="docutils literal notranslate"><span class="pre">aspect_ratio</span></code> only once a cell falls below <code class="docutils literal notranslate"><span class="pre">re_bounds[1]</span></code>. The wall law swallows a misspelling such as <code class="docutils literal notranslate"><span class="pre">a_dp</span></code> and fails the same way; the friction law rejects one at its first evaluation. The regime wall law reads <code class="docutils literal notranslate"><span class="pre">depth</span></code> and dies on a circular pipe.</p>
 <p>The cell builds the channel with both regime laws, the transition between Reynolds numbers 2000 and 5000.</p>
 <div class="nbinput docutils container">
@@ -218,7 +417,7 @@ HotChannel: 10 cells, 31 rows
 <p>Ten bulk temperatures, a <code class="docutils literal notranslate"><span class="pre">pressure</span></code> row, ten coefficients per wall.</p>
 </section>
 <section id="Evaluate-the-laws">
-<h2>Evaluate the laws<a class="headerlink" href="#Evaluate-the-laws" title="Link to this heading"></a></h2>
+<h2>Evaluate the laws<a class="headerlink" href="#Evaluate-the-laws" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">h_wall</span></code> returns a coefficient per cell and <code class="docutils literal notranslate"><span class="pre">pressure</span></code> a gain per cell. The cell takes coolant at 40 °C, walls at 60 °C and 1.8 bar, at 0.5 kg/s, a tenth of it and a hundredth.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -298,7 +497,7 @@ HotChannel: 10 cells, 31 rows
 <p>At 0.5 kg/s friction outweighs gravity and the gain is about -17.5 kPa; at 0.005 kg/s it is about 6.8 kPa, almost all gravity. The coefficient falls from about 19200 to about 1190 W/m²K.</p>
 </section>
 <section id="Swap-the-wall-law">
-<h2>Swap the wall law<a class="headerlink" href="#Swap-the-wall-law" title="Link to this heading"></a></h2>
+<h2>Swap the wall law<a class="headerlink" href="#Swap-the-wall-law" title="Link to this heading">¶</a></h2>
 <p>Dittus-Boelter is <code class="docutils literal notranslate"><span class="pre">spl_htc(&quot;turbulent&quot;)</span></code>, which a <code class="docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> also uses when given no <code class="docutils literal notranslate"><span class="pre">h_wall_func</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -386,7 +585,7 @@ regime over Dittus-Boelter at 0.005 kg/s: 2.46
 <p>The laws agree at 0.5 kg/s. In the transition range the regime law falls below Dittus-Boelter, about half at 0.05 kg/s; at 0.005 kg/s it gives about 2.5 times as much, because Dittus-Boelter falls with the flow and the regime law keeps a natural-convection floor. When a transient ends in low flow, use the regime-dependent law; <a class="reference internal" href="../LOFAPoolReactor.html#Which-wall-law"><span class="std std-ref">Which wall law</span></a> shows what that does to a plate.</p>
 </section>
 <section id="Risers-and-saturation">
-<h2>Risers and saturation<a class="headerlink" href="#Risers-and-saturation" title="Link to this heading"></a></h2>
+<h2>Risers and saturation<a class="headerlink" href="#Risers-and-saturation" title="Link to this heading">¶</a></h2>
 <p>The physics reads only the size of the cells, so reversed <code class="docutils literal notranslate"><span class="pre">z_boundaries</span></code> build the same downward channel, and nothing complains. A riser reverses gravity in its law, <code class="docutils literal notranslate"><span class="pre">partial(pressure_diff,</span> <span class="pre">g=-g)</span></code>; a lumped leg rises through a <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> with a negative <code class="docutils literal notranslate"><span class="pre">disposition</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -415,34 +614,81 @@ HotChannel:   6.81 kPa
 </section>
 </section>
 
-
-           </div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="build-a-plate-or-rod.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Build a plate, an assembly or a rod</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="wire-a-flow-network.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Wire a flow network</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            Made with 
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            <div class="last-updated">
+              Last updated on Oct 30, 2026</div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="wire-a-flow-network.html" class="btn btn-neutral float-left" title="Wire a flow network" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="build-a-plate-or-rod.html" class="btn btn-neutral float-right" title="Build a plate, an assembly or a rod" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
     </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Choose a channel and its laws</a><ul>
+<li><a class="reference internal" href="#The-class-and-the-pipe">The class and the pipe</a></li>
+<li><a class="reference internal" href="#Give-it-its-laws">Give it its laws</a></li>
+<li><a class="reference internal" href="#Evaluate-the-laws">Evaluate the laws</a></li>
+<li><a class="reference internal" href="#Swap-the-wall-law">Swap the wall law</a></li>
+<li><a class="reference internal" href="#Risers-and-saturation">Risers and saturation</a></li>
+</ul>
+</li>
+</ul>
 
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-      <span class="lastupdated">Last updated on Oct 30, 2026.
-      </span></p>
-  </div>
-
-   
-
-</footer>
+          </div>
         </div>
       </div>
-    </section>
+      
+      
+    </aside>
   </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
-
-</body>
+</div><script src="../_static/documentation_options.js?v=2a705162"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="../_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    </body>
 </html>
