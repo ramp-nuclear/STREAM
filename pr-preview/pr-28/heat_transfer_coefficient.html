@@ -767,26 +767,32 @@ but its correlations are forced-flow ones. The laminar law is keyed on the Graet
 <span class="math notranslate nohighlight">\(\text{Gz} = \text{Re}\,\text{Pr}\,D_h/x\)</span>, with <span class="math notranslate nohighlight">\(x\)</span> the distance from the inlet. A large Gz
 means a thin thermal boundary layer and a high <span class="math notranslate nohighlight">\(h\)</span>. As the flow dies Gz goes to zero and the law
 settles on its fully developed value, Nu about 8 in a wide plate channel.</p>
-<p>That zero-flow limit lies outside the data the laminar law was fitted to, so holding it at stagnation has
-to be justified. Handing over instead to a natural-convection correlation is tempting, for example
-Elenbaas’s correlation for natural convection between vertical heated plates. In the LOFA example’s hot
-channel, a 2.2 mm plate gap, at 10 K superheat, though, Elenbaas gives 136 W/m²K against a laminar
-1161 W/m²K (Nu about 8), so <span class="math notranslate nohighlight">\(h\)</span> drops almost an order of magnitude in the narrow band around zero
-flow where such a handover acts, within a few units of Re of zero.</p>
-<p>Each cell’s wall temperature is the root of its wall balance: the plate’s heat flux equals
-<span class="math notranslate nohighlight">\(h\,\Delta T\)</span>, with <span class="math notranslate nohighlight">\(\Delta T\)</span> the wall superheat. When <span class="math notranslate nohighlight">\(h\)</span> jumps, the root jumps, and the
-solver must cut its step to cross it at every reversal. A switch to natural convection keyed on the
-superheat is worse. <span class="math notranslate nohighlight">\(h\,\Delta T\)</span> can then fall while <span class="math notranslate nohighlight">\(\Delta T\)</span> rises, and one heat flux has
-three wall temperatures. Newton lands on whichever root its guess leads to, so a steady solve depends on
-its start and a transient can jump between branches.</p>
+<p>What is <span class="math notranslate nohighlight">\(h\)</span> near zero flow? Sudo et al. measured it in water, in a 2.25 mm gap heated on both sides,
+down to Re 100 and Gz 16 (see <a class="reference internal" href="#htc-sudo-downflow"><span class="std std-ref">Heated downflow and the Sudo option</span></a>). The lower limits of their laminar data at the
+lowest Graetz numbers are Nu 6 in upflow and Nu 4 in downflow. Below Gz 16 there are no data, but the limit
+of fluid at rest is known: between two plates heated at uniform flux it conducts with Nu 12 on
+<span class="math notranslate nohighlight">\(D_h\)</span>. Both put <span class="math notranslate nohighlight">\(h\)</span> near stagnation at the order of the fully developed laminar value.</p>
+<p>Handing over to a natural-convection correlation near zero flow contradicts this. Elenbaas’s correlation
+for natural convection between vertical heated plates is the usual candidate. In the LOFA example’s hot
+channel, a 2.2 mm plate gap, at 10 K superheat, it gives 136 W/m²K (Nu about 0.9) against a laminar
+1161 W/m²K (Nu about 8), four to six times below the lower limits Sudo measured. The channel’s Rayleigh
+number lies inside the range quoted for Elenbaas’s correlation, but its setting does not. Elenbaas measured
+two plates standing in room air, open at both ends, cooled only by the flow their own heating drives, and
+his coefficient is a plate average referred to the room temperature. In a narrow gap his law reduces to the
+heat that this flow carries out, leaving at the plate temperature. In a loop the flow is set by the loop,
+<span class="math notranslate nohighlight">\(h\)</span> is referred to the local bulk temperature, and the heat carried out is already in the channel’s
+energy balance. Elenbaas does not describe the flow in such a channel.</p>
+<p>A drop in <span class="math notranslate nohighlight">\(h\)</span> near zero flow is also hard on the solver. Each cell’s wall temperature is the root of
+its wall balance, the plate’s heat flux equal to <span class="math notranslate nohighlight">\(h\,\Delta T\)</span> with <span class="math notranslate nohighlight">\(\Delta T\)</span> the wall
+superheat, so when <span class="math notranslate nohighlight">\(h\)</span> jumps the root jumps and the solver cuts its step at every reversal. If the
+switch is keyed on the superheat, one heat flux can have three wall temperatures, and Newton lands on
+whichever its guess leads to.</p>
 </section>
 <section id="what-the-law-does">
 <h5>What the law does<a class="headerlink" href="#what-the-law-does" title="Link to this heading"></a></h5>
 <p><a class="reference internal" href="#stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl" title="stream.physical_models.heat_transfer_coefficient.single_phase.regime_dependent_h_spl"><code class="xref py py-func docutils literal notranslate"><span class="pre">regime_dependent_h_spl</span></code></a> holds the laminar law at its fully developed value through zero flow, so
-<span class="math notranslate nohighlight">\(h\)</span> is the same on both sides of reversal. This is safe. Fluid at rest between two plates heated at
-uniform flux conducts with Nu 12 on <span class="math notranslate nohighlight">\(D_h\)</span>, above the laminar value of about 8, so the held value
-understates <span class="math notranslate nohighlight">\(h\)</span> at stagnation. Sudo’s upflow lower limit at low Graetz number in a narrow channel,
-described below, is of the same order, so the held value is not out of line with measurements.</p>
+<span class="math notranslate nohighlight">\(h\)</span> is the same on both sides of reversal. The held value, Nu about 8, lies above Sudo’s lower
+limits and below the Nu 12 of fluid at rest, so at stagnation it understates <span class="math notranslate nohighlight">\(h\)</span>, the conservative side.</p>
 <p>The Elenbaas natural value <span class="math notranslate nohighlight">\(h_n\)</span> is added to the forced value <span class="math notranslate nohighlight">\(h_f\)</span> at every flow by the cube
 norm <span class="math notranslate nohighlight">\(h = (h_f^3 + h_n^3)^{1/3}\)</span>, a smooth maximum that only adds. Its share grows with the superheat
 and about as the fourth power of the gap. In a 2 mm gap at up to 30 K superheat it adds under 1 %; from
@@ -821,7 +827,7 @@ passes it negated, and a horizontal channel passes <code class="docutils literal
 option.</p>
 </section>
 <section id="heated-downflow-and-the-sudo-option">
-<h5>Heated downflow and the Sudo option<a class="headerlink" href="#heated-downflow-and-the-sudo-option" title="Link to this heading"></a></h5>
+<span id="htc-sudo-downflow"></span><h5>Heated downflow and the Sudo option<a class="headerlink" href="#heated-downflow-and-the-sudo-option" title="Link to this heading"></a></h5>
 <p>When flow past a heated wall runs along gravity, the warm fluid at the wall is buoyant and pushes against
 the flow. In laminar flow this slows the fluid at the wall and lowers <span class="math notranslate nohighlight">\(h\)</span>, which the forced law cannot
 see. Sudo et al. measured it in a 2.25 mm gap heated on both sides: at Re 250 to 400 the downflow
@@ -1204,7 +1210,7 @@ This temperature may be used to assess the thermodynamical properties of the coo
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 
