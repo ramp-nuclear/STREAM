@@ -51,7 +51,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#solving">Solving</a><ul class="current">
@@ -73,7 +73,6 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#plotting">Plotting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
@@ -187,7 +186,7 @@ explains the background.</p>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">build(head)</span></code> wires the loop for a pump head; the riser is a <code class="docutils literal notranslate"><span class="pre">Gravity</span></code> whose negative <code class="docutils literal notranslate"><span class="pre">disposition</span></code> is a rise of 0.7 m along its edge. It sits between two heat exchangers, so its water is at 38 °C whichever way the loop runs; with one, reversed flow would reach it hot and the loop would have no natural-circulation solution.</p>
 <p><img alt="The page's loop drawn twice with the same edge directions: blue flow along the edges with the pump on, orange flow against them with the pump off." src="../_images/steady-solve-flow-signs.svg" /></p>
-<p><em>The edges are fixed by ``build``; with the pump off the flow runs against them, so the seed’s flow is negative.</em></p>
+<p><em>The edges are fixed by build(); with the pump off the flow runs against them, so the seed’s flow is negative.</em></p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
@@ -399,7 +398,7 @@ one call -0.01 kg/s: flow -0.012015 kg/s, outlet 77.8 °C
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 

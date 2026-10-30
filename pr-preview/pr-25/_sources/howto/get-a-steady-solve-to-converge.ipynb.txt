@@ -106,7 +106,7 @@
     "\n",
     "![The page's loop drawn twice with the same edge directions: blue flow along the edges with the pump on, orange flow against them with the pump off.](../_static/howto/steady-solve-flow-signs.svg)\n",
     "\n",
-    "*The edges are fixed by `build`; with the pump off the flow runs against them, so the seed's flow is negative.*"
+    "*The edges are fixed by build(); with the pump off the flow runs against them, so the seed's flow is negative.*"
    ]
   },
   {

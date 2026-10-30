@@ -43,7 +43,7 @@
     "\n",
     "![A ChannelAndContacts in elevation, ten cells between a left and a right wall with positive flow running down, and its rectangular pipe in cross-section.](../_static/howto/channel-and-its-laws.svg)\n",
     "\n",
-    "*Positive `mdot` runs down from `z_boundaries[0]`; `T_left` comes in, `h_left` goes out.*"
+    "*Positive mdot runs down from z_boundaries[0]; T_left comes in, h_left goes out.*"
    ]
   },
   {

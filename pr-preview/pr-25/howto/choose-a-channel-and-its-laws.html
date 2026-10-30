@@ -51,7 +51,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#building">Building</a><ul class="current">
 <li class="toctree-l3"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
@@ -75,7 +75,6 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#plotting">Plotting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
@@ -133,7 +132,7 @@
 <p><code class="docutils literal notranslate"><span class="pre">Channel</span></code> takes its wall coefficients from outside and serves an unheated bypass or pool column. <code class="docutils literal notranslate"><span class="pre">ChannelAndContacts</span></code> computes both wall coefficients itself. It also reads <code class="docutils literal notranslate"><span class="pre">p_abs</span></code>, the absolute inlet pressure, which has no default: list the channel in the flow graph’s <code class="docutils literal notranslate"><span class="pre">abs_pressure_comps</span></code>, or bind it through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>. <code class="docutils literal notranslate"><span class="pre">ChannelHeatFlux</span></code>, imported from <code class="docutils literal notranslate"><span class="pre">stream.calculations.channel</span></code> only, takes the heat flux itself from its neighbour and is meant for toy problems.</p>
 <p><code class="docutils literal notranslate"><span class="pre">EffectivePipe.rectangular(length,</span> <span class="pre">edge1,</span> <span class="pre">edge2,</span> <span class="pre">heated_edge)</span></code> is a gap heated on both wide sides, or on one with <code class="docutils literal notranslate"><span class="pre">one_sided=&quot;left&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;right&quot;</span></code>; its shorter edge is its <code class="docutils literal notranslate"><span class="pre">depth</span></code>. <code class="docutils literal notranslate"><span class="pre">EffectivePipe.circular(length,</span> <span class="pre">diameter)</span></code> is a tube without <code class="docutils literal notranslate"><span class="pre">depth</span></code>. The cell makes a 2.2 mm plate gap, 0.7 m by 70 mm.</p>
 <p><img alt="A ChannelAndContacts in elevation, ten cells between a left and a right wall with positive flow running down, and its rectangular pipe in cross-section." src="../_images/channel-and-its-laws.svg" /></p>
-<p><em>Positive ``mdot`` runs down from ``z_boundaries[0]``; ``T_left`` comes in, ``h_left`` goes out.</em></p>
+<p><em>Positive mdot runs down from z_boundaries[0]; T_left comes in, h_left goes out.</em></p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
@@ -428,7 +427,7 @@ HotChannel:   6.81 kPa
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 

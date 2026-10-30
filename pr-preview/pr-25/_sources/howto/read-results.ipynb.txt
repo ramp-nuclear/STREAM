@@ -45,7 +45,7 @@
     "\n",
     "![The vector y as a column of 171 rows, the Plate slice then the Channel slice, each split by variable, beside the State saved from it, whose entries point back into y as views or a copy, or own no row.](../_static/howto/state-and-vector.svg)\n",
     "\n",
-    "*The 171 rows of `y` in graph order: the Plate slice, rows 0 to 139, then the Channel slice, rows 140 to 170, where `pressure` takes one row; the computed entries of the saved state own none.*"
+    "*The 171 rows of y in graph order: the Plate slice, rows 0 to 139, then the Channel slice, rows 140 to 170, where pressure takes one row; the computed entries of the saved state own none.*"
    ]
   },
   {

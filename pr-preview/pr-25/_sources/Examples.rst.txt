@@ -13,6 +13,8 @@ From a first loop to a fuel rod
   of its own and solves the circuit in time.
 - :doc:`TheCubeProblem` wires twelve resistors on the edges of a cube with junctions and recovers the cube's
   equivalent resistance.
+- :doc:`Parallel thermosyphone driven flow` drives three parallel vertical branches by buoyancy alone, each at
+  its own temperature, and checks the flows against the closed-form solution.
 - :doc:`PCSCoastdown` adds a flywheel to a pump and a resistor and compares the coastdown transient with its
   analytic solution.
 - :doc:`SampleFuelPlateAndChannel` couples a fuel plate to the coolant channel that cools it.
@@ -22,8 +24,10 @@ From a first loop to a fuel rod
 .. toctree::
    :hidden:
 
+   quickstart.ipynb
    SeriesRLCCircuit.ipynb
    TheCubeProblem.ipynb
+   Parallel thermosyphone driven flow.ipynb
    PCSCoastdown.ipynb
    SampleFuelPlateAndChannel.ipynb
    MultiplePlatesInRod.ipynb

@@ -51,8 +51,6 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="Examples.html#from-a-first-loop-to-a-fuel-rod">From a first loop to a fuel rod</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Examples.html#more-calculations">More calculations</a></li>
@@ -74,6 +72,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
 <li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
@@ -218,7 +217,7 @@ pump head the loop’s losses were estimated to need at nominal flow, before any
 <h2>The core<a class="headerlink" href="#The-core" title="Link to this heading"></a></h2>
 <p>The core is described by four groups of plates. There are 300 normal plates, a single hot plate carrying 1.6 times the power of a normal one, 90 low plates carrying half of it, and 10 wider unheated channels forming a bypass. The heated plates have a 2.2 mm coolant gap and the bypass 10 mm.</p>
 <p><img alt="The four core groups as plate stacks between the pool top and the plenum, and as four parallel edges of the flow graph" src="_images/lofa-core.svg" /></p>
-<p><em>One channel and one plate per group; the edge weight ``signify`` is the plate count.</em></p>
+<p><em>One channel and one plate per group; the edge weight signify is the plate count.</em></p>
 <p>Simulating 401 channels one by one would be wasteful, as plates of a group behave identically. Each group is therefore one channel, one plate, and one edge in the flow network, and that edge carries a <code class="docutils literal notranslate"><span class="pre">signify</span></code> weight equal to the group’s plate count: the edge’s flow is the flow of one plate, and the junctions it connects see that flow multiplied by the plate count. The table below gives the share of the core power each single plate receives and the per-plate flow of the design point. That
 flow is an estimate, the channel’s area times the square root of its hydraulic diameter anchored at 0.5 kg/s for a 2.2 mm gap; it sizes the pumps and the initial guess, and is not the law the solved steady state is checked against below.</p>
 <div class="nbinput docutils container">
@@ -312,7 +311,7 @@ flow is an estimate, the channel’s area times the square root of its hydraulic
 <p><code class="docutils literal notranslate"><span class="pre">build</span></code> returns the aggregator, the Kirchhoff calculation that holds the flows and pressures of the network, and a dictionary of references to the components. Without kinetics every plate is fed a constant share of the nominal power, which is what the thermal-hydraulic steady state needs. The figure shows the loop it builds, in elevation; <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> builds it component by component and draws the flow graph. The four core groups are the
 parallel edges from the pool top to the plenum; the flapper runs from the pool bottom to the plenum, so when it opens the core and the flapper form a loop through the pool.</p>
 <p><img alt="The pool reactor's loop in elevation, from the pool surface down to the pumps" src="_images/lofa-loop.svg" /></p>
-<p><em>The loop ``build`` makes, in elevation: seven junctions, twelve edges, the pool as the free surface.</em></p>
+<p><em>The loop build() makes, in elevation: seven junctions, twelve edges, the pool as the free surface.</em></p>
 </section>
 <section id="The-operating-point">
 <h2>The operating point<a class="headerlink" href="#The-operating-point" title="Link to this heading"></a></h2>
@@ -710,7 +709,7 @@ W/m²K against about 440 W/m²K for Dittus-Boelter.</p>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 

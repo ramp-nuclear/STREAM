@@ -44,7 +44,7 @@
     "\n",
     "![Timeline of the three runs over one minute: the margin crossing zero at t_trip, and the output times each run returns.](../_static/howto/trip-stop-and-restart.svg)\n",
     "\n",
-    "*The first run stops at `t_trip` and ends on it, the second sees no event, the third restarts there and keeps only the grid.*\n",
+    "*The first run stops at t_trip and ends on it, the second sees no event, the third restarts there and keeps only the grid.*\n",
     "\n",
     "`FlowSwitch` owns no rows. It watches `ref_mdot` and latches the first time that flow is at or below its threshold, recording the time. `change_state` runs on every calculation at every event, so it tests its own condition before acting. Once latched, the margin is a constant `1.0`: a flow that recovers cannot fire the event again. By default a calculation takes part in events if and only if it overrides `change_state` or `should_continue`; one whose part depends on a runtime flag overrides `has_event` to return that flag."
    ]

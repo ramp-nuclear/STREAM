@@ -51,7 +51,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
 <li class="toctree-l2"><a class="reference internal" href="index.html#solving">Solving</a></li>
@@ -70,7 +70,6 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#plotting">Plotting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
@@ -257,7 +256,7 @@ input state changed: False
 </table>
 <p>Each correlation holds over the range its docstring states: <code class="docutils literal notranslate"><span class="pre">Fabrega_CHF</span></code> for flows below 0.5 m/s, <code class="docutils literal notranslate"><span class="pre">Mirshak_CHF</span></code> above 1.5 m/s. A level margin is positive while the channel is short of the threshold; the ONB key is negative below the onset of nucleate boiling and positive past it, so the worst cell has the smallest level margin and the largest ONB key. On a plain <code class="docutils literal notranslate"><span class="pre">Channel</span></code>, which saves no wall flux, <code class="docutils literal notranslate"><span class="pre">twall_limit</span></code> returns minus infinity without a warning.</p>
 <p><img alt="A heat-flux level with its margin to the wall flux, and the temperatures that set the ONB key." src="../_images/levels-and-margins.svg" /></p>
-<p><em>In (a) a safety factor scales the level, the margin follows; in (b) ``onb_factor=0.8`` lowers :math:`T_{ONB}`, and the ONB key rises.</em></p>
+<p><em>In (a) a safety factor scales the level, the margin follows; in (b) onb_factor=0.8 lowers the ONB temperature, and the ONB key rises.</em></p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
@@ -368,7 +367,7 @@ ONB key at 0 s and 30 s:           -55.1 K, -29.7 K
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 

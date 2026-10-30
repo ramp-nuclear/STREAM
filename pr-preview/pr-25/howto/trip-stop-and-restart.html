@@ -51,7 +51,7 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">How-to guides</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="index.html#building">Building</a></li>
 <li class="toctree-l2 current"><a class="reference internal" href="index.html#solving">Solving</a><ul class="current">
@@ -73,7 +73,6 @@
 <li class="toctree-l2"><a class="reference internal" href="index.html#plotting">Plotting</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../Examples.html">Examples</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
@@ -133,7 +132,7 @@
 <p>A calculation takes part in events through three hooks, each off by default. <code class="docutils literal notranslate"><span class="pre">event_margin</span></code> returns an array of margins, positive while no event is pending, that cross zero at the event; the solver locates that time. <code class="docutils literal notranslate"><span class="pre">change_state</span></code> runs at the located time, and <code class="docutils literal notranslate"><span class="pre">should_continue</span></code> returning <code class="docutils literal notranslate"><span class="pre">False</span></code> asks for the run to stop. The hooks receive what <code class="docutils literal notranslate"><span class="pre">calculate</span></code> receives, so a hook reading an input from another calculation takes <code class="docutils literal notranslate"><span class="pre">&#64;unpacked</span></code>, as in <a class="reference internal" href="write-a-calculation.html"><span class="doc">Write a
 calculation</span></a>.</p>
 <p><img alt="Timeline of the three runs over one minute: the margin crossing zero at t_trip, and the output times each run returns." src="../_images/trip-stop-and-restart.svg" /></p>
-<p><em>The first run stops at ``t_trip`` and ends on it, the second sees no event, the third restarts there and keeps only the grid.</em></p>
+<p><em>The first run stops at t_trip and ends on it, the second sees no event, the third restarts there and keeps only the grid.</em></p>
 <p><code class="docutils literal notranslate"><span class="pre">FlowSwitch</span></code> owns no rows. It watches <code class="docutils literal notranslate"><span class="pre">ref_mdot</span></code> and latches the first time that flow is at or below its threshold, recording the time. <code class="docutils literal notranslate"><span class="pre">change_state</span></code> runs on every calculation at every event, so it tests its own condition before acting. Once latched, the margin is a constant <code class="docutils literal notranslate"><span class="pre">1.0</span></code>: a flow that recovers cannot fire the event again. By default a calculation takes part in events if and only if it overrides <code class="docutils literal notranslate"><span class="pre">change_state</span></code> or <code class="docutils literal notranslate"><span class="pre">should_continue</span></code>; one whose part depends on a runtime flag
 overrides <code class="docutils literal notranslate"><span class="pre">has_event</span></code> to return that flag.</p>
 <div class="nbinput nblast docutils container">
@@ -324,7 +323,7 @@ sampled crossing: 6.0 s
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 

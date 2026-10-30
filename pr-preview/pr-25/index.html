@@ -49,9 +49,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">A first loop</a></li>
-<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="howto/index.html">How-to guides</a></li>
 <li class="toctree-l1"><a class="reference internal" href="explanation/index.html">Explanation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
@@ -88,8 +87,9 @@
 <span class="math notranslate nohighlight">\(M\dot{y} = F(y, t)\)</span>, put together from calculations that each own a slice of the state vector
 <span class="math notranslate nohighlight">\(y\)</span>. It ships thermal-hydraulic components, from pumps and channels to fuel plates and point
 kinetics, with the correlations behind them, for modelling the heat removal of research reactors.</p>
-<section id="where-to-start">
-<h2>Where to start<a class="headerlink" href="#where-to-start" title="Link to this heading"></a></h2>
+<section id="where-to-look">
+<h2>Where to look<a class="headerlink" href="#where-to-look" title="Link to this heading"></a></h2>
+<p>The documentation has four parts:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 45.0%" />
@@ -101,63 +101,17 @@ kinetics, with the correlations behind them, for modelling the heat removal of r
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p>write your first loop and check it by hand</p></td>
-<td><p><a class="reference internal" href="quickstart.html"><span class="doc">A first loop</span></a></p></td>
+<tr class="row-even"><td><p>learn the package from a first loop to a loss of flow</p></td>
+<td><p>the <a class="reference internal" href="Examples.html"><span class="doc">Examples</span></a>, in order</p></td>
 </tr>
-<tr class="row-odd"><td><p>write a component of your own as a calculation</p></td>
-<td><p><a class="reference internal" href="howto/write-a-calculation.html"><span class="doc">Write a calculation</span></a></p></td>
+<tr class="row-odd"><td><p>get a specific task done</p></td>
+<td><p>the <a class="reference internal" href="howto/index.html"><span class="doc">How-to guides</span></a></p></td>
 </tr>
-<tr class="row-even"><td><p>put components on the edges of a loop and solve its flows</p></td>
-<td><p><a class="reference internal" href="howto/wire-a-flow-network.html"><span class="doc">Wire a flow network</span></a></p></td>
+<tr class="row-even"><td><p>understand the physics and the reasoning behind the library</p></td>
+<td><p>the <a class="reference internal" href="explanation/index.html"><span class="doc">Explanation</span></a> pages</p></td>
 </tr>
-<tr class="row-odd"><td><p>pick the coolant channel past a plate and its wall and friction laws</p></td>
-<td><p><a class="reference internal" href="howto/choose-a-channel-and-its-laws.html"><span class="doc">Choose a channel and its laws</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>put a fuel plate behind a channel and multiply it into a rod</p></td>
-<td><p><a class="reference internal" href="howto/build-a-plate-or-rod.html"><span class="doc">Build a plate, an assembly or a rod</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>feed a calculation a constant, a step or a table in time</p></td>
-<td><p><a class="reference internal" href="howto/bind-inputs-and-schedules.html"><span class="doc">Bind inputs and time schedules</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>add reactor kinetics with a reactivity controller and a scram</p></td>
-<td><p><a class="reference internal" href="howto/add-point-kinetics-and-a-trip.html"><span class="doc">Add point kinetics, feedback and a trip</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>add the heat that lingers after shutdown</p></td>
-<td><p><a class="reference internal" href="howto/add-decay-heat.html"><span class="doc">Add decay heat</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>seed a steady solve that fails or lands on the wrong flow direction</p></td>
-<td><p><a class="reference internal" href="howto/get-a-steady-solve-to-converge.html"><span class="doc">Get a steady solve to converge</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>run a transient from an operating point and choose its tolerances</p></td>
-<td><p><a class="reference internal" href="howto/run-a-transient-and-set-tolerances.html"><span class="doc">Run a transient and set tolerances</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>stop a run at an event the solver locates, and restart it</p></td>
-<td><p><a class="reference internal" href="howto/trip-stop-and-restart.html"><span class="doc">Trip, stop and restart</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>find why a solve dies or lands somewhere wrong</p></td>
-<td><p><a class="reference internal" href="howto/diagnose-a-failing-solve.html"><span class="doc">Diagnose a failing solve</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>read a steady state or a transient by name, as a table or a history</p></td>
-<td><p><a class="reference internal" href="howto/read-results.html"><span class="doc">Read results</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>add boiling limits to a solution, at steady state and over a transient</p></td>
-<td><p><a class="reference internal" href="howto/compute-margins.html"><span class="doc">Compute margins</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>draw a sweep of steady states as profiles, curves, maps and required values</p></td>
-<td><p><a class="reference internal" href="howto/plot-a-sweep.html"><span class="doc">Plot a sweep</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>see a whole reactor built and run through a loss of flow</p></td>
-<td><p><a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> and the three pages after it, or
-<a class="reference internal" href="Examples.html"><span class="doc">Examples</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>learn the physics behind a heat transfer, friction or boiling law</p></td>
-<td><p><a class="reference internal" href="stream.physical_models.html"><span class="doc">Physical Models</span></a></p></td>
-</tr>
-<tr class="row-odd"><td><p>understand why a solve converges or a flow reverses</p></td>
-<td><p><a class="reference internal" href="explanation/index.html"><span class="doc">Explanation</span></a></p></td>
-</tr>
-<tr class="row-even"><td><p>look a name up</p></td>
-<td><p><a class="reference internal" href="stream.html"><span class="doc">Documentation</span></a></p></td>
+<tr class="row-odd"><td><p>look up a name, its arguments, or the correlation behind a physical model</p></td>
+<td><p>the <a class="reference internal" href="stream.html"><span class="doc">Documentation</span></a> of each module</p></td>
 </tr>
 </tbody>
 </table>
@@ -191,7 +145,7 @@ negative, and the gains cancel around every loop.</p></li>
 
   <div role="contentinfo">
     <p>
-      <span class="lastupdated">Last updated on Oct 22, 2026.
+      <span class="lastupdated">Last updated on Oct 30, 2026.
       </span></p>
   </div>
 
