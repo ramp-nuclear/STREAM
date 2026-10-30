@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" width="1000" height="540" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/></marker>
+    <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker>
+    <marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+  </defs>
+  <rect width="1000" height="540" fill="#ffffff"/>
+
+  <text x="210" y="34" font-size="15" font-weight="bold" text-anchor="middle">y = agr.load(steady)</text>
+  <text x="210" y="52" fill="#555" text-anchor="middle">171 rows, in graph order</text>
+
+  <g stroke="#333" stroke-width="1.5">
+    <rect x="150" y="70" width="120" height="150" fill="#fff3e0"/>
+    <rect x="150" y="220" width="120" height="36" fill="#faf6ee"/>
+    <rect x="150" y="256" width="120" height="36" fill="#faf6ee"/>
+    <rect x="150" y="292" width="120" height="36" fill="#e8f1fb"/>
+    <rect x="150" y="328" width="120" height="14" fill="#e8f1fb"/>
+    <rect x="150" y="342" width="120" height="36" fill="#e8f1fb"/>
+    <rect x="150" y="378" width="120" height="36" fill="#e8f1fb"/>
+  </g>
+  <line x1="146" y1="292" x2="274" y2="292" stroke="#333" stroke-width="3"/>
+  <g text-anchor="middle" fill="#333">
+    <text x="210" y="141">T</text>
+    <text x="210" y="157" fill="#555" font-size="11">120 rows</text>
+    <text x="210" y="242" font-size="11">T_wall_left, 10</text>
+    <text x="210" y="278" font-size="11">T_wall_right, 10</text>
+    <text x="210" y="314" font-size="11">T_cool, 10</text>
+    <text x="210" y="339" font-size="10">pressure, 1</text>
+    <text x="210" y="364" font-size="11">h_left, 10</text>
+    <text x="210" y="400" font-size="11">h_right, 10</text>
+  </g>
+  <g text-anchor="end" fill="#555" font-size="10">
+    <text x="144" y="74">0</text>
+    <text x="144" y="224">120</text>
+    <text x="144" y="260">130</text>
+    <text x="144" y="296">140</text>
+    <text x="144" y="329">150</text>
+    <text x="144" y="345">151</text>
+    <text x="144" y="382">161</text>
+    <text x="144" y="418">171</text>
+  </g>
+
+  <g stroke="#888" stroke-width="1" fill="none">
+    <path d="M104,72 L98,72 L98,290 L104,290"/>
+    <path d="M104,294 L98,294 L98,412 L104,412"/>
+  </g>
+  <g font-weight="bold" text-anchor="end">
+    <text x="90" y="178">Plate</text>
+    <text x="90" y="350">Channel</text>
+  </g>
+  <g fill="#555" text-anchor="end" font-size="11">
+    <text x="90" y="194">rows 0 to 139</text>
+    <text x="90" y="366">rows 140 to 170</text>
+  </g>
+  <text x="210" y="434" fill="#555" font-style="italic" text-anchor="middle">not to scale</text>
+
+  <text x="430" y="34" font-size="15" font-weight="bold">saved = agr.save(y)</text>
+  <text x="430" y="52" fill="#555">a State, keyed by name</text>
+
+  <g fill="#333">
+    <text x="430" y="100">{&quot;Plate&quot;: {</text>
+    <text x="450" y="124">&quot;T&quot;: array (10, 12)</text>
+    <text x="450" y="148">&quot;T_wall_left&quot;: array (10,)</text>
+    <text x="450" y="172">&quot;T_wall_right&quot;: array (10,)</text>
+    <text x="430" y="196">},</text>
+    <text x="430" y="220">&quot;Channel&quot;: {</text>
+    <text x="450" y="244">&quot;T_cool&quot;: array (10,)</text>
+    <text x="450" y="268">&quot;pressure&quot;: float</text>
+    <text x="450" y="292">&quot;h_left&quot;: array (10,)</text>
+    <text x="450" y="316">&quot;h_right&quot;: array (10,)</text>
+  </g>
+  <g fill="#888">
+    <text x="450" y="340">&quot;T_out&quot;, &quot;mass_flow&quot;, &quot;Re&quot;,</text>
+    <text x="450" y="356">&quot;q, left&quot;, ... 15 entries</text>
+  </g>
+  <text x="430" y="380" fill="#333">}}</text>
+
+  <g stroke="#1f5fbf" stroke-width="1.5" marker-end="url(#b)">
+    <line x1="444" y1="120" x2="276" y2="145"/>
+    <line x1="444" y1="144" x2="276" y2="238"/>
+    <line x1="444" y1="168" x2="276" y2="274"/>
+    <line x1="444" y1="288" x2="276" y2="360"/>
+    <line x1="444" y1="312" x2="276" y2="396"/>
+  </g>
+  <line x1="444" y1="240" x2="277" y2="310" stroke="#d9480f" stroke-width="2.5" marker-end="url(#o)"/>
+  <line x1="444" y1="264" x2="277" y2="335" stroke="#333" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#g)"/>
+
+  <g fill="#555">
+    <text x="680" y="118">view, reshaped to cells by thickness;</text>
+    <text x="680" y="134">flat (120,) with strict=True</text>
+    <text x="680" y="160">views</text>
+  </g>
+  <text x="680" y="244" fill="#d9480f">view: shares memory with y</text>
+  <text x="680" y="268" fill="#333">copy</text>
+  <text x="680" y="304" fill="#555">views</text>
+  <g fill="#555">
+    <text x="680" y="340">no row: computed by save,</text>
+    <text x="680" y="356">absent from strict=True</text>
+  </g>
+
+  <line x1="410" y1="400" x2="990" y2="400" stroke="#ddd"/>
+  <text x="430" y="428" font-size="15" font-weight="bold">copied = State.merge(saved)</text>
+  <g stroke="#333" stroke-width="1.5" fill="#fff">
+    <rect x="430" y="446" width="70" height="24"/>
+    <rect x="500" y="446" width="80" height="24"/>
+    <rect x="580" y="446" width="80" height="24"/>
+    <rect x="660" y="446" width="60" height="24"/>
+    <rect x="720" y="446" width="58" height="24"/>
+    <rect x="778" y="446" width="56" height="24"/>
+    <rect x="834" y="446" width="56" height="24"/>
+    <rect x="890" y="446" width="70" height="24" stroke="#888"/>
+  </g>
+  <g text-anchor="middle" font-size="11" fill="#333">
+    <text x="465" y="462">T</text>
+    <text x="540" y="462">T_wall_left</text>
+    <text x="620" y="462">T_wall_right</text>
+    <text x="690" y="462">T_cool</text>
+    <text x="749" y="462">pressure</text>
+    <text x="806" y="462">h_left</text>
+    <text x="862" y="462">h_right</text>
+    <text x="925" y="462" fill="#888">T_out, ...</text>
+  </g>
+  <text x="430" y="494" fill="#555">every array a copy in its own memory, nothing points into y:</text>
+  <text x="430" y="510" fill="#555">editing it leaves y alone</text>
+</svg>

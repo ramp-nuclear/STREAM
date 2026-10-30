@@ -19,7 +19,7 @@ workflow has three steps:
 
 ::
 
-    cases_ = cases(power=[20e3, 40e3, 60e3, 80e3], mdot=[0.2, 0.3], shape=["cosine", "flat"])
+    cases_ = cases(power=[10e3, 20e3, 30e3, 40e3, 60e3, 80e3], mdot=[0.1, 0.2, 0.3], shape=["cosine", "flat"])
     frames = run_cases(model, cases_)
     sweep = Sweep(cases_, frames, agr,
                   labels={"power": ("Power per plate", "kW", 1e-3),
@@ -30,10 +30,10 @@ workflow has three steps:
                           "T_wall, left": ("Clad surface temperature", "°C")},
                   limits={"OSVR": at_least(1.3), "CHFR": at_least(1.3), "T_wall, left": at_most(110.0)})
     print(sweep)
-    sweep.profile(["T_cool", "T_wall, left"], where=dict(power=40e3, mdot=0.2, shape="cosine")).plot()
-    sweep.reduce("OSVR", "min", versus="power", where=dict(shape="cosine")).plot(color="mdot", crossing="mark")
+    sweep.profile(["T_cool", "T_wall, left"], where={"power": 40e3, "mdot": 0.2, "shape": "cosine"}).plot()
+    sweep.reduce("OSVR", "min", versus="power", where={"shape": "cosine"}).plot(color="mdot", crossing="mark")
     sweep.reduce("T_wall, left", "max", versus="power").plot(color="mdot", col="shape", show_limit="shade")
-    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where=dict(shape="cosine")).plot(show_limit="shade")
+    sweep.reduce("OSVR", "min", versus=("power", "mdot"), where={"shape": "cosine"}).plot(show_limit="shade")
     sweep.required(["OSVR", "CHFR", "T_wall, left"], solve_for="power", versus="mdot", limiting=True).plot(color="shape")
 
 Customisation lives in three places. The :class:`Sweep` holds what is true of
