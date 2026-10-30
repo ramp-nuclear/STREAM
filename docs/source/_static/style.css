@@ -35,6 +35,15 @@ article[role="main"] .nboutput pre {
     line-height: 1.45;
 }
 
+.sig:not(.sig-inline) {
+    background: var(--color-code-background);
+    border: 1px solid var(--color-background-border);
+}
+
+.sig:not(.sig-inline):hover {
+    background: var(--color-background-hover);
+}
+
 article[role="main"] img,
 article[role="main"] object,
 article[role="main"] video {
