@@ -20,7 +20,7 @@ jobs:
       cancel-in-progress: false
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Remove PR preview
       uses: rossjrw/pr-preview-action@v1
       with:
