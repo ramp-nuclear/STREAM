@@ -1,111 +1,286 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="./">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection" href="LOFABothPumpsTrip.html"><link rel="prev" title="Building the Pool Reactor Loop" href="LOFABuildingTheLoop.html">
+
+    <!-- Generated with Sphinx 9.2.0 and Furo 2025.12.19 -->
+        <title>A Pool Reactor for Loss-of-Flow Analysis - STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
+    <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="_static/style.css?v=36af31e0" />
+    
+    
 
 
-<!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
-
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>A Pool Reactor for Loss-of-Flow Analysis &mdash; STREAM 1.1.0 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
-      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
-      <link rel="stylesheet" type="text/css" href="_static/plot_directive.css" />
-      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
-
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=2a705162"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-      <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-      <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
-    <script src="_static/js/theme.js"></script>
-    <link rel="index" title="Index" href="genindex.html" />
-    <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection" href="LOFABothPumpsTrip.html" />
-    <link rel="prev" title="Building the Pool Reactor Loop" href="LOFABuildingTheLoop.html" />
-    <link href="_static/style.css" rel="stylesheet" type="text/css">
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
 
-</head>
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
 
-          
-          
-          <a href="index.html">
-            
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
-</div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="stream.html">Documentation</a></li>
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">STREAM 1.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
+  
+  <span class="sidebar-brand-text">STREAM 1.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1 has-children"><a class="reference internal" href="stream.html">Documentation</a><input aria-label="Toggle navigation of Documentation" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="calculation.html">Calculation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="stream.calculations.html">Calculations</a><input aria-label="Toggle navigation of Calculations" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="stream.composition.html">Composition</a><input aria-label="Toggle navigation of Composition" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="stream.physical_models.html">Physical Models</a><input aria-label="Toggle navigation of Physical Models" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="decay_heat.html">Decay Heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="viz.html">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utility_packages.html">Utility Packages</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="Installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart Guide</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="Examples.html">Examples</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="Examples.html#creating-a-general-calculation">Creating a General <span class="xref std std-ref">Calculation</span></a></li>
-<li class="toctree-l2"><a class="reference internal" href="Examples.html#simulating-nuclear-thermohydraulic-systems">Simulating Nuclear Thermohydraulic Systems</a></li>
-<li class="toctree-l2 current"><a class="reference internal" href="Examples.html#loss-of-flow">Loss of Flow</a><ul class="current">
-<li class="toctree-l3"><a class="reference internal" href="LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
-<li class="toctree-l3 current"><a class="current reference internal" href="#">A Pool Reactor for Loss-of-Flow Analysis</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Parameters">Parameters</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#The-core">The core</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#The-loop-as-a-graph">The loop as a graph</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#The-operating-point">The operating point</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Hand-checks">Hand checks</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Temperatures-along-the-core">Temperatures along the core</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Which-wall-law">Which wall law</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
-<li class="toctree-l3"><a class="reference internal" href="LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
-</ul>
-</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="Examples.html">Examples</a><input aria-label="Toggle navigation of Examples" checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="SeriesRLCCircuit.html">Series RLC Circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoupledSprings.html">Coupled Masses and Springs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PlanarPendulum.html">Planar Pendulum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SampleFuelPlateAndChannel.html">Plates and Channels, an MTR Love Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="TheCubeProblem.html">The Cube Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="tests.html">Tests</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="tests.html">Tests</a><input aria-label="Toggle navigation of Tests" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tests.integration.html">Integration Tests</a></li>
+</ul>
+</li>
 </ul>
 
-        </div>
-      </div>
-    </nav>
-
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="index.html">STREAM</a>
-      </nav>
-
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-          <li class="breadcrumb-item"><a href="Examples.html">Examples</a></li>
-      <li class="breadcrumb-item active">A Pool Reactor for Loss-of-Flow Analysis</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/LOFAPoolReactor.ipynb.txt" rel="nofollow"> View page source</a>
-      </li>
-  </ul>
-  <hr/>
 </div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <section id="A-Pool-Reactor-for-Loss-of-Flow-Analysis">
-<h1>A Pool Reactor for Loss-of-Flow Analysis<a class="headerlink" href="#A-Pool-Reactor-for-Loss-of-Flow-Analysis" title="Link to this heading"></a></h1>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="_sources/LOFAPoolReactor.ipynb.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="A-Pool-Reactor-for-Loss-of-Flow-Analysis">
+<h1>A Pool Reactor for Loss-of-Flow Analysis<a class="headerlink" href="#A-Pool-Reactor-for-Loss-of-Flow-Analysis" title="Link to this heading">¶</a></h1>
 <p>The reactor on this page is an open-pool research reactor. Its plate core sits 8 m under the pool surface and is cooled by forced flow running downward through four groups of plate channels. Below the core a plenum collects the flow and sends it to a decay tank, then to two pump legs in parallel, each with a pump, a flywheel and a check valve, and on through the heat exchanger back to the pool. A flapper joins the plenum below the core to the bottom of the pool beside it: it is held shut by the
 pressure of the forced flow and opens when that flow is lost. The pool itself is the heat sink for the natural circulation that follows.</p>
 <p>The whole loop is built from the library’s components and shipped as <code class="docutils literal notranslate"><span class="pre">stream.examples.lofa</span></code>; the previous page, <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a>, puts it together by hand, and <code class="docutils literal notranslate"><span class="pre">build</span></code> makes the same loop in one call. The next two examples take it through a loss of flow: both pumps tripping, from coastdown through the reactor trip and the flapper opening to natural circulation, and then the variations (one pump, a flapper that does not open) and how far the
@@ -130,7 +305,7 @@ numbers can be trusted.</p>
 </div>
 </div>
 <section id="Parameters">
-<h2>Parameters<a class="headerlink" href="#Parameters" title="Link to this heading"></a></h2>
+<h2>Parameters<a class="headerlink" href="#Parameters" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">Params</span></code> holds the operating point and the modelling choices, all with defaults. Only a few of them set the character of the plant: the core makes 10 MW, the heat exchanger returns the water at 38 °C, there are 8 m of water above the core, each of the two pump legs carries half the core flow, and the flapper opens once the flow returning from the heat exchanger falls to 30 % of the nominal core flow: the flapper and the reactor trip both read the flow of the riser. The table also gives the
 pump head the loop’s losses were estimated to need at nominal flow, before any pump curve is attached.</p>
 <div class="nbinput docutils container">
@@ -214,7 +389,7 @@ pump head the loop’s losses were estimated to need at nominal flow, before any
 </div>
 </section>
 <section id="The-core">
-<h2>The core<a class="headerlink" href="#The-core" title="Link to this heading"></a></h2>
+<h2>The core<a class="headerlink" href="#The-core" title="Link to this heading">¶</a></h2>
 <p>The core is described by four groups of plates. There are 300 normal plates, a single hot plate carrying 1.6 times the power of a normal one, 90 low plates carrying half of it, and 10 wider unheated channels forming a bypass. The heated plates have a 2.2 mm coolant gap and the bypass 10 mm.</p>
 <p><img alt="The four core groups as plate stacks between the pool top and the plenum, and as four parallel edges of the flow graph" src="_images/lofa-core.svg" /></p>
 <p><em>One channel and one plate per group; the edge weight ``signify`` is the plate count.</em></p>
@@ -307,14 +482,14 @@ flow is an estimate, the channel’s area times the square root of its hydraulic
 </div>
 </section>
 <section id="The-loop-as-a-graph">
-<h2>The loop as a graph<a class="headerlink" href="#The-loop-as-a-graph" title="Link to this heading"></a></h2>
+<h2>The loop as a graph<a class="headerlink" href="#The-loop-as-a-graph" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">build</span></code> returns the aggregator, the Kirchhoff calculation that holds the flows and pressures of the network, and a dictionary of references to the components. Without kinetics every plate is fed a constant share of the nominal power, which is what the thermal-hydraulic steady state needs. The figure shows the loop it builds, in elevation; <a class="reference internal" href="LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> builds it component by component and draws the flow graph. The four core groups are the
 parallel edges from the pool top to the plenum; the flapper runs from the pool bottom to the plenum, so when it opens the core and the flapper form a loop through the pool.</p>
 <p><img alt="The pool reactor's loop in elevation, from the pool surface down to the pumps" src="_images/lofa-loop.svg" /></p>
 <p><em>The loop ``build`` makes, in elevation: seven junctions, twelve edges, the pool as the free surface.</em></p>
 </section>
 <section id="The-operating-point">
-<h2>The operating point<a class="headerlink" href="#The-operating-point" title="Link to this heading"></a></h2>
+<h2>The operating point<a class="headerlink" href="#The-operating-point" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">operating_point</span></code> solves the steady state in two stages. First the thermal-hydraulics, with the plates at constant power, from the rough guess described in <a class="reference internal" href="LOFABuildingTheLoop.html#A-first-solve"><span class="std std-ref">A first solve</span></a>. Then the point-kinetics node is attached, its temperature-feedback references taken at the solved temperatures, so that the full system starts with zero reactivity and exactly at its operating point. It returns the full system and its consistent state vector <code class="docutils literal notranslate"><span class="pre">y</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
@@ -403,7 +578,7 @@ parallel edges from the pool top to the plenum; the flapper runs from the pool b
 </div>
 </section>
 <section id="Hand-checks">
-<h2>Hand checks<a class="headerlink" href="#Hand-checks" title="Link to this heading"></a></h2>
+<h2>Hand checks<a class="headerlink" href="#Hand-checks" title="Link to this heading">¶</a></h2>
 <p>Three things about this steady state can be estimated without the code: the outlet temperature of each heated channel, how the flow divides between the groups, and the pump heads. <code class="docutils literal notranslate"><span class="pre">operating_point</span></code> stores these checks of the thermal-hydraulic solve in <code class="docutils literal notranslate"><span class="pre">refs[&quot;th_checks&quot;]</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
@@ -533,7 +708,7 @@ largest imbalance: 2.8e-14 kg/s
 <p>Every junction closes to round-off, the largest imbalance being about 3e-14 kg/s against a core flow of about 242 kg/s.</p>
 </section>
 <section id="Temperatures-along-the-core">
-<h2>Temperatures along the core<a class="headerlink" href="#Temperatures-along-the-core" title="Link to this heading"></a></h2>
+<h2>Temperatures along the core<a class="headerlink" href="#Temperatures-along-the-core" title="Link to this heading">¶</a></h2>
 <p>The coolant enters each channel at the top of the core at the pool temperature and heats up on its way down. The plates’ power follows a cosine along their length, so the water heats fastest at mid-core and the profile is an S rather than a straight line.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
@@ -573,7 +748,7 @@ low outlet: 45.4 °C
 <p>The hot channel leaves the core at about 61 °C and the normal channels at about 53 °C, far below the saturation temperature at the pressure under 8 m of water.</p>
 </section>
 <section id="Which-wall-law">
-<h2>Which wall law<a class="headerlink" href="#Which-wall-law" title="Link to this heading"></a></h2>
+<h2>Which wall law<a class="headerlink" href="#Which-wall-law" title="Link to this heading">¶</a></h2>
 <p>The plates hand their heat to the coolant through a wall heat-transfer coefficient, and which law gives it matters most once the forced flow is gone. Dittus-Boelter is a turbulent correlation: the coefficient scales as the Reynolds number to the power 0.8, so it goes to zero with the flow. In natural circulation the water moves through the plates at a few centimetres per second, and there it starves the plate of heat transfer and the plate runs hot. The regime-dependent law composes laminar,
 turbulent and natural convection and holds a finite coefficient down to zero flow. That is why <code class="docutils literal notranslate"><span class="pre">Params.htc</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;regime&quot;</span></code> and Dittus-Boelter is kept only as a comparison.</p>
 <p>The cell below evaluates the hot channel’s coefficient for both laws, averaged over its cells, for a wall 20 K above a 40 °C coolant at the core-top pressure, from the nominal per-plate flow down to 1e-4 kg/s, and marks the hot plate’s flow five minutes into the both-pumps transient. It then runs those five minutes with each law and compares the hot plate’s peak meat temperature, the hot coolant’s peak, the margin to saturation, the hot channel’s reversal time and its flow at the end.</p>
@@ -697,34 +872,83 @@ against about 440 W/m²K for Dittus-Boelter.</p>
 </section>
 </section>
 
-
-           </div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="LOFABothPumpsTrip.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="LOFABuildingTheLoop.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Building the Pool Reactor Loop</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            Made with 
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            <div class="last-updated">
+              Last updated on Oct 30, 2026</div>
           </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="LOFABuildingTheLoop.html" class="btn btn-neutral float-left" title="Building the Pool Reactor Loop" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="LOFABothPumpsTrip.html" class="btn btn-neutral float-right" title="Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
     </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">A Pool Reactor for Loss-of-Flow Analysis</a><ul>
+<li><a class="reference internal" href="#Parameters">Parameters</a></li>
+<li><a class="reference internal" href="#The-core">The core</a></li>
+<li><a class="reference internal" href="#The-loop-as-a-graph">The loop as a graph</a></li>
+<li><a class="reference internal" href="#The-operating-point">The operating point</a></li>
+<li><a class="reference internal" href="#Hand-checks">Hand checks</a></li>
+<li><a class="reference internal" href="#Temperatures-along-the-core">Temperatures along the core</a></li>
+<li><a class="reference internal" href="#Which-wall-law">Which wall law</a></li>
+</ul>
+</li>
+</ul>
 
-  <hr/>
-
-  <div role="contentinfo">
-    <p>
-      <span class="lastupdated">Last updated on Oct 30, 2026.
-      </span></p>
-  </div>
-
-   
-
-</footer>
+          </div>
         </div>
       </div>
-    </section>
+      
+      
+    </aside>
   </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
-
-</body>
+</div><script src="_static/documentation_options.js?v=2a705162"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/scripts/furo.js?v=46bd48cc"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    </body>
 </html>
