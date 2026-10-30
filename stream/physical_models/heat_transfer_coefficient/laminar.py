@@ -6,6 +6,7 @@ import operator
 import numpy as np
 
 from stream.physical_models.dimensionless import Pr, Re_mdot
+from stream.smoothing import smooth_step
 from stream.substances import Liquid
 from stream.units import KgPerS, Meter, Meter2, Value, WPerM2K
 
@@ -382,3 +383,77 @@ def developing_laminar_h_spl(
     nudev = _nusselt_coefficient_interp_developing(x_star)
     nusselt = two_sided_heating_nusselt(aspect_ratio, nudev)
     return nusselt * coolant.conductivity / Dh
+
+
+def Sudo_downflow_ratio(gz: Value, fade: tuple[float, float] = (2.0, 16.0)) -> Value:
+    r"""Ratio of the laminar downflow to the laminar upflow heat transfer coefficient
+    in a narrow heated rectangular channel, after Sudo et al. [#Sudo1985]_.
+
+    The lower limits of the laminar data, measured in a 2.25 mm gap at Reynolds
+    numbers from 100 to 50,000, are
+
+    - upflow: :math:`\text{Nu} = 2.0\,\text{Gz}^{0.3}` for :math:`\text{Gz} \geq 40`, 6.0 for :math:`16 < \text{Gz} < 40`;
+    - downflow: :math:`\text{Nu} = 0.915\,\text{Gz}^{0.4}` for :math:`\text{Gz} \geq 40`, 4.0 for :math:`16 < \text{Gz} < 40`;
+
+    with Nu on the equivalent diameter :math:`D_e` and the local bulk temperature, and
+    :math:`\text{Gz} = \text{Re}\,\text{Pr}\,D_e/x`, :math:`x` from the inlet. Their
+    ratio, :math:`0.4575\,\text{Gz}^{0.1}`, is clipped to :math:`[2/3, 1]` and, below
+    Gz 16 where there are no data, fades back to 1 over ``fade`` by a smooth step on
+    :math:`\log_{10}\text{Gz}`. A non-positive Graetz number returns 1.
+
+    The default ``fade`` returns the ratio to 1 over about one decade of Graetz number
+    below the data limit of 16, because at zero flow the laminar law already holds the
+    fully developed value, which is the conservative choice at stagnation. A lower first
+    value holds the plateau further down, and a narrow band just below 16 keeps it almost
+    to the data limit. :func:`~.regime_dependent_h_spl` always uses the default; another
+    ``fade`` applies only when this function is called directly. The choice is discussed
+    in :ref:`htc-low-flow`.
+
+    Parameters
+    ----------
+    gz: Value
+        Local Graetz number.
+    fade: tuple[float, float]
+        Graetz numbers between which the ratio fades from 1 to the plateau, two
+        positive values with the first below the second.
+
+    Returns
+    -------
+    Value
+        Downflow to upflow ratio in :math:`[2/3, 1]`.
+
+    Raises
+    ------
+    ValueError
+        If ``fade`` is not two positive values in increasing order.
+
+    Examples
+    --------
+    >>> float(Sudo_downflow_ratio(1.0))
+    1.0
+    >>> float(round(Sudo_downflow_ratio(16.0), 4))
+    0.6667
+    >>> float(round(Sudo_downflow_ratio(43.0), 4))
+    0.6667
+    >>> float(round(Sudo_downflow_ratio(400.0), 3))
+    0.833
+    >>> float(Sudo_downflow_ratio(5000.0))
+    1.0
+    >>> bool(np.all(np.diff(Sudo_downflow_ratio(np.geomspace(16.0, 1e4, 500))) >= 0))
+    True
+
+    References
+    ----------
+    .. [#Sudo1985] Y. Sudo, K. Miyata, H. Ikawa, M. Ohkawara, M. Kaminaga, "Experimental
+       study of differences in single-phase forced-convection heat transfer
+       characteristics between upflow and downflow for narrow rectangular channel",
+       J. Nucl. Sci. Technol. 22(3):202-212, 1985.
+    """
+    if not 0.0 < fade[0] < fade[1]:
+        raise ValueError(f"fade must be two positive values, the first below the second, got {fade!r}")
+    gz = np.asarray(gz, dtype=float)
+    plateau = 2.0 / 3.0
+    clipped = np.minimum(1.0, np.maximum(plateau, 0.4575 * np.maximum(gz, 0.0) ** 0.1))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        weight = smooth_step(np.log10(gz), np.log10(fade[0]), np.log10(fade[1]))
+    return np.where(gz > 0.0, 1.0 - weight * (1.0 - clipped), 1.0)[()]

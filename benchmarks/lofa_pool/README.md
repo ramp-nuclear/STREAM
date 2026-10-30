@@ -31,9 +31,8 @@ guess is expected to pass. Elsewhere in the sweep, the `tolerance` axis's atol 1
 fail in the steady solve's line search, and the three `EXPECTED_SATURATION` rows of `sweeps.py`
 reach saturation by design. The `htc` axis runs the default case with the regime-dependent law and
 with Dittus-Boelter; both rows complete, and the Dittus-Boelter row's hot-plate meat peaks about
-16 °C higher. The `cells` axis's 40-cell row records two NumPy warnings, a divide by zero in the
-friction law's viscosity ratio and an invalid value in the laminar heat-transfer law's entry length, so it
-completes but counts as warned.
+16 °C higher. The `cells` axis's 40-cell row records one NumPy warning, an invalid value in the
+laminar heat-transfer law's entry length, so it completes but counts as warned.
 
 ## Rungs
 

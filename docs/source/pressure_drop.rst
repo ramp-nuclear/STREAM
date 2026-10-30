@@ -32,6 +32,27 @@ Friction
 .. automodule:: stream.physical_models.pressure_drop.friction
    :members:
 
+Through zero flow, and the wall-viscosity correction
+----------------------------------------------------
+
+The friction law runs through the same loss-of-flow transients as the wall heat transfer coefficient.
+Below ``re_bounds`` the laminar factor :math:`64/(\text{Re}\,k_R)` makes the friction pressure linear in the
+flow, so it passes through zero flow and reverses with it, continuous in both directions.
+
+The risk is the viscosity correction ``k_H``, a laminar correlation for the heated wall thinning the fluid
+next to it. Applied in every regime, it would change a turbulent factor it was never fitted for. Reading the
+wall viscosity on every call would tie the law to the wall temperature even when no correction is asked
+for, and a solver iterate whose temperature leaves the viscosity fit would then divide by zero.
+
+:func:`~.regime_dependent_friction` applies ``k_H`` to the laminar factor only, so it fades out across
+``re_bounds``, and reads the wall viscosity only when ``k_H`` is given.
+
+.. plot:: htc_figures.py friction_through_zero
+   :width: 100%
+   :alt: Channel pressure difference against mass flow, crossing zero flow at the hydrostatic head.
+
+   Pressure difference of a 0.7 m long, 2 mm gap channel in ten cells against mass flow, with gravity, crossing zero flow at the hydrostatic head.
+
 Local
 =====
 

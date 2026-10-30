@@ -51,7 +51,14 @@ extensions = [
     "sphinx.ext.inheritance_diagram",
     "nbsphinx",
     "sphinx.ext.coverage",
+    "matplotlib.sphinxext.plot_directive",
 ]
+
+plot_include_source = False
+plot_html_show_source_link = False
+plot_html_show_formats = False
+plot_formats = [("png", 120)]
+plot_rcparams = {"savefig.bbox": "tight"}
 
 nbsphinx_timeout = -1
 
