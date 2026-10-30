@@ -22,6 +22,7 @@ From a first loop to a fuel rod
 .. toctree::
    :hidden:
 
+   quickstart.ipynb
    SeriesRLCCircuit.ipynb
    TheCubeProblem.ipynb
    PCSCoastdown.ipynb
