@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 560" width="1060" height="560" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/></marker>
+    <marker id="k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#333"/></marker>
+    <marker id="o" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#d9480f"/></marker>
+  </defs>
+  <rect width="1060" height="560" fill="#ffffff"/>
+  <text x="20" y="28" font-size="15" font-weight="bold">(a) ChannelAndContacts, in elevation</text>
+  <line x1="120" y1="110" x2="120" y2="450" stroke="#888"/>
+  <line x1="114" y1="110" x2="126" y2="110" stroke="#888"/>
+  <line x1="114" y1="144" x2="126" y2="144" stroke="#888"/>
+  <line x1="114" y1="178" x2="126" y2="178" stroke="#888"/>
+  <line x1="114" y1="212" x2="126" y2="212" stroke="#888"/>
+  <line x1="114" y1="246" x2="126" y2="246" stroke="#888"/>
+  <line x1="114" y1="280" x2="126" y2="280" stroke="#888"/>
+  <line x1="114" y1="314" x2="126" y2="314" stroke="#888"/>
+  <line x1="114" y1="348" x2="126" y2="348" stroke="#888"/>
+  <line x1="114" y1="382" x2="126" y2="382" stroke="#888"/>
+  <line x1="114" y1="416" x2="126" y2="416" stroke="#888"/>
+  <line x1="114" y1="450" x2="126" y2="450" stroke="#888"/>
+  <g fill="#555" text-anchor="end">
+    <text x="110" y="114">0 m</text>
+    <text x="110" y="454">0.7 m</text>
+  </g>
+  <text x="120" y="476" text-anchor="middle" font-weight="bold">z_boundaries</text>
+  <text x="120" y="492" text-anchor="middle" fill="#555">11 boundaries, 10 cells</text>
+  <line x1="126" y1="110" x2="340" y2="110" stroke="#888" stroke-dasharray="4,3"/>
+  <line x1="126" y1="450" x2="340" y2="450" stroke="#888" stroke-dasharray="4,3"/>
+  <rect x="340" y="110" width="30" height="340" fill="#faf6ee" stroke="#333" stroke-width="1.5"/>
+  <rect x="430" y="110" width="30" height="340" fill="#faf6ee" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="110" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="144" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="178" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="212" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="246" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="280" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="314" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="348" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="382" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <rect x="370" y="416" width="60" height="34" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="400" y1="48" x2="400" y2="106" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <line x1="400" y1="122" x2="400" y2="438" stroke="#1f5fbf" stroke-width="2" stroke-opacity="0.45" marker-end="url(#b)"/>
+  <line x1="400" y1="454" x2="400" y2="500" stroke="#1f5fbf" stroke-width="3" marker-end="url(#b)"/>
+  <text x="414" y="62" font-weight="bold" fill="#1f5fbf">mdot &gt; 0</text>
+  <text x="414" y="78">Tin, p_abs enter here:</text>
+  <text x="414" y="94" fill="#555">the inlet of positive flow</text>
+  <text x="414" y="480" fill="#555">outlet of positive flow</text>
+  <text x="328" y="126" text-anchor="end" font-weight="bold">left wall</text>
+  <text x="328" y="142" text-anchor="end" fill="#555">a plate surface</text>
+  <line x1="230" y1="189" x2="338" y2="189" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="226" y="193" text-anchor="end">T_left in</text>
+  <line x1="338" y1="217" x2="230" y2="217" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="226" y="221" text-anchor="end">h_left out</text>
+  <line x1="344" y1="297" x2="392" y2="297" stroke="#d9480f" stroke-width="2.5" marker-end="url(#o)"/>
+  <g text-anchor="end">
+    <text x="328" y="293" fill="#d9480f">h_left (T_left − T)</text>
+    <text x="328" y="309" fill="#555">per cell, into the coolant</text>
+  </g>
+  <line x1="240" y1="342" x2="240" y2="436" stroke="#333" stroke-width="2" marker-end="url(#k)"/>
+  <text x="250" y="356" font-weight="bold">g</text>
+  <g text-anchor="end" fill="#555">
+    <text x="230" y="356">+ρ g dz per cell,</text>
+    <text x="230" y="372">positive direction</text>
+    <text x="230" y="388">downward</text>
+  </g>
+  <text x="472" y="126" font-weight="bold">right wall</text>
+  <text x="472" y="142" fill="#555">a plate surface</text>
+  <line x1="570" y1="189" x2="462" y2="189" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="574" y="193">T_right in</text>
+  <line x1="462" y1="217" x2="570" y2="217" stroke="#333" stroke-width="1.5" marker-end="url(#k)"/>
+  <text x="574" y="221">h_right out</text>
+  <line x1="456" y1="297" x2="408" y2="297" stroke="#d9480f" stroke-width="2.5" marker-end="url(#o)"/>
+  <text x="472" y="293" fill="#d9480f">h_right (T_right − T)</text>
+  <text x="472" y="309" fill="#555">per cell, into the coolant</text>
+  <text x="472" y="344" font-weight="bold">h_wall_func</text>
+  <text x="472" y="360">a coefficient per cell on each wall:</text>
+  <text x="472" y="376">the rows h_left, h_right</text>
+  <text x="472" y="404" font-weight="bold">pressure_func</text>
+  <text x="472" y="420">a gain per cell; their sum</text>
+  <text x="472" y="436">is the pressure row</text>
+  <text x="20" y="542" fill="#555">rows of the channel: T_cool, one per cell; pressure; h_left and h_right, one per cell on each wall</text>
+  <line x1="720" y1="16" x2="720" y2="520" stroke="#ddd"/>
+  <text x="740" y="28" font-size="15" font-weight="bold">(b) the pipe, in cross-section</text>
+  <text x="740" y="46" fill="#555" font-style="italic">not to scale</text>
+  <rect x="880" y="130" width="26" height="260" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <line x1="880" y1="130" x2="880" y2="390" stroke="#d9480f" stroke-width="4"/>
+  <line x1="906" y1="130" x2="906" y2="390" stroke="#d9480f" stroke-width="4"/>
+  <g text-anchor="end">
+    <text x="868" y="256" fill="#d9480f">heated edge,</text>
+    <text x="868" y="272" fill="#d9480f">left</text>
+  </g>
+  <text x="918" y="256" fill="#d9480f">heated edge,</text>
+  <text x="918" y="272" fill="#d9480f">right</text>
+  <line x1="880" y1="114" x2="906" y2="114" stroke="#888" marker-start="url(#k)" marker-end="url(#k)"/>
+  <text x="893" y="88" text-anchor="middle">depth = 2.2 mm,</text>
+  <text x="893" y="104" text-anchor="middle" fill="#555">the shorter edge</text>
+  <line x1="996" y1="130" x2="996" y2="390" stroke="#888" marker-start="url(#k)" marker-end="url(#k)"/>
+  <line x1="910" y1="130" x2="1002" y2="130" stroke="#888" stroke-dasharray="4,3"/>
+  <line x1="910" y1="390" x2="1002" y2="390" stroke="#888" stroke-dasharray="4,3"/>
+  <text x="1004" y="190">width =</text>
+  <text x="1004" y="206">70 mm,</text>
+  <text x="1004" y="222" fill="#555">the longer</text>
+  <text x="1004" y="238" fill="#555">edge</text>
+  <text x="740" y="424">EffectivePipe.rectangular(length=0.7,</text>
+  <text x="752" y="440">edge1=0.070, edge2=0.0022,</text>
+  <text x="752" y="456">heated_edge=0.070)</text>
+  <text x="740" y="482" fill="#555">length 0.7 m runs along the flow,</text>
+  <text x="740" y="498" fill="#555">into the page</text>
+</svg>

@@ -1,0 +1,785 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Add point kinetics, feedback and a trip" href="add-point-kinetics-and-a-trip.html"><link rel="prev" title="Build a plate, an assembly or a rod" href="build-a-plate-or-rod.html">
+
+    <!-- Generated with Sphinx 9.2.0 and Furo 2025.12.19 -->
+        <title>Bind inputs and time schedules - STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/style.css?v=36af31e0" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">STREAM 1.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">STREAM 1.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../Examples.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SeriesRLCCircuit.html">Series RLC Circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../TheCubeProblem.html">The Cube Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Parallel%20thermosyphone%20driven%20flow.html">Parallel Thermosyphon-Driven flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SampleFuelPlateAndChannel.html">Plates and Channels, an MTR Love Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CoupledSprings.html">Coupled Masses and Springs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PlanarPendulum.html">Planar Pendulum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAPoolReactor.html">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">How-to guides</a><input aria-label="Toggle navigation of How-to guides" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="choose-a-channel-and-its-laws.html">Choose a channel and its laws</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Bind inputs and time schedules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get-a-steady-solve-to-converge.html">Get a steady solve to converge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run-a-transient-and-set-tolerances.html">Run a transient and set tolerances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="trip-stop-and-restart.html">Trip, stop and restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diagnose-a-failing-solve.html">Diagnose a failing solve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="read-results.html">Read results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compute-margins.html">Compute margins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="plot-a-sweep.html">Plot a sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../explanation/index.html">Explanation</a><input aria-label="Toggle navigation of Explanation" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/natural-circulation.html">Natural circulation and flow reversal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/steady-states-and-guesses.html">Steady states and guesses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/sign-conventions.html">Sign conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stream.html">Documentation</a><input aria-label="Toggle navigation of Documentation" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calculation.html">Calculation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.calculations.html">Calculations</a><input aria-label="Toggle navigation of Calculations" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.composition.html">Composition</a><input aria-label="Toggle navigation of Composition" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.physical_models.html">Physical Models</a><input aria-label="Toggle navigation of Physical Models" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../decay_heat.html">Decay Heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viz.html">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utility_packages.html">Utility Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stream.examples.html">Examples package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tests.html">Tests</a><input aria-label="Toggle navigation of Tests" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.integration.html">Integration Tests</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/howto/bind-inputs-and-schedules.ipynb.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="Bind-inputs-and-time-schedules">
+<h1>Bind inputs and time schedules<a class="headerlink" href="#Bind-inputs-and-time-schedules" title="Link to this heading">¶</a></h1>
+<p><a class="reference internal" href="write-a-calculation.html"><span class="doc">Write a calculation</span></a> feeds one block its heating through <code class="docutils literal notranslate"><span class="pre">funcs</span></code>, as a constant and then as a step. This page uses the same mechanism on a loop of the library’s components: it binds a pump’s head as a constant, as a step and as a table in time, states what a binding cannot reach, and sweeps the head over five values on one aggregator.</p>
+<p>A binding is <code class="docutils literal notranslate"><span class="pre">funcs={calc:</span> <span class="pre">{&quot;name&quot;:</span> <span class="pre">value}}</span></code>, and <code class="docutils literal notranslate"><span class="pre">FlowGraph</span></code>, <code class="docutils literal notranslate"><span class="pre">CalculationGraph</span></code>, <code class="docutils literal notranslate"><span class="pre">Aggregator</span></code> and <code class="docutils literal notranslate"><span class="pre">from_decoupled</span></code> all take it. The value is a constant or a callable of the time alone; the aggregator calls it at every evaluation of <span class="math notranslate nohighlight">\(F\)</span> and hands the result to <code class="docutils literal notranslate"><span class="pre">calc</span></code> as the keyword <code class="docutils literal notranslate"><span class="pre">name</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">report</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">HeatExchanger</span><span class="p">,</span> <span class="n">Junction</span><span class="p">,</span> <span class="n">Pump</span><span class="p">,</span> <span class="n">Resistor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">FlowGraph</span><span class="p">,</span> <span class="n">flow_edge</span>
+</pre></div>
+</div>
+</div>
+<section id="A-constant">
+<h2>A constant<a class="headerlink" href="#A-constant" title="Link to this heading">¶</a></h2>
+<p>The loop is a pump, a core resistance of <code class="docutils literal notranslate"><span class="pre">2.5e4</span></code> Pa per kg/s and a heat exchanger returning the water at 40 °C, on three named junctions. A <code class="docutils literal notranslate"><span class="pre">Pump</span></code> takes a bound <code class="docutils literal notranslate"><span class="pre">pressure</span></code> as its head, ahead of any head it was built with; this one is built with none. The loop has no change of height, so its flow is the head over the resistance, <span class="math notranslate nohighlight">\(\dot m = H / R\)</span>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">j_pump</span><span class="p">,</span> <span class="n">j_core</span><span class="p">,</span> <span class="n">j_hx</span> <span class="o">=</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_pump"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_core"</span><span class="p">),</span> <span class="n">Junction</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"J_hx"</span><span class="p">)</span>
+<span class="n">pump</span> <span class="o">=</span> <span class="n">Pump</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Pump"</span><span class="p">)</span>
+<span class="n">core</span> <span class="o">=</span> <span class="n">Resistor</span><span class="p">(</span><span class="mf">2.5e4</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Core"</span><span class="p">)</span>
+<span class="n">hx</span> <span class="o">=</span> <span class="n">HeatExchanger</span><span class="p">(</span><span class="n">outlet</span><span class="o">=</span><span class="mf">40.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"HX"</span><span class="p">)</span>
+
+<span class="n">fg</span> <span class="o">=</span> <span class="n">FlowGraph</span><span class="p">(</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_pump</span><span class="p">,</span> <span class="n">j_core</span><span class="p">),</span> <span class="n">pump</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_core</span><span class="p">,</span> <span class="n">j_hx</span><span class="p">),</span> <span class="n">core</span><span class="p">),</span>
+    <span class="n">flow_edge</span><span class="p">((</span><span class="n">j_hx</span><span class="p">,</span> <span class="n">j_pump</span><span class="p">),</span> <span class="n">hx</span><span class="p">),</span>
+    <span class="n">funcs</span><span class="o">=</span><span class="p">{</span><span class="n">pump</span><span class="p">:</span> <span class="p">{</span><span class="s2">"pressure"</span><span class="p">:</span> <span class="mf">5e3</span><span class="p">}},</span>
+    <span class="n">reference_node</span><span class="o">=</span><span class="p">(</span><span class="n">j_pump</span><span class="p">,</span> <span class="mf">1e5</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">agr</span><span class="p">,</span> <span class="n">K</span> <span class="o">=</span> <span class="n">fg</span><span class="o">.</span><span class="n">aggregator</span><span class="p">,</span> <span class="n">fg</span><span class="o">.</span><span class="n">kirchhoff</span>
+<span class="n">report</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+
+<span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">fg</span><span class="o">.</span><span class="n">guess_steady_state</span><span class="p">({</span><span class="n">pump</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">core</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="n">hx</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span> <span class="mf">40.0</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow solved:  </span><span class="si">{</span><span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">core</span><span class="p">)]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"flow by hand: </span><span class="si">{</span><span class="mf">5e3</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">core</span><span class="o">.</span><span class="n">r</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> kg/s"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 12 Equations, 7 Nodes, 21 Edges.</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>J_pump</p></td>
+<td><p>Junction</p></td>
+<td><p>0 - 1</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Pump</p></td>
+<td><p>Pump</p></td>
+<td><p>1 - 3</p></td>
+<td><p>mdot0</p></td>
+<td><p>pressure</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_core</p></td>
+<td><p>Junction</p></td>
+<td><p>3 - 4</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Core</p></td>
+<td><p>Resistor</p></td>
+<td><p>4 - 6</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_hx</p></td>
+<td><p>Junction</p></td>
+<td><p>6 - 7</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>HX</p></td>
+<td><p>HeatExchanger</p></td>
+<td><p>7 - 9</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Kirchhoff</p></td>
+<td><p>Kirchhoff</p></td>
+<td><p>9 - 12</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+flow solved:  0.2000 kg/s
+flow by hand: 0.2000 kg/s
+</pre></div></div>
+</div>
+<p>The pump’s <code class="docutils literal notranslate"><span class="pre">pressure</span></code> stands under <strong>Set Externally</strong>, and the flow is the hand value, about 0.2 kg/s.</p>
+</section>
+<section id="A-step-and-a-table-in-time">
+<h2>A step and a table in time<a class="headerlink" href="#A-step-and-a-table-in-time" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">solve_steady</span></code> evaluates every binding at time zero, so a schedule shows only in a solve over time. This loop has no differential row, and <code class="docutils literal notranslate"><span class="pre">solve</span></code> finds its root at each output time from the root at the one before, a quasi-static solve. The step drops the head to half at 10 s. The table is <code class="docutils literal notranslate"><span class="pre">np.interp</span></code> over a few points, which holds the end values outside them: the head holds until 10 s and ramps linearly to zero by 20 s. Both are rebound on the same aggregator, which the last section
+explains.</p>
+<p>The clock itself is bound the same way: a calculation whose <code class="docutils literal notranslate"><span class="pre">calculate</span></code> takes <code class="docutils literal notranslate"><span class="pre">t</span></code> gets it from <code class="docutils literal notranslate"><span class="pre">{&quot;t&quot;:</span> <span class="pre">identity}</span></code>, with <code class="docutils literal notranslate"><span class="pre">identity</span></code> from <code class="docutils literal notranslate"><span class="pre">stream.utilities</span></code> returning its argument.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">schedules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"step"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="mf">5e3</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="mf">10.0</span> <span class="k">else</span> <span class="mf">2.5e3</span><span class="p">,</span>
+    <span class="s2">"table"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">],</span> <span class="p">[</span><span class="mf">5e3</span><span class="p">,</span> <span class="mf">5e3</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]),</span>
+<span class="p">}</span>
+<span class="n">time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">20.0</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">flows</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">label</span><span class="p">,</span> <span class="n">head</span> <span class="ow">in</span> <span class="n">schedules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">pump</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="o">=</span> <span class="n">head</span>
+    <span class="n">sol</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">time</span><span class="p">)</span>
+    <span class="n">flows</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> [kg/s]"</span><span class="p">]</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">at_times</span><span class="p">(</span><span class="n">sol</span><span class="p">,</span> <span class="n">K</span><span class="p">,</span> <span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">core</span><span class="p">))</span>
+    <span class="n">flows</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2"> by hand [kg/s]"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">head</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">/</span> <span class="n">core</span><span class="o">.</span><span class="n">r</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">time</span><span class="p">]</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">time</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"time [s]"</span><span class="p">))</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>step [kg/s]</th>
+      <th>step by hand [kg/s]</th>
+      <th>table [kg/s]</th>
+      <th>table by hand [kg/s]</th>
+    </tr>
+    <tr>
+      <th>time [s]</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0.0</th>
+      <td>0.2</td>
+      <td>0.2</td>
+      <td>0.2</td>
+      <td>0.2</td>
+    </tr>
+    <tr>
+      <th>5.0</th>
+      <td>0.2</td>
+      <td>0.2</td>
+      <td>0.2</td>
+      <td>0.2</td>
+    </tr>
+    <tr>
+      <th>10.0</th>
+      <td>0.1</td>
+      <td>0.1</td>
+      <td>0.2</td>
+      <td>0.2</td>
+    </tr>
+    <tr>
+      <th>15.0</th>
+      <td>0.1</td>
+      <td>0.1</td>
+      <td>0.1</td>
+      <td>0.1</td>
+    </tr>
+    <tr>
+      <th>20.0</th>
+      <td>0.1</td>
+      <td>0.1</td>
+      <td>0.0</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>Each column follows its schedule at every output time. A schedule runs at every evaluation of <span class="math notranslate nohighlight">\(F\)</span>, not once per output time: a cheap function of the time alone, giving the same value each time it is asked, is the right size.</p>
+</section>
+<section id="What-a-binding-cannot-reach">
+<h2>What a binding cannot reach<a class="headerlink" href="#What-a-binding-cannot-reach" title="Link to this heading">¶</a></h2>
+<p><strong>The state.</strong> A binding is passed the time and nothing else, though a closure may read an attribute that an event sets, as the decay-heat schedule of the pool reactor does. A driver that watches the state, a trip reading a flow, is a <code class="docutils literal notranslate"><span class="pre">Calculation</span></code> with rows and events of its own, as <code class="docutils literal notranslate"><span class="pre">LowFlowTrip</span></code> in <code class="docutils literal notranslate"><span class="pre">stream.examples.lofa.components</span></code> is; <a class="reference internal" href="trip-stop-and-restart.html"><span class="doc">Trip, stop and restart</span></a> builds one.</p>
+<p><strong>Another object.</strong> <code class="docutils literal notranslate"><span class="pre">funcs</span></code> is keyed by the calculation object, as <a class="reference internal" href="write-a-calculation.html"><span class="doc">Write a calculation</span></a> shows, so a copy of a calculation is another key and needs its own entry.</p>
+<p><strong>An edge’s value.</strong> A binding on a name an edge already supplies replaces the edge’s value, with no warning. <strong>Set Externally</strong> lists it, which is where to catch it.</p>
+<p><strong>An attribute.</strong> A value the component keeps on itself is not an input. <code class="docutils literal notranslate"><span class="pre">HeatExchanger</span></code> holds its outlet temperature as <code class="docutils literal notranslate"><span class="pre">hx.T</span></code>; a binding named <code class="docutils literal notranslate"><span class="pre">outlet</span></code> reaches its <code class="docutils literal notranslate"><span class="pre">calculate</span></code> and is ignored, and <code class="docutils literal notranslate"><span class="pre">report</span></code> does not list it. Changing such a value is changing the component, as <a class="reference internal" href="../PCSCoastdown.html"><span class="doc">Primary Cooling System Coastdown</span></a> does to its pump to start a transient.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">hx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"outlet"</span><span class="p">:</span> <span class="mf">60.0</span><span class="p">}</span>
+<span class="n">report</span><span class="p">(</span><span class="n">agr</span><span class="p">)</span>
+<span class="k">del</span> <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">hx</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<p>Contains 12 Equations, 7 Nodes, 21 Edges.</p>
+<div class="table-wrapper docutils container">
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Calculation</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Equation No.</p></th>
+<th class="head"><p>Unset</p></th>
+<th class="head"><p>Set Externally</p></th>
+<th class="head"><p>Missing</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>J_pump</p></td>
+<td><p>Junction</p></td>
+<td><p>0 - 1</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Pump</p></td>
+<td><p>Pump</p></td>
+<td><p>1 - 3</p></td>
+<td><p>mdot0</p></td>
+<td><p>pressure</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_core</p></td>
+<td><p>Junction</p></td>
+<td><p>3 - 4</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>Core</p></td>
+<td><p>Resistor</p></td>
+<td><p>4 - 6</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>J_hx</p></td>
+<td><p>Junction</p></td>
+<td><p>6 - 7</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p>HX</p></td>
+<td><p>HeatExchanger</p></td>
+<td><p>7 - 9</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Kirchhoff</p></td>
+<td><p>Kirchhoff</p></td>
+<td><p>9 - 12</p></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<p>The heat exchanger’s row has nothing under <strong>Set Externally</strong>.</p>
+</section>
+<section id="Sweep-a-boundary-condition">
+<h2>Sweep a boundary condition<a class="headerlink" href="#Sweep-a-boundary-condition" title="Link to this heading">¶</a></h2>
+<p>The aggregator reads <code class="docutils literal notranslate"><span class="pre">agr.funcs</span></code> at every evaluation, and <code class="docutils literal notranslate"><span class="pre">report</span></code> reads it when called, so a binding changed on a built aggregator needs no rebuild. Rebind through <code class="docutils literal notranslate"><span class="pre">agr.funcs</span></code>: once aggregators are added, the sum holds a merged copy of their bindings, not the dictionaries passed at construction. The cell sweeps the head over five values, each solve starting from the last.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">head</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">2.5e3</span><span class="p">,</span> <span class="mf">5e3</span><span class="p">,</span> <span class="mf">7.5e3</span><span class="p">,</span> <span class="mf">1e4</span><span class="p">,</span> <span class="mf">1.25e4</span><span class="p">]:</span>
+    <span class="n">agr</span><span class="o">.</span><span class="n">funcs</span><span class="p">[</span><span class="n">pump</span><span class="p">][</span><span class="s2">"pressure"</span><span class="p">]</span> <span class="o">=</span> <span class="n">head</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">agr</span><span class="o">.</span><span class="n">solve_steady</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">"head [kPa]"</span><span class="p">:</span> <span class="n">head</span> <span class="o">/</span> <span class="mf">1e3</span><span class="p">,</span> <span class="s2">"flow [kg/s]"</span><span class="p">:</span> <span class="n">agr</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">y</span><span class="p">)[</span><span class="n">K</span><span class="o">.</span><span class="n">name</span><span class="p">][</span><span class="n">K</span><span class="o">.</span><span class="n">component_edge</span><span class="p">(</span><span class="n">core</span><span class="p">)],</span>
+                 <span class="s2">"H / R [kg/s]"</span><span class="p">:</span> <span class="n">head</span> <span class="o">/</span> <span class="n">core</span><span class="o">.</span><span class="n">r</span><span class="p">})</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>head [kPa]</th>
+      <th>flow [kg/s]</th>
+      <th>H / R [kg/s]</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>2.5</td>
+      <td>0.1</td>
+      <td>0.1</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>5.0</td>
+      <td>0.2</td>
+      <td>0.2</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>7.5</td>
+      <td>0.3</td>
+      <td>0.3</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>10.0</td>
+      <td>0.4</td>
+      <td>0.4</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>12.5</td>
+      <td>0.5</td>
+      <td>0.5</td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<p>Every solved flow equals <span class="math notranslate nohighlight">\(H / R\)</span> to the digits the table keeps.</p>
+<p><a class="reference internal" href="../LOFABuildingTheLoop.html"><span class="doc">Building the Pool Reactor Loop</span></a> binds at scale: a constant plate power, the clocks of the flapper and the trip, and a decay-heat schedule counted from the trip. The usual next task: <a class="reference internal" href="add-point-kinetics-and-a-trip.html"><span class="doc">Add point kinetics, feedback and a trip</span></a>.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="add-point-kinetics-and-a-trip.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Add point kinetics, feedback and a trip</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="build-a-plate-or-rod.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Build a plate, an assembly or a rod</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            Made with 
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            <div class="last-updated">
+              Last updated on Oct 30, 2026</div>
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Bind inputs and time schedules</a><ul>
+<li><a class="reference internal" href="#A-constant">A constant</a></li>
+<li><a class="reference internal" href="#A-step-and-a-table-in-time">A step and a table in time</a></li>
+<li><a class="reference internal" href="#What-a-binding-cannot-reach">What a binding cannot reach</a></li>
+<li><a class="reference internal" href="#Sweep-a-boundary-condition">Sweep a boundary condition</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=2a705162"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="../_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    </body>
+</html>

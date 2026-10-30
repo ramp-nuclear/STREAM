@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 600" width="1100" height="600" font-family="Helvetica, Arial, sans-serif" font-size="12">
+  <defs>
+    <marker id="fwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#1f5fbf"/>
+    </marker>
+  </defs>
+  <rect width="1100" height="600" fill="#ffffff"/>
+  <text x="50" y="36" fill="#555" font-size="14" font-weight="bold">in the core: one plate stack per group, gaps drawn to scale with each other</text>
+  <text x="957" y="36" fill="#555" font-size="14" font-weight="bold" text-anchor="middle">in the flow graph</text>
+  <rect x="50" y="70" width="740" height="25" fill="#e8f1fb" stroke="#333" stroke-width="1.5"/>
+  <text x="420" y="87" text-anchor="middle" font-weight="bold">J_pool_top: pool water at the core top</text>
+  <rect x="50" y="385" width="740" height="25" fill="#f2f2f2" stroke="#333" stroke-width="1.5"/>
+  <text x="420" y="402" text-anchor="middle" font-weight="bold">J_plenum</text>
+  <line x1="40" y1="140" x2="40" y2="340" stroke="#888"/>
+  <line x1="34" y1="140" x2="46" y2="140" stroke="#888"/><line x1="34" y1="340" x2="46" y2="340" stroke="#888"/>
+  <text x="32" y="244" text-anchor="end" fill="#555">0.7 m</text>
+
+  <rect x="72" y="140" width="33" height="200" fill="#e8f1fb" stroke="#888"/>
+  <rect x="80" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <line x1="91.5" y1="102" x2="91.5" y2="134" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="91.5" y1="346" x2="91.5" y2="379" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <rect x="180" y="140" width="119" height="200" fill="#e8f1fb" stroke="#888"/>
+  <rect x="188" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="205" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="222" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="239" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="274" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="259" y="139" width="12" height="202" fill="#ffffff"/>
+  <path d="M255,236 L262,226 L268,246 L275,236" fill="none" stroke="#555" stroke-width="1.5"/>
+  <text x="265" y="128" text-anchor="middle" font-weight="bold">× 300</text>
+  <line x1="199.5" y1="102" x2="199.5" y2="134" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="285.5" y1="346" x2="285.5" y2="379" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <rect x="380" y="140" width="119" height="200" fill="#e8f1fb" stroke="#888"/>
+  <rect x="388" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="405" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="422" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="439" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="474" y="140" width="6" height="200" fill="#e6c89a" stroke="#8a6d3b"/>
+  <rect x="459" y="139" width="12" height="202" fill="#ffffff"/>
+  <path d="M455,236 L462,226 L468,246 L475,236" fill="none" stroke="#555" stroke-width="1.5"/>
+  <text x="465" y="128" text-anchor="middle" font-weight="bold">× 90</text>
+  <line x1="399.5" y1="102" x2="399.5" y2="134" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="485.5" y1="346" x2="485.5" y2="379" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <rect x="575" y="140" width="202" height="200" fill="#e8f1fb" stroke="#888"/>
+  <rect x="583" y="140" width="6" height="200" fill="#d8d8d8" stroke="#888"/>
+  <rect x="639" y="140" width="6" height="200" fill="#d8d8d8" stroke="#888"/>
+  <rect x="713" y="140" width="6" height="200" fill="#d8d8d8" stroke="#888"/>
+  <rect x="698" y="139" width="12" height="202" fill="#ffffff"/>
+  <path d="M694,236 L701,226 L707,246 L714,236" fill="none" stroke="#555" stroke-width="1.5"/>
+  <text x="704" y="128" text-anchor="middle" font-weight="bold">× 10</text>
+  <line x1="614.0" y1="102" x2="614.0" y2="134" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <line x1="744.0" y1="346" x2="744.0" y2="379" stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)"/>
+  <g text-anchor="middle"><text x="88.5" y="436" font-weight="bold">hot</text><text x="88.5" y="452">1 plate</text><text x="88.5" y="468">2.2 mm gap</text><text x="88.5" y="484">power ×1.6</text></g>
+  <rect x="16.5" y="500" width="144" height="40" rx="4" fill="#fff" stroke="#333"/>
+  <g text-anchor="middle"><text x="88.5" y="516">1 channel + 1 plate</text><text x="88.5" y="532" font-weight="bold">signify = 1</text></g>
+  <g text-anchor="middle"><text x="239.5" y="436" font-weight="bold">normal</text><text x="239.5" y="452">300 plates</text><text x="239.5" y="468">2.2 mm gap</text><text x="239.5" y="484">power ×1.0</text></g>
+  <rect x="167.5" y="500" width="144" height="40" rx="4" fill="#fff" stroke="#333"/>
+  <g text-anchor="middle"><text x="239.5" y="516">1 channel + 1 plate</text><text x="239.5" y="532" font-weight="bold">signify = 300</text></g>
+  <g text-anchor="middle"><text x="439.5" y="436" font-weight="bold">low</text><text x="439.5" y="452">90 plates</text><text x="439.5" y="468">2.2 mm gap</text><text x="439.5" y="484">power ×0.5</text></g>
+  <rect x="367.5" y="500" width="144" height="40" rx="4" fill="#fff" stroke="#333"/>
+  <g text-anchor="middle"><text x="439.5" y="516">1 channel + 1 plate</text><text x="439.5" y="532" font-weight="bold">signify = 90</text></g>
+  <g text-anchor="middle"><text x="676" y="436" font-weight="bold">bypass</text><text x="676" y="452">10 plates</text><text x="676" y="468">10 mm gap</text><text x="676" y="484">unheated</text></g>
+  <rect x="604" y="500" width="144" height="40" rx="4" fill="#fff" stroke="#333"/>
+  <g text-anchor="middle"><text x="676" y="516">1 channel, no plate</text><text x="676" y="532" font-weight="bold">signify = 10</text></g>
+  <text x="50" y="572" fill="#555">gaps at 5 px per mm; plate thickness and length not to scale; the break marks stand for the plates not drawn</text>
+  <rect x="850" y="70" width="215" height="25" rx="12" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="957" y="87" text-anchor="middle" font-weight="bold">J_pool_top</text>
+  <rect x="850" y="385" width="215" height="25" rx="12" fill="#fff" stroke="#333" stroke-width="1.5"/>
+  <text x="957" y="402" text-anchor="middle" font-weight="bold">J_plenum</text>
+  <g stroke="#1f5fbf" stroke-width="2.5" marker-end="url(#fwd)">
+    <line x1="875" y1="95" x2="875" y2="380"/><line x1="930" y1="95" x2="930" y2="380"/>
+    <line x1="985" y1="95" x2="985" y2="380"/><line x1="1040" y1="95" x2="1040" y2="380"/>
+  </g>
+  <g text-anchor="middle">
+    <rect x="850" y="216" width="50" height="36" fill="#fff"/><text x="875" y="230">hot</text><text x="875" y="246" font-weight="bold">×1</text>
+    <rect x="905" y="216" width="50" height="36" fill="#fff"/><text x="930" y="230">normal</text><text x="930" y="246" font-weight="bold">×300</text>
+    <rect x="960" y="216" width="50" height="36" fill="#fff"/><text x="985" y="230">low</text><text x="985" y="246" font-weight="bold">×90</text>
+    <rect x="1015" y="216" width="50" height="36" fill="#fff"/><text x="1040" y="230">bypass</text><text x="1040" y="246" font-weight="bold">×10</text>
+  </g>
+  <g text-anchor="middle">
+    <text x="957" y="436" font-weight="bold">four edges, 401 channels</text>
+    <text x="957" y="456">an edge carries one plate's flow;</text>
+    <text x="957" y="472">its junctions count it × signify</text>
+    <text x="957" y="500" fill="#1f5fbf">forced flow: down, J_pool_top</text>
+    <text x="957" y="516" fill="#1f5fbf">to J_plenum, the edges' direction</text>
+  </g>
+</svg>

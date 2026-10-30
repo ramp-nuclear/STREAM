@@ -1,0 +1,814 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="Explanation" href="../explanation/index.html"><link rel="prev" title="Compute margins" href="compute-margins.html">
+
+    <!-- Generated with Sphinx 9.2.0 and Furo 2025.12.19 -->
+        <title>Plot a sweep - STREAM 1.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    <link rel="stylesheet" type="text/css" href="../_static/style.css?v=36af31e0" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">STREAM 1.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">STREAM 1.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Installation.html">Installation</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../Examples.html">Examples</a><input aria-label="Toggle navigation of Examples" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../quickstart.html">A first loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SeriesRLCCircuit.html">Series RLC Circuit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../TheCubeProblem.html">The Cube Problem</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../Parallel%20thermosyphone%20driven%20flow.html">Parallel Thermosyphon-Driven flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PCSCoastdown.html">Primary Cooling System Coastdown</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../SampleFuelPlateAndChannel.html">Plates and Channels, an MTR Love Story</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../MultiplePlatesInRod.html">Multiple Plates In a Fuel Rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../CoupledSprings.html">Coupled Masses and Springs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../PlanarPendulum.html">Planar Pendulum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABuildingTheLoop.html">Building the Pool Reactor Loop</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAPoolReactor.html">A Pool Reactor for Loss-of-Flow Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFABothPumpsTrip.html">Both Pumps Trip: Coastdown, Trip, Flapper, Natural Convection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../LOFAVariations.html">One Pump, a Stuck Flapper, and How Far to Trust the Numbers</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current has-children"><a class="reference internal" href="index.html">How-to guides</a><input aria-label="Toggle navigation of How-to guides" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="write-a-calculation.html">Write a calculation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="wire-a-flow-network.html">Wire a flow network</a></li>
+<li class="toctree-l2"><a class="reference internal" href="choose-a-channel-and-its-laws.html">Choose a channel and its laws</a></li>
+<li class="toctree-l2"><a class="reference internal" href="build-a-plate-or-rod.html">Build a plate, an assembly or a rod</a></li>
+<li class="toctree-l2"><a class="reference internal" href="bind-inputs-and-schedules.html">Bind inputs and time schedules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-point-kinetics-and-a-trip.html">Add point kinetics, feedback and a trip</a></li>
+<li class="toctree-l2"><a class="reference internal" href="add-decay-heat.html">Add decay heat</a></li>
+<li class="toctree-l2"><a class="reference internal" href="get-a-steady-solve-to-converge.html">Get a steady solve to converge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="run-a-transient-and-set-tolerances.html">Run a transient and set tolerances</a></li>
+<li class="toctree-l2"><a class="reference internal" href="trip-stop-and-restart.html">Trip, stop and restart</a></li>
+<li class="toctree-l2"><a class="reference internal" href="diagnose-a-failing-solve.html">Diagnose a failing solve</a></li>
+<li class="toctree-l2"><a class="reference internal" href="read-results.html">Read results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="compute-margins.html">Compute margins</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">Plot a sweep</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../explanation/index.html">Explanation</a><input aria-label="Toggle navigation of Explanation" class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" role="switch" type="checkbox"/><label for="toctree-checkbox-3"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/natural-circulation.html">Natural circulation and flow reversal</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/steady-states-and-guesses.html">Steady states and guesses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../explanation/sign-conventions.html">Sign conventions</a></li>
+</ul>
+</li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stream.html">Documentation</a><input aria-label="Toggle navigation of Documentation" class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" role="switch" type="checkbox"/><label for="toctree-checkbox-4"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aggregator.html">Aggregator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../calculation.html">Calculation</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.calculations.html">Calculations</a><input aria-label="Toggle navigation of Calculations" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" role="switch" type="checkbox"/><label for="toctree-checkbox-5"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.composition.html">Composition</a><input aria-label="Toggle navigation of Composition" class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" role="switch" type="checkbox"/><label for="toctree-checkbox-6"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="simple">
+</ul>
+</li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="../stream.physical_models.html">Physical Models</a><input aria-label="Toggle navigation of Physical Models" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" role="switch" type="checkbox"/><label for="toctree-checkbox-7"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l3"><a class="reference internal" href="../heat_transfer_coefficient.html">Heat Transfer Coefficient</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../pressure_drop.html">Pressure Drop</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../thresholds.html">Thresholds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../decay_heat.html">Decay Heat</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis.html">Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../viz.html">Visualization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../utility_packages.html">Utility Packages</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stream.examples.html">Examples package</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../Contributing.html">Contributing</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../tests.html">Tests</a><input aria-label="Toggle navigation of Tests" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" role="switch" type="checkbox"/><label for="toctree-checkbox-8"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_general.html">General Framework Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_calculations.html">Calculations Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_composition.html">Composition Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.test_libraries.html">Libraries Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tests.integration.html">Integration Tests</a></li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/howto/plot-a-sweep.ipynb.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="Plot-a-sweep">
+<h1>Plot a sweep<a class="headerlink" href="#Plot-a-sweep" title="Link to this heading">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">stream.viz</span></code> turns a steady-state parameter sweep into figures and tidy data. Build a <code class="docutils literal notranslate"><span class="pre">Sweep</span></code> from the cases and their result frames, ask it a question, and call <code class="docutils literal notranslate"><span class="pre">.plot()</span></code> on the answer, or read its <code class="docutils literal notranslate"><span class="pre">frame</span></code>.</p>
+<p>Each task below starts from what you want to look at and ends at the call that draws it. The page builds a fuel plate and its coolant channel and sweeps them over power, mass flow and axial power shape.</p>
+<section id="The-plate-and-its-channel">
+<h2>The plate and its channel<a class="headerlink" href="#The-plate-and-its-channel" title="Link to this heading">¶</a></h2>
+<p>The cell builds one plate and channel per axial power shape and a <code class="docutils literal notranslate"><span class="pre">model</span></code> that solves one case with <code class="docutils literal notranslate"><span class="pre">symmetric_plate_steady_state</span></code>. It adds the CHF and OSV thresholds to the state, and their ratios to the larger wall flux as <code class="docutils literal notranslate"><span class="pre">CHFR</span></code> and <code class="docutils literal notranslate"><span class="pre">OSVR</span></code>. A case whose coolant reaches saturation raises <code class="docutils literal notranslate"><span class="pre">SaturationReachedError</span></code>, which makes it a hole.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">EffectivePipe</span><span class="p">,</span> <span class="n">Solid</span><span class="p">,</span> <span class="n">light_water</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.thresholds</span><span class="w"> </span><span class="kn">import</span> <span class="n">Saha_Zuber_OSV</span><span class="p">,</span> <span class="n">Sudo_Kaminaga_CHF</span><span class="p">,</span> <span class="n">threshold_analysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelAndContacts</span><span class="p">,</span> <span class="n">Fuel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.calculations.channel</span><span class="w"> </span><span class="kn">import</span> <span class="n">Direction</span><span class="p">,</span> <span class="n">SaturationReachedError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.composition</span><span class="w"> </span><span class="kn">import</span> <span class="n">symmetric_plate</span><span class="p">,</span> <span class="n">symmetric_plate_steady_state</span><span class="p">,</span> <span class="n">uniform_x_power_shape</span><span class="p">,</span> <span class="n">x_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.physical_models.heat_transfer_coefficient</span><span class="w"> </span><span class="kn">import</span> <span class="n">spl_htc</span><span class="p">,</span> <span class="n">wall_heat_transfer_coeff</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stream.utilities</span><span class="w"> </span><span class="kn">import</span> <span class="n">cosine_shape</span>
+
+<span class="n">T_in</span><span class="p">,</span> <span class="n">p_abs</span> <span class="o">=</span> <span class="mf">40.0</span><span class="p">,</span> <span class="mf">2e5</span>
+<span class="n">length</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">gap</span><span class="p">,</span> <span class="n">cells</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.070</span><span class="p">,</span> <span class="mf">0.002</span><span class="p">,</span> <span class="mi">14</span>
+<span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mf">0.0005</span><span class="p">,</span> <span class="mf">0.0006</span>
+<span class="n">z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">cells</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">pipe</span> <span class="o">=</span> <span class="n">EffectivePipe</span><span class="o">.</span><span class="n">rectangular</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">edge1</span><span class="o">=</span><span class="n">width</span><span class="p">,</span> <span class="n">edge2</span><span class="o">=</span><span class="n">gap</span><span class="p">,</span> <span class="n">heated_edge</span><span class="o">=</span><span class="n">width</span><span class="p">)</span>
+<span class="n">h_wall</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+    <span class="n">wall_heat_transfer_coeff</span><span class="p">,</span>
+    <span class="n">h_spl</span><span class="o">=</span><span class="n">spl_htc</span><span class="p">(</span><span class="s2">"regime_dependent"</span><span class="p">,</span> <span class="n">re_bounds</span><span class="o">=</span><span class="p">(</span><span class="mf">2000.0</span><span class="p">,</span> <span class="mf">5000.0</span><span class="p">),</span> <span class="n">aspect_ratio</span><span class="o">=</span><span class="n">gap</span> <span class="o">/</span> <span class="n">width</span><span class="p">,</span> <span class="n">Lh</span><span class="o">=</span><span class="n">length</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="n">shapes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cosine"</span><span class="p">:</span> <span class="n">cosine_shape</span><span class="p">,</span> <span class="s2">"flat"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">zb</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">diff</span><span class="p">(</span><span class="n">zb</span><span class="p">)</span> <span class="o">/</span> <span class="n">zb</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plate</span><span class="p">(</span><span class="n">shape</span><span class="p">):</span>
+    <span class="n">meat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">cells</span><span class="p">,</span> <span class="n">fuel_N</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">clad_N</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+    <span class="n">meat</span><span class="p">[:,</span> <span class="n">clad_N</span><span class="p">:</span><span class="o">-</span><span class="n">clad_N</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">fuel</span> <span class="o">=</span> <span class="n">Fuel</span><span class="p">(</span>
+        <span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span>
+        <span class="n">x_boundaries</span><span class="o">=</span><span class="n">x_boundaries</span><span class="p">(</span><span class="n">clad_N</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">),</span>
+        <span class="n">material</span><span class="o">=</span><span class="n">Solid</span><span class="o">.</span><span class="n">from_array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">meat</span><span class="p">,</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">3500</span><span class="p">,</span> <span class="mi">750</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span> <span class="n">Solid</span><span class="p">(</span><span class="mi">2700</span><span class="p">,</span> <span class="mi">900</span><span class="p">,</span> <span class="mi">167</span><span class="p">))),</span>
+        <span class="n">meat_indices</span><span class="o">=</span><span class="n">meat</span><span class="p">,</span>
+        <span class="n">power_shape</span><span class="o">=</span><span class="n">uniform_x_power_shape</span><span class="p">(</span><span class="n">cells</span><span class="p">,</span> <span class="n">fuel_N</span><span class="p">,</span> <span class="n">clad_N</span><span class="p">,</span> <span class="n">clad_w</span><span class="p">,</span> <span class="n">meat_w</span><span class="p">,</span> <span class="n">width</span><span class="p">,</span> <span class="n">z_shaper</span><span class="o">=</span><span class="n">shapes</span><span class="p">[</span><span class="n">shape</span><span class="p">]),</span>
+        <span class="n">y_length</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"Fuel"</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">ChannelAndContacts</span><span class="p">(</span><span class="n">z_boundaries</span><span class="o">=</span><span class="n">z</span><span class="p">,</span> <span class="n">fluid</span><span class="o">=</span><span class="n">light_water</span><span class="p">,</span> <span class="n">pipe</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span> <span class="n">h_wall_func</span><span class="o">=</span><span class="n">h_wall</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Channel"</span><span class="p">)</span>
+    <span class="n">funcs</span> <span class="o">=</span> <span class="p">{</span><span class="n">channel</span><span class="p">:</span> <span class="p">{</span><span class="s2">"mdot"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"p_abs"</span><span class="p">:</span> <span class="n">p_abs</span><span class="p">,</span> <span class="s2">"Tin"</span><span class="p">:</span> <span class="n">T_in</span><span class="p">},</span> <span class="n">fuel</span><span class="p">:</span> <span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="mf">1e4</span><span class="p">}}</span>
+    <span class="k">return</span> <span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">symmetric_plate</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">funcs</span><span class="p">)</span><span class="o">.</span><span class="n">to_aggregator</span><span class="p">()</span>
+
+
+<span class="n">plates</span> <span class="o">=</span> <span class="p">{</span><span class="n">shape</span><span class="p">:</span> <span class="n">plate</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span> <span class="k">for</span> <span class="n">shape</span> <span class="ow">in</span> <span class="n">shapes</span><span class="p">}</span>
+<span class="n">agr</span> <span class="o">=</span> <span class="n">plates</span><span class="p">[</span><span class="s2">"cosine"</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span>
+<span class="n">thresholds</span> <span class="o">=</span> <span class="n">threshold_analysis</span><span class="p">(</span><span class="n">CHF</span><span class="o">=</span><span class="n">Sudo_Kaminaga_CHF</span><span class="p">,</span> <span class="n">OSV</span><span class="o">=</span><span class="n">partial</span><span class="p">(</span><span class="n">Saha_Zuber_OSV</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">Direction</span><span class="o">.</span><span class="n">left</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="n">power</span><span class="p">,</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">agr</span> <span class="o">=</span> <span class="n">plates</span><span class="p">[</span><span class="n">shape</span><span class="p">]</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">symmetric_plate_steady_state</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">fuel</span><span class="p">,</span> <span class="n">mdot</span><span class="o">=</span><span class="n">mdot</span><span class="p">,</span> <span class="n">p_abs</span><span class="o">=</span><span class="n">p_abs</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="n">power</span><span class="p">,</span> <span class="n">Tin</span><span class="o">=</span><span class="n">T_in</span><span class="p">)</span>
+    <span class="n">state</span> <span class="o">=</span> <span class="n">thresholds</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span> <span class="n">channel</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">ch</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="n">channel</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+    <span class="n">T_cool</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"T_cool"</span><span class="p">])</span>
+    <span class="n">T_sat</span> <span class="o">=</span> <span class="n">light_water</span><span class="o">.</span><span class="n">sat_temperature</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"static_pressure"</span><span class="p">]))</span>
+    <span class="n">boiling</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flatnonzero</span><span class="p">(</span><span class="n">T_cool</span> <span class="o">&gt;=</span> <span class="n">T_sat</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">boiling</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">SaturationReachedError</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">boiling</span><span class="p">,</span> <span class="n">T_cool</span><span class="p">[</span><span class="n">boiling</span><span class="p">],</span> <span class="n">T_sat</span><span class="p">[</span><span class="n">boiling</span><span class="p">])</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"q, left"</span><span class="p">]),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"q, right"</span><span class="p">]))</span>
+    <span class="n">ch</span><span class="p">[</span><span class="s2">"CHFR"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"CHF"</span><span class="p">])</span> <span class="o">/</span> <span class="n">q</span>
+    <span class="n">ch</span><span class="p">[</span><span class="s2">"OSVR"</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ch</span><span class="p">[</span><span class="s2">"OSV"</span><span class="p">])</span> <span class="o">/</span> <span class="n">q</span>
+    <span class="k">return</span> <span class="n">state</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Build-the-sweep">
+<h2>Build the sweep<a class="headerlink" href="#Build-the-sweep" title="Link to this heading">¶</a></h2>
+<p>A sweep needs three things: the cases, one frame per case, and the aggregator the frames came from. A frame is <code class="docutils literal notranslate"><span class="pre">State.to_dataframe()</span></code> of a solved case, so the model is any function that takes one case’s parameters as keywords, solves it and returns that frame.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">stream.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sweep</span><span class="p">,</span> <span class="n">at_least</span><span class="p">,</span> <span class="n">at_most</span><span class="p">,</span> <span class="n">cases</span><span class="p">,</span> <span class="n">run_cases</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="sa">r</span><span class="s2">"\d+ of \d+ cases failed"</span><span class="p">)</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"holes in the sweep"</span><span class="p">)</span>
+<span class="n">cases_</span> <span class="o">=</span> <span class="n">cases</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="p">[</span><span class="mf">10e3</span><span class="p">,</span> <span class="mf">20e3</span><span class="p">,</span> <span class="mf">30e3</span><span class="p">,</span> <span class="mf">40e3</span><span class="p">,</span> <span class="mf">60e3</span><span class="p">,</span> <span class="mf">80e3</span><span class="p">],</span> <span class="n">mdot</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="s2">"cosine"</span><span class="p">,</span> <span class="s2">"flat"</span><span class="p">])</span>
+<span class="n">frames</span> <span class="o">=</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cases_</span><span class="p">)</span>
+<span class="n">sweep</span> <span class="o">=</span> <span class="n">Sweep</span><span class="p">(</span><span class="n">cases_</span><span class="p">,</span> <span class="n">frames</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span>
+              <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Power per plate"</span><span class="p">,</span> <span class="s2">"kW"</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">),</span>
+                      <span class="s2">"mdot"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Mass flow"</span><span class="p">,</span> <span class="s2">"kg/s"</span><span class="p">),</span>
+                      <span class="s2">"shape"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Axial power shape"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                      <span class="s2">"OSVR"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"OSV ratio"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                      <span class="s2">"CHFR"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"CHF ratio"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+                      <span class="s2">"T_wall, left"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"Clad surface temperature"</span><span class="p">,</span> <span class="s2">"°C"</span><span class="p">)},</span>
+              <span class="n">limits</span><span class="o">=</span><span class="p">{</span><span class="s2">"OSVR"</span><span class="p">:</span> <span class="n">at_least</span><span class="p">(</span><span class="mf">1.3</span><span class="p">),</span> <span class="s2">"CHFR"</span><span class="p">:</span> <span class="n">at_least</span><span class="p">(</span><span class="mf">1.3</span><span class="p">),</span> <span class="s2">"T_wall, left"</span><span class="p">:</span> <span class="n">at_most</span><span class="p">(</span><span class="mf">110.0</span><span class="p">)})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">sweep</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Sweep: 36 cases, 8 holes, no uncertainty
+  parameters: power [10000, 20000, 30000, 40000, 60000, 80000], mdot [0.1, 0.2, 0.3], shape [cosine, flat]
+  Channel: CHF (profile), CHFR (profile), Gr, left (profile), Gr, right (profile), OSV (profile), OSVR (profile), Pe (profile), Re (profile), T_cool (profile), T_in (scalar), T_out (scalar), T_wall, left (profile), T_wall, right (profile), absolute_pressure (profile), h_left (profile), h_right (profile), mass_flow (scalar), power (scalar), pressure (scalar), q, left (profile), q, right (profile), static_pressure (profile), velocity (profile)
+  Fuel: T (field), T_wall_left (profile), T_wall_right (profile)
+  limits: OSVR at least 1.3, CHFR at least 1.3, T_wall, left at most 110
+  holes: case 18 (power=40000, mdot=0.1, shape=cosine): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=4.249e+06.
+         case 19 (power=40000, mdot=0.1, shape=flat): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=nan.
+         case 24 (power=60000, mdot=0.1, shape=cosine): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=9.652e+08.
+         case 25 (power=60000, mdot=0.1, shape=flat): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=9.070e+07.
+         case 30 (power=80000, mdot=0.1, shape=cosine): scaled_newton failed at iteration 4 (Armijo line search found no descent direction); ||F||=1.704e+10.
+         case 31 (power=80000, mdot=0.1, shape=flat): scaled_newton failed at iteration 6 (Armijo line search found no descent direction); ||F||=3.357e+08.
+         case 32 (power=80000, mdot=0.2, shape=cosine): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=nan.
+         case 33 (power=80000, mdot=0.2, shape=flat): scaled_newton failed at iteration 100 (exceeded maxit=100); ||F||=8.686e+03.
+</pre></div></div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cases</span></code> makes one dict per combination of levels; a parameter can be a number or a string (a choice, such as a wall law).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">labels=</span></code> gives each name its display text, unit and scale; <code class="docutils literal notranslate"><span class="pre">&quot;power&quot;:</span> <span class="pre">(&quot;Power</span> <span class="pre">per</span> <span class="pre">plate&quot;,</span> <span class="pre">&quot;kW&quot;,</span> <span class="pre">1e-3)</span></code> prints watts as kilowatts.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">limits=</span></code> declares what the design must respect; a declared limit is drawn on every figure that shows its quantity.</p></li>
+</ul>
+<p>Cases and frames from your own loop work the same way: <code class="docutils literal notranslate"><span class="pre">Sweep(cases_,</span> <span class="pre">frames,</span> <span class="pre">agr)</span></code> with <code class="docutils literal notranslate"><span class="pre">None</span></code> in the slot of a case that did not solve. <code class="docutils literal notranslate"><span class="pre">print(sweep)</span></code> says what can be asked of the sweep. Here it lists eight holes: every case at 0.1 kg/s from 40 kW on, and both shapes at 80 kW and 0.2 kg/s.</p>
+<p>A profile has one value per cell along the channel, a field one value per cell over a plate’s two axes, and a scalar one value per case.</p>
+<p>Each question below warns again with the holes it skips. The cell silences that repeat; the section on holes below explains them.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">"ignore"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"skipping unsolved"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="See-a-quantity-along-the-channel">
+<h2>See a quantity along the channel<a class="headerlink" href="#See-a-quantity-along-the-channel" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sweep</span><span class="o">.</span><span class="n">profile</span><span class="p">([</span><span class="s2">"T_cool"</span><span class="p">,</span> <span class="s2">"T_wall, left"</span><span class="p">],</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="mf">40e3</span><span class="p">,</span> <span class="s2">"mdot"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_7_0.png" src="../_images/howto_plot-a-sweep_7_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">where=</span></code> fixes parameters at grid levels; every parameter it leaves free draws one line per level.</p></li>
+<li><p>Several quantities share one axis when they share a unit, and each gets its own colour.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(color=&quot;power&quot;)</span></code> puts a free parameter on colour; <code class="docutils literal notranslate"><span class="pre">style=</span></code> and <code class="docutils literal notranslate"><span class="pre">marker=</span></code> take the next ones.</p></li>
+</ul>
+<p>For a plate, <code class="docutils literal notranslate"><span class="pre">sweep.field(&quot;T&quot;,</span> <span class="pre">of=&quot;Fuel&quot;,</span> <span class="pre">where=dict(power=40e3,</span> <span class="pre">mdot=0.2,</span> <span class="pre">shape=&quot;cosine&quot;)).plot()</span></code> draws one case’s temperature over both axes.</p>
+</section>
+<section id="See-how-the-worst-value-moves-with-a-parameter">
+<h2>See how the worst value moves with a parameter<a class="headerlink" href="#See-how-the-worst-value-moves-with-a-parameter" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sweep</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="s2">"OSVR"</span><span class="p">,</span> <span class="s2">"min"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">crossing</span><span class="o">=</span><span class="s2">"mark"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_9_0.png" src="../_images/howto_plot-a-sweep_9_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p>The reducer collapses each case to one number: <code class="docutils literal notranslate"><span class="pre">&quot;min&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code> for the worst value; the reference below lists the others.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">versus=</span></code> is the parameter on the x axis; <code class="docutils literal notranslate"><span class="pre">plot(color=&quot;mdot&quot;)</span></code> gives each mass flow its own line.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(crossing=&quot;mark&quot;)</span></code> marks where each line meets its limit and prints the value under the axis.</p></li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sweep</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="s2">"T_wall, left"</span><span class="p">,</span> <span class="s2">"max"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="s2">"power"</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="s2">"shape"</span><span class="p">,</span> <span class="n">show_limit</span><span class="o">=</span><span class="s2">"shade"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_11_0.png" src="../_images/howto_plot-a-sweep_11_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(col=&quot;shape&quot;)</span></code> draws one panel per level; <code class="docutils literal notranslate"><span class="pre">row=</span></code> adds a second direction.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(show_limit=&quot;shade&quot;)</span></code> hatches the unsafe side of the limit; the default <code class="docutils literal notranslate"><span class="pre">&quot;line&quot;</span></code> draws only the dashed line.</p></li>
+</ul>
+</section>
+<section id="See-the-worst-value-over-two-parameters">
+<h2>See the worst value over two parameters<a class="headerlink" href="#See-the-worst-value-over-two-parameters" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sweep</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="s2">"OSVR"</span><span class="p">,</span> <span class="s2">"min"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="p">(</span><span class="s2">"power"</span><span class="p">,</span> <span class="s2">"mdot"</span><span class="p">),</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">show_limit</span><span class="o">=</span><span class="s2">"shade"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_13_0.png" src="../_images/howto_plot-a-sweep_13_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p>A pair on <code class="docutils literal notranslate"><span class="pre">versus=</span></code> makes a map: filled contours over the two parameters.</p></li>
+<li><p>The declared limit is a contour; with <code class="docutils literal notranslate"><span class="pre">show_limit=&quot;shade&quot;</span></code> its unsafe side is hatched.</p></li>
+<li><p>When the reducer is the limit’s own (<code class="docutils literal notranslate"><span class="pre">&quot;min&quot;</span></code> for <code class="docutils literal notranslate"><span class="pre">at_least</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;max&quot;</span></code> for <code class="docutils literal notranslate"><span class="pre">at_most</span></code>), the limit contour is the curve of the next task.</p></li>
+</ul>
+</section>
+<section id="Find-how-far-a-parameter-can-go">
+<h2>Find how far a parameter can go<a class="headerlink" href="#Find-how-far-a-parameter-can-go" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sweep</span><span class="o">.</span><span class="n">required</span><span class="p">([</span><span class="s2">"OSVR"</span><span class="p">,</span> <span class="s2">"CHFR"</span><span class="p">,</span> <span class="s2">"T_wall, left"</span><span class="p">],</span> <span class="n">solve_for</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">limiting</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s2">"shape"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_15_0.png" src="../_images/howto_plot-a-sweep_15_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">solve_for=</span></code> is the parameter walked until the quantity meets its limit, <code class="docutils literal notranslate"><span class="pre">versus=</span></code> the parameter on the x axis.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">equals=</span></code> replaces the declared limit with a number, a dict per quantity, or the name of another quantity.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">limiting=True</span></code> keeps, at each level, only the quantity that binds; the markers say which one.</p></li>
+</ul>
+<p>The cosine shape reaches a limit at a lower power than the flat one at every flow: at about 18 kW per plate at 0.1 kg/s, on the CHF ratio, up to about 50 kW at 0.3 kg/s, on the clad surface temperature. The flat shape is bound by the clad surface temperature at every flow, from about 19 to about 52 kW.</p>
+<p>Read <code class="docutils literal notranslate"><span class="pre">.frame</span></code> for the numbers: one row per level with <code class="docutils literal notranslate"><span class="pre">lower</span></code>, <code class="docutils literal notranslate"><span class="pre">value</span></code>, <code class="docutils literal notranslate"><span class="pre">upper</span></code> and <code class="docutils literal notranslate"><span class="pre">safe</span></code>, the side of the crossing where the design is safe.</p>
+</section>
+<section id="See-the-uncertainty">
+<h2>See the uncertainty<a class="headerlink" href="#See-the-uncertainty" title="Link to this heading">¶</a></h2>
+<p>A model that returns its frame with <code class="docutils literal notranslate"><span class="pre">uq_attach</span></code> bands gives a banded sweep: the <code class="docutils literal notranslate"><span class="pre">sys</span></code> and <code class="docutils literal notranslate"><span class="pre">stat</span></code> columns become <code class="docutils literal notranslate"><span class="pre">lower</span></code> and <code class="docutils literal notranslate"><span class="pre">upper</span></code> envelopes in every answer.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">stream.analysis.UQ</span><span class="w"> </span><span class="kn">import</span> <span class="n">Uncertainty</span><span class="p">,</span> <span class="n">UQModel</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">banded</span><span class="p">(</span><span class="n">power</span><span class="p">,</span> <span class="n">mdot</span><span class="p">,</span> <span class="n">shape</span><span class="p">):</span>
+    <span class="n">uq</span> <span class="o">=</span> <span class="n">UQModel</span><span class="p">({</span><span class="s2">"power"</span><span class="p">:</span> <span class="n">power</span><span class="p">,</span> <span class="s2">"mdot"</span><span class="p">:</span> <span class="n">mdot</span><span class="p">},</span> <span class="n">partial</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">uq</span><span class="o">.</span><span class="n">uq_attach</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="n">Uncertainty</span><span class="p">(</span><span class="n">systematic_relative</span><span class="o">=</span><span class="mf">0.02</span><span class="p">),</span> <span class="n">mdot</span><span class="o">=</span><span class="n">Uncertainty</span><span class="p">(</span><span class="n">statistical_relative</span><span class="o">=</span><span class="mf">0.03</span><span class="p">))</span>
+
+
+<span class="n">few</span> <span class="o">=</span> <span class="n">cases</span><span class="p">(</span><span class="n">power</span><span class="o">=</span><span class="p">[</span><span class="mf">20e3</span><span class="p">,</span> <span class="mf">40e3</span><span class="p">,</span> <span class="mf">60e3</span><span class="p">],</span> <span class="n">mdot</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="n">shape</span><span class="o">=</span><span class="s2">"cosine"</span><span class="p">)</span>
+<span class="n">banded_sweep</span> <span class="o">=</span> <span class="n">Sweep</span><span class="p">(</span><span class="n">few</span><span class="p">,</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">banded</span><span class="p">,</span> <span class="n">few</span><span class="p">),</span> <span class="n">agr</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">sweep</span><span class="o">.</span><span class="n">labels</span><span class="p">,</span> <span class="n">limits</span><span class="o">=</span><span class="n">sweep</span><span class="o">.</span><span class="n">limits</span><span class="p">)</span>
+<span class="n">chfr</span> <span class="o">=</span> <span class="n">banded_sweep</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="s2">"CHFR"</span><span class="p">,</span> <span class="s2">"min"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">chfr</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">band</span><span class="o">=</span><span class="s2">"split"</span><span class="p">)</span>
+<span class="n">chfr</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"mdot"</span><span class="p">,</span> <span class="n">errorbars</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_17_0.png" src="../_images/howto_plot-a-sweep_17_0.png" />
+</div>
+</div>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">UQModel</span></code> solves each case once more per uncertain parameter, so the banded sweep above is a small grid of the cosine shape.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">band=</span></code> draws <code class="docutils literal notranslate"><span class="pre">&quot;total&quot;</span></code> (the default), <code class="docutils literal notranslate"><span class="pre">&quot;split&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;none&quot;</span></code>. On the left, <code class="docutils literal notranslate"><span class="pre">&quot;split&quot;</span></code> shades the systematic part darker inside the total band; the total band reaches <code class="docutils literal notranslate"><span class="pre">sys</span></code> plus two <code class="docutils literal notranslate"><span class="pre">stat</span></code> from the line, because the question uses <code class="docutils literal notranslate"><span class="pre">sigma=2.0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(errorbars=True)</span></code> draws the total band as error bars at each case, as on the right.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sigma=</span></code> on the question is the multiple of <code class="docutils literal notranslate"><span class="pre">stat</span></code> in the envelopes; <code class="docutils literal notranslate"><span class="pre">sys</span></code> is added as it is.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot(bound=&quot;lower&quot;)</span></code> or <code class="docutils literal notranslate"><span class="pre">bound=&quot;upper&quot;</span></code> draws an envelope instead of the nominal value, and a crossing or a limit contour follows it.</p></li>
+</ul>
+</section>
+<section id="Handle-cases-that-did-not-solve">
+<h2>Handle cases that did not solve<a class="headerlink" href="#Handle-cases-that-did-not-solve" title="Link to this heading">¶</a></h2>
+<p>A case whose solve failed is a hole: its frame is <code class="docutils literal notranslate"><span class="pre">None</span></code>, and <code class="docutils literal notranslate"><span class="pre">run_cases</span></code> keeps the solver’s message. The sweep warns once with every hole, and each question warns again with the holes it skips; the map above marks them with crosses. This page silences these warnings, and the one <code class="docutils literal notranslate"><span class="pre">run_cases</span></code> gives, because the printed summary lists the holes.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">patched</span> <span class="o">=</span> <span class="n">Sweep</span><span class="p">(</span><span class="n">cases_</span><span class="p">,</span> <span class="n">frames</span><span class="p">,</span> <span class="n">agr</span><span class="p">,</span> <span class="n">fill_holes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"holes:  </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">patched</span><span class="o">.</span><span class="n">holes</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"filled: </span><span class="si">{</span><span class="n">patched</span><span class="o">.</span><span class="n">filled</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+holes:  [18, 19, 24, 25, 30, 31, 32, 33]
+filled: {}
+</pre></div></div>
+</div>
+<p>Every hole here sits at an edge of the grid along one parameter and next to another hole along the other, so none is filled.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">fill_holes=True</span></code> interpolates a hole between its two solved neighbours along a numeric parameter; a hole at the edge of the sweep, or next to another hole, along every numeric parameter, stays a hole.</p></li>
+<li><p>A filled case draws with an open marker and carries <code class="docutils literal notranslate"><span class="pre">filled=True</span></code> in every frame, and <code class="docutils literal notranslate"><span class="pre">required</span></code> warns when a crossing rests on it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">patched.holes</span></code> maps each hole to its message and <code class="docutils literal notranslate"><span class="pre">patched.filled</span></code> each filled hole to the cases it was interpolated from.</p></li>
+</ul>
+</section>
+<section id="Run-the-cases-in-parallel">
+<h2>Run the cases in parallel<a class="headerlink" href="#Run-the-cases-in-parallel" title="Link to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">run_cases</span></code> runs the cases one after the other. <code class="docutils literal notranslate"><span class="pre">mapper=</span></code> takes any map that keeps the order of the cases, called as <code class="docutils literal notranslate"><span class="pre">mapper(f,</span> <span class="pre">cases)</span></code>. The cell runs the six cases of the banded sweep, without their bands, on a pool of threads and compares the frames with a run in order:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+
+<span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+    <span class="n">threaded</span> <span class="o">=</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">few</span><span class="p">,</span> <span class="n">mapper</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">equals</span><span class="p">(</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">threaded</span><span class="p">,</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">few</span><span class="p">))))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+True
+</pre></div></div>
+</div>
+<p>A process pool and dask take the same <code class="docutils literal notranslate"><span class="pre">mapper=</span></code> form:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">dask</span>
+
+<span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cases_</span><span class="p">,</span> <span class="n">mapper</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">map</span><span class="p">)</span>
+<span class="n">frames</span> <span class="o">=</span> <span class="n">run_cases</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">cases_</span><span class="p">,</span> <span class="n">mapper</span><span class="o">=</span><span class="k">lambda</span> <span class="n">f</span><span class="p">,</span> <span class="n">xs</span><span class="p">:</span> <span class="n">dask</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">dask</span><span class="o">.</span><span class="n">delayed</span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">xs</span><span class="p">)))</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>A process pool pickles the model, so the model must be a function defined at module level; threads and dask take any callable.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">catch=</span></code> is the tuple of exceptions that make a case a hole. The default holds the three ways a STREAM solve reports that it did not finish: <code class="docutils literal notranslate"><span class="pre">AlgRuntimeError</span></code>, <code class="docutils literal notranslate"><span class="pre">TransientRuntimeError</span></code> and <code class="docutils literal notranslate"><span class="pre">SaturationReachedError</span></code>.</p></li>
+<li><p>Any other exception, a bug in the model among them, stops the run.</p></li>
+</ul>
+</section>
+<section id="Change-the-look">
+<h2>Change the look<a class="headerlink" href="#Change-the-look" title="Link to this heading">¶</a></h2>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">stream.viz</span><span class="w"> </span><span class="kn">import</span> <span class="n">Label</span><span class="p">,</span> <span class="n">Style</span>
+
+<span class="n">sheet</span> <span class="o">=</span> <span class="n">Style</span><span class="p">(</span><span class="n">palette</span><span class="o">=</span><span class="p">(</span><span class="s2">"#1b9e77"</span><span class="p">,</span> <span class="s2">"#d95f02"</span><span class="p">,</span> <span class="s2">"#7570b3"</span><span class="p">),</span> <span class="n">number_format</span><span class="o">=</span><span class="s2">".3g"</span><span class="p">,</span> <span class="n">limit_color</span><span class="o">=</span><span class="s2">"#d62728"</span><span class="p">)</span>
+<span class="n">chfr</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">reduce</span><span class="p">(</span><span class="s2">"CHFR"</span><span class="p">,</span> <span class="s2">"min"</span><span class="p">,</span> <span class="n">versus</span><span class="o">=</span><span class="s2">"power"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"mdot"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">})</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">left</span><span class="p">,</span> <span class="n">right</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mf">4.2</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">chfr</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">left</span><span class="p">,</span> <span class="n">crossing</span><span class="o">=</span><span class="s2">"mark"</span><span class="p">)</span>
+<span class="n">chfr</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">right</span><span class="p">,</span> <span class="n">crossing</span><span class="o">=</span><span class="s2">"mark"</span><span class="p">,</span> <span class="n">style_sheet</span><span class="o">=</span><span class="n">sheet</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="n">Label</span><span class="p">(</span><span class="s2">"Power"</span><span class="p">,</span> <span class="s2">"kW"</span><span class="p">,</span> <span class="mf">1e-3</span><span class="p">)})</span>
+<span class="n">left</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Style()"</span><span class="p">)</span>
+<span class="n">right</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"sheet"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_23_0.png" src="../_images/howto_plot-a-sweep_23_0.png" />
+</div>
+</div>
+<p>The left panel is the first <code class="docutils literal notranslate"><span class="pre">plot</span></code> with the default <code class="docutils literal notranslate"><span class="pre">Style()</span></code>. The right panel is the second: <code class="docutils literal notranslate"><span class="pre">sheet</span></code> gives it the palette, the red limit and the <code class="docutils literal notranslate"><span class="pre">&quot;.3g&quot;</span></code> crossing values, and the label override renames the axis.</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">style_sheet=</span></code> on <code class="docutils literal notranslate"><span class="pre">plot</span></code> takes a <code class="docutils literal notranslate"><span class="pre">Style</span></code>: palette, sizes, the limit’s colour and hatch, the map’s levels, and the number format of every printed value.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">labels=</span></code> on <code class="docutils literal notranslate"><span class="pre">plot</span></code> overrides the sweep’s labels for one figure. A <code class="docutils literal notranslate"><span class="pre">Label</span></code> or its tuple <code class="docutils literal notranslate"><span class="pre">(display,</span> <span class="pre">unit,</span> <span class="pre">scale,</span> <span class="pre">fmt)</span></code> sets how a name prints; <code class="docutils literal notranslate"><span class="pre">fmt</span></code> is a format spec such as <code class="docutils literal notranslate"><span class="pre">&quot;.1f&quot;</span></code> or a function of the scaled number.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">with</span> <span class="pre">sheet:</span></code> makes it the sheet of every <code class="docutils literal notranslate"><span class="pre">plot</span></code> call inside the block, and applies its matplotlib settings to your own figures drawn there, so they match.</p></li>
+</ul>
+<p>The cell draws one case’s coolant temperature from the profile’s <code class="docutils literal notranslate"><span class="pre">frame</span></code> with plain matplotlib inside the block:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">coolant</span> <span class="o">=</span> <span class="n">sweep</span><span class="o">.</span><span class="n">profile</span><span class="p">(</span><span class="s2">"T_cool"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"power"</span><span class="p">:</span> <span class="mf">40e3</span><span class="p">,</span> <span class="s2">"mdot"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s2">"shape"</span><span class="p">:</span> <span class="s2">"cosine"</span><span class="p">})</span><span class="o">.</span><span class="n">frame</span>
+<span class="k">with</span> <span class="n">sheet</span><span class="p">:</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">coolant</span><span class="p">[</span><span class="s2">"z"</span><span class="p">],</span> <span class="n">coolant</span><span class="p">[</span><span class="s2">"value"</span><span class="p">])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"z [m]"</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Coolant temperature [°C]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/howto_plot-a-sweep_25_0.png" src="../_images/howto_plot-a-sweep_25_0.png" />
+</div>
+</div>
+<p>A frame with a <code class="docutils literal notranslate"><span class="pre">time</span></code> column is refused: the module draws steady states only.</p>
+<p>The signatures, the reducers and the label and style classes are in <a class="reference internal" href="../viz.html"><span class="doc">the visualization reference</span></a>.</p>
+<p><strong>Warning.</strong> <code class="docutils literal notranslate"><span class="pre">stream.viz</span></code> was written by an AI assistant, and it is a large amount of intricately interwoven code. Reading it, changing it or fixing it will not feel like the rest of STREAM. Before a change is safe, expect to spend real time tracing how <code class="docutils literal notranslate"><span class="pre">Sweep</span></code>, its questions and <code class="docutils literal notranslate"><span class="pre">Result</span></code> hand data to each other, and lean on the tests in <code class="docutils literal notranslate"><span class="pre">tests/test_viz</span></code>.</p>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="../explanation/index.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Explanation</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="compute-margins.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">Compute margins</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            Made with 
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            <div class="last-updated">
+              Last updated on Oct 30, 2026</div>
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">Plot a sweep</a><ul>
+<li><a class="reference internal" href="#The-plate-and-its-channel">The plate and its channel</a></li>
+<li><a class="reference internal" href="#Build-the-sweep">Build the sweep</a></li>
+<li><a class="reference internal" href="#See-a-quantity-along-the-channel">See a quantity along the channel</a></li>
+<li><a class="reference internal" href="#See-how-the-worst-value-moves-with-a-parameter">See how the worst value moves with a parameter</a></li>
+<li><a class="reference internal" href="#See-the-worst-value-over-two-parameters">See the worst value over two parameters</a></li>
+<li><a class="reference internal" href="#Find-how-far-a-parameter-can-go">Find how far a parameter can go</a></li>
+<li><a class="reference internal" href="#See-the-uncertainty">See the uncertainty</a></li>
+<li><a class="reference internal" href="#Handle-cases-that-did-not-solve">Handle cases that did not solve</a></li>
+<li><a class="reference internal" href="#Run-the-cases-in-parallel">Run the cases in parallel</a></li>
+<li><a class="reference internal" href="#Change-the-look">Change the look</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=2a705162"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script>window.MathJax = {"loader": {"paths": {"fonts": "[mathjax]/fonts"}}, "tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="../_static/mathjax/tex-chtml.js?v=4ea4c670"></script>
+    </body>
+</html>
